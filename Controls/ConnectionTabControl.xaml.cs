@@ -21,6 +21,12 @@ public partial class ConnectionTabControl : UserControl
     private readonly SqlFormatterService _formatterService;
     private readonly QueryHistoryService _queryHistoryService;
     private readonly ExportService _exportService;
+    private readonly PreferencesService _preferencesService;
+    
+    // Pagination state
+    private string _lastExecutedSql = string.Empty;
+    private int _currentPage = 1;
+    private int _currentOffset = 0;
 
     public ConnectionTabControl(DB2Connection connection)
     {
@@ -32,10 +38,13 @@ public partial class ConnectionTabControl : UserControl
         _formatterService = new SqlFormatterService();
         _queryHistoryService = new QueryHistoryService();
         _exportService = new ExportService();
+        _preferencesService = new PreferencesService();
 
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
         _ = ConnectToDatabase();
+        
+        Logger.Debug($"Pagination enabled with max rows: {_preferencesService.Preferences.MaxRowsPerQuery}");
     }
 
     private void RegisterKeyboardShortcuts()
@@ -276,7 +285,7 @@ public partial class ConnectionTabControl : UserControl
         return statements.LastOrDefault()?.Trim() ?? string.Empty;
     }
 
-    private async Task ExecuteSql(string sql)
+    private async Task ExecuteSql(string sql, bool resetPagination = true)
     {
         sql = sql?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(sql))
@@ -286,28 +295,48 @@ public partial class ConnectionTabControl : UserControl
             return;
         }
 
-        Logger.Info($"Executing SQL: {sql.Substring(0, Math.Min(50, sql.Length))}...");
+        // Reset pagination if this is a new query
+        if (resetPagination)
+        {
+            _currentPage = 1;
+            _currentOffset = 0;
+            _lastExecutedSql = sql;
+            Logger.Debug("Pagination reset to page 1");
+        }
+
+        Logger.Info($"Executing SQL (Page {_currentPage}, Offset {_currentOffset}): {sql.Substring(0, Math.Min(50, sql.Length))}...");
         StatusText.Text = "Executing query...";
         ExecuteButton.IsEnabled = false;
+        PreviousButton.IsEnabled = false;
+        NextButton.IsEnabled = false;
 
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
-            var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+            var maxRows = _preferencesService.Preferences.MaxRowsPerQuery;
+            var handleDecimalErrors = _preferencesService.Preferences.HandleDecimalErrorsGracefully;
+            
+            var dataTable = await _connectionManager.ExecuteQueryAsync(sql, maxRows, _currentOffset, handleDecimalErrors);
             ResultsGrid.ItemsSource = dataTable.DefaultView;
 
             stopwatch.Stop();
             var elapsed = stopwatch.ElapsedMilliseconds;
 
-            RowCountText.Text = $"{dataTable.Rows.Count} rows";
+            var rowsReturned = dataTable.Rows.Count;
+            RowCountText.Text = $"{rowsReturned} rows (Page {_currentPage})";
             ExecutionTimeText.Text = $"Executed in {elapsed}ms";
             StatusText.Text = "Query completed successfully";
+            PageInfoText.Text = $"Page {_currentPage}";
 
-            Logger.Info($"Query executed successfully: {dataTable.Rows.Count} rows in {elapsed}ms");
+            // Enable/disable pagination buttons
+            PreviousButton.IsEnabled = _currentPage > 1;
+            NextButton.IsEnabled = rowsReturned >= maxRows; // If we got a full page, there might be more
+
+            Logger.Info($"Query executed successfully: {rowsReturned} rows in {elapsed}ms (Page {_currentPage})");
 
             // Save to query history
-            _queryHistoryService.AddQuery(sql, _connection.Database, true, elapsed, dataTable.Rows.Count);
+            _queryHistoryService.AddQuery(sql, _connection.Database, true, elapsed, rowsReturned);
         }
         catch (Exception ex)
         {
@@ -318,6 +347,8 @@ public partial class ConnectionTabControl : UserControl
             StatusText.Text = "Query failed";
             RowCountText.Text = "Error";
             ExecutionTimeText.Text = "";
+            PreviousButton.IsEnabled = false;
+            NextButton.IsEnabled = false;
 
             // Save failed query to history
             _queryHistoryService.AddQuery(sql, _connection.Database, false, elapsed);
@@ -329,6 +360,36 @@ public partial class ConnectionTabControl : UserControl
         {
             ExecuteButton.IsEnabled = true;
         }
+    }
+    
+    private async void Previous_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentPage <= 1 || string.IsNullOrEmpty(_lastExecutedSql))
+        {
+            return;
+        }
+
+        Logger.Debug($"Loading previous page (current: {_currentPage})");
+        
+        _currentPage--;
+        _currentOffset = (_currentPage - 1) * _preferencesService.Preferences.MaxRowsPerQuery;
+        
+        await ExecuteSql(_lastExecutedSql, resetPagination: false);
+    }
+
+    private async void Next_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_lastExecutedSql))
+        {
+            return;
+        }
+
+        Logger.Debug($"Loading next page (current: {_currentPage})");
+        
+        _currentPage++;
+        _currentOffset = (_currentPage - 1) * _preferencesService.Preferences.MaxRowsPerQuery;
+        
+        await ExecuteSql(_lastExecutedSql, resetPagination: false);
     }
 
     private void Format_Click(object sender, RoutedEventArgs e)

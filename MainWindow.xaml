@@ -26,6 +26,14 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
+                <MenuItem x:Name="RecentConnectionsMenuItem" Header="_Recent Connections">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🕐" FontSize="16"/>
+                    </MenuItem.Icon>
+                    <!-- Recent connections will be populated dynamically -->
+                    <MenuItem Header="(No recent connections)" IsEnabled="False"/>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="_Close Tab" Click="CloseTab_Click" InputGestureText="Ctrl+W">
                     <MenuItem.Icon>
                         <TextBlock Text="✖" FontSize="16"/>

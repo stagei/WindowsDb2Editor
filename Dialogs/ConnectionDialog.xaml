@@ -4,12 +4,15 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="New DB2 Connection"
-        Height="400"
+        Height="480"
         Width="500"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="CanResize"
+        MinHeight="480"
+        MinWidth="500">
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -46,14 +49,14 @@
 
         <!-- Username -->
         <TextBlock Grid.Row="6" Text="Username:" Margin="0,0,0,5"/>
-        <TextBox Grid.Row="7" x:Name="UsernameTextBox" Margin="0,0,0,15" VerticalAlignment="Top"/>
+        <TextBox Grid.Row="7" x:Name="UsernameTextBox" Margin="0,0,0,15"/>
 
         <!-- Password -->
-        <TextBlock Grid.Row="8" Text="Password:" Margin="0,0,0,5" VerticalAlignment="Top"/>
-        <PasswordBox Grid.Row="9" x:Name="PasswordBox" Margin="0,0,0,0" VerticalAlignment="Top"/>
+        <TextBlock Grid.Row="8" Text="Password:" Margin="0,0,0,5"/>
+        <PasswordBox Grid.Row="9" x:Name="PasswordBox" Margin="0,0,0,15"/>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="10" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="Test Connection" Width="120" Margin="0,0,10,0" Click="TestConnection_Click"/>
             <Button Content="Connect" Width="100" Margin="0,0,10,0" IsDefault="True" Click="Connect_Click"/>
             <Button Content="Cancel" Width="100" IsCancel="True" Click="Cancel_Click"/>

@@ -91,7 +91,7 @@ public class DB2ConnectionManager : IDisposable
     /// <summary>
     /// Execute SQL query and return DataTable
     /// </summary>
-    public async Task<DataTable> ExecuteQueryAsync(string sql)
+    public async Task<DataTable> ExecuteQueryAsync(string sql, int? maxRows = null, int offset = 0, bool handleDecimalErrors = true)
     {
         if (_db2Connection == null || _db2Connection.State != ConnectionState.Open)
         {
@@ -100,19 +100,39 @@ public class DB2ConnectionManager : IDisposable
         }
 
         Logger.Info("Executing SQL query");
-        Logger.Debug($"SQL: {sql.Substring(0, Math.Min(100, sql.Length))}...");
+        Logger.Debug($"SQL: {sql.Substring(0, Math.Min(100, sql.Length))}... MaxRows: {maxRows}, Offset: {offset}");
 
         try
         {
             var startTime = DateTime.Now;
 
+            // Modify SQL to include pagination if maxRows is specified
+            var paginatedSql = sql;
+            if (maxRows.HasValue)
+            {
+                // Add FETCH FIRST syntax for DB2 pagination
+                paginatedSql = AddPaginationToQuery(sql, maxRows.Value, offset);
+                Logger.Debug($"Paginated SQL: {paginatedSql.Substring(0, Math.Min(150, paginatedSql.Length))}...");
+            }
+
             using var command = _db2Connection.CreateCommand();
-            command.CommandText = sql;
+            command.CommandText = paginatedSql;
             command.CommandTimeout = _connectionInfo.ConnectionTimeout;
 
             using var adapter = new DB2DataAdapter(command);
             var dataTable = new DataTable("Results");
-            await Task.Run(() => adapter.Fill(dataTable));
+            
+            try
+            {
+                await Task.Run(() => adapter.Fill(dataTable));
+            }
+            catch (FormatException fex) when (handleDecimalErrors && fex.Message.Contains("was not in a correct format"))
+            {
+                Logger.Warn(fex, "DB2Decimal format error detected, attempting to read with DataReader");
+                
+                // Try alternative method using DataReader with manual conversion
+                return await ExecuteQueryWithDataReaderAsync(paginatedSql);
+            }
 
             var elapsed = (DateTime.Now - startTime).TotalMilliseconds;
             Logger.Info($"Query executed successfully in {elapsed}ms, {dataTable.Rows.Count} rows returned");
@@ -130,6 +150,86 @@ public class DB2ConnectionManager : IDisposable
             Logger.Error(ex, "Query execution failed");
             throw new Exception($"Query failed: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Add pagination clauses to SQL query for DB2
+    /// </summary>
+    private string AddPaginationToQuery(string sql, int maxRows, int offset)
+    {
+        Logger.Debug($"Adding pagination: LIMIT {maxRows} OFFSET {offset}");
+        
+        // Check if query already has FETCH FIRST or similar clauses
+        var upperSql = sql.Trim().ToUpperInvariant();
+        
+        if (upperSql.Contains("FETCH FIRST") || upperSql.Contains("LIMIT"))
+        {
+            Logger.Warn("Query already contains pagination clause, not modifying");
+            return sql;
+        }
+
+        // For DB2, use OFFSET/FETCH NEXT syntax (DB2 11.1+)
+        var paginatedSql = $"{sql.TrimEnd().TrimEnd(';')} OFFSET {offset} ROWS FETCH NEXT {maxRows} ROWS ONLY";
+        
+        return paginatedSql;
+    }
+
+    /// <summary>
+    /// Execute query using DataReader with graceful decimal handling
+    /// </summary>
+    private async Task<DataTable> ExecuteQueryWithDataReaderAsync(string sql)
+    {
+        Logger.Debug("Executing query with DataReader for decimal error handling");
+        
+        using var command = _db2Connection!.CreateCommand();
+        command.CommandText = sql;
+        command.CommandTimeout = _connectionInfo.ConnectionTimeout;
+
+        var dataTable = new DataTable("Results");
+        
+        await using var reader = await command.ExecuteReaderAsync();
+        
+        // Create columns
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            var columnName = reader.GetName(i);
+            var columnType = reader.GetFieldType(i);
+            dataTable.Columns.Add(columnName, typeof(string)); // Use string to avoid conversion errors
+            Logger.Debug($"Column {i}: {columnName} ({columnType.Name})");
+        }
+
+        // Read rows
+        int rowCount = 0;
+        while (await reader.ReadAsync())
+        {
+            var row = dataTable.NewRow();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                try
+                {
+                    if (reader.IsDBNull(i))
+                    {
+                        row[i] = DBNull.Value;
+                    }
+                    else
+                    {
+                        // Get value as string to avoid DB2Decimal conversion issues
+                        var value = reader.GetValue(i);
+                        row[i] = value?.ToString() ?? string.Empty;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, $"Error reading column {i} ({reader.GetName(i)}), setting to error message");
+                    row[i] = $"[ERROR: {ex.Message}]";
+                }
+            }
+            dataTable.Rows.Add(row);
+            rowCount++;
+        }
+
+        Logger.Info($"DataReader method returned {rowCount} rows with graceful error handling");
+        return dataTable;
     }
 
     /// <summary>

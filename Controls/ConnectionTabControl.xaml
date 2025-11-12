@@ -117,13 +117,26 @@
                           CanUserDeleteRows="False"/>
             </Border>
 
-            <!-- Status Bar -->
-            <StatusBar Grid.Row="4" Height="25">
+            <!-- Status Bar with Pagination Controls -->
+            <StatusBar Grid.Row="4" Height="30">
                 <StatusBarItem>
-                    <TextBlock x:Name="RowCountText" Text="No results"/>
+                    <TextBlock x:Name="RowCountText" Text="No results" VerticalAlignment="Center"/>
+                </StatusBarItem>
+                <Separator Margin="10,0"/>
+                <StatusBarItem>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="PreviousButton" Content="◀ Previous" Width="85" Height="22" 
+                                Click="Previous_Click" IsEnabled="False" Margin="0,0,5,0"
+                                ToolTip="Load previous page of results"/>
+                        <TextBlock x:Name="PageInfoText" Text="Page 1" VerticalAlignment="Center" 
+                                   MinWidth="80" TextAlignment="Center" Margin="5,0"/>
+                        <Button x:Name="NextButton" Content="Next ▶" Width="85" Height="22" 
+                                Click="Next_Click" IsEnabled="False" Margin="5,0,0,0"
+                                ToolTip="Load next page of results"/>
+                    </StackPanel>
                 </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right">
-                    <TextBlock x:Name="ExecutionTimeText" Text=""/>
+                    <TextBlock x:Name="ExecutionTimeText" Text="" VerticalAlignment="Center"/>
                 </StatusBarItem>
             </StatusBar>
         </Grid>

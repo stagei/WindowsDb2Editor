@@ -2,18 +2,36 @@ using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
 public partial class ConnectionDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly ConnectionStorageService _storageService;
     public DB2Connection? Connection { get; private set; }
 
     public ConnectionDialog()
     {
         InitializeComponent();
+        _storageService = new ConnectionStorageService();
         Logger.Debug("ConnectionDialog opened");
+    }
+    
+    /// <summary>
+    /// Constructor for editing existing connection
+    /// </summary>
+    public ConnectionDialog(DB2Connection connection) : this()
+    {
+        Logger.Debug("ConnectionDialog opened with existing connection: {Name}", connection.Name);
+        
+        NameTextBox.Text = connection.Name;
+        ServerTextBox.Text = connection.Server;
+        PortTextBox.Text = connection.Port.ToString();
+        DatabaseTextBox.Text = connection.Database;
+        UsernameTextBox.Text = connection.Username;
+        PasswordBox.Password = connection.Password;
     }
 
     private async void TestConnection_Click(object sender, RoutedEventArgs e)
@@ -66,6 +84,18 @@ public partial class ConnectionDialog : Window
             MessageBox.Show("Please fill in all required fields.", "Validation Error",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
+        }
+
+        // Save connection to storage with encrypted password
+        try
+        {
+            _storageService.SaveConnection(connection);
+            Logger.Info("Connection saved to storage: {Name}", connection.Name);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to save connection");
+            // Continue anyway - don't block connection if save fails
         }
 
         Connection = connection;

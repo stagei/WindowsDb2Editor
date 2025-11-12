@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using NLog;
@@ -15,6 +16,7 @@ public partial class MainWindow : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly ThemeService _themeService;
+    private readonly ConnectionStorageService _connectionStorageService;
 
     public MainWindow()
     {
@@ -25,10 +27,12 @@ public partial class MainWindow : Window
         var configService = new ConfigurationService();
         _themeService = new ThemeService(configService);
         _themeService.InitializeTheme();
+        _connectionStorageService = new ConnectionStorageService();
 
         RegisterKeyboardShortcuts();
         UpdatePlaceholderVisibility();
         UpdateThemeMenuText();
+        PopulateRecentConnections();
 
         Logger.Info("MainWindow initialized successfully");
     }
@@ -83,6 +87,9 @@ public partial class MainWindow : Window
         {
             Logger.Info($"Creating new connection tab for: {dialog.Connection.GetDisplayName()}");
             AddConnectionTab(dialog.Connection);
+            
+            // Refresh recent connections menu
+            PopulateRecentConnections();
         }
         else
         {
@@ -344,6 +351,146 @@ public partial class MainWindow : Window
             "About WindowsDb2Editor",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    /// <summary>
+    /// Populate the Recent Connections menu with saved connections
+    /// </summary>
+    private void PopulateRecentConnections()
+    {
+        Logger.Debug("Populating recent connections menu");
+        
+        try
+        {
+            var recentConnections = _connectionStorageService.LoadConnections();
+            
+            // Clear existing items
+            RecentConnectionsMenuItem.Items.Clear();
+            
+            if (recentConnections.Count == 0)
+            {
+                var noConnectionsItem = new MenuItem
+                {
+                    Header = "(No recent connections)",
+                    IsEnabled = false
+                };
+                RecentConnectionsMenuItem.Items.Add(noConnectionsItem);
+                Logger.Debug("No recent connections found");
+            }
+            else
+            {
+                Logger.Info("Found {Count} recent connections", recentConnections.Count);
+                
+                foreach (var savedConnection in recentConnections)
+                {
+                    var menuItem = new MenuItem
+                    {
+                        Header = $"{savedConnection.Name} ({savedConnection.Database}@{savedConnection.Server})",
+                        Tag = savedConnection.Name
+                    };
+                    
+                    menuItem.Click += RecentConnection_Click;
+                    RecentConnectionsMenuItem.Items.Add(menuItem);
+                }
+                
+                // Add separator and clear history option
+                RecentConnectionsMenuItem.Items.Add(new Separator());
+                
+                var clearHistoryItem = new MenuItem
+                {
+                    Header = "Clear Recent Connections"
+                };
+                clearHistoryItem.Click += ClearRecentConnections_Click;
+                RecentConnectionsMenuItem.Items.Add(clearHistoryItem);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to populate recent connections");
+        }
+    }
+    
+    /// <summary>
+    /// Handle click on a recent connection menu item
+    /// </summary>
+    private void RecentConnection_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string connectionName)
+        {
+            return;
+        }
+        
+        Logger.Info("Opening recent connection: {Name}", connectionName);
+        
+        try
+        {
+            // Get connection with decrypted password
+            var connection = _connectionStorageService.GetConnection(connectionName);
+            
+            if (connection == null)
+            {
+                Logger.Warn("Recent connection not found: {Name}", connectionName);
+                MessageBox.Show($"Connection '{connectionName}' not found in saved connections.",
+                    "Connection Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                
+                // Refresh menu
+                PopulateRecentConnections();
+                return;
+            }
+            
+            // Open tab with this connection
+            AddConnectionTab(connection);
+            
+            // Update last used timestamp
+            _connectionStorageService.UpdateLastUsed(connectionName);
+            
+            // Refresh menu to update order
+            PopulateRecentConnections();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open recent connection: {Name}", connectionName);
+            MessageBox.Show($"Failed to open connection:\n\n{ex.Message}",
+                "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Clear all recent connections
+    /// </summary>
+    private void ClearRecentConnections_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Clear recent connections requested");
+        
+        var result = MessageBox.Show(
+            "Are you sure you want to clear all recent connections?\n\nThis will remove all saved connection information including passwords.",
+            "Clear Recent Connections",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        
+        if (result == MessageBoxResult.Yes)
+        {
+            try
+            {
+                var filePath = _connectionStorageService.GetConnectionsFilePath();
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    Logger.Info("Connections file deleted: {Path}", filePath);
+                }
+                
+                PopulateRecentConnections();
+                
+                MessageBox.Show("Recent connections cleared successfully.",
+                    "Clear Recent Connections", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to clear recent connections");
+                MessageBox.Show($"Failed to clear recent connections:\n\n{ex.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
