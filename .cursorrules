@@ -1,0 +1,592 @@
+# WindowsDb2Editor - Cursor AI Rules
+
+## Project Overview
+This is a C# WPF application for Windows 11 that provides a DBeaver-like database editor specifically for IBM DB2 databases. The application targets .NET 10, uses native DB2 drivers, supports offline deployment, and includes features like multiple connection tabs, dark mode, Monaco-like SQL editor, and auto-formatting.
+
+## Framework & Technology Stack
+
+### Required Technologies
+- **Framework**: .NET 10 (net10.0-windows)
+- **UI Framework**: WPF (Windows Presentation Foundation)
+- **Database Driver**: IBM.Data.DB2.Core (native drivers)
+- **Logging**: NLog (NOT Serilog)
+- **SQL Editor**: AvalonEdit
+- **SQL Formatter**: PoorMansTSqlFormatter
+- **UI Theme**: ModernWpfUI
+- **Language**: C# 13
+
+### Key Dependencies
+```xml
+<PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.400" />
+<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+<PackageReference Include="PoorMansTSqlFormatter" Version="1.4.3.1" />
+<PackageReference Include="ModernWpfUI" Version="0.9.6" />
+<PackageReference Include="NLog" Version="6.0.6" />
+<PackageReference Include="NLog.Extensions.Logging" Version="6.0.6" />
+<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+```
+
+### DB2 Client Configuration
+**IMPORTANT**: The application uses **Net.IBM.Data.Db2 9.0.0.400** which provides native DB2 connectivity without requiring external IBM DB2 Client installation. The package includes all necessary drivers and communicates directly with the DB2 database server over the network.
+
+## Logging Standards
+
+### Always Use NLog (Never Serilog)
+```csharp
+using NLog;
+
+private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+// Logging examples
+Logger.Info("Application started");
+Logger.Debug("Debug information: {value}", someValue);
+Logger.Error(exception, "Error occurred during operation");
+Logger.Warn("Warning message");
+```
+
+### NLog Configuration
+- Configuration file: `nlog.config` (XML format)
+- Log location: `logs/` directory
+- Log format: `${longdate}|${level:uppercase=true}|${logger}|${message}`
+- Archive daily, keep 30 days
+- Never log passwords or sensitive data (mask connection strings)
+
+### Logging Best Practices
+1. Log all DB2 connection attempts (success/failure)
+2. Log query executions with timing
+3. Log all exceptions with full context
+4. Use structured logging with parameters
+5. Mask sensitive data (passwords) in logs
+6. Log application lifecycle events (startup, shutdown)
+7. **ALWAYS implement DEBUG-level logging when encountering ANY issues** - this is critical for troubleshooting
+8. Include debug logs for: connection lifecycle, query parameters, configuration loading, UI state changes, and all error scenarios
+
+### Debug Logging Requirements
+**CRITICAL**: When encountering any issues, errors, or unexpected behavior:
+- Add `Logger.Debug()` statements before and after the operation
+- Log input parameters and state
+- Log intermediate steps and decisions
+- Log timing information
+- Log the full context of the operation
+- This debug logging is MANDATORY for troubleshooting and should be added proactively, not just reactively
+
+## Code Style & Naming Conventions
+
+### C# Conventions
+- Use C# 13 features when appropriate
+- Enable nullable reference types
+- Use `async`/`await` for DB operations
+- Use `using` statements for disposable resources
+- Follow Microsoft C# coding conventions
+
+### Naming Standards
+- Classes: PascalCase (e.g., `DB2ConnectionManager`)
+- Methods: PascalCase (e.g., `ExecuteQuery`)
+- Private fields: _camelCase with underscore (e.g., `_connectionString`)
+- Properties: PascalCase (e.g., `ConnectionStatus`)
+- Local variables: camelCase (e.g., `connectionString`)
+- Constants: PascalCase (e.g., `DefaultTimeout`)
+- Async methods: Suffix with `Async` (e.g., `ExecuteQueryAsync`)
+
+### File Organization
+```
+WindowsDb2Editor/
+├── Controls/          # UserControls (e.g., ConnectionTabControl)
+├── Data/             # DB2 connection and query logic
+├── Dialogs/          # Dialog windows
+├── Models/           # Data models and DTOs
+├── Services/         # Business logic (LoggingService, SqlFormatterService)
+├── Utils/            # Helper classes
+└── Resources/        # XSHD files, icons, themes
+```
+
+## Database & DB2 Standards
+
+### Connection Management
+- Always use `using` statements for connections
+- Use Net.IBM.Data.Db2 9.0.0.400 (self-contained, no DB2 client required)
+- Connection string format: `Server=host:port;Database=DBNAME;UID=user;PWD=pass;`
+- Enable connection pooling
+- Log all connection attempts
+- Namespace: `IBM.Data.Db2`
+
+### Query Execution
+- Always use parameterized queries (prevent SQL injection)
+- Use `DB2Parameter` for parameters
+- Log query execution with timing
+- Handle `DB2Exception` specifically with SqlState and ErrorCode
+- Implement timeout handling (default 30 seconds)
+
+### Example Pattern
+```csharp
+using NLog;
+using IBM.Data.Db2;
+using DB2Conn = IBM.Data.Db2.DB2Connection;
+
+private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+public async Task<DataTable> ExecuteQueryAsync(string sql)
+{
+    Logger.Info("Executing query");
+    Logger.Debug($"SQL: {sql.Substring(0, Math.Min(100, sql.Length))}...");
+    
+    try
+    {
+        using var command = _db2Connection.CreateCommand();
+        command.CommandText = sql;
+        command.CommandTimeout = 30;
+        
+        using var adapter = new DB2DataAdapter(command);
+        var dataTable = new DataTable("Results");
+        await Task.Run(() => adapter.Fill(dataTable));
+        
+        Logger.Info($"Query returned {dataTable.Rows.Count} rows");
+        return dataTable;
+    }
+    catch (DB2Exception db2Ex)
+    {
+        Logger.Error(db2Ex, "DB2 error - SQL State: {SqlState}, Error Code: {ErrorCode}", 
+                     db2Ex.SqlState, db2Ex.ErrorCode);
+        throw;
+    }
+}
+```
+
+## WPF & UI Standards
+
+### XAML Conventions
+- Use ModernWpfUI theme system
+- Support both Dark and Light themes
+- Use dynamic resources for theme-aware colors
+- Follow Material Design principles
+- Use data binding over code-behind when possible
+
+### Theme Support
+- Default theme: Dark
+- Toggle via Ctrl+D or View menu
+- Use `ModernWpf.ThemeManager` for theme switching
+- All colors must support both themes
+
+### AvalonEdit Integration
+- Syntax highlighting: Custom DB2 SQL (DB2SQL.xshd)
+- Line numbers: Always enabled
+- Font: Consolas, size 14
+- Features: Code folding, find/replace, multiple cursors
+- Keyboard shortcuts: Standard VS Code bindings
+
+### TabControl Pattern
+- Each connection = separate tab
+- Tab header shows: `{Database} @ {Host}` with close button
+- Support Ctrl+N (new tab), Ctrl+W (close tab)
+- Each tab is a `ConnectionTabControl` UserControl
+
+## Feature-Specific Rules
+
+### Multiple Connection Tabs
+- Each tab maintains its own DB2 connection
+- Tabs are independent (separate connection managers)
+- Tab headers include close button (✕)
+- Support tab switching via Ctrl+Tab
+- Maximum tabs: No limit (performance dependent)
+
+### SQL Auto-Format
+- Use PoorMansTSqlFormatter
+- Trigger: Ctrl+Shift+F
+- Settings: 4-space indent, uppercase keywords, 120 char line width
+- Format on save: Optional (configurable)
+
+### Dark Mode
+- Use ModernWpfUI themes
+- Toggle: Ctrl+D or View menu
+- Persist preference in appsettings.json
+- Update syntax highlighting colors for dark theme
+
+### Offline Deployment
+- Self-contained: Include .NET 10 runtime
+- All dependencies bundled (no internet required)
+- Include: nlog.config, appsettings.json, DB2SQL.xshd
+- Publish command: `dotnet publish -c Release -r win-x64 --self-contained true -f net10.0-windows`
+
+## Error Handling
+
+### Exception Handling Pattern
+```csharp
+try
+{
+    Logger.Debug("Starting operation");
+    // Operation
+    Logger.Info("Operation completed successfully");
+}
+catch (DB2Exception db2Ex)
+{
+    Logger.Error(db2Ex, "DB2 error - SQL State: {SqlState}", db2Ex.SqlState);
+    MessageBox.Show($"Database error: {db2Ex.Message}", "Error", 
+                   MessageBoxButton.OK, MessageBoxImage.Error);
+}
+catch (Exception ex)
+{
+    Logger.Error(ex, "Unexpected error");
+    MessageBox.Show($"Error: {ex.Message}", "Error",
+                   MessageBoxButton.OK, MessageBoxImage.Error);
+}
+```
+
+### Error Logging Requirements
+1. Always log exceptions with full context
+2. Log exception type, message, and stack trace
+3. Include operation context (what was being done)
+4. Mask sensitive data (passwords, connection strings)
+5. Show user-friendly messages to users
+
+## Configuration Management
+
+### appsettings.json
+- Store all configurable settings
+- Include framework version
+- Never commit passwords
+- Support environment-specific configs
+
+### Required Settings
+```json
+{
+  "Application": {
+    "Framework": "net10.0-windows"
+  },
+  "Editor": {
+    "DefaultTheme": "Dark",
+    "FontFamily": "Consolas",
+    "FontSize": 14
+  },
+  "Database": {
+    "DefaultCommandTimeout": 30
+  },
+  "Logging": {
+    "UseNLog": true,
+    "ConfigFile": "nlog.config"
+  }
+}
+```
+
+## Keyboard Shortcuts
+
+### Standard Shortcuts (Must Implement)
+- F5: Execute query
+- Ctrl+Enter: Execute current statement
+- Ctrl+Shift+F: Format SQL
+- Ctrl+N: New connection tab
+- Ctrl+W: Close current tab
+- Ctrl+S: Save script
+- Ctrl+O: Open script
+- Ctrl+D: Toggle dark mode
+- Ctrl+F: Find
+- Ctrl+H: Replace
+
+### Implementation
+Use WPF `RoutedCommand` with `KeyGesture` bindings in MainWindow.xaml.cs
+
+## Security Best Practices
+
+### Connection Strings
+- Never log passwords in plain text
+- Use regex to mask passwords: `PWD=([^;]*)` → `PWD=***`
+- Consider Windows Credential Manager for storage
+- Encrypt sensitive configuration values
+
+### SQL Injection Prevention
+- Always use parameterized queries
+- Never concatenate user input into SQL
+- Use `DB2Parameter` with proper data types
+- Validate and sanitize all user inputs
+
+## Testing Standards
+
+### Manual Testing Checklist
+- Test with multiple simultaneous connections
+- Test dark/light theme switching
+- Test SQL formatting with complex queries
+- Test offline deployment (no internet)
+- Test on clean Windows 11 VM
+- Test with various DB2 versions
+
+### Error Scenarios to Test
+- Invalid connection credentials
+- Network timeout
+- Invalid SQL syntax
+- Large result sets
+- Long-running queries
+- Connection loss during query
+
+## Performance Considerations
+
+### Database Operations
+- Use connection pooling (enabled by default)
+- Implement query timeouts (30 seconds default)
+- Use async operations for long-running queries
+- Display loading indicators for operations > 1 second
+- Implement query cancellation (Ctrl+Break)
+
+### UI Performance
+- Use virtualization for large DataGrid results
+- Implement pagination for > 10,000 rows
+- Use background threads for DB operations
+- Keep UI thread responsive
+
+## Deployment Rules
+
+### Offline Deployment Requirements
+- Target: win-x64, self-contained
+- Include all dependencies
+- Include nlog.config, appsettings.json, DB2SQL.xshd
+- Create Logs directory structure
+- Test on VM without .NET installed
+
+### Publishing Command
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -f net10.0-windows \
+  /p:PublishSingleFile=true \
+  /p:IncludeNativeLibrariesForSelfExtract=true \
+  /p:PublishReadyToRun=true
+```
+
+### Files to Include
+- WindowsDb2Editor.exe
+- nlog.config
+- appsettings.json
+- DB2SQL.xshd
+- All DLL dependencies
+- .NET 10 runtime (if self-contained)
+
+## Code Review Checklist
+
+Before committing code, verify:
+- [ ] Uses .NET 10 (net10.0-windows)
+- [ ] Uses NLog for logging (not Serilog)
+- [ ] All exceptions are logged
+- [ ] DEBUG-level logging implemented for all critical operations
+- [ ] Passwords masked in logs
+- [ ] Parameterized queries used
+- [ ] Using statements for disposables
+- [ ] Dark mode compatible
+- [ ] Keyboard shortcuts implemented
+- [ ] Error messages user-friendly
+- [ ] No hardcoded connection strings
+- [ ] appsettings.json and nlog.config copy to output
+- [ ] TASKLIST.md updated with completed tasks
+- [ ] Uses IBM.Data.DB2.Core (self-contained drivers)
+
+## Common Patterns
+
+### Creating a New Service (with Debug Logging)
+```csharp
+using NLog;
+
+namespace WindowsDb2Editor.Services
+{
+    public class MyService
+    {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        
+        public MyService()
+        {
+            Logger.Debug("MyService initialized");
+        }
+        
+        public void DoWork(string parameter)
+        {
+            try
+            {
+                Logger.Info("Starting work");
+                Logger.Debug("DoWork called with parameter: {Parameter}", parameter);
+                
+                // Implementation step 1
+                Logger.Debug("Step 1: Validating input");
+                // validation code
+                
+                // Implementation step 2
+                Logger.Debug("Step 2: Processing data");
+                // processing code
+                
+                Logger.Info("Work completed successfully");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error during work with parameter: {Parameter}", parameter);
+                throw;
+            }
+        }
+    }
+}
+```
+
+### Debug Logging Pattern for Troubleshooting
+```csharp
+public void ComplexOperation(int id, string data)
+{
+    Logger.Debug("ComplexOperation started - ID: {Id}, Data length: {Length}", id, data?.Length ?? 0);
+    
+    try
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        Logger.Debug("Step 1: Fetching entity with ID: {Id}", id);
+        var entity = FetchEntity(id);
+        Logger.Debug("Entity fetched in {Ms}ms - Found: {Found}", stopwatch.ElapsedMilliseconds, entity != null);
+        
+        if (entity == null)
+        {
+            Logger.Warn("Entity not found for ID: {Id}", id);
+            return;
+        }
+        
+        stopwatch.Restart();
+        Logger.Debug("Step 2: Processing entity - Current state: {State}", entity.State);
+        ProcessEntity(entity, data);
+        Logger.Debug("Entity processed in {Ms}ms", stopwatch.ElapsedMilliseconds);
+        
+        Logger.Info("ComplexOperation completed successfully for ID: {Id}", id);
+    }
+    catch (Exception ex)
+    {
+        Logger.Error(ex, "ComplexOperation failed for ID: {Id}, Data: {Data}", id, data);
+        throw;
+    }
+}
+```
+
+### Creating a New Dialog
+```csharp
+public partial class MyDialog : Window
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    public MyDialog()
+    {
+        InitializeComponent();
+        Logger.Debug("MyDialog opened");
+    }
+    
+    private void OK_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = true;
+        Logger.Info("MyDialog confirmed");
+        Close();
+    }
+}
+```
+
+## Documentation Requirements
+
+### XML Documentation
+- Document all public classes and methods
+- Include parameter descriptions
+- Include return value descriptions
+- Include exception documentation
+
+### Example
+```csharp
+/// <summary>
+/// Executes a SQL query and returns the results.
+/// </summary>
+/// <param name="sql">The SQL query to execute</param>
+/// <returns>DataTable containing query results</returns>
+/// <exception cref="DB2Exception">Thrown when database error occurs</exception>
+public DataTable ExecuteQuery(string sql)
+{
+    // Implementation
+}
+```
+
+## Task Management & Workflow
+
+### TASKLIST.md Updates
+**MANDATORY**: After completing ANY task:
+1. Open `TASKLIST.md`
+2. Locate the completed task
+3. Update the checkbox from `- [ ]` to `- [x]`
+4. Update the Status Summary with new counts
+5. Update the "Last Updated" date at the bottom
+6. Commit the updated tasklist with your code changes
+
+**This is NOT optional** - the tasklist MUST be kept up to date to track project progress accurately.
+
+### Development Workflow
+1. Review `TASKLIST.md` to identify next task
+2. Read relevant section in `DB2_Application_Development_Guide.md`
+3. Implement the feature/component
+4. Add comprehensive NLog logging (including DEBUG level)
+5. **Build regularly** - Run `dotnet build` after completing each component/feature
+6. Fix any compilation errors immediately
+7. Test the implementation
+8. Update `TASKLIST.md` checkbox
+9. Commit changes with meaningful message
+10. Move to next task
+
+### Build Frequently
+**CRITICAL**: Build the project regularly to catch compilation errors early:
+- After adding/modifying any class
+- After installing NuGet packages
+- After changing configuration files
+- Before marking tasks as complete
+- Command: `dotnet build` or `dotnet build -c Release`
+- Fix all errors and warnings before proceeding
+
+## AI Assistant Instructions
+
+When generating code for this project:
+
+1. **Always use .NET 10** - Never suggest .NET 6, 7, or 8
+2. **Always use NLog** - Never use Serilog, log4net, or Console.WriteLine
+3. **Always add DEBUG-level logging** - Critical for troubleshooting issues
+4. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
+5. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
+6. **Follow WPF MVVM patterns** when appropriate
+7. **Support both dark and light themes** in all UI code
+8. **Include proper error handling** with logging
+9. **Use parameterized queries** for all SQL
+10. **Follow the project structure** (Controls, Data, Services, etc.)
+11. **Include keyboard shortcuts** for all major actions
+12. **Consider offline deployment** - no external dependencies
+
+## Prohibited Patterns
+
+### Never Do This
+- ❌ Use Serilog (use NLog instead)
+- ❌ Use .NET 6, 7, or 8 (use .NET 10)
+- ❌ Concatenate SQL strings (use parameters)
+- ❌ Log passwords in plain text
+- ❌ Use Console.WriteLine for logging
+- ❌ Hardcode connection strings
+- ❌ Ignore exceptions without logging
+- ❌ Implement features without DEBUG-level logging
+- ❌ Complete tasks without updating TASKLIST.md
+- ❌ Block UI thread for long operations
+- ❌ Use synchronous DB calls without async option
+- ❌ Create dependencies on external web services
+- ❌ Assume external IBM DB2 Client is installed (use Net.IBM.Data.Db2 9.0.0.400)
+
+## Questions to Ask Before Implementing
+
+1. Does this work offline (no internet)?
+2. Is this logged with NLog at appropriate levels (Info, Debug, Error)?
+3. Have I added DEBUG-level logging for troubleshooting?
+4. Does this support dark mode?
+5. Is the SQL parameterized?
+6. Is the exception handled and logged (including DB2Exception with SqlState/ErrorCode)?
+7. Does this follow the project structure?
+8. Is this compatible with .NET 10?
+9. Are keyboard shortcuts implemented?
+10. Is the UI responsive during operation?
+11. Is sensitive data masked in logs?
+12. Have I updated TASKLIST.md after completing this task?
+13. Does this use Net.IBM.Data.Db2 9.0.0.400 (not requiring external DB2 client)?
+
+---
+
+**Project Goal**: Create a professional, offline-capable DB2 database editor for Windows 11 using .NET 10, with enterprise-grade logging (NLog), modern UI (dark mode support), and DBeaver-like functionality.
+
+**Target Users**: Database administrators and developers working with IBM DB2 in offline/air-gapped environments.
+
+**Critical Requirements**: Offline deployment, multiple connections, dark mode, SQL formatting, native DB2 drivers, enterprise logging.
+

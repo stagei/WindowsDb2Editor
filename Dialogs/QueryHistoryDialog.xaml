@@ -1,0 +1,93 @@
+<Window x:Class="WindowsDb2Editor.Dialogs.QueryHistoryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        mc:Ignorable="d"
+        Title="Query History" 
+        Height="600" 
+        Width="900"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search and Filter Bar -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="SearchTextBox" 
+                     Grid.Column="0"
+                     TextChanged="SearchTextBox_TextChanged"
+                     Padding="8"
+                     ui:ControlHelper.PlaceholderText="Search query text..."/>
+
+            <Button Grid.Column="1" Content="Refresh" Click="Refresh_Click" Padding="15,8" Margin="10,0,5,0"/>
+            <Button Grid.Column="2" Content="Clear All" Click="ClearAll_Click" Padding="15,8"/>
+        </Grid>
+
+        <!-- Query History DataGrid -->
+        <DataGrid Grid.Row="1" 
+                  x:Name="HistoryDataGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  GridLinesVisibility="Horizontal"
+                  RowHeaderWidth="0"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionChanged="HistoryDataGrid_SelectionChanged">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Timestamp" Binding="{Binding ExecutedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150"/>
+                <DataGridTextColumn Header="Database" Binding="{Binding Database}" Width="120"/>
+                <DataGridTextColumn Header="Query" Binding="{Binding Sql}" Width="*"/>
+                <DataGridTextColumn Header="Rows" Binding="{Binding RowCount}" Width="80"/>
+                <DataGridTextColumn Header="Time (ms)" Binding="{Binding ExecutionTimeMs}" Width="90"/>
+                <DataGridTemplateColumn Header="Status" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Status}" 
+                                       Foreground="{Binding StatusColor}"
+                                       FontWeight="SemiBold"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Selected Query Details -->
+        <Grid Grid.Row="2" Margin="0,10,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="150"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Selected Query:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox Grid.Row="1" 
+                     x:Name="QueryDetailsTextBox"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     FontFamily="Consolas"
+                     Padding="5"/>
+        </Grid>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Copy Query" Click="CopyQuery_Click" Padding="15,8" Margin="0,0,10,0"/>
+            <Button Content="Rerun Query" Click="RerunQuery_Click" Padding="15,8" Margin="0,0,10,0"/>
+            <Button Content="Close" Click="Close_Click" IsCancel="True" Padding="20,8"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
