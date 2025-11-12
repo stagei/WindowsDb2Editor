@@ -156,10 +156,32 @@ public partial class ConnectionTabControl : UserControl
 
         try
         {
+            DatabaseTreeView.Items.Clear();
+            
+            // Add a loading indicator
+            var loadingNode = new TreeViewItem
+            {
+                Header = "⏳ Loading schemas...",
+                IsEnabled = false
+            };
+            DatabaseTreeView.Items.Add(loadingNode);
+            
             var schemas = await _connectionManager.GetSchemasAsync();
             Logger.Info($"Loaded {schemas.Count} schemas");
 
             DatabaseTreeView.Items.Clear();
+
+            if (schemas.Count == 0)
+            {
+                var noSchemaNode = new TreeViewItem
+                {
+                    Header = "⚠ No schemas found or insufficient permissions",
+                    IsEnabled = false
+                };
+                DatabaseTreeView.Items.Add(noSchemaNode);
+                Logger.Warn("No schemas returned from database");
+                return;
+            }
 
             foreach (var schema in schemas.Take(20)) // Limit to first 20 schemas for performance
             {
@@ -181,6 +203,16 @@ public partial class ConnectionTabControl : UserControl
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to load database objects");
+            
+            DatabaseTreeView.Items.Clear();
+            var errorNode = new TreeViewItem
+            {
+                Header = $"❌ Error loading schemas: {ex.Message}",
+                IsEnabled = false
+            };
+            DatabaseTreeView.Items.Add(errorNode);
+            
+            StatusText.Text = "Failed to load database objects";
         }
     }
 
@@ -209,6 +241,7 @@ public partial class ConnectionTabControl : UserControl
                     };
 
                     tableNode.MouseDoubleClick += TableNode_DoubleClick;
+                    tableNode.ContextMenu = CreateTableContextMenu($"{schema}.{table}");
                     schemaNode.Items.Add(tableNode);
                 }
 
@@ -232,6 +265,298 @@ public partial class ConnectionTabControl : UserControl
             Logger.Debug($"Table double-clicked: {fullTableName}");
             SqlEditor.AppendText($"SELECT * FROM {fullTableName};\n");
         }
+    }
+
+    /// <summary>
+    /// Create context menu for table nodes with various options
+    /// </summary>
+    private ContextMenu CreateTableContextMenu(string fullTableName)
+    {
+        Logger.Debug("Creating context menu for table: {Table}", fullTableName);
+        
+        var contextMenu = new ContextMenu();
+
+        // View Table Details
+        var detailsMenuItem = new MenuItem
+        {
+            Header = "📋 View Table Details...",
+            FontWeight = FontWeights.Bold
+        };
+        detailsMenuItem.Click += (s, e) => ViewTableDetails(fullTableName);
+        contextMenu.Items.Add(detailsMenuItem);
+
+        contextMenu.Items.Add(new Separator());
+
+        // SELECT Top 1000
+        var selectTopMenuItem = new MenuItem
+        {
+            Header = "🔍 SELECT Top 1000 Rows"
+        };
+        selectTopMenuItem.Click += (s, e) => SelectTopRows(fullTableName, 1000);
+        contextMenu.Items.Add(selectTopMenuItem);
+
+        // SELECT Top 100
+        var selectTop100MenuItem = new MenuItem
+        {
+            Header = "🔍 SELECT Top 100 Rows"
+        };
+        selectTop100MenuItem.Click += (s, e) => SelectTopRows(fullTableName, 100);
+        contextMenu.Items.Add(selectTop100MenuItem);
+
+        // SELECT All
+        var selectAllMenuItem = new MenuItem
+        {
+            Header = "🔍 SELECT * (All Rows)"
+        };
+        selectAllMenuItem.Click += (s, e) => SelectAllRows(fullTableName);
+        contextMenu.Items.Add(selectAllMenuItem);
+
+        contextMenu.Items.Add(new Separator());
+
+        // View Foreign Keys
+        var foreignKeysMenuItem = new MenuItem
+        {
+            Header = "🔗 View Foreign Keys..."
+        };
+        foreignKeysMenuItem.Click += (s, e) => ViewForeignKeys(fullTableName);
+        contextMenu.Items.Add(foreignKeysMenuItem);
+
+        // View Indexes
+        var indexesMenuItem = new MenuItem
+        {
+            Header = "📊 View Indexes..."
+        };
+        indexesMenuItem.Click += (s, e) => ViewIndexes(fullTableName);
+        contextMenu.Items.Add(indexesMenuItem);
+
+        // View DDL
+        var ddlMenuItem = new MenuItem
+        {
+            Header = "📝 View DDL Script..."
+        };
+        ddlMenuItem.Click += (s, e) => ViewDDL(fullTableName);
+        contextMenu.Items.Add(ddlMenuItem);
+
+        contextMenu.Items.Add(new Separator());
+
+        // Copy Table Name
+        var copyNameMenuItem = new MenuItem
+        {
+            Header = "📄 Copy Table Name"
+        };
+        copyNameMenuItem.Click += (s, e) => CopyTableName(fullTableName);
+        contextMenu.Items.Add(copyNameMenuItem);
+
+        // Copy SELECT Statement
+        var copySelectMenuItem = new MenuItem
+        {
+            Header = "📄 Copy SELECT Statement"
+        };
+        copySelectMenuItem.Click += (s, e) => CopySelectStatement(fullTableName);
+        contextMenu.Items.Add(copySelectMenuItem);
+
+        contextMenu.Items.Add(new Separator());
+
+        // Refresh
+        var refreshMenuItem = new MenuItem
+        {
+            Header = "🔄 Refresh"
+        };
+        refreshMenuItem.Click += (s, e) => RefreshTable(fullTableName);
+        contextMenu.Items.Add(refreshMenuItem);
+
+        return contextMenu;
+    }
+
+    private void ViewTableDetails(string fullTableName)
+    {
+        Logger.Info("Opening table details dialog for: {Table}", fullTableName);
+        
+        try
+        {
+            var dialog = new Dialogs.TableDetailsDialog(_connectionManager, fullTableName)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Check if user wants to query the table
+                if (dialog.ShouldQueryTable)
+                {
+                    SelectTopRows(fullTableName, _preferencesService.Preferences.MaxRowsPerQuery);
+                }
+                // Check if user selected a related table to view
+                else if (!string.IsNullOrEmpty(dialog.SelectedRelatedTable))
+                {
+                    ViewTableDetails(dialog.SelectedRelatedTable);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open table details dialog");
+            MessageBox.Show($"Error opening table details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SelectTopRows(string fullTableName, int topRows)
+    {
+        Logger.Info("Generating SELECT TOP {Count} for table: {Table}", topRows, fullTableName);
+        
+        var sql = $"SELECT * FROM {fullTableName} FETCH FIRST {topRows} ROWS ONLY";
+        SqlEditor.Text = sql;
+        SqlEditor.SelectAll();
+        SqlEditor.Focus();
+        
+        StatusText.Text = $"Query generated for {fullTableName}";
+    }
+
+    private void SelectAllRows(string fullTableName)
+    {
+        Logger.Info("Generating SELECT ALL for table: {Table}", fullTableName);
+        
+        var sql = $"SELECT * FROM {fullTableName}";
+        SqlEditor.Text = sql;
+        SqlEditor.SelectAll();
+        SqlEditor.Focus();
+        
+        StatusText.Text = $"Query generated for {fullTableName}";
+    }
+
+    private void ViewForeignKeys(string fullTableName)
+    {
+        Logger.Info("Opening table details (Foreign Keys tab) for: {Table}", fullTableName);
+        
+        try
+        {
+            var dialog = new Dialogs.TableDetailsDialog(_connectionManager, fullTableName)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            
+            // Switch to Foreign Keys tab after loading
+            dialog.Loaded += (s, e) =>
+            {
+                if (dialog.DetailsTabControl.Items.Count > 1)
+                {
+                    dialog.DetailsTabControl.SelectedIndex = 1; // Foreign Keys tab
+                }
+            };
+            
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to view foreign keys");
+            MessageBox.Show($"Error viewing foreign keys:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ViewIndexes(string fullTableName)
+    {
+        Logger.Info("Opening table details (Indexes tab) for: {Table}", fullTableName);
+        
+        try
+        {
+            var dialog = new Dialogs.TableDetailsDialog(_connectionManager, fullTableName)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            
+            // Switch to Indexes tab after loading
+            dialog.Loaded += (s, e) =>
+            {
+                if (dialog.DetailsTabControl.Items.Count > 2)
+                {
+                    dialog.DetailsTabControl.SelectedIndex = 2; // Indexes tab
+                }
+            };
+            
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to view indexes");
+            MessageBox.Show($"Error viewing indexes:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ViewDDL(string fullTableName)
+    {
+        Logger.Info("Opening table details (DDL tab) for: {Table}", fullTableName);
+        
+        try
+        {
+            var dialog = new Dialogs.TableDetailsDialog(_connectionManager, fullTableName)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            
+            // Switch to DDL tab after loading
+            dialog.Loaded += (s, e) =>
+            {
+                if (dialog.DetailsTabControl.Items.Count > 3)
+                {
+                    dialog.DetailsTabControl.SelectedIndex = 3; // DDL tab
+                }
+            };
+            
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to view DDL");
+            MessageBox.Show($"Error viewing DDL:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CopyTableName(string fullTableName)
+    {
+        Logger.Debug("Copying table name to clipboard: {Table}", fullTableName);
+        
+        try
+        {
+            Clipboard.SetText(fullTableName);
+            StatusText.Text = $"Table name copied: {fullTableName}";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to copy table name");
+            MessageBox.Show($"Failed to copy to clipboard:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CopySelectStatement(string fullTableName)
+    {
+        Logger.Debug("Copying SELECT statement to clipboard for: {Table}", fullTableName);
+        
+        try
+        {
+            var sql = $"SELECT * FROM {fullTableName};";
+            Clipboard.SetText(sql);
+            StatusText.Text = $"SELECT statement copied";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to copy SELECT statement");
+            MessageBox.Show($"Failed to copy to clipboard:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void RefreshTable(string fullTableName)
+    {
+        Logger.Info("Refresh requested for table: {Table}", fullTableName);
+        
+        StatusText.Text = $"Refreshed: {fullTableName}";
+        
+        // Could reload table details if needed in the future
     }
 
     private async void Execute_Click(object sender, RoutedEventArgs e)
@@ -324,7 +649,10 @@ public partial class ConnectionTabControl : UserControl
             var elapsed = stopwatch.ElapsedMilliseconds;
 
             var rowsReturned = dataTable.Rows.Count;
-            RowCountText.Text = $"{rowsReturned} rows (Page {_currentPage})";
+            var rowFrom = _currentOffset + 1;
+            var rowTo = _currentOffset + rowsReturned;
+            
+            RowCountText.Text = $"{rowsReturned} rows (Rows {rowFrom:N0}-{rowTo:N0})";
             ExecutionTimeText.Text = $"Executed in {elapsed}ms";
             StatusText.Text = "Query completed successfully";
             PageInfoText.Text = $"Page {_currentPage}";
@@ -332,6 +660,9 @@ public partial class ConnectionTabControl : UserControl
             // Enable/disable pagination buttons
             PreviousButton.IsEnabled = _currentPage > 1;
             NextButton.IsEnabled = rowsReturned >= maxRows; // If we got a full page, there might be more
+            
+            Logger.Debug("Pagination buttons updated - Previous: {PrevEnabled}, Next: {NextEnabled}", 
+                PreviousButton.IsEnabled, NextButton.IsEnabled);
 
             Logger.Info($"Query executed successfully: {rowsReturned} rows in {elapsed}ms (Page {_currentPage})");
 
@@ -345,8 +676,9 @@ public partial class ConnectionTabControl : UserControl
             var elapsed = stopwatch.ElapsedMilliseconds;
 
             StatusText.Text = "Query failed";
-            RowCountText.Text = "Error";
+            RowCountText.Text = "Error - No results";
             ExecutionTimeText.Text = "";
+            PageInfoText.Text = "Page -";
             PreviousButton.IsEnabled = false;
             NextButton.IsEnabled = false;
 
