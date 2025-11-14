@@ -140,6 +140,9 @@ public partial class ConnectionTabControl : UserControl
 
             // Load database objects
             await LoadDatabaseObjectsAsync();
+            
+            // Load query history for this connection
+            RefreshQueryHistory();
         }
         catch (Exception ex)
         {
@@ -666,8 +669,11 @@ public partial class ConnectionTabControl : UserControl
 
             Logger.Info($"Query executed successfully: {rowsReturned} rows in {elapsed}ms (Page {_currentPage})");
 
-            // Save to query history
-            _queryHistoryService.AddQuery(sql, _connection.Database, true, elapsed, rowsReturned);
+            // Save to query history with connection name
+            _queryHistoryService.AddQuery(sql, _connection.GetDisplayName(), _connection.Database, true, elapsed, rowsReturned);
+            
+            // Refresh history display
+            RefreshQueryHistory();
         }
         catch (Exception ex)
         {
@@ -683,7 +689,10 @@ public partial class ConnectionTabControl : UserControl
             NextButton.IsEnabled = false;
 
             // Save failed query to history
-            _queryHistoryService.AddQuery(sql, _connection.Database, false, elapsed);
+            _queryHistoryService.AddQuery(sql, _connection.GetDisplayName(), _connection.Database, false, elapsed);
+            
+            // Refresh history display
+            RefreshQueryHistory();
 
             MessageBox.Show($"Query execution error:\n\n{ex.Message}", "Query Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
@@ -932,6 +941,275 @@ public partial class ConnectionTabControl : UserControl
         Logger.Debug("Setting query text from external source");
         SqlEditor.Text = queryText;
         SqlEditor.Focus();
+    }
+
+    /// <summary>
+    /// Refresh query history display
+    /// </summary>
+    private void RefreshQueryHistory()
+    {
+        try
+        {
+            Logger.Debug("Refreshing query history display");
+            
+            var searchTerm = HistorySearchBox?.Text ?? string.Empty;
+            var showAllConnections = ShowAllConnectionsCheckBox?.IsChecked == true;
+            
+            var connectionFilter = showAllConnections ? null : _connection.GetDisplayName();
+            
+            var historyItems = _queryHistoryService.SearchHistory(searchTerm, connectionFilter);
+            
+            var viewModels = historyItems.Select(item =>
+            {
+                var decryptedSql = _queryHistoryService.GetDecryptedSql(item);
+                return Models.QueryHistoryViewModel.FromHistoryItem(item, decryptedSql);
+            }).ToList();
+            
+            QueryHistoryListBox.ItemsSource = viewModels;
+            
+            Logger.Debug("History refreshed with {Count} items", viewModels.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to refresh query history");
+        }
+    }
+
+    /// <summary>
+    /// Handle search text changed in history
+    /// </summary>
+    private void HistorySearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        RefreshQueryHistory();
+    }
+
+    /// <summary>
+    /// Handle show all connections checkbox changed
+    /// </summary>
+    private void ShowAllConnections_Changed(object sender, RoutedEventArgs e)
+    {
+        RefreshQueryHistory();
+    }
+
+    /// <summary>
+    /// Handle double-click on history item to load query
+    /// </summary>
+    private void HistoryItem_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (QueryHistoryListBox.SelectedItem is Models.QueryHistoryViewModel viewModel)
+        {
+            Logger.Info("Loading query from history: {Preview}", viewModel.SqlPreview);
+            
+            SqlEditor.Text = viewModel.SqlStatement;
+            SqlEditor.SelectAll();
+            SqlEditor.Focus();
+            
+            StatusText.Text = $"Query loaded from history ({viewModel.ExecutedAt})";
+        }
+    }
+
+    /// <summary>
+    /// Open dialog to copy results to clipboard in various formats
+    /// </summary>
+    private void CopyToClipboard_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Copy to clipboard requested");
+
+        if (ResultsGrid.ItemsSource == null)
+        {
+            MessageBox.Show("No results to copy. Execute a query first.", "Copy to Clipboard",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dataView = ResultsGrid.ItemsSource as System.Data.DataView;
+        if (dataView?.Table == null)
+        {
+            Logger.Warn("Unable to copy: ItemsSource is not a DataView or Table is null");
+            MessageBox.Show("No data available to copy.", "Copy Failed",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var dialog = new Dialogs.ExportToClipboardDialog(dataView.Table)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                StatusText.Text = "Data copied to clipboard";
+                Logger.Info("Data successfully copied to clipboard");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open copy to clipboard dialog");
+            MessageBox.Show($"Error opening copy dialog:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Copy selected cell value to clipboard
+    /// </summary>
+    private void CopyCell_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Copy cell requested");
+
+        try
+        {
+            var selectedCells = ResultsGrid.SelectedCells;
+            if (selectedCells.Count == 0)
+            {
+                MessageBox.Show("No cell selected.", "Copy Cell",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var cell = selectedCells[0];
+            var cellValue = cell.Item;
+            var columnName = cell.Column?.Header?.ToString() ?? string.Empty;
+
+            if (cellValue != null)
+            {
+                var property = cellValue.GetType().GetProperty(columnName);
+                if (property != null)
+                {
+                    var value = property.GetValue(cellValue)?.ToString() ?? string.Empty;
+                    Clipboard.SetText(value);
+                    StatusText.Text = $"Cell value copied: {value.Substring(0, Math.Min(30, value.Length))}...";
+                    Logger.Info("Cell value copied to clipboard");
+                }
+                else
+                {
+                    // Try DataRowView
+                    if (cellValue is System.Data.DataRowView rowView)
+                    {
+                        var value = rowView[columnName]?.ToString() ?? string.Empty;
+                        Clipboard.SetText(value);
+                        StatusText.Text = $"Cell value copied";
+                        Logger.Info("Cell value copied to clipboard");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to copy cell");
+            MessageBox.Show($"Failed to copy cell:\n\n{ex.Message}", "Copy Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Copy selected row to clipboard as CSV
+    /// </summary>
+    private void CopyRow_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Copy row requested");
+
+        try
+        {
+            if (ResultsGrid.SelectedItem == null)
+            {
+                MessageBox.Show("No row selected.", "Copy Row",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dataView = ResultsGrid.ItemsSource as System.Data.DataView;
+            if (dataView?.Table == null)
+            {
+                Logger.Warn("Unable to copy row: ItemsSource is not a DataView");
+                return;
+            }
+
+            var rowView = ResultsGrid.SelectedItem as System.Data.DataRowView;
+            if (rowView == null)
+            {
+                Logger.Warn("Selected item is not a DataRowView");
+                return;
+            }
+
+            // Build CSV row
+            var values = new List<string>();
+            foreach (System.Data.DataColumn column in dataView.Table.Columns)
+            {
+                var value = rowView[column.ColumnName]?.ToString() ?? string.Empty;
+                // Escape CSV if needed
+                if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+                {
+                    value = $"\"{value.Replace("\"", "\"\"")}\"";
+                }
+                values.Add(value);
+            }
+
+            var csvRow = string.Join(",", values);
+            Clipboard.SetText(csvRow);
+            StatusText.Text = "Row copied to clipboard as CSV";
+            Logger.Info("Row copied to clipboard");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to copy row");
+            MessageBox.Show($"Failed to copy row:\n\n{ex.Message}", "Copy Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Copy selected column values to clipboard
+    /// </summary>
+    private void CopyColumn_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Copy column requested");
+
+        try
+        {
+            var selectedCells = ResultsGrid.SelectedCells;
+            if (selectedCells.Count == 0)
+            {
+                MessageBox.Show("No column selected.", "Copy Column",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var columnName = selectedCells[0].Column?.Header?.ToString();
+            if (string.IsNullOrEmpty(columnName))
+            {
+                Logger.Warn("Unable to determine column name");
+                return;
+            }
+
+            var dataView = ResultsGrid.ItemsSource as System.Data.DataView;
+            if (dataView?.Table == null)
+            {
+                Logger.Warn("Unable to copy column: ItemsSource is not a DataView");
+                return;
+            }
+
+            // Collect all values from the column
+            var columnValues = new List<string> { columnName }; // Header first
+            foreach (System.Data.DataRow row in dataView.Table.Rows)
+            {
+                var value = row[columnName]?.ToString() ?? string.Empty;
+                columnValues.Add(value);
+            }
+
+            var result = string.Join(Environment.NewLine, columnValues);
+            Clipboard.SetText(result);
+            StatusText.Text = $"Column '{columnName}' copied to clipboard ({dataView.Table.Rows.Count} values)";
+            Logger.Info("Column copied to clipboard: {Column}, {Count} values", columnName, dataView.Table.Rows.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to copy column");
+            MessageBox.Show($"Failed to copy column:\n\n{ex.Message}", "Copy Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     public void Cleanup()

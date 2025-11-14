@@ -23,9 +23,8 @@ namespace WindowsDb2Editor.Services
         {
             Logger.Debug("ConnectionStorageService initialized");
             
-            // Store connections.json in the application directory
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            _connectionsFilePath = Path.Combine(appDirectory, ConnectionsFileName);
+            // Store connections.json in user's AppData folder
+            _connectionsFilePath = AppDataHelper.GetDataFilePath(ConnectionsFileName);
             
             Logger.Debug("Connections file path: {Path}", _connectionsFilePath);
         }

@@ -14,7 +14,7 @@ namespace WindowsDb2Editor.Models
         public int MaxRowsPerQuery { get; set; } = 1000;
 
         /// <summary>
-        /// Default theme (Dark or Light)
+        /// Default theme (System, Dark, or Light)
         /// </summary>
         [JsonPropertyName("defaultTheme")]
         public string DefaultTheme { get; set; } = "Dark";
@@ -22,14 +22,20 @@ namespace WindowsDb2Editor.Models
         /// <summary>
         /// SQL editor font family
         /// </summary>
-        [JsonPropertyName("editorFontFamily")]
-        public string EditorFontFamily { get; set; } = "Consolas";
+        [JsonPropertyName("fontFamily")]
+        public string FontFamily { get; set; } = "Consolas";
 
         /// <summary>
         /// SQL editor font size
         /// </summary>
-        [JsonPropertyName("editorFontSize")]
-        public double EditorFontSize { get; set; } = 14;
+        [JsonPropertyName("fontSize")]
+        public int FontSize { get; set; } = 14;
+
+        /// <summary>
+        /// Tab size in spaces
+        /// </summary>
+        [JsonPropertyName("tabSize")]
+        public int TabSize { get; set; } = 4;
 
         /// <summary>
         /// Auto-format SQL on execute
@@ -38,16 +44,28 @@ namespace WindowsDb2Editor.Models
         public bool AutoFormatOnExecute { get; set; } = false;
 
         /// <summary>
-        /// Query timeout in seconds (default: 30)
+        /// Command timeout in seconds (default: 30, 0 = no timeout)
         /// </summary>
-        [JsonPropertyName("queryTimeoutSeconds")]
-        public int QueryTimeoutSeconds { get; set; } = 30;
+        [JsonPropertyName("commandTimeout")]
+        public int CommandTimeout { get; set; } = 30;
 
         /// <summary>
         /// Handle DB2Decimal errors gracefully
         /// </summary>
         [JsonPropertyName("handleDecimalErrorsGracefully")]
         public bool HandleDecimalErrorsGracefully { get; set; } = true;
+
+        /// <summary>
+        /// Auto-refresh database objects on connection
+        /// </summary>
+        [JsonPropertyName("autoRefreshObjectsOnConnect")]
+        public bool AutoRefreshObjectsOnConnect { get; set; } = true;
+
+        /// <summary>
+        /// Log level (Debug, Info, Warn, Error)
+        /// </summary>
+        [JsonPropertyName("logLevel")]
+        public string LogLevel { get; set; } = "Info";
     }
 }
 

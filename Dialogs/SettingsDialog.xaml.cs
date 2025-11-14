@@ -1,229 +1,250 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using NLog;
 using WindowsDb2Editor.Services;
+using WindowsDb2Editor.Models;
 
-namespace WindowsDb2Editor.Dialogs;
-
-/// <summary>
-/// Settings dialog for configuring application preferences
-/// </summary>
-public partial class SettingsDialog : Window
+namespace WindowsDb2Editor.Dialogs
 {
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly ConfigurationService _configService;
-
-    public SettingsDialog()
+    public partial class SettingsDialog : Window
     {
-        InitializeComponent();
-        Logger.Debug("SettingsDialog initialized");
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly PreferencesService _preferencesService;
 
-        _configService = new ConfigurationService();
-        LoadCurrentSettings();
-    }
-
-    private void LoadCurrentSettings()
-    {
-        Logger.Debug("Loading current settings");
-
-        try
+        public SettingsDialog(PreferencesService preferencesService)
         {
-            // Editor Settings
-            var themePref = _configService.GetSetting("Editor:DefaultTheme", "Dark");
-            SelectComboBoxItem(ThemeComboBox, themePref);
+            InitializeComponent();
+            Logger.Debug("SettingsDialog initialized");
 
-            var fontFamily = _configService.GetSetting("Editor:FontFamily", "Consolas");
-            SelectComboBoxItem(FontFamilyComboBox, fontFamily);
+            _preferencesService = preferencesService;
 
-            FontSizeSlider.Value = _configService.GetSetting("Editor:FontSize", 14);
-            TabSizeSlider.Value = _configService.GetSetting("Editor:TabSize", 4);
-            WordWrapCheckBox.IsChecked = _configService.GetSetting("Editor:WordWrap", false);
+            // Set up event handlers
+            FontSizeSlider.ValueChanged += FontSizeSlider_ValueChanged;
+            TabSizeSlider.ValueChanged += TabSizeSlider_ValueChanged;
 
-            // Database Settings
-            CommandTimeoutSlider.Value = _configService.GetSetting("Database:DefaultCommandTimeout", 30);
-            PoolSizeSlider.Value = _configService.GetSetting("Database:PoolSize", 20);
-            AutoCommitCheckBox.IsChecked = _configService.GetSetting("Database:AutoCommit", true);
+            // Load current preferences
+            LoadCurrentSettings();
 
-            // Logging Settings
-            var logLevel = _configService.GetSetting("Logging:MinLevel", "Info");
-            SelectComboBoxItem(LogLevelComboBox, logLevel);
-
-            var logPath = _configService.GetSetting("Logging:LogDirectory", 
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs"));
-            LogPathTextBox.Text = logPath;
-
-            LogRetentionSlider.Value = _configService.GetSetting("Logging:RetentionDays", 30);
-
-            Logger.Info("Current settings loaded successfully");
+            // Display data folder path
+            DataFolderPathText.Text = $"Location: {AppDataHelper.GetAppDataFolder()}";
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to load current settings");
-            MessageBox.Show($"Failed to load settings:\n\n{ex.Message}", "Settings Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
 
-    private void SelectComboBoxItem(ComboBox comboBox, string value)
-    {
-        foreach (ComboBoxItem item in comboBox.Items)
-        {
-            if (item.Content.ToString()?.Equals(value, StringComparison.OrdinalIgnoreCase) == true ||
-                item.Tag?.ToString()?.Equals(value, StringComparison.OrdinalIgnoreCase) == true)
-            {
-                comboBox.SelectedItem = item;
-                return;
-            }
-        }
-        // Default to first item if not found
-        if (comboBox.Items.Count > 0)
-        {
-            comboBox.SelectedIndex = 0;
-        }
-    }
-
-    private void Save_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Info("Saving settings");
-
-        try
-        {
-            // Editor Settings
-            var selectedTheme = (ThemeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "Dark";
-            _configService.SetSetting("Editor:DefaultTheme", selectedTheme);
-
-            var selectedFont = (FontFamilyComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Consolas";
-            _configService.SetSetting("Editor:FontFamily", selectedFont);
-
-            _configService.SetSetting("Editor:FontSize", (int)FontSizeSlider.Value);
-            _configService.SetSetting("Editor:TabSize", (int)TabSizeSlider.Value);
-            _configService.SetSetting("Editor:WordWrap", WordWrapCheckBox.IsChecked ?? false);
-
-            // Database Settings
-            _configService.SetSetting("Database:DefaultCommandTimeout", (int)CommandTimeoutSlider.Value);
-            _configService.SetSetting("Database:PoolSize", (int)PoolSizeSlider.Value);
-            _configService.SetSetting("Database:AutoCommit", AutoCommitCheckBox.IsChecked ?? true);
-
-            // Logging Settings
-            var selectedLogLevel = (LogLevelComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "Info";
-            _configService.SetSetting("Logging:MinLevel", selectedLogLevel);
-            _configService.SetSetting("Logging:LogDirectory", LogPathTextBox.Text);
-            _configService.SetSetting("Logging:RetentionDays", (int)LogRetentionSlider.Value);
-
-            DialogResult = true;
-
-            Logger.Info("Settings saved successfully");
-            MessageBox.Show(
-                "Settings saved successfully.\n\nSome changes may require restarting the application to take effect.",
-                "Settings Saved",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-
-            Close();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to save settings");
-            MessageBox.Show($"Failed to save settings:\n\n{ex.Message}", "Save Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private void Cancel_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Debug("Settings dialog cancelled");
-        DialogResult = false;
-        Close();
-    }
-
-    private void ResetDefaults_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Info("Resetting to default settings");
-
-        var result = MessageBox.Show(
-            "Reset all settings to default values?\n\nThis will discard your current settings.",
-            "Reset to Defaults",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (result == MessageBoxResult.Yes)
+        private void LoadCurrentSettings()
         {
             try
             {
-                // Reset to defaults
-                SelectComboBoxItem(ThemeComboBox, "Dark");
-                SelectComboBoxItem(FontFamilyComboBox, "Consolas");
-                FontSizeSlider.Value = 14;
-                TabSizeSlider.Value = 4;
-                WordWrapCheckBox.IsChecked = false;
+                Logger.Debug("Loading current settings into dialog");
+                var prefs = _preferencesService.Preferences;
 
-                CommandTimeoutSlider.Value = 30;
-                PoolSizeSlider.Value = 20;
-                AutoCommitCheckBox.IsChecked = true;
+                // Editor settings
+                SetComboBoxValue(ThemeComboBox, prefs.DefaultTheme);
+                SetComboBoxValue(FontFamilyComboBox, prefs.FontFamily);
+                FontSizeSlider.Value = prefs.FontSize;
+                FontSizeText.Text = prefs.FontSize.ToString();
+                TabSizeSlider.Value = prefs.TabSize;
+                TabSizeText.Text = prefs.TabSize.ToString();
 
-                SelectComboBoxItem(LogLevelComboBox, "Info");
-                LogPathTextBox.Text = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-                LogRetentionSlider.Value = 30;
+                // Database settings
+                MaxRowsTextBox.Text = prefs.MaxRowsPerQuery.ToString();
+                CommandTimeoutTextBox.Text = prefs.CommandTimeout.ToString();
+                HandleDecimalErrorsCheckBox.IsChecked = prefs.HandleDecimalErrorsGracefully;
+                AutoRefreshObjectsCheckBox.IsChecked = prefs.AutoRefreshObjectsOnConnect;
 
-                Logger.Info("Settings reset to defaults");
+                // Logging settings
+                SetComboBoxValue(LogLevelComboBox, prefs.LogLevel);
+
+                Logger.Info("Settings loaded successfully");
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Failed to reset settings");
-                MessageBox.Show($"Failed to reset settings:\n\n{ex.Message}", "Reset Error",
+                Logger.Error(ex, "Error loading settings");
+                MessageBox.Show($"Error loading settings: {ex.Message}", "Error", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-    }
 
-    private void BrowseLogPath_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Debug("Browse log path requested");
-
-        var dialog = new System.Windows.Forms.FolderBrowserDialog
+        private void SetComboBoxValue(ComboBox comboBox, string value)
         {
-            Description = "Select log directory",
-            SelectedPath = LogPathTextBox.Text,
-            ShowNewFolderButton = true
-        };
-
-        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            LogPathTextBox.Text = dialog.SelectedPath;
-            Logger.Debug($"Log path selected: {dialog.SelectedPath}");
-        }
-    }
-
-    private void OpenLogDirectory_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Debug("Open log directory requested");
-
-        try
-        {
-            var logPath = LogPathTextBox.Text;
-            if (!Directory.Exists(logPath))
+            foreach (ComboBoxItem item in comboBox.Items)
             {
-                Directory.CreateDirectory(logPath);
-                Logger.Info($"Created log directory: {logPath}");
+                if (item.Tag?.ToString() == value)
+                {
+                    comboBox.SelectedItem = item;
+                    break;
+                }
             }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = logPath,
-                UseShellExecute = true,
-                Verb = "open"
-            });
-
-            Logger.Info($"Opened log directory: {logPath}");
         }
-        catch (Exception ex)
+
+        private string GetComboBoxValue(ComboBox comboBox)
         {
-            Logger.Error(ex, "Failed to open log directory");
-            MessageBox.Show($"Failed to open log directory:\n\n{ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            return (comboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
+        }
+
+        private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (FontSizeText != null)
+            {
+                FontSizeText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void TabSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TabSizeText != null)
+            {
+                TabSizeText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void OpenLogsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.Info("Opening logs folder");
+                var logsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                
+                if (!Directory.Exists(logsFolder))
+                {
+                    Directory.CreateDirectory(logsFolder);
+                    Logger.Info("Created logs folder: {Folder}", logsFolder);
+                }
+
+                Process.Start("explorer.exe", logsFolder);
+                Logger.Info("Opened logs folder in Explorer");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error opening logs folder");
+                MessageBox.Show($"Error opening logs folder: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenDataFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.Info("Opening data folder");
+                var dataFolder = AppDataHelper.GetAppDataFolder();
+                
+                if (!Directory.Exists(dataFolder))
+                {
+                    Directory.CreateDirectory(dataFolder);
+                    Logger.Info("Created data folder: {Folder}", dataFolder);
+                }
+
+                Process.Start("explorer.exe", dataFolder);
+                Logger.Info("Opened data folder in Explorer");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error opening data folder");
+                MessageBox.Show($"Error opening data folder: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ResetToDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.Info("Resetting settings to defaults");
+                
+                var result = MessageBox.Show(
+                    "Are you sure you want to reset all settings to defaults?", 
+                    "Confirm Reset", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    var defaults = new UserPreferences();
+                    
+                    // Editor settings
+                    SetComboBoxValue(ThemeComboBox, defaults.DefaultTheme);
+                    SetComboBoxValue(FontFamilyComboBox, defaults.FontFamily);
+                    FontSizeSlider.Value = defaults.FontSize;
+                    TabSizeSlider.Value = defaults.TabSize;
+
+                    // Database settings
+                    MaxRowsTextBox.Text = defaults.MaxRowsPerQuery.ToString();
+                    CommandTimeoutTextBox.Text = defaults.CommandTimeout.ToString();
+                    HandleDecimalErrorsCheckBox.IsChecked = defaults.HandleDecimalErrorsGracefully;
+                    AutoRefreshObjectsCheckBox.IsChecked = defaults.AutoRefreshObjectsOnConnect;
+
+                    // Logging settings
+                    SetComboBoxValue(LogLevelComboBox, defaults.LogLevel);
+
+                    Logger.Info("Settings reset to defaults");
+                    MessageBox.Show("Settings have been reset to defaults.", "Reset Complete", 
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error resetting settings");
+                MessageBox.Show($"Error resetting settings: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.Info("Saving settings");
+
+                // Validate inputs
+                if (!int.TryParse(MaxRowsTextBox.Text, out int maxRows) || maxRows < 1)
+                {
+                    MessageBox.Show("Max Rows Per Query must be a positive integer.", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MaxRowsTextBox.Focus();
+                    return;
+                }
+
+                if (!int.TryParse(CommandTimeoutTextBox.Text, out int commandTimeout) || commandTimeout < 0)
+                {
+                    MessageBox.Show("Command Timeout must be a non-negative integer.", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    CommandTimeoutTextBox.Focus();
+                    return;
+                }
+
+                // Update preferences
+                _preferencesService.Preferences.DefaultTheme = GetComboBoxValue(ThemeComboBox);
+                _preferencesService.Preferences.FontFamily = GetComboBoxValue(FontFamilyComboBox);
+                _preferencesService.Preferences.FontSize = (int)FontSizeSlider.Value;
+                _preferencesService.Preferences.TabSize = (int)TabSizeSlider.Value;
+                _preferencesService.Preferences.MaxRowsPerQuery = maxRows;
+                _preferencesService.Preferences.CommandTimeout = commandTimeout;
+                _preferencesService.Preferences.HandleDecimalErrorsGracefully = HandleDecimalErrorsCheckBox.IsChecked ?? true;
+                _preferencesService.Preferences.AutoRefreshObjectsOnConnect = AutoRefreshObjectsCheckBox.IsChecked ?? true;
+                _preferencesService.Preferences.LogLevel = GetComboBoxValue(LogLevelComboBox);
+
+                // Save to file
+                _preferencesService.SavePreferences();
+
+                Logger.Info("Settings saved successfully");
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error saving settings");
+                MessageBox.Show($"Error saving settings: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.Debug("Settings dialog cancelled");
+            DialogResult = false;
+            Close();
         }
     }
 }
-

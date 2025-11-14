@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly ThemeService _themeService;
     private readonly ConnectionStorageService _connectionStorageService;
+    private readonly PreferencesService _preferencesService;
 
     public MainWindow()
     {
@@ -28,6 +29,7 @@ public partial class MainWindow : Window
         _themeService = new ThemeService(configService);
         _themeService.InitializeTheme();
         _connectionStorageService = new ConnectionStorageService();
+        _preferencesService = new PreferencesService();
 
         RegisterKeyboardShortcuts();
         UpdatePlaceholderVisibility();
@@ -294,44 +296,31 @@ public partial class MainWindow : Window
 
     private void QueryHistory_Click(object sender, RoutedEventArgs e)
     {
-        Logger.Info("Query history dialog requested");
-
-        var historyDialog = new Dialogs.QueryHistoryDialog
-        {
-            Owner = this
-        };
-
-        if (historyDialog.ShowDialog() == true && historyDialog.ShouldRerunQuery)
-        {
-            // Get the active tab
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab &&
-                selectedTab.Content is ConnectionTabControl tabControl &&
-                !string.IsNullOrEmpty(historyDialog.SelectedQuery))
-            {
-                Logger.Info("Rerunning query from history");
-                tabControl.SetQueryText(historyDialog.SelectedQuery);
-            }
-            else
-            {
-                Logger.Warn("No active connection tab to rerun query");
-                MessageBox.Show("Please open a connection first to rerun the query.", "No Connection",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
+        Logger.Info("Query history requested - now integrated into each connection tab");
+        MessageBox.Show("Query History is now integrated into each connection tab!\n\n" +
+                       "Look for the '📜 History' tab in the left panel of any open connection.\n\n" +
+                       "Features:\n" +
+                       "• Search queries by text\n" +
+                       "• Filter by connection\n" +
+                       "• Double-click to load query\n" +
+                       "• Encrypted SQL storage",
+                       "Query History", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
         Logger.Info("Settings dialog requested");
 
-        var settingsDialog = new Dialogs.SettingsDialog
+        var settingsDialog = new Dialogs.SettingsDialog(_preferencesService)
         {
             Owner = this
         };
 
         if (settingsDialog.ShowDialog() == true)
         {
-            Logger.Info("Settings changed, may require application restart");
+            Logger.Info("Settings saved successfully");
+            MessageBox.Show("Some settings changes may require restarting the application to take effect.", 
+                "Settings Saved", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 

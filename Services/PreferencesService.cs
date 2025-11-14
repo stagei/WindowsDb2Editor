@@ -21,9 +21,8 @@ namespace WindowsDb2Editor.Services
         {
             Logger.Debug("PreferencesService initialized");
             
-            // Store preferences.json in the application directory
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            _preferencesFilePath = Path.Combine(appDirectory, PreferencesFileName);
+            // Store preferences.json in user's AppData folder
+            _preferencesFilePath = AppDataHelper.GetDataFilePath(PreferencesFileName);
             
             Logger.Debug("Preferences file path: {Path}", _preferencesFilePath);
             

@@ -1,4 +1,6 @@
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using NLog;
 using WindowsDb2Editor.Models;
@@ -6,7 +8,7 @@ using WindowsDb2Editor.Models;
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// Service for managing SQL query history
+/// Service for managing SQL query history with encrypted storage
 /// </summary>
 public class QueryHistoryService
 {
@@ -15,15 +17,12 @@ public class QueryHistoryService
     private List<QueryHistoryItem> _history;
     private readonly int _maxHistoryItems;
 
-    public QueryHistoryService(int maxHistoryItems = 100)
+    public QueryHistoryService(int maxHistoryItems = 500)
     {
         Logger.Debug("QueryHistoryService initializing");
 
         _maxHistoryItems = maxHistoryItems;
-        _historyFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "WindowsDb2Editor",
-            "query-history.json");
+        _historyFilePath = AppDataHelper.GetDataFilePath("query-history.json");
 
         _history = new List<QueryHistoryItem>();
         LoadHistory();
@@ -32,37 +31,93 @@ public class QueryHistoryService
     }
 
     /// <summary>
-    /// Add query to history
+    /// Add query to history with connection information
     /// </summary>
-    public void AddQuery(string sql, string database, bool success, double executionTimeMs, int? rowCount = null)
+    public void AddQuery(string sql, string connectionName, string database, bool success, double executionTimeMs, int? rowCount = null)
     {
         Logger.Debug($"Adding query to history: {sql.Substring(0, Math.Min(50, sql.Length))}...");
 
-        var item = new QueryHistoryItem
+        try
         {
-            Sql = sql,
-            Database = database,
-            ExecutedAt = DateTime.Now,
-            Success = success,
-            ExecutionTimeMs = executionTimeMs,
-            RowCount = rowCount
-        };
+            var encryptedSql = EncryptSql(sql);
+            
+            var item = new QueryHistoryItem
+            {
+                EncryptedSql = encryptedSql,
+                ConnectionName = connectionName,
+                Database = database,
+                ExecutedAt = DateTime.Now,
+                Success = success,
+                ExecutionTimeMs = executionTimeMs,
+                RowCount = rowCount
+            };
 
-        _history.Insert(0, item); // Add to beginning
+            _history.Insert(0, item); // Add to beginning
 
-        // Trim history to max items
-        if (_history.Count > _maxHistoryItems)
-        {
-            _history = _history.Take(_maxHistoryItems).ToList();
-            Logger.Debug($"Trimmed history to {_maxHistoryItems} items");
+            // Trim history to max items
+            if (_history.Count > _maxHistoryItems)
+            {
+                _history = _history.Take(_maxHistoryItems).ToList();
+                Logger.Debug($"Trimmed history to {_maxHistoryItems} items");
+            }
+
+            SaveHistory();
+            Logger.Info($"Query added to history (total: {_history.Count})");
         }
-
-        SaveHistory();
-        Logger.Info($"Query added to history (total: {_history.Count})");
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to add query to history");
+        }
     }
 
     /// <summary>
-    /// Get all query history
+    /// Encrypt SQL statement using DPAPI
+    /// </summary>
+    private string EncryptSql(string sql)
+    {
+        if (string.IsNullOrEmpty(sql))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var plainBytes = Encoding.UTF8.GetBytes(sql);
+            var encryptedBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
+            return Convert.ToBase64String(encryptedBytes);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to encrypt SQL");
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Decrypt SQL statement using DPAPI
+    /// </summary>
+    private string DecryptSql(string encryptedSql)
+    {
+        if (string.IsNullOrEmpty(encryptedSql))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var encryptedBytes = Convert.FromBase64String(encryptedSql);
+            var decryptedBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.CurrentUser);
+            return Encoding.UTF8.GetString(decryptedBytes);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to decrypt SQL");
+            return "[Decryption failed]";
+        }
+    }
+
+    /// <summary>
+    /// Get all query history (decrypts SQL on demand)
     /// </summary>
     public List<QueryHistoryItem> GetHistory()
     {
@@ -70,23 +125,42 @@ public class QueryHistoryService
     }
 
     /// <summary>
+    /// Get decrypted SQL for a history item
+    /// </summary>
+    public string GetDecryptedSql(QueryHistoryItem item)
+    {
+        return DecryptSql(item.EncryptedSql);
+    }
+
+    /// <summary>
     /// Search query history
     /// </summary>
-    public List<QueryHistoryItem> SearchHistory(string searchTerm)
+    public List<QueryHistoryItem> SearchHistory(string searchTerm, string? connectionFilter = null)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        var results = _history.AsEnumerable();
+
+        // Filter by connection if specified
+        if (!string.IsNullOrEmpty(connectionFilter))
         {
-            return _history;
+            results = results.Where(item => item.ConnectionName.Equals(connectionFilter, StringComparison.OrdinalIgnoreCase));
         }
 
-        Logger.Debug($"Searching history for: {searchTerm}");
+        // Search in decrypted SQL if search term provided
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            Logger.Debug($"Searching history for: {searchTerm}");
+            results = results.Where(item =>
+            {
+                var decryptedSql = DecryptSql(item.EncryptedSql);
+                return decryptedSql.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       item.Database.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       item.ConnectionName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+            });
+        }
 
-        var results = _history
-            .Where(item => item.Sql.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        Logger.Debug($"Found {results.Count} matching queries");
-        return results;
+        var resultList = results.ToList();
+        Logger.Debug($"Found {resultList.Count} matching queries");
+        return resultList;
     }
 
     /// <summary>
@@ -154,11 +228,12 @@ public class QueryHistoryService
 }
 
 /// <summary>
-/// Model for query history item
+/// Model for query history item with encrypted SQL
 /// </summary>
 public class QueryHistoryItem
 {
-    public string Sql { get; set; } = string.Empty;
+    public string EncryptedSql { get; set; } = string.Empty;
+    public string ConnectionName { get; set; } = string.Empty;
     public string Database { get; set; } = string.Empty;
     public DateTime ExecutedAt { get; set; }
     public bool Success { get; set; }
