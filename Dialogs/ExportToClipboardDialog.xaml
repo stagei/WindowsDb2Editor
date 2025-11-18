@@ -3,13 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         Title="Copy to Clipboard"
-        Height="280"
+        Height="380"
         Width="450"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -45,24 +46,44 @@
                              Content="CSV (Comma-Separated Values)" 
                              IsChecked="True" 
                              Margin="0,5"
+                             Checked="FormatRadio_Changed"
                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 <RadioButton x:Name="TsvRadio" 
                              Content="TSV (Tab-Separated Values)" 
                              Margin="0,5"
+                             Checked="FormatRadio_Changed"
                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 <RadioButton x:Name="JsonRadio" 
                              Content="JSON (JavaScript Object Notation)" 
                              Margin="0,5"
+                             Checked="FormatRadio_Changed"
                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 <RadioButton x:Name="XmlRadio" 
                              Content="XML (Extensible Markup Language)" 
                              Margin="0,5"
+                             Checked="FormatRadio_Changed"
                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             </StackPanel>
         </GroupBox>
 
+        <!-- Options -->
+        <GroupBox Grid.Row="3" 
+                  Header="Options" 
+                  Margin="0,0,0,15"
+                  Padding="10"
+                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+            <StackPanel>
+                <CheckBox x:Name="IncludeHeadersCheckBox" 
+                          Content="Include Column Headers" 
+                          IsChecked="True" 
+                          Margin="0,5"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          ToolTip="Include column headers as the first row (CSV/TSV only)"/>
+            </StackPanel>
+        </GroupBox>
+
         <!-- Progress indicator -->
-        <StackPanel Grid.Row="3" 
+        <StackPanel Grid.Row="4" 
                     x:Name="ProgressPanel" 
                     Visibility="Collapsed"
                     VerticalAlignment="Center">
@@ -85,7 +106,7 @@
         </StackPanel>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="5" 
+        <StackPanel Grid.Row="6" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Right" 
                     Margin="0,15,0,0">
@@ -106,6 +127,10 @@
         </StackPanel>
     </Grid>
 </Window>
+
+
+
+
 
 
 

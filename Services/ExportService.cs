@@ -186,9 +186,12 @@ public class ExportService
     /// <summary>
     /// Export DataTable to CSV string (for clipboard)
     /// </summary>
-    public async Task<string> ExportToCsvStringAsync(DataTable dataTable, IProgress<int>? progress = null)
+    /// <param name="dataTable">DataTable to export</param>
+    /// <param name="includeHeaders">Whether to include column headers as first row</param>
+    /// <param name="progress">Progress reporter</param>
+    public async Task<string> ExportToCsvStringAsync(DataTable dataTable, bool includeHeaders = true, IProgress<int>? progress = null)
     {
-        Logger.Info($"Exporting {dataTable.Rows.Count} rows to CSV string");
+        Logger.Info($"Exporting {dataTable.Rows.Count} rows to CSV string (includeHeaders: {includeHeaders})");
         Logger.Debug("Starting CSV string export with progress reporting");
 
         try
@@ -198,10 +201,18 @@ public class ExportService
                 var csv = new StringBuilder();
                 var totalRows = dataTable.Rows.Count;
 
-                // Write header
-                var columnNames = dataTable.Columns.Cast<DataColumn>()
-                    .Select(column => EscapeCsvField(column.ColumnName));
-                csv.AppendLine(string.Join(",", columnNames));
+                // Write header if requested
+                if (includeHeaders)
+                {
+                    var columnNames = dataTable.Columns.Cast<DataColumn>()
+                        .Select(column => EscapeCsvField(column.ColumnName));
+                    csv.AppendLine(string.Join(",", columnNames));
+                    Logger.Debug("CSV headers included");
+                }
+                else
+                {
+                    Logger.Debug("CSV headers excluded");
+                }
 
                 // Write rows with progress
                 int processedRows = 0;
@@ -234,9 +245,12 @@ public class ExportService
     /// <summary>
     /// Export DataTable to TSV string (for clipboard)
     /// </summary>
-    public async Task<string> ExportToTsvStringAsync(DataTable dataTable, IProgress<int>? progress = null)
+    /// <param name="dataTable">DataTable to export</param>
+    /// <param name="includeHeaders">Whether to include column headers as first row</param>
+    /// <param name="progress">Progress reporter</param>
+    public async Task<string> ExportToTsvStringAsync(DataTable dataTable, bool includeHeaders = true, IProgress<int>? progress = null)
     {
-        Logger.Info($"Exporting {dataTable.Rows.Count} rows to TSV string");
+        Logger.Info($"Exporting {dataTable.Rows.Count} rows to TSV string (includeHeaders: {includeHeaders})");
         Logger.Debug("Starting TSV string export with progress reporting");
 
         try
@@ -246,10 +260,18 @@ public class ExportService
                 var tsv = new StringBuilder();
                 var totalRows = dataTable.Rows.Count;
 
-                // Write header
-                var columnNames = dataTable.Columns.Cast<DataColumn>()
-                    .Select(column => column.ColumnName);
-                tsv.AppendLine(string.Join("\t", columnNames));
+                // Write header if requested
+                if (includeHeaders)
+                {
+                    var columnNames = dataTable.Columns.Cast<DataColumn>()
+                        .Select(column => column.ColumnName);
+                    tsv.AppendLine(string.Join("\t", columnNames));
+                    Logger.Debug("TSV headers included");
+                }
+                else
+                {
+                    Logger.Debug("TSV headers excluded");
+                }
 
                 // Write rows with progress
                 int processedRows = 0;

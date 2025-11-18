@@ -20,6 +20,28 @@ public partial class ExportToClipboardDialog : Window
         _exportService = new ExportService();
 
         RowCountInfo.Text = $"Ready to export {dataTable.Rows.Count:N0} rows to clipboard";
+        
+        // Enable headers checkbox only for CSV/TSV (default is CSV, so enabled by default)
+        UpdateHeadersCheckBoxState();
+    }
+
+    private void FormatRadio_Changed(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Export format changed");
+        UpdateHeadersCheckBoxState();
+    }
+
+    private void UpdateHeadersCheckBoxState()
+    {
+        // Headers option only applies to CSV and TSV formats
+        bool isCsvOrTsv = CsvRadio?.IsChecked == true || TsvRadio?.IsChecked == true;
+        
+        if (IncludeHeadersCheckBox != null)
+        {
+            IncludeHeadersCheckBox.IsEnabled = isCsvOrTsv;
+            Logger.Debug("Headers checkbox enabled: {Enabled} (CSV/TSV: {IsCsvOrTsv})", 
+                IncludeHeadersCheckBox.IsEnabled, isCsvOrTsv);
+        }
     }
 
     private async void Copy_Click(object sender, RoutedEventArgs e)
@@ -69,15 +91,19 @@ public partial class ExportToClipboardDialog : Window
                 ProgressText.Text = $"Processing {percent}%...";
             });
 
+            // Get header option
+            bool includeHeaders = IncludeHeadersCheckBox.IsChecked == true;
+            Logger.Debug("Include headers: {IncludeHeaders}", includeHeaders);
+
             // Export to clipboard
             string result;
             switch (format)
             {
                 case "CSV":
-                    result = await _exportService.ExportToCsvStringAsync(_dataTable, progress);
+                    result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
                     break;
                 case "TSV":
-                    result = await _exportService.ExportToTsvStringAsync(_dataTable, progress);
+                    result = await _exportService.ExportToTsvStringAsync(_dataTable, includeHeaders, progress);
                     break;
                 case "JSON":
                     result = await _exportService.ExportToJsonStringAsync(_dataTable, progress);
@@ -86,7 +112,7 @@ public partial class ExportToClipboardDialog : Window
                     result = await _exportService.ExportToXmlStringAsync(_dataTable, progress);
                     break;
                 default:
-                    result = await _exportService.ExportToCsvStringAsync(_dataTable, progress);
+                    result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
                     break;
             }
 
@@ -131,6 +157,10 @@ public partial class ExportToClipboardDialog : Window
         Close();
     }
 }
+
+
+
+
 
 
 
