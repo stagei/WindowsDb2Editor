@@ -15,12 +15,12 @@ namespace WindowsDb2Editor.Services;
 public class CliExecutorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly ConnectionProfileService _profileService;
+    private readonly ConnectionStorageService _connectionStorage;
     private readonly ExportService _exportService;
     
     public CliExecutorService()
     {
-        _profileService = new ConnectionProfileService();
+        _connectionStorage = new ConnectionStorageService();
         _exportService = new ExportService();
         Logger.Debug("CliExecutorService initialized");
     }
@@ -50,9 +50,9 @@ public class CliExecutorService
                 return 1;
             }
             
-            // Load connection profile
+            // Load connection profile from GUI storage (with decrypted password)
             Console.WriteLine($"Loading connection profile: {args.ProfileName}");
-            var profile = _profileService.GetProfile(args.ProfileName);
+            var profile = _connectionStorage.GetConnection(args.ProfileName);
             
             if (profile == null)
             {
