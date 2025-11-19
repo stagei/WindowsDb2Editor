@@ -523,6 +523,78 @@ public DataTable ExecuteQuery(string sql)
 8. When ready to implement, change status to "IN PROGRESS"
 9. After completion, update all checkboxes to `- [x]` and status to "✅ COMPLETE"
 
+### Task Completion Verification (MANDATORY)
+
+**BEFORE claiming ANY task list is "complete" or "done":**
+
+**MANDATORY VERIFICATION STEPS:**
+```bash
+# 1. Count unchecked items in TASKLIST.md
+grep '^- \[ \]' TASKLIST.md | wc -l
+# MUST return: 0
+
+# 2. Count unchecked items in any *list.md files  
+grep '^- \[ \]' *list.md | wc -l
+# MUST return: 0
+
+# 3. Verify build succeeds
+dotnet build
+# MUST return: Exit code 0
+
+# 4. Verify CLI tests pass
+run_cli_tests
+# MUST return: All passed
+```
+
+**If ANY check fails:**
+- Task list is NOT complete
+- Continue implementing
+- DO NOT create "FINAL" reports
+- DO NOT ask user permission to continue
+- DO NOT declare completion
+
+**Only when ALL checks pass:**
+- Create final summary with verification proof
+- Report completion with evidence
+- Show: "grep '^- \[ \]' TASKLIST.md → 0 results"
+
+**NEVER claim completion without running these verifications.**
+
+### Continuous Implementation Mode
+
+**When user says: "continuous", "continue", "no interaction", "until done"**
+
+**This means:**
+1. **Work continuously without stopping** to ask permission
+2. **Only report progress** at regular intervals (every 10-20% completion)
+3. **No status documents** until actual completion
+4. **No "should I continue?" questions** - just continue
+5. **No "FINAL" reports** at 70%, 80%, 90% - only at 100%
+6. **Use TASKLIST.md as source of truth** - not your mental model
+7. **Verify completion** with grep before any "done" claim
+
+**Progress Reporting in Continuous Mode:**
+- Report every 20% completion (brief, no questions)
+- Format: "Progress: X% - Y tasks complete, Z remaining"
+- Continue working immediately
+- No multi-page status documents
+
+**Completion Reporting:**
+- Only when verification passes
+- Show proof: grep results, build output, test results
+- One final comprehensive report
+- No interim "final" reports
+
+**DO NOT:**
+- ❌ Stop to ask "should I continue?"
+- ❌ Stop to ask "which approach?"
+- ❌ Create multiple "FINAL" reports
+- ❌ Declare "done" without verification
+- ❌ Spend tokens on status docs instead of implementation
+- ❌ Rationalize "service layer complete = done"
+
+**VERIFICATION is the ONLY source of truth for completion.**
+
 ### Development Workflow
 1. Review `TASKLIST.md` to identify next task
 2. **VERIFY functionality doesn't already exist** (use grep/glob_file_search to check Services/, Models/, Controls/)

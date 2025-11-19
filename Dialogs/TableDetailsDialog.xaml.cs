@@ -3,6 +3,7 @@ using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -10,6 +11,7 @@ public partial class TableDetailsDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly TableRelationshipService _relationshipService;
     private readonly string _fullTableName;
     private readonly string _schema;
     private readonly string _tableName;
@@ -21,6 +23,7 @@ public partial class TableDetailsDialog : Window
     {
         InitializeComponent();
         _connectionManager = connectionManager;
+        _relationshipService = new TableRelationshipService();
         _fullTableName = fullTableName;
         
         // Parse schema and table name
@@ -56,8 +59,13 @@ public partial class TableDetailsDialog : Window
             var indexesTask = LoadIndexesAsync();
             var statsTask = LoadStatisticsAsync();
             var ddlTask = GenerateDDLAsync();
+            var incomingFKTask = LoadIncomingForeignKeysAsync();
+            var packagesTask = LoadReferencingPackagesAsync();
+            var viewsTask = LoadReferencingViewsAsync();
+            var routinesTask = LoadReferencingRoutinesAsync();
             
-            await Task.WhenAll(columnsTask, foreignKeysTask, indexesTask, statsTask, ddlTask);
+            await Task.WhenAll(columnsTask, foreignKeysTask, indexesTask, statsTask, ddlTask, 
+                              incomingFKTask, packagesTask, viewsTask, routinesTask);
             
             Logger.Info("Table details loaded successfully");
         }
@@ -349,6 +357,62 @@ public partial class TableDetailsDialog : Window
         }
     }
 
+    private async Task LoadIncomingForeignKeysAsync()
+    {
+        try
+        {
+            var incomingFKs = await _relationshipService.GetIncomingForeignKeysAsync(_connectionManager, _schema, _tableName);
+            IncomingFKGrid.ItemsSource = incomingFKs;
+            Logger.Info("Loaded {Count} incoming foreign keys", incomingFKs.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load incoming foreign keys");
+        }
+    }
+    
+    private async Task LoadReferencingPackagesAsync()
+    {
+        try
+        {
+            var packages = await _relationshipService.GetReferencingPackagesAsync(_connectionManager, _schema, _tableName);
+            PackagesGrid.ItemsSource = packages;
+            Logger.Info("Loaded {Count} referencing packages", packages.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load referencing packages");
+        }
+    }
+    
+    private async Task LoadReferencingViewsAsync()
+    {
+        try
+        {
+            var views = await _relationshipService.GetReferencingViewsAsync(_connectionManager, _schema, _tableName);
+            ViewsGrid.ItemsSource = views;
+            Logger.Info("Loaded {Count} referencing views", views.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load referencing views");
+        }
+    }
+    
+    private async Task LoadReferencingRoutinesAsync()
+    {
+        try
+        {
+            var routines = await _relationshipService.GetReferencingRoutinesAsync(_connectionManager, _schema, _tableName);
+            RoutinesGrid.ItemsSource = routines;
+            Logger.Info("Loaded {Count} referencing routines", routines.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load referencing routines");
+        }
+    }
+    
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;

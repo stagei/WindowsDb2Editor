@@ -146,6 +146,18 @@ public partial class ConnectionTabControl : UserControl
                 e.Handled = true;
                 OpenScript();
             }
+            // Ctrl+Shift+C - Commit Transaction
+            else if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                e.Handled = true;
+                _ = CommitTransaction();
+            }
+            // Ctrl+Shift+R - Rollback Transaction
+            else if (e.Key == Key.R && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                e.Handled = true;
+                _ = RollbackTransaction();
+            }
         };
     }
 
@@ -202,12 +214,32 @@ public partial class ConnectionTabControl : UserControl
 
             // RBAC: Update access level indicator
             UpdateAccessLevelIndicator();
+            
+            // Feature #2: Update commit/rollback button visibility
+            UpdateTransactionButtonsVisibility();
 
             // Load database objects
             await LoadDatabaseObjectsAsync();
             
             // Load query history for this connection
             RefreshQueryHistory();
+            
+            // Feature #5: Background metadata collection (non-blocking)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    Logger.Info("Starting background metadata collection");
+                    var metadataService = new DB2MetadataService();
+                    await metadataService.CollectMetadataAsync(_connectionManager, _connection.Name ?? _connection.GetDisplayName());
+                    Logger.Info("Background metadata collection completed");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Background metadata collection failed");
+                    // Don't show error to user - non-critical background task
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -1328,6 +1360,50 @@ public partial class ConnectionTabControl : UserControl
             permissions.CanExecuteDDL, permissions.CanExecuteDML, permissions.CanForceDisconnect,
             permissions.CanModifyStatistics, permissions.CanModifyCDC, permissions.CanDropObjects);
     }
+    
+    private void UpdateTransactionButtonsVisibility()
+    {
+        var showButtons = !_connection.AutoCommit;
+        CommitButton.Visibility = showButtons ? Visibility.Visible : Visibility.Collapsed;
+        RollbackButton.Visibility = showButtons ? Visibility.Visible : Visibility.Collapsed;
+        Logger.Debug("Transaction buttons visibility: {Visible} (AutoCommit: {AutoCommit})", showButtons, _connection.AutoCommit);
+    }
+    
+    private async Task CommitTransaction()
+    {
+        try
+        {
+            await _connectionManager.CommitAsync();
+            StatusText.Text = "Transaction committed";
+            Logger.Info("Transaction committed successfully");
+            MessageBox.Show("Transaction committed successfully.", "Commit", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to commit transaction");
+            MessageBox.Show($"Failed to commit:\n\n{ex.Message}", "Commit Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async Task RollbackTransaction()
+    {
+        try
+        {
+            await _connectionManager.RollbackAsync();
+            StatusText.Text = "Transaction rolled back";
+            Logger.Info("Transaction rolled back successfully");
+            MessageBox.Show("Transaction rolled back successfully.", "Rollback", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to rollback transaction");
+            MessageBox.Show($"Failed to rollback:\n\n{ex.Message}", "Rollback Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async void Commit_Click(object sender, RoutedEventArgs e) => await CommitTransaction();
+    
+    private async void Rollback_Click(object sender, RoutedEventArgs e) => await RollbackTransaction();
 
     public void Cleanup()
     {

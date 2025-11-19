@@ -210,6 +210,19 @@
                     </StackPanel>
                 </Button>
                 <Separator Margin="10,0"/>
+                <Button x:Name="CommitButton" Click="Commit_Click" Padding="15,8" ToolTip="Commit Transaction (Ctrl+Shift+C)" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="✅" FontSize="16" Margin="0,0,8,0"/>
+                        <TextBlock Text="Commit" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="RollbackButton" Click="Rollback_Click" Padding="15,8" ToolTip="Rollback Transaction (Ctrl+Shift+R)" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↩️" FontSize="16" Margin="0,0,8,0"/>
+                        <TextBlock Text="Rollback" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Separator Margin="10,0"/>
                 <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="15,0,0,0" 
                            Text="Ready" FontWeight="SemiBold"
                            Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
