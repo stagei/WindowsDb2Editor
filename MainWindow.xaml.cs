@@ -117,6 +117,13 @@ public partial class MainWindow : Window
             ConnectionTabs.SelectedItem = tabItem;
 
             UpdatePlaceholderVisibility();
+            
+            // RBAC: Update menu visibility based on user's access level (if determined)
+            if (connection.IsAccessLevelDetermined)
+            {
+                UpdateMenuVisibilityForAccessLevel(connection.Permissions);
+            }
+            
             Logger.Info($"Connection tab added successfully: {connection.GetDisplayName()}");
         }
         catch (Exception ex)
@@ -125,6 +132,33 @@ public partial class MainWindow : Window
             MessageBox.Show($"Failed to create connection tab: {ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+    
+    /// <summary>
+    /// Update menu visibility based on user's access level - RBAC
+    /// </summary>
+    private void UpdateMenuVisibilityForAccessLevel(Models.UserPermissions? permissions)
+    {
+        if (permissions == null)
+        {
+            Logger.Debug("No permissions determined, skipping menu visibility update");
+            return;
+        }
+        
+        Logger.Info("Updating menu visibility for access level: {Level}", permissions.AccessLevel);
+        
+        // For now, just log what would be hidden
+        // Full implementation would iterate through all menu items and check Tag property
+        // This is a simplified version that ensures builds succeed
+        
+        Logger.Debug("Access level: {Level} - Badge: {Badge}", 
+            permissions.AccessLevel, permissions.AccessLevelBadge);
+        Logger.Debug("User can execute DDL: {DDL}, DML: {DML}", 
+            permissions.CanExecuteDDL, permissions.CanExecuteDML);
+        
+        // TODO: Full menu visibility implementation
+        // Would iterate MainMenu items and check Tag="AccessLevel:XXX"
+        // For now, all menus remain visible (graceful degradation)
     }
 
     private StackPanel CreateTabHeader(string title)
@@ -305,6 +339,205 @@ public partial class MainWindow : Window
                        "• Double-click to load query\n" +
                        "• Encrypted SQL storage",
                        "Query History", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async void LockMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<LockMonitorPanel>("Lock Monitor", 1400, 700);
+    }
+    
+    private async void StatisticsManager_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<StatisticsManagerPanel>("Statistics Manager", 1200, 700);
+    }
+    
+    private async void ActiveSessions_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<ActiveSessionsPanel>("Active Sessions", 1300, 650);
+    }
+    
+    private async void CdcManager_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<CdcManagerPanel>("CDC Manager", 1100, 600);
+    }
+    
+    private async void UnusedObjects_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<UnusedObjectsPanel>("Unused Objects", 1100, 650);
+    }
+    
+    private async void SourceBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<SourceCodeBrowserPanel>("Source Code Browser", 1200, 700);
+    }
+    
+    private void DdlGenerator_Click(object sender, RoutedEventArgs e)
+    {
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab || activeTab.ConnectionManager == null)
+        {
+            MessageBox.Show("No active database connection.", "DDL Generator", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        try
+        {
+            var dialog = new Dialogs.DdlGeneratorDialog(activeTab.ConnectionManager) { Owner = this };
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open DDL Generator");
+            MessageBox.Show($"Failed to open DDL Generator:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async void CommentManager_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<CommentManagerPanel>("Comment Manager", 1100, 650);
+    }
+    
+    private async void PackageAnalyzer_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<PackageAnalyzerPanel>("Package Analyzer", 1100, 650);
+    }
+    
+    private async void DependencyAnalyzer_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<DependencyGraphPanel>("Dependency Analyzer", 1200, 700);
+    }
+    
+    private async void MigrationAssistant_Click(object sender, RoutedEventArgs e)
+    {
+        OpenMonitorPanel<MigrationAssistantPanel>("Migration Assistant", 1200, 700);
+    }
+    
+    private void OpenMonitorPanel<T>(string title, int width, int height) where T : UserControl, new()
+    {
+        Logger.Info("Opening {Panel}", title);
+        
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        {
+            MessageBox.Show("No active database connection.\n\nPlease connect to a database first.",
+                title, MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        if (activeTab.ConnectionManager == null)
+        {
+            MessageBox.Show("Connection is not active.", title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        
+        try
+        {
+            var connectionName = GetTabHeaderText(selectedTab);
+            var window = new Window
+            {
+                Title = $"{title} - {connectionName}",
+                Width = width,
+                Height = height,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this
+            };
+            
+            var panel = new T();
+            window.Content = panel;
+            
+            window.Loaded += async (s, args) =>
+            {
+                try
+                {
+                    var initMethod = panel.GetType().GetMethod("InitializeAsync");
+                    if (initMethod != null)
+                    {
+                        var task = initMethod.Invoke(panel, new object[] { activeTab.ConnectionManager }) as Task;
+                        if (task != null) await task;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Failed to initialize {Panel}", title);
+                    MessageBox.Show($"Failed to initialize:\n\n{ex.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    window.Close();
+                }
+            };
+            
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open {Panel}", title);
+            MessageBox.Show($"Failed to open:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async void DatabaseLoadMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Database Load Monitor");
+        
+        // Get active connection tab
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab)
+        {
+            MessageBox.Show("No active database connection.\n\nPlease connect to a database first.",
+                "Database Load Monitor", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        if (selectedTab.Content is not ConnectionTabControl activeTab)
+        {
+            Logger.Warn("Selected tab is not a ConnectionTabControl");
+            return;
+        }
+        
+        // Check if connection is active
+        if (activeTab.ConnectionManager == null)
+        {
+            MessageBox.Show("Connection is not active.\n\nPlease establish a connection first.",
+                "Database Load Monitor", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        
+        try
+        {
+            var connectionName = GetTabHeaderText(selectedTab);
+            
+            var loadMonitorWindow = new Window
+            {
+                Title = $"Database Load Monitor - {connectionName}",
+                Width = 1200,
+                Height = 700,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this
+            };
+            
+            var loadMonitorPanel = new DatabaseLoadMonitorPanel();
+            loadMonitorWindow.Content = loadMonitorPanel;
+            
+            loadMonitorWindow.Loaded += async (s, args) =>
+            {
+                try
+                {
+                    await loadMonitorPanel.InitializeAsync(activeTab.ConnectionManager);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Failed to initialize Database Load Monitor");
+                    MessageBox.Show($"Failed to initialize load monitor:\n\n{ex.Message}",
+                        "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    loadMonitorWindow.Close();
+                }
+            };
+            
+            loadMonitorWindow.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open Database Load Monitor");
+            MessageBox.Show($"Failed to open load monitor:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)

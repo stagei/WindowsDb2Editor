@@ -74,6 +74,16 @@ public class DB2ConnectionManager : IDisposable
             
             Logger.Info($"DB2 connection opened successfully - State: {_db2Connection.State}");
             Logger.Debug($"DB2 Server Version: {_db2Connection.ServerVersion}");
+            
+            // Feature #2: Set auto-commit mode
+            await SetAutoCommitModeAsync(_connectionInfo.AutoCommit);
+            
+            // Feature #2: Log connection mode
+            Logger.Info("Connection mode - ReadOnly: {ReadOnly}, AutoCommit: {AutoCommit}", 
+                _connectionInfo.IsReadOnly, _connectionInfo.AutoCommit);
+            
+            // RBAC: Determine user's access level
+            await DetermineUserAccessLevelAsync();
         }
         catch (DB2Exception db2Ex)
         {
@@ -101,6 +111,48 @@ public class DB2ConnectionManager : IDisposable
 
         Logger.Info("Executing SQL query");
         Logger.Debug($"SQL: {sql.Substring(0, Math.Min(100, sql.Length))}... MaxRows: {maxRows}, Offset: {offset}");
+        
+        // Feature #2 + RBAC: Check if read-only mode or access level prevents this SQL
+        if (_connectionInfo.IsReadOnly && IsModifyingSql(sql))
+        {
+            Logger.Warn("Attempted to execute modifying SQL in read-only mode");
+            throw new InvalidOperationException(
+                "This connection is in read-only mode. " +
+                "Data modification statements (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, TRUNCATE) are not allowed.");
+        }
+        
+        // RBAC: Check access level permissions
+        if (_connectionInfo.Permissions != null && IsModifyingSql(sql))
+        {
+            var accessLevel = _connectionInfo.Permissions.AccessLevel;
+            var sqlUpper = sql.Trim().ToUpperInvariant();
+            
+            if (accessLevel == UserAccessLevel.Low)
+            {
+                Logger.Warn("LOW level user {Username} attempted to execute modifying SQL", 
+                    _connectionInfo.Permissions.Username);
+                throw new UnauthorizedAccessException(
+                    $"Access Denied: You have READ-ONLY access ({_connectionInfo.Permissions.AccessLevelBadge}).\n\n" +
+                    "Only SELECT statements are allowed.\n" +
+                    "Contact your database administrator to request additional privileges.");
+            }
+            
+            if (accessLevel == UserAccessLevel.Middle)
+            {
+                // Check if it's DDL (not allowed for Middle level)
+                var ddlKeywords = new[] { "CREATE", "DROP", "ALTER", "TRUNCATE", "GRANT", "REVOKE" };
+                if (ddlKeywords.Any(kw => System.Text.RegularExpressions.Regex.IsMatch(sqlUpper, $@"\b{kw}\b")))
+                {
+                    Logger.Warn("MIDDLE level user {Username} attempted to execute DDL", 
+                        _connectionInfo.Permissions.Username);
+                    throw new UnauthorizedAccessException(
+                        $"Access Denied: You have STANDARD USER access ({_connectionInfo.Permissions.AccessLevelBadge}).\n\n" +
+                        "DDL statements (CREATE, DROP, ALTER) require DBA privileges.\n" +
+                        "DML statements (SELECT, INSERT, UPDATE, DELETE) are allowed.\n\n" +
+                        "Contact your database administrator to request DBA privileges.");
+                }
+            }
+        }
 
         try
         {
@@ -297,6 +349,183 @@ public class DB2ConnectionManager : IDisposable
         catch (Exception ex)
         {
             Logger.Error(ex, "Error closing connection");
+        }
+    }
+    
+    /// <summary>
+    /// Determine user's access level based on DBAUTH - RBAC
+    /// </summary>
+    private async Task DetermineUserAccessLevelAsync()
+    {
+        Logger.Debug("Determining user access level");
+        
+        try
+        {
+            var accessControlService = new Services.AccessControlService();
+            _connectionInfo.Permissions = await accessControlService.DetermineAccessLevelAsync(
+                this, 
+                _connectionInfo.Username);
+            
+            Logger.Info("User {Username} access level determined: {Level}", 
+                _connectionInfo.Username, 
+                _connectionInfo.Permissions.AccessLevel);
+            Logger.Info("Access level badge: {Badge}", _connectionInfo.Permissions.AccessLevelBadge);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to determine user access level");
+            Logger.Warn("SECURITY: Defaulting to LOW (read-only) access due to error");
+            
+            // Default to LOW for security
+            _connectionInfo.Permissions = new UserPermissions
+            {
+                Username = _connectionInfo.Username,
+                AccessLevel = UserAccessLevel.Low
+            };
+        }
+    }
+    
+    /// <summary>
+    /// Set auto-commit mode for the connection - Feature #2
+    /// </summary>
+    private async Task SetAutoCommitModeAsync(bool autoCommit)
+    {
+        Logger.Debug("Setting auto-commit mode: {AutoCommit}", autoCommit);
+        
+        if (_db2Connection?.State != ConnectionState.Open)
+        {
+            Logger.Warn("Cannot set auto-commit mode - connection is not open");
+            return;
+        }
+        
+        try
+        {
+            using var command = _db2Connection.CreateCommand();
+            command.CommandText = autoCommit ? "SET AUTOCOMMIT ON" : "SET AUTOCOMMIT OFF";
+            await command.ExecuteNonQueryAsync();
+            
+            Logger.Info("Auto-commit mode set to: {Mode}", autoCommit ? "ON" : "OFF");
+        }
+        catch (DB2Exception db2Ex)
+        {
+            Logger.Error(db2Ex, "Failed to set auto-commit mode - SQL State: {SqlState}", db2Ex.SqlState);
+            // Don't throw - some DB2 versions may not support this command
+            Logger.Warn("Auto-commit mode could not be set, continuing anyway");
+        }
+    }
+    
+    /// <summary>
+    /// Check if SQL statement is modifying (DML/DDL) - Feature #2 + RBAC
+    /// </summary>
+    private bool IsModifyingSql(string sql)
+    {
+        var sqlUpper = sql.Trim().ToUpperInvariant();
+        
+        Logger.Debug("Checking if SQL is modifying - First 50 chars: {SQL}", 
+            sqlUpper.Substring(0, Math.Min(50, sqlUpper.Length)));
+        
+        // RBAC: For LOW level users, everything except SELECT is modifying
+        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Low)
+        {
+            var isSelect = sqlUpper.StartsWith("SELECT") || 
+                          sqlUpper.StartsWith("WITH") || // CTE
+                          sqlUpper.StartsWith("VALUES"); // VALUES clause
+            
+            var isModifying = !isSelect;
+            Logger.Debug("LOW level user - SQL is modifying: {IsModifying} (not a SELECT)", isModifying);
+            return isModifying;
+        }
+        
+        // RBAC: For MIDDLE level users, DDL is modifying (DML is allowed)
+        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Middle)
+        {
+            var ddlKeywords = new[] { "CREATE", "DROP", "ALTER", "TRUNCATE", "GRANT", "REVOKE" };
+            var isModifying = ddlKeywords.Any(keyword => 
+                System.Text.RegularExpressions.Regex.IsMatch(sqlUpper, $@"\b{keyword}\b"));
+            
+            Logger.Debug("MIDDLE level user - SQL is DDL: {IsModifying}", isModifying);
+            return isModifying;
+        }
+        
+        // For DBA level (or if permissions not yet determined), check all modifying keywords
+        var modifyingKeywords = new[] 
+        { 
+            "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", 
+            "ALTER", "TRUNCATE", "GRANT", "REVOKE", "MERGE" 
+        };
+        
+        var isModifyingDba = modifyingKeywords.Any(keyword => 
+            System.Text.RegularExpressions.Regex.IsMatch(sqlUpper, $@"\b{keyword}\b"));
+        
+        Logger.Debug("DBA level check - SQL is modifying: {IsModifying}", isModifyingDba);
+        return isModifyingDba;
+    }
+    
+    /// <summary>
+    /// Commit current transaction - Feature #2
+    /// </summary>
+    public async Task CommitAsync()
+    {
+        Logger.Info("Committing transaction");
+        
+        if (_connectionInfo.AutoCommit)
+        {
+            Logger.Warn("Commit called but auto-commit is enabled");
+            throw new InvalidOperationException("Cannot commit manually when auto-commit is enabled.");
+        }
+        
+        if (_db2Connection?.State != ConnectionState.Open)
+        {
+            Logger.Warn("Cannot commit - connection is not open");
+            throw new InvalidOperationException("Connection is not open");
+        }
+        
+        try
+        {
+            using var command = _db2Connection.CreateCommand();
+            command.CommandText = "COMMIT";
+            await command.ExecuteNonQueryAsync();
+            
+            Logger.Info("Transaction committed successfully");
+        }
+        catch (DB2Exception db2Ex)
+        {
+            Logger.Error(db2Ex, "DB2 error during commit - SQL State: {SqlState}", db2Ex.SqlState);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Rollback current transaction - Feature #2
+    /// </summary>
+    public async Task RollbackAsync()
+    {
+        Logger.Info("Rolling back transaction");
+        
+        if (_connectionInfo.AutoCommit)
+        {
+            Logger.Warn("Rollback called but auto-commit is enabled");
+            throw new InvalidOperationException("Cannot rollback manually when auto-commit is enabled.");
+        }
+        
+        if (_db2Connection?.State != ConnectionState.Open)
+        {
+            Logger.Warn("Cannot rollback - connection is not open");
+            throw new InvalidOperationException("Connection is not open");
+        }
+        
+        try
+        {
+            using var command = _db2Connection.CreateCommand();
+            command.CommandText = "ROLLBACK";
+            await command.ExecuteNonQueryAsync();
+            
+            Logger.Info("Transaction rolled back successfully");
+        }
+        catch (DB2Exception db2Ex)
+        {
+            Logger.Error(db2Ex, "DB2 error during rollback - SQL State: {SqlState}", db2Ex.SqlState);
+            throw;
         }
     }
 

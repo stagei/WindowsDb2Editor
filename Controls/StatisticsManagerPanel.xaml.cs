@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using Microsoft.Win32;
+using NLog;
+using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
+
+namespace WindowsDb2Editor.Controls;
+
+public partial class StatisticsManagerPanel : UserControl
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly StatisticsService _statisticsService;
+    private DB2ConnectionManager? _connectionManager;
+    
+    public StatisticsManagerPanel()
+    {
+        InitializeComponent();
+        _statisticsService = new StatisticsService();
+        Logger.Debug("StatisticsManagerPanel initialized");
+    }
+    
+    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    {
+        Logger.Info("Initializing Statistics Manager");
+        _connectionManager = connectionManager;
+        
+        try
+        {
+            SchemaComboBox.Items.Add("*");
+            SchemaComboBox.SelectedIndex = 0;
+            await RefreshDataAsync();
+            Logger.Info("Statistics Manager initialized");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to initialize Statistics Manager");
+            MessageBox.Show($"Failed to initialize:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async Task RefreshDataAsync()
+    {
+        if (_connectionManager == null) return;
+        
+        try
+        {
+            StatusText.Text = "Loading...";
+            RefreshButton.IsEnabled = false;
+            
+            var filter = new StatisticsFilter
+            {
+                SchemaFilter = SchemaComboBox.SelectedItem?.ToString() ?? "*",
+                ShowOnlyOutdated = ShowOnlyOutdatedCheckBox.IsChecked ?? false,
+                OutdatedThresholdDays = int.TryParse(ThresholdDaysTextBox.Text, out var days) ? days : 30
+            };
+            
+            var stats = await _statisticsService.GetTableStatisticsAsync(_connectionManager, filter);
+            StatisticsDataGrid.ItemsSource = stats;
+            StatusText.Text = $"Found {stats.Count} tables - {DateTime.Now:HH:mm:ss}";
+            Logger.Info("Statistics refreshed - {Count} tables", stats.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to refresh statistics");
+            StatusText.Text = "Error";
+            MessageBox.Show($"Failed to load statistics:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            RefreshButton.IsEnabled = true;
+        }
+    }
+    
+    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        await RefreshDataAsync();
+    }
+    
+    private void GenerateRunstats_Click(object sender, RoutedEventArgs e)
+    {
+        var stats = StatisticsDataGrid.SelectedItems.Cast<TableStatistics>().ToList();
+        if (stats.Count == 0)
+        {
+            MessageBox.Show("Please select tables to generate RUNSTATS for.",
+                "Generate RUNSTATS", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        var script = _statisticsService.GenerateRunstatsScript(stats);
+        var window = new Window
+        {
+            Title = "RUNSTATS Script",
+            Width = 700,
+            Height = 500,
+            Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) }
+        };
+        window.ShowDialog();
+    }
+    
+    private async void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        var stats = StatisticsDataGrid.ItemsSource as List<TableStatistics>;
+        if (stats == null || stats.Count == 0) return;
+        
+        var saveDialog = new SaveFileDialog { Filter = "CSV Files (*.csv)|*.csv", FileName = $"statistics_{DateTime.Now:yyyyMMdd_HHmmss}.csv" };
+        if (saveDialog.ShowDialog() == true)
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("Schema,Table,Last Update,Days Old,Row Count,Tablespace,Status");
+            foreach (var s in stats)
+                csv.AppendLine($"{s.TabSchema},{s.TabName},{s.StatsTime},{s.DaysSinceUpdate},{s.CardinalityEstimate},{s.TableSpace},{s.StatsStatus}");
+            await File.WriteAllTextAsync(saveDialog.FileName, csv.ToString());
+            MessageBox.Show("Exported successfully", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+}
+

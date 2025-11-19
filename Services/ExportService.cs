@@ -154,6 +154,42 @@ public class ExportService
     }
 
     /// <summary>
+    /// Export only column headers as CSV string (no data rows)
+    /// </summary>
+    /// <param name="dataTable">DataTable to get headers from</param>
+    /// <returns>Comma-separated column headers</returns>
+    public string ExportHeadersOnlyCsv(DataTable dataTable)
+    {
+        Logger.Info("Exporting headers only as CSV");
+        Logger.Debug("Column count: {Count}", dataTable.Columns.Count);
+
+        var columnNames = dataTable.Columns.Cast<DataColumn>()
+            .Select(column => EscapeCsvField(column.ColumnName));
+        
+        var result = string.Join(",", columnNames);
+        Logger.Info("Headers only CSV export complete: {Length} characters", result.Length);
+        return result;
+    }
+
+    /// <summary>
+    /// Export only column headers as TSV string (no data rows)
+    /// </summary>
+    /// <param name="dataTable">DataTable to get headers from</param>
+    /// <returns>Tab-separated column headers</returns>
+    public string ExportHeadersOnlyTsv(DataTable dataTable)
+    {
+        Logger.Info("Exporting headers only as TSV");
+        Logger.Debug("Column count: {Count}", dataTable.Columns.Count);
+
+        var columnNames = dataTable.Columns.Cast<DataColumn>()
+            .Select(column => column.ColumnName);
+        
+        var result = string.Join("\t", columnNames);
+        Logger.Info("Headers only TSV export complete: {Length} characters", result.Length);
+        return result;
+    }
+
+    /// <summary>
     /// Escape CSV field (handle commas, quotes, newlines)
     /// </summary>
     private string EscapeCsvField(string field)

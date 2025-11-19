@@ -126,7 +126,9 @@ public partial class ConnectionDialog : Window
             Database = DatabaseTextBox.Text.Trim(),
             Username = UsernameTextBox.Text.Trim(),
             Password = PasswordBox.Password,
-            SavePassword = !string.IsNullOrEmpty(PasswordBox.Password)
+            SavePassword = !string.IsNullOrEmpty(PasswordBox.Password),
+            IsReadOnly = ReadOnlyCheckBox.IsChecked ?? false,  // Feature #2
+            AutoCommit = AutoCommitCheckBox.IsChecked ?? true  // Feature #2
         };
     }
 }

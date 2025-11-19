@@ -3,10 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         Title="Copy to Clipboard"
-        Height="380"
+        SizeToContent="Height"
         Width="450"
+        MinHeight="350"
+        MaxHeight="700"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -73,8 +75,16 @@
                   Padding="10"
                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
             <StackPanel>
+                <CheckBox x:Name="HeadersOnlyCheckBox" 
+                          Content="Copy Headers Only (no data rows)" 
+                          IsChecked="False" 
+                          Margin="0,5"
+                          Checked="HeadersOnly_Changed"
+                          Unchecked="HeadersOnly_Changed"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          ToolTip="Copy only column headers as comma-separated string (CSV/TSV only)"/>
                 <CheckBox x:Name="IncludeHeadersCheckBox" 
-                          Content="Include Column Headers" 
+                          Content="Include Column Headers with data" 
                           IsChecked="True" 
                           Margin="0,5"
                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"

@@ -31,16 +31,46 @@ public partial class ExportToClipboardDialog : Window
         UpdateHeadersCheckBoxState();
     }
 
+    private void HeadersOnly_Changed(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Headers only checkbox changed");
+        
+        // If headers only is checked, disable the "Include Headers" checkbox
+        if (HeadersOnlyCheckBox != null && IncludeHeadersCheckBox != null)
+        {
+            if (HeadersOnlyCheckBox.IsChecked == true)
+            {
+                IncludeHeadersCheckBox.IsEnabled = false;
+                IncludeHeadersCheckBox.IsChecked = true; // Force to true when headers only
+                Logger.Debug("Headers only mode enabled - Include Headers checkbox disabled");
+            }
+            else
+            {
+                UpdateHeadersCheckBoxState();
+                Logger.Debug("Headers only mode disabled - Include Headers checkbox enabled");
+            }
+        }
+    }
+
     private void UpdateHeadersCheckBoxState()
     {
         // Headers option only applies to CSV and TSV formats
         bool isCsvOrTsv = CsvRadio?.IsChecked == true || TsvRadio?.IsChecked == true;
         
+        if (HeadersOnlyCheckBox != null)
+        {
+            HeadersOnlyCheckBox.IsEnabled = isCsvOrTsv;
+            Logger.Debug("Headers only checkbox enabled: {Enabled} (CSV/TSV: {IsCsvOrTsv})", 
+                HeadersOnlyCheckBox.IsEnabled, isCsvOrTsv);
+        }
+        
         if (IncludeHeadersCheckBox != null)
         {
-            IncludeHeadersCheckBox.IsEnabled = isCsvOrTsv;
-            Logger.Debug("Headers checkbox enabled: {Enabled} (CSV/TSV: {IsCsvOrTsv})", 
-                IncludeHeadersCheckBox.IsEnabled, isCsvOrTsv);
+            // Disable if headers only is checked or if not CSV/TSV
+            bool headersOnly = HeadersOnlyCheckBox?.IsChecked == true;
+            IncludeHeadersCheckBox.IsEnabled = isCsvOrTsv && !headersOnly;
+            Logger.Debug("Include headers checkbox enabled: {Enabled} (CSV/TSV: {IsCsvOrTsv}, HeadersOnly: {HeadersOnly})", 
+                IncludeHeadersCheckBox.IsEnabled, isCsvOrTsv, headersOnly);
         }
     }
 
@@ -91,19 +121,34 @@ public partial class ExportToClipboardDialog : Window
                 ProgressText.Text = $"Processing {percent}%...";
             });
 
-            // Get header option
+            // Get header options
+            bool headersOnly = HeadersOnlyCheckBox.IsChecked == true;
             bool includeHeaders = IncludeHeadersCheckBox.IsChecked == true;
-            Logger.Debug("Include headers: {IncludeHeaders}", includeHeaders);
+            Logger.Debug("Headers only: {HeadersOnly}, Include headers: {IncludeHeaders}", headersOnly, includeHeaders);
 
             // Export to clipboard
             string result;
             switch (format)
             {
                 case "CSV":
-                    result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
+                    if (headersOnly)
+                    {
+                        result = _exportService.ExportHeadersOnlyCsv(_dataTable);
+                    }
+                    else
+                    {
+                        result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
+                    }
                     break;
                 case "TSV":
-                    result = await _exportService.ExportToTsvStringAsync(_dataTable, includeHeaders, progress);
+                    if (headersOnly)
+                    {
+                        result = _exportService.ExportHeadersOnlyTsv(_dataTable);
+                    }
+                    else
+                    {
+                        result = await _exportService.ExportToTsvStringAsync(_dataTable, includeHeaders, progress);
+                    }
                     break;
                 case "JSON":
                     result = await _exportService.ExportToJsonStringAsync(_dataTable, progress);
@@ -112,7 +157,14 @@ public partial class ExportToClipboardDialog : Window
                     result = await _exportService.ExportToXmlStringAsync(_dataTable, progress);
                     break;
                 default:
-                    result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
+                    if (headersOnly)
+                    {
+                        result = _exportService.ExportHeadersOnlyCsv(_dataTable);
+                    }
+                    else
+                    {
+                        result = await _exportService.ExportToCsvStringAsync(_dataTable, includeHeaders, progress);
+                    }
                     break;
             }
 

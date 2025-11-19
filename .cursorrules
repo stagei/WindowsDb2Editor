@@ -511,17 +511,32 @@ public DataTable ExecuteQuery(string sql)
 
 **This is NOT optional** - the tasklist MUST be kept up to date to track project progress accurately.
 
+### Bug Tracking Process
+**When user reports a bug:**
+1. Add bug to the "🐛 BUGS & ISSUES" section at the END of TASKLIST.md
+2. Create detailed subtasks with unchecked checkboxes `- [ ]`
+3. Mark status as "❌ NOT STARTED"
+4. Add note: "Pending verification of all preceding features"
+5. **DO NOT implement the bug fix immediately**
+6. Wait for user instruction to implement
+7. All preceding features/tasks must be verified complete first
+8. When ready to implement, change status to "IN PROGRESS"
+9. After completion, update all checkboxes to `- [x]` and status to "✅ COMPLETE"
+
 ### Development Workflow
 1. Review `TASKLIST.md` to identify next task
-2. Read relevant section in `DB2_Application_Development_Guide.md`
-3. Implement the feature/component
-4. Add comprehensive NLog logging (including DEBUG level)
-5. **Build regularly** - Run `dotnet build` after completing each component/feature
-6. Fix any compilation errors immediately
-7. Test the implementation
-8. Update `TASKLIST.md` checkbox
-9. Commit changes with meaningful message
-10. Move to next task
+2. **VERIFY functionality doesn't already exist** (use grep/glob_file_search to check Services/, Models/, Controls/)
+3. If exists: Update TASKLIST.md to mark as complete, enhance existing code if needed
+4. If doesn't exist: Proceed with implementation
+5. Read relevant section in `DB2_Application_Development_Guide.md` or `NEXTSTEPS.md`
+6. Implement the feature/component
+7. Add comprehensive NLog logging (including DEBUG level)
+8. **Kill, Build, and Run** - Follow the Build, Kill, and Run Workflow after EVERY change
+9. Fix any compilation errors immediately
+10. Test the implementation in the running application
+11. Update `TASKLIST.md` checkbox from `- [ ]` to `- [x]`
+12. Commit changes with meaningful message
+13. Move to next task
 
 ### Build Frequently
 **CRITICAL**: Build the project regularly to catch compilation errors early:
@@ -532,22 +547,52 @@ public DataTable ExecuteQuery(string sql)
 - Command: `dotnet build` or `dotnet build -c Release`
 - Fix all errors and warnings before proceeding
 
+### Build, Kill, and Run Workflow
+**MANDATORY**: After EVERY code change, follow this exact sequence:
+1. **Kill existing processes**: `taskkill /F /IM WindowsDb2Editor.exe 2>$null`
+2. **Build the project**: `dotnet build`
+3. **Run the project**: `Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"`
+
+**PowerShell one-liner**:
+```powershell
+taskkill /F /IM WindowsDb2Editor.exe 2>$null; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
+```
+
+**Why this is critical**:
+- The executable is locked when running, preventing builds from succeeding
+- Always kill the process BEFORE building to avoid file lock errors
+- Only run the application if the build succeeds (check exit code)
+- This ensures you're always testing the latest code changes
+
+**When to apply**:
+- After modifying any .cs file
+- After modifying any .xaml file
+- After modifying any dialog or control
+- After adding new files to the project
+- Essentially: AFTER EVERY CHANGE that affects the compiled code
+
 ## AI Assistant Instructions
 
 When generating code for this project:
 
-1. **Always use .NET 10** - Never suggest .NET 6, 7, or 8
-2. **Always use NLog** - Never use Serilog, log4net, or Console.WriteLine
-3. **Always add DEBUG-level logging** - Critical for troubleshooting issues
-4. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
-5. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
-6. **Follow WPF MVVM patterns** when appropriate
-7. **Support both dark and light themes** in all UI code
-8. **Include proper error handling** with logging
-9. **Use parameterized queries** for all SQL
-10. **Follow the project structure** (Controls, Data, Services, etc.)
-11. **Include keyboard shortcuts** for all major actions
-12. **Consider offline deployment** - no external dependencies
+1. **ALWAYS verify existing functionality FIRST** - Use grep/glob_file_search to check Services/, Models/, Controls/ folders before creating new files
+2. **Always use .NET 10** - Never suggest .NET 6, 7, or 8
+3. **Always use NLog** - Never use Serilog, log4net, or Console.WriteLine
+4. **Always add DEBUG-level logging** - Critical for troubleshooting issues
+5. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
+6. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
+7. **Review TASKLIST.md BEFORE implementing** - Check what's already done to avoid duplicates
+8. **Kill, Build, and Run after EVERY change** - Follow the Build, Kill, and Run Workflow
+9. **Implement access control checks** - Query DBAUTH, respect user permission levels
+10. **Tag menu items with access levels** - DBA, Middle, or Low level required
+11. **Follow WPF MVVM patterns** when appropriate
+12. **Support both dark and light themes** in all UI code
+13. **Include proper error handling** with logging
+14. **Use parameterized queries** for all SQL
+15. **Follow the project structure** (Controls, Data, Services, etc.)
+16. **Include keyboard shortcuts** for all major actions
+17. **Consider offline deployment** - no external dependencies
+18. **Add bugs to end of TASKLIST.md** - Do not implement until all preceding tasks verified
 
 ## Prohibited Patterns
 
@@ -561,26 +606,67 @@ When generating code for this project:
 - ❌ Ignore exceptions without logging
 - ❌ Implement features without DEBUG-level logging
 - ❌ Complete tasks without updating TASKLIST.md
+- ❌ Make code changes without killing process, building, and running
 - ❌ Block UI thread for long operations
 - ❌ Use synchronous DB calls without async option
 - ❌ Create dependencies on external web services
 - ❌ Assume external IBM DB2 Client is installed (use Net.IBM.Data.Db2 9.0.0.400)
+- ❌ Create duplicate functionality without checking if it already exists
+
+## Pre-Implementation Verification Process
+
+**MANDATORY FIRST STEP:** Before implementing ANY new feature, service, model, or component:
+
+1. **Search for existing implementations:**
+   - Use `grep` to search for similar class names
+   - Use `glob_file_search` to find similar files
+   - Check Services/ folder for existing services
+   - Check Models/ folder for existing models
+   - Check Controls/ folder for existing UI components
+   - Review TASKLIST.md to see what's already completed
+
+2. **If functionality exists:**
+   - DO NOT duplicate it
+   - Enhance existing code instead
+   - Update TASKLIST.md to reflect what's already done
+
+3. **If functionality doesn't exist:**
+   - Proceed with implementation
+   - Follow all naming conventions
+   - Add to appropriate folder
+   - Update TASKLIST.md when complete
+
+**Example verification commands:**
+```bash
+# Search for existing service
+grep -r "LockMonitorService" Services/
+
+# Find similar model files
+glob_file_search "*Lock*.cs" Models/
+
+# Check if UI component exists
+list_dir Controls/
+```
 
 ## Questions to Ask Before Implementing
 
-1. Does this work offline (no internet)?
-2. Is this logged with NLog at appropriate levels (Info, Debug, Error)?
-3. Have I added DEBUG-level logging for troubleshooting?
-4. Does this support dark mode?
-5. Is the SQL parameterized?
-6. Is the exception handled and logged (including DB2Exception with SqlState/ErrorCode)?
-7. Does this follow the project structure?
-8. Is this compatible with .NET 10?
-9. Are keyboard shortcuts implemented?
-10. Is the UI responsive during operation?
-11. Is sensitive data masked in logs?
-12. Have I updated TASKLIST.md after completing this task?
-13. Does this use Net.IBM.Data.Db2 9.0.0.400 (not requiring external DB2 client)?
+1. **CRITICAL: Have I verified this functionality doesn't already exist?** (See Pre-Implementation Verification Process above)
+2. **What access level does this feature require?** (DBA, Middle, or Low level)
+3. **Have I tagged the menu item with the correct access level?**
+4. Does this work offline (no internet)?
+5. Is this logged with NLog at appropriate levels (Info, Debug, Error)?
+6. Have I added DEBUG-level logging for troubleshooting?
+7. Does this support dark mode?
+8. Is the SQL parameterized?
+9. Is the exception handled and logged (including DB2Exception with SqlState/ErrorCode)?
+10. Does this follow the project structure?
+11. Is this compatible with .NET 10?
+12. Are keyboard shortcuts implemented?
+13. Is the UI responsive during operation?
+14. Is sensitive data masked in logs?
+15. Have I updated TASKLIST.md after completing this task?
+16. Does this use Net.IBM.Data.Db2 9.0.0.400 (not requiring external DB2 client)?
+17. Have I killed the process, built, and run the application to test this change?
 
 ---
 
@@ -588,5 +674,120 @@ When generating code for this project:
 
 **Target Users**: Database administrators and developers working with IBM DB2 in offline/air-gapped environments.
 
-**Critical Requirements**: Offline deployment, multiple connections, dark mode, SQL formatting, native DB2 drivers, enterprise logging.
+**Critical Requirements**: Offline deployment, multiple connections, dark mode, SQL formatting, native DB2 drivers, enterprise logging, role-based access control.
+
+## Security & Access Control
+
+### User Permission Levels
+After establishing a DB2 connection, query `SYSCAT.DBAUTH` to determine user's permission level:
+
+```sql
+SELECT * FROM SYSCAT.DBAUTH 
+WHERE GRANTEE = '<username_without_domain>'
+```
+
+**Access Levels:**
+1. **DBA Level** - User has DBA authority in DBAUTH table
+   - Full access to all functionality
+   - Can execute DDL, DML, DCL
+   - Can view all monitoring panels
+   - Can modify database objects
+
+2. **Middle Level** - User is present in DBAUTH but not DBA
+   - Standard DML operations (SELECT, INSERT, UPDATE, DELETE)
+   - Can view most monitoring panels
+   - Cannot execute DDL (CREATE, DROP, ALTER)
+   - Cannot force disconnect sessions
+   - Cannot modify database structure
+
+3. **Low Level** - User NOT present in DBAUTH table
+   - Read-only access only
+   - Can execute SELECT statements only
+   - Can view table properties (read-only)
+   - Cannot modify any data
+   - Cannot execute DML or DDL
+   - Monitoring panels are read-only
+
+### Menu Item Categorization
+Each menu item and feature must be tagged with minimum required access level:
+
+```csharp
+// Example menu item with access level
+<MenuItem Header="Database Load Monitor" 
+          Click="DatabaseLoadMonitor_Click"
+          Tag="AccessLevel:Middle"/>
+
+<MenuItem Header="Lock Monitor" 
+          Click="LockMonitor_Click"
+          Tag="AccessLevel:DBA"/>
+
+<MenuItem Header="Table Properties" 
+          Click="TableProperties_Click"
+          Tag="AccessLevel:Low"/>
+```
+
+**Feature Categories:**
+- **DBA Only:**
+  - Lock Monitor (force disconnect)
+  - Active Session Manager (force disconnect)
+  - RUNSTATS execution
+  - DDL generation and execution
+  - CDC management (ALTER TABLE)
+  - Migration assistant
+  - Unused object cleanup (DROP statements)
+
+- **Middle Level:**
+  - Database Load Monitor (view only)
+  - Table statistics (view only, no RUNSTATS)
+  - Query execution (DML allowed)
+  - Export functionality
+  - Source code browser (view only)
+  - Dependency analyzer (view only)
+  - Comment manager (view only)
+
+- **Low Level (Read-Only):**
+  - Query execution (SELECT only)
+  - Table properties (view only)
+  - Column details (view only)
+  - Export query results
+  - View metadata
+
+### Implementation Requirements
+1. Query DBAUTH immediately after successful connection
+2. Parse username from connection (remove domain prefix if present)
+3. Determine and store user's access level
+4. Show/hide menu items based on access level
+5. Validate access level before executing operations
+6. Log access level in connection logs
+7. Display access level indicator in UI (e.g., "🔒 READ-ONLY USER")
+
+### Username Parsing
+```csharp
+// Remove domain prefix from username
+// Example: "DOMAIN\username" -> "username"
+private string GetUsernameWithoutDomain(string fullUsername)
+{
+    if (fullUsername.Contains("\\"))
+        return fullUsername.Split('\\')[1];
+    if (fullUsername.Contains("@"))
+        return fullUsername.Split('@')[0];
+    return fullUsername;
+}
+```
+
+### Access Level Validation
+```csharp
+public enum UserAccessLevel
+{
+    Low,      // Read-only, not in DBAUTH
+    Middle,   // Standard user, in DBAUTH but not DBA
+    DBA       // Full access, has DBA authority
+}
+
+// Before executing operation
+if (_userAccessLevel < UserAccessLevel.DBA)
+{
+    throw new UnauthorizedException("This operation requires DBA privileges.");
+}
+```
 

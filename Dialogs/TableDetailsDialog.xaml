@@ -4,12 +4,13 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Table Details"
-        Height="600"
+        SizeToContent="Height"
         Width="900"
+        MinHeight="400"
+        MaxHeight="900"
+        MinWidth="700"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="CanResize"
-        MinHeight="500"
-        MinWidth="700">
+        ResizeMode="CanResize">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

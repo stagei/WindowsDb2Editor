@@ -8,6 +8,7 @@ using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Dialogs;
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 
@@ -27,6 +28,15 @@ public partial class ConnectionTabControl : UserControl
     private string _lastExecutedSql = string.Empty;
     private int _currentPage = 1;
     private int _currentOffset = 0;
+    
+    // Cell copy state (Issue #1 fix)
+    private DataGridCellInfo? _lastClickedCell;
+    private System.Windows.Point _lastRightClickPosition;
+
+    /// <summary>
+    /// Public property to access the connection manager for monitoring and management
+    /// </summary>
+    public DB2ConnectionManager ConnectionManager => _connectionManager;
 
     public ConnectionTabControl(DB2Connection connection)
     {
@@ -42,9 +52,61 @@ public partial class ConnectionTabControl : UserControl
 
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
+        RegisterResultsGridEvents();
         _ = ConnectToDatabase();
         
         Logger.Debug($"Pagination enabled with max rows: {_preferencesService.Preferences.MaxRowsPerQuery}");
+    }
+    
+    /// <summary>
+    /// Register results grid event handlers (Issue #1 fix)
+    /// </summary>
+    private void RegisterResultsGridEvents()
+    {
+        Logger.Debug("Registering ResultsGrid event handlers");
+        
+        // Capture cell info on right-click before context menu opens
+        ResultsGrid.PreviewMouseRightButtonDown += ResultsGrid_PreviewMouseRightButtonDown;
+    }
+    
+    /// <summary>
+    /// Capture clicked cell before context menu opens (Issue #1 fix)
+    /// </summary>
+    private void ResultsGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        Logger.Debug("Right-click detected on results grid");
+        
+        try
+        {
+            // Get the clicked element
+            var dep = (DependencyObject)e.OriginalSource;
+            
+            // Walk up the visual tree to find DataGridCell
+            while (dep != null && !(dep is DataGridCell))
+            {
+                dep = System.Windows.Media.VisualTreeHelper.GetParent(dep);
+            }
+            
+            if (dep is DataGridCell cell)
+            {
+                _lastClickedCell = new DataGridCellInfo(cell);
+                _lastRightClickPosition = e.GetPosition(ResultsGrid);
+                
+                var rowIndex = ResultsGrid.Items.IndexOf(cell.DataContext);
+                Logger.Debug("Captured cell info - Column: {Column}, Row: {Row}", 
+                    cell.Column?.Header, rowIndex);
+            }
+            else
+            {
+                Logger.Debug("Right-click not on a DataGridCell");
+                _lastClickedCell = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error capturing cell info on right-click");
+            _lastClickedCell = null;
+        }
     }
 
     private void RegisterKeyboardShortcuts()
@@ -137,6 +199,9 @@ public partial class ConnectionTabControl : UserControl
             await _connectionManager.OpenAsync();
             StatusText.Text = $"Connected to {_connection.GetDisplayName()}";
             Logger.Info("Database connection established");
+
+            // RBAC: Update access level indicator
+            UpdateAccessLevelIndicator();
 
             // Load database objects
             await LoadDatabaseObjectsAsync();
@@ -773,7 +838,7 @@ public partial class ConnectionTabControl : UserControl
         StatusText.Text = "Ready";
     }
 
-    private async void Export_Click(object sender, RoutedEventArgs e)
+    private void Export_Click(object sender, RoutedEventArgs e)
     {
         Logger.Debug("Export button clicked");
 
@@ -801,55 +866,16 @@ public partial class ConnectionTabControl : UserControl
             return;
         }
 
-        var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+        // Show export dialog
+        var exportDialog = new ExportToFileDialog(dataTable)
         {
-            Filter = "CSV Files (*.csv)|*.csv|TSV Files (*.tsv)|*.tsv|JSON Files (*.json)|*.json|SQL Files (*.sql)|*.sql",
-            DefaultExt = ".csv",
-            FileName = $"export_{DateTime.Now:yyyyMMdd_HHmmss}"
+            Owner = Window.GetWindow(this)
         };
 
-        if (saveFileDialog.ShowDialog() == true)
+        if (exportDialog.ShowDialog() == true)
         {
-            try
-            {
-                Logger.Info($"Exporting to: {saveFileDialog.FileName}");
-                StatusText.Text = "Exporting...";
-
-                var extension = System.IO.Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant();
-
-                switch (extension)
-                {
-                    case ".csv":
-                        await _exportService.ExportToCsvAsync(dataTable, saveFileDialog.FileName);
-                        break;
-                    case ".tsv":
-                        await _exportService.ExportToTsvAsync(dataTable, saveFileDialog.FileName);
-                        break;
-                    case ".json":
-                        await _exportService.ExportToJsonAsync(dataTable, saveFileDialog.FileName);
-                        break;
-                    case ".sql":
-                        var tableName = "exported_table"; // Could prompt user for table name
-                        await _exportService.ExportToSqlAsync(dataTable, tableName, saveFileDialog.FileName);
-                        break;
-                    default:
-                        await _exportService.ExportToCsvAsync(dataTable, saveFileDialog.FileName);
-                        break;
-                }
-
-                StatusText.Text = $"Exported {dataTable.Rows.Count} rows";
-                Logger.Info($"Successfully exported {dataTable.Rows.Count} rows to {saveFileDialog.FileName}");
-
-                MessageBox.Show($"Successfully exported {dataTable.Rows.Count} rows to:\n{saveFileDialog.FileName}",
-                    "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Export failed");
-                StatusText.Text = "Export failed";
-                MessageBox.Show($"Export failed:\n\n{ex.Message}", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            StatusText.Text = $"Exported {dataTable.Rows.Count} rows";
+            Logger.Info("Export to file completed successfully");
         }
     }
 
@@ -1053,7 +1079,7 @@ public partial class ConnectionTabControl : UserControl
     }
 
     /// <summary>
-    /// Copy selected cell value to clipboard
+    /// Copy selected cell value to clipboard (Issue #1 fix - uses cached cell info)
     /// </summary>
     private void CopyCell_Click(object sender, RoutedEventArgs e)
     {
@@ -1061,17 +1087,29 @@ public partial class ConnectionTabControl : UserControl
 
         try
         {
-            var selectedCells = ResultsGrid.SelectedCells;
-            if (selectedCells.Count == 0)
+            // Use cached cell info instead of SelectedCells (Issue #1 fix)
+            if (_lastClickedCell == null || !_lastClickedCell.HasValue)
             {
-                MessageBox.Show("No cell selected.", "Copy Cell",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                Logger.Warn("No cell clicked - attempting fallback to SelectedCells");
+                
+                // Fallback to selected cells if no cached cell
+                var selectedCells = ResultsGrid.SelectedCells;
+                if (selectedCells.Count == 0)
+                {
+                    MessageBox.Show("No cell selected.", "Copy Cell",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                
+                _lastClickedCell = selectedCells[0];
             }
 
-            var cell = selectedCells[0];
-            var cellValue = cell.Item;
-            var columnName = cell.Column?.Header?.ToString() ?? string.Empty;
+            var cellInfo = _lastClickedCell.Value;
+            var cellValue = cellInfo.Item;
+            var columnName = cellInfo.Column?.Header?.ToString() ?? string.Empty;
+
+            Logger.Debug("Copying cell - Column: {Column}, HasValue: {HasValue}", 
+                columnName, cellValue != null);
 
             if (cellValue != null)
             {
@@ -1161,55 +1199,134 @@ public partial class ConnectionTabControl : UserControl
     }
 
     /// <summary>
-    /// Copy selected column values to clipboard
+    /// Copy selected cells to clipboard with format options
     /// </summary>
-    private void CopyColumn_Click(object sender, RoutedEventArgs e)
+    private void CopySelection_Click(object sender, RoutedEventArgs e)
     {
-        Logger.Debug("Copy column requested");
+        Logger.Debug("Copy selection requested");
 
         try
         {
             var selectedCells = ResultsGrid.SelectedCells;
             if (selectedCells.Count == 0)
             {
-                MessageBox.Show("No column selected.", "Copy Column",
+                MessageBox.Show("No cells selected.", "Copy Selection",
                     MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var columnName = selectedCells[0].Column?.Header?.ToString();
-            if (string.IsNullOrEmpty(columnName))
-            {
-                Logger.Warn("Unable to determine column name");
                 return;
             }
 
             var dataView = ResultsGrid.ItemsSource as System.Data.DataView;
             if (dataView?.Table == null)
             {
-                Logger.Warn("Unable to copy column: ItemsSource is not a DataView");
+                Logger.Warn("Unable to copy selection: ItemsSource is not a DataView");
                 return;
             }
 
-            // Collect all values from the column
-            var columnValues = new List<string> { columnName }; // Header first
-            foreach (System.Data.DataRow row in dataView.Table.Rows)
+            // Group selected cells by row and column
+            var selectedRows = new HashSet<int>();
+            var selectedColumns = new HashSet<int>();
+            
+            foreach (var cellInfo in selectedCells)
             {
-                var value = row[columnName]?.ToString() ?? string.Empty;
-                columnValues.Add(value);
+                var rowItem = cellInfo.Item;
+                var rowIndex = dataView.Table.Rows.IndexOf(((System.Data.DataRowView)rowItem).Row);
+                var columnIndex = cellInfo.Column.DisplayIndex;
+                
+                selectedRows.Add(rowIndex);
+                selectedColumns.Add(columnIndex);
             }
 
-            var result = string.Join(Environment.NewLine, columnValues);
-            Clipboard.SetText(result);
-            StatusText.Text = $"Column '{columnName}' copied to clipboard ({dataView.Table.Rows.Count} values)";
-            Logger.Info("Column copied to clipboard: {Column}, {Count} values", columnName, dataView.Table.Rows.Count);
+            Logger.Debug("Selection spans {RowCount} rows and {ColumnCount} columns", 
+                selectedRows.Count, selectedColumns.Count);
+
+            // Get sorted list of columns and their names
+            var sortedColumns = selectedColumns.OrderBy(c => c).ToList();
+            var columnHeaders = sortedColumns
+                .Select(colIndex => ResultsGrid.Columns[colIndex].Header?.ToString() ?? $"Column{colIndex}")
+                .ToList();
+
+            // Create a DataTable with only the selected data
+            var selectionTable = new System.Data.DataTable();
+            foreach (var header in columnHeaders)
+            {
+                selectionTable.Columns.Add(header);
+            }
+
+            var sortedRows = selectedRows.OrderBy(r => r).ToList();
+            foreach (var rowIndex in sortedRows)
+            {
+                var sourceRow = dataView.Table.Rows[rowIndex];
+                var newRow = selectionTable.NewRow();
+                
+                for (int i = 0; i < sortedColumns.Count; i++)
+                {
+                    var colIndex = sortedColumns[i];
+                    var columnName = dataView.Table.Columns[colIndex].ColumnName;
+                    newRow[i] = sourceRow[columnName];
+                }
+                
+                selectionTable.Rows.Add(newRow);
+            }
+
+            // Show copy selection dialog
+            var copyDialog = new CopySelectionDialog(selectionTable, columnHeaders)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (copyDialog.ShowDialog() == true)
+            {
+                StatusText.Text = $"Copied {sortedRows.Count} row(s) × {sortedColumns.Count} column(s) to clipboard";
+                Logger.Info("Selection copied successfully");
+            }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to copy column");
-            MessageBox.Show($"Failed to copy column:\n\n{ex.Message}", "Copy Error",
+            Logger.Error(ex, "Failed to copy selection");
+            MessageBox.Show($"Failed to copy selection:\n\n{ex.Message}", "Copy Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+    
+    /// <summary>
+    /// Update access level indicator badge - RBAC
+    /// </summary>
+    private void UpdateAccessLevelIndicator()
+    {
+        Logger.Debug("Updating access level indicator");
+        
+        if (_connection.Permissions == null)
+        {
+            Logger.Warn("Permissions not determined, hiding access level badge");
+            AccessLevelBadge.Visibility = Visibility.Collapsed;
+            return;
+        }
+        
+        var permissions = _connection.Permissions;
+        
+        // Update badge text
+        AccessLevelText.Text = permissions.AccessLevelBadge;
+        AccessLevelText.ToolTip = permissions.PermissionsTooltip;
+        
+        // Update badge color
+        var color = permissions.BadgeColor switch
+        {
+            "Green" => System.Windows.Media.Colors.Green,
+            "Orange" => System.Windows.Media.Colors.Orange,
+            "Red" => System.Windows.Media.Colors.Red,
+            _ => System.Windows.Media.Colors.Gray
+        };
+        
+        AccessLevelBadge.Background = new System.Windows.Media.SolidColorBrush(color);
+        AccessLevelBadge.Visibility = Visibility.Visible;
+        
+        Logger.Info("Access level indicator updated: {Badge} ({Color})", 
+            permissions.AccessLevelBadge, permissions.BadgeColor);
+        
+        // Log user permissions for transparency
+        Logger.Info("User permissions - DDL: {DDL}, DML: {DML}, Force: {Force}, Stats: {Stats}, CDC: {CDC}, Drop: {Drop}",
+            permissions.CanExecuteDDL, permissions.CanExecuteDML, permissions.CanForceDisconnect,
+            permissions.CanModifyStatistics, permissions.CanModifyCDC, permissions.CanDropObjects);
     }
 
     public void Cleanup()

@@ -4,11 +4,12 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="New DB2 Connection"
-        Height="480"
+        SizeToContent="Height"
         Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        MinHeight="480"
+        MinHeight="400"
+        MaxHeight="800"
         MinWidth="500">
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -54,6 +55,20 @@
         <!-- Password -->
         <TextBlock Grid.Row="8" Text="Password:" Margin="0,0,0,5"/>
         <PasswordBox Grid.Row="9" x:Name="PasswordBox" Margin="0,0,0,15"/>
+
+        <!-- Connection Options (Feature #2) -->
+        <StackPanel Grid.Row="10" Margin="0,0,0,15">
+            <CheckBox x:Name="ReadOnlyCheckBox"
+                      Content="Read-Only Mode (prevents data modifications)"
+                      Margin="0,5"
+                      ToolTip="When enabled, only SELECT statements are allowed"/>
+            
+            <CheckBox x:Name="AutoCommitCheckBox"
+                      Content="Auto-Commit (commit after each statement)"
+                      IsChecked="True"
+                      Margin="0,5"
+                      ToolTip="When disabled, you must manually commit or rollback changes"/>
+        </StackPanel>
 
         <!-- Buttons -->
         <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">

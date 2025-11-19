@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using NLog;
 using WindowsDb2Editor.Services;
+using WindowsDb2Editor.Utils;
 
 namespace WindowsDb2Editor;
 
@@ -11,7 +12,7 @@ public partial class App : Application
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -24,11 +25,42 @@ public partial class App : Application
             Logger.Info($"Version: 1.0.0");
             Logger.Debug($"Startup arguments: {string.Join(" ", e.Args)}");
 
+            // Feature #4: Check if CLI mode (has command-line arguments)
+            if (e.Args.Length > 0)
+            {
+                Logger.Info("CLI mode detected - {Count} arguments", e.Args.Length);
+                
+                var cliArgs = CliArgumentParser.Parse(e.Args);
+                
+                if (cliArgs.Help)
+                {
+                    CliExecutorService.PrintHelp();
+                    Shutdown(0);
+                    return;
+                }
+                
+                // Execute CLI command
+                var executor = new CliExecutorService();
+                var exitCode = await executor.ExecuteAsync(cliArgs);
+                
+                Logger.Info("CLI execution completed with exit code: {ExitCode}", exitCode);
+                Shutdown(exitCode);
+                return;
+            }
+
+            // Normal GUI mode
+            Logger.Info("GUI mode - launching main window");
+            
             // Set up global exception handling
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             DispatcherUnhandledException += App_DispatcherUnhandledException;
 
             Logger.Debug("Global exception handlers registered");
+            
+            // Create and show main window
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
+            
             Logger.Info("Application startup completed successfully");
         }
         catch (Exception ex)

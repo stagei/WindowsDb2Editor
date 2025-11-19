@@ -14,6 +14,26 @@ public class DB2Connection
     public string Password { get; set; } = string.Empty;
     public bool SavePassword { get; set; } = false;
     public int ConnectionTimeout { get; set; } = 30;
+    
+    /// <summary>
+    /// Whether this connection should be read-only (no DML/DDL allowed) - Feature #2
+    /// </summary>
+    public bool IsReadOnly { get; set; } = false;
+    
+    /// <summary>
+    /// Auto-commit mode: true = auto-commit, false = manual commit - Feature #2
+    /// </summary>
+    public bool AutoCommit { get; set; } = true;
+    
+    /// <summary>
+    /// User's permission level (determined after connection) - RBAC
+    /// </summary>
+    public UserPermissions? Permissions { get; set; }
+    
+    /// <summary>
+    /// Whether access level has been determined
+    /// </summary>
+    public bool IsAccessLevelDetermined => Permissions != null;
 
     /// <summary>
     /// Get connection string (with password masked for logging)

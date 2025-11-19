@@ -213,6 +213,21 @@
                 <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="15,0,0,0" 
                            Text="Ready" FontWeight="SemiBold"
                            Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                
+                <!-- RBAC: Access Level Indicator -->
+                <Border x:Name="AccessLevelBadge"
+                        Background="Gray"
+                        CornerRadius="3"
+                        Padding="8,4"
+                        Margin="15,0,0,0"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="AccessLevelText"
+                               Text="❓ UNKNOWN"
+                               Foreground="White"
+                               FontWeight="Bold"
+                               FontSize="11"
+                               ToolTip="Your DB2 access level"/>
+                </Border>
             </ToolBar>
 
             <!-- SQL Editor -->
@@ -257,9 +272,9 @@
                                     <TextBlock Text="Copy selected row as CSV"/>
                                 </MenuItem.ToolTip>
                             </MenuItem>
-                            <MenuItem Header="📄 Copy Column" Click="CopyColumn_Click">
+                            <MenuItem Header="📄 Copy Selection" Click="CopySelection_Click">
                                 <MenuItem.ToolTip>
-                                    <TextBlock Text="Copy selected column values"/>
+                                    <TextBlock Text="Copy selected cells/rows/columns"/>
                                 </MenuItem.ToolTip>
                             </MenuItem>
                             <Separator/>

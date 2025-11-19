@@ -4,9 +4,10 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Settings" 
-        Height="500" 
+        SizeToContent="Height"
         Width="700"
-        MinHeight="500"
+        MinHeight="400"
+        MaxHeight="900"
         MinWidth="700"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
