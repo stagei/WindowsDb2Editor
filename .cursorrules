@@ -31,6 +31,37 @@ This is a C# WPF application for Windows 11 that provides a DBeaver-like databas
 ### DB2 Client Configuration
 **IMPORTANT**: The application uses **Net.IBM.Data.Db2 9.0.0.400** which provides native DB2 connectivity without requiring external IBM DB2 Client installation. The package includes all necessary drivers and communicates directly with the DB2 database server over the network.
 
+## Documentation Standards
+
+### Markdown Documentation Location
+**CRITICAL**: All markdown documentation files MUST be created in the `MarkdownDoc/` directory.
+
+**Rules:**
+- All new `.md` files (except README.md) should be created in `MarkdownDoc/`
+- Feature specifications → `MarkdownDoc/`
+- Implementation summaries → `MarkdownDoc/`
+- Status reports → `MarkdownDoc/`
+- Technical guides → `MarkdownDoc/`
+- Analysis documents → `MarkdownDoc/`
+- Only `README.md` stays in the project root
+
+**When creating documentation:**
+```bash
+# Correct path for new markdown files
+MarkdownDoc/MY_NEW_FEATURE.md
+
+# Incorrect - DO NOT create in root
+MY_NEW_FEATURE.md  # ❌ WRONG
+```
+
+**Existing Documentation:**
+All project markdown files are located in `MarkdownDoc/` including:
+- `TASKLIST.md` - Project task tracking
+- `NEXTSTEPS.md` - Implementation roadmap
+- `OBJECT_BROWSER_IMPROVEMENT_PLAN.md` - Object Browser specifications
+- All implementation summaries and status reports
+- All feature specifications and guides
+
 ## Logging Standards
 
 ### Always Use NLog (Never Serilog)
@@ -720,7 +751,7 @@ glob_file_search "*Lock*.cs" Models/
 list_dir Controls/
 ```
 
-## Logical User Scenario Walkthrough (MANDATORY for ALL UIs)
+## Logical User Scenario Walkthrough (MANDATORY for ALL UIs and changes in the UI) 
 
 **BEFORE completing ANY user interface (dialog, panel, window):**
 

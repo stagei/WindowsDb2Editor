@@ -20,6 +20,9 @@
     
     <!-- Application Information -->
     <NeutralLanguage>en-US</NeutralLanguage>
+    
+    <!-- DPI Awareness Manifest -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>

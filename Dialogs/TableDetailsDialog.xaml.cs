@@ -85,14 +85,14 @@ public partial class TableDetailsDialog : Window
         {
             var sql = $@"
                 SELECT 
-                    COLNAME AS ColumnName,
-                    TYPENAME AS DataType,
+                    TRIM(COLNAME) AS ColumnName,
+                    TRIM(TYPENAME) AS DataType,
                     LENGTH,
                     CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable,
-                    COALESCE(DEFAULT, '-') AS DefaultValue,
-                    COALESCE(REMARKS, '') AS Remarks
+                    COALESCE(TRIM(DEFAULT), '-') AS DefaultValue,
+                    COALESCE(TRIM(REMARKS), '') AS Remarks
                 FROM SYSCAT.COLUMNS 
-                WHERE TABSCHEMA = '{_schema}' AND TABNAME = '{_tableName}'
+                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'
                 ORDER BY COLNO";
             
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
@@ -120,17 +120,17 @@ public partial class TableDetailsDialog : Window
         {
             var sql = $@"
                 SELECT 
-                    FK.CONSTNAME AS FKName,
-                    FK.COLNAME AS FKColumn,
-                    PK.TABSCHEMA || '.' || PK.TABNAME AS PKTable,
-                    PK.COLNAME AS PKColumn,
-                    R.DELETERULE AS DeleteRule,
-                    R.UPDATERULE AS UpdateRule
+                    TRIM(FK.CONSTNAME) AS FKName,
+                    TRIM(FK.COLNAME) AS FKColumn,
+                    TRIM(PK.TABSCHEMA) || '.' || TRIM(PK.TABNAME) AS PKTable,
+                    TRIM(PK.COLNAME) AS PKColumn,
+                    TRIM(R.DELETERULE) AS DeleteRule,
+                    TRIM(R.UPDATERULE) AS UpdateRule
                 FROM SYSCAT.REFERENCES R
                 JOIN SYSCAT.KEYCOLUSE FK ON R.CONSTNAME = FK.CONSTNAME AND R.TABSCHEMA = FK.TABSCHEMA AND R.TABNAME = FK.TABNAME
                 JOIN SYSCAT.KEYCOLUSE PK ON R.REFKEYNAME = PK.CONSTNAME AND R.REFTABSCHEMA = PK.TABSCHEMA AND R.REFTABNAME = PK.TABNAME
                     AND FK.COLSEQ = PK.COLSEQ
-                WHERE R.TABSCHEMA = '{_schema}' AND R.TABNAME = '{_tableName}'
+                WHERE TRIM(R.TABSCHEMA) = '{_schema}' AND TRIM(R.TABNAME) = '{_tableName}'
                 ORDER BY FK.CONSTNAME, FK.COLSEQ";
             
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
@@ -158,7 +158,7 @@ public partial class TableDetailsDialog : Window
         {
             var sql = $@"
                 SELECT 
-                    I.INDNAME AS IndexName,
+                    TRIM(I.INDNAME) AS IndexName,
                     CASE WHEN I.INDEXTYPE = 'CLUS' THEN 'Clustered'
                          WHEN I.INDEXTYPE = 'REG' THEN 'Regular'
                          WHEN I.INDEXTYPE = 'DIM' THEN 'Dimension'
@@ -166,10 +166,10 @@ public partial class TableDetailsDialog : Window
                     CASE WHEN I.UNIQUERULE = 'U' THEN 'Yes' 
                          WHEN I.UNIQUERULE = 'P' THEN 'Primary Key'
                          ELSE 'No' END AS IsUnique,
-                    LISTAGG(IC.COLNAME, ', ') WITHIN GROUP (ORDER BY IC.COLSEQ) AS Columns
+                    LISTAGG(TRIM(IC.COLNAME), ', ') WITHIN GROUP (ORDER BY IC.COLSEQ) AS Columns
                 FROM SYSCAT.INDEXES I
                 LEFT JOIN SYSCAT.INDEXCOLUSE IC ON I.INDSCHEMA = IC.INDSCHEMA AND I.INDNAME = IC.INDNAME
-                WHERE I.TABSCHEMA = '{_schema}' AND I.TABNAME = '{_tableName}'
+                WHERE TRIM(I.TABSCHEMA) = '{_schema}' AND TRIM(I.TABNAME) = '{_tableName}'
                 GROUP BY I.INDNAME, I.INDEXTYPE, I.UNIQUERULE
                 ORDER BY I.INDNAME";
             
@@ -202,9 +202,9 @@ public partial class TableDetailsDialog : Window
             
             // Get table info
             var infoSql = $@"
-                SELECT TYPE, TBSPACE
+                SELECT TRIM(TYPE), TRIM(TBSPACE)
                 FROM SYSCAT.TABLES
-                WHERE TABSCHEMA = '{_schema}' AND TABNAME = '{_tableName}'";
+                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'";
             
             var infoTable = await _connectionManager.ExecuteQueryAsync(infoSql);
             
@@ -247,9 +247,9 @@ public partial class TableDetailsDialog : Window
         {
             // Get columns
             var columnsSql = $@"
-                SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT
+                SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT)
                 FROM SYSCAT.COLUMNS 
-                WHERE TABSCHEMA = '{_schema}' AND TABNAME = '{_tableName}'
+                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'
                 ORDER BY COLNO";
             
             var columnsTable = await _connectionManager.ExecuteQueryAsync(columnsSql);

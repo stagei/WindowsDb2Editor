@@ -34,7 +34,10 @@ public class ExportService
             foreach (DataRow row in dataTable.Rows)
             {
                 var fields = row.ItemArray.Select(field => 
-                    EscapeCsvField(field?.ToString() ?? string.Empty));
+                {
+                    var value = field?.ToString() ?? string.Empty;
+                    return EscapeCsvField(value.Trim()); // Trim all string fields
+                });
                 csv.AppendLine(string.Join(",", fields));
             }
 
@@ -68,7 +71,11 @@ public class ExportService
             // Write rows
             foreach (DataRow row in dataTable.Rows)
             {
-                var fields = row.ItemArray.Select(field => field?.ToString() ?? string.Empty);
+                var fields = row.ItemArray.Select(field => 
+                {
+                    var value = field?.ToString() ?? string.Empty;
+                    return value.Trim(); // Trim all string fields
+                });
                 tsv.AppendLine(string.Join("\t", fields));
             }
 
@@ -99,7 +106,16 @@ public class ExportService
                 var dict = new Dictionary<string, object?>();
                 foreach (DataColumn column in dataTable.Columns)
                 {
-                    dict[column.ColumnName] = row[column];
+                    var value = row[column];
+                    // Trim string values
+                    if (value is string strValue)
+                    {
+                        dict[column.ColumnName] = strValue.Trim();
+                    }
+                    else
+                    {
+                        dict[column.ColumnName] = value;
+                    }
                 }
                 list.Add(dict);
             }
@@ -211,7 +227,12 @@ public class ExportService
             return "NULL";
         }
 
-        if (value is string || value is DateTime)
+        if (value is string strValue)
+        {
+            return $"'{strValue.Trim().Replace("'", "''")}'"; // Trim string values
+        }
+        
+        if (value is DateTime)
         {
             return $"'{value.ToString()?.Replace("'", "''")}'";
         }

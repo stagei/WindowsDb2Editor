@@ -24,7 +24,15 @@ public partial class ConnectionDialog : Window
     /// </summary>
     public ConnectionDialog(DB2Connection connection) : this()
     {
-        Logger.Debug("ConnectionDialog opened with existing connection: {Name}", connection.Name);
+        LoadConnection(connection);
+    }
+    
+    /// <summary>
+    /// Load an existing connection into the dialog fields
+    /// </summary>
+    public void LoadConnection(DB2Connection connection)
+    {
+        Logger.Debug("Loading connection into dialog: {Name}", connection.Name);
         
         NameTextBox.Text = connection.Name;
         ServerTextBox.Text = connection.Server;
@@ -32,6 +40,8 @@ public partial class ConnectionDialog : Window
         DatabaseTextBox.Text = connection.Database;
         UsernameTextBox.Text = connection.Username;
         PasswordBox.Password = connection.Password;
+        ReadOnlyCheckBox.IsChecked = connection.IsReadOnly;
+        AutoCommitCheckBox.IsChecked = connection.AutoCommit;
     }
 
     private async void TestConnection_Click(object sender, RoutedEventArgs e)

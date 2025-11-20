@@ -5,7 +5,7 @@
              xmlns:ui="http://schemas.modernwpf.com/2019">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250" MinWidth="150"/>
+            <ColumnDefinition x:Name="ObjectBrowserColumn" Width="250" MinWidth="150"/>
             <ColumnDefinition Width="5"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -17,19 +17,79 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Grid.Row="0" Text="Database Objects" FontWeight="Bold" Margin="10,10,10,5"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                    <!-- Header with Database Info -->
+                    <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" 
+                            Padding="10,8" BorderThickness="0,0,0,1" 
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                        <StackPanel>
+                            <TextBlock x:Name="DatabaseInfoText" 
+                                       Text="🗄️ Database: Loading..." 
+                                       FontWeight="Bold" FontSize="14"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                            <TextBlock x:Name="ConnectionInfoText" 
+                                       Text="Server: Loading..." 
+                                       FontSize="11" Margin="0,2,0,0"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        </StackPanel>
+                    </Border>
                     
-                    <TreeView Grid.Row="1" x:Name="DatabaseTreeView" Margin="5" 
-                              Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                    <!-- Search/Filter Box -->
+                    <Border Grid.Row="1" Padding="10,8" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBox Grid.Column="0" x:Name="ObjectSearchBox" 
+                                     TextChanged="ObjectSearchBox_TextChanged"
+                                     VerticalContentAlignment="Center"
+                                     Padding="8,6">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                        <Style.Triggers>
+                                            <Trigger Property="Text" Value="">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <VisualBrush Stretch="None" AlignmentX="Left">
+                                                            <VisualBrush.Visual>
+                                                                <TextBlock Text="🔍 Search objects..." 
+                                                                           Foreground="Gray" 
+                                                                           Margin="8,0,0,0"
+                                                                           FontStyle="Italic"/>
+                                                            </VisualBrush.Visual>
+                                                        </VisualBrush>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                            
+                            <Button Grid.Column="1" Content="🔄 Refresh" 
+                                    Click="RefreshObjectBrowser_Click"
+                                    Margin="5,0,0,0" Padding="10,6"/>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- TreeView with improved styling -->
+                    <TreeView Grid.Row="2" x:Name="DatabaseTreeView" 
+                              Margin="5" 
+                              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem">
                                 <Setter Property="IsExpanded" Value="False"/>
                                 <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                                 <Setter Property="FontSize" Value="13"/>
+                                <Setter Property="Padding" Value="4,2"/>
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Foreground" Value="{DynamicResource SystemControlHighlightAltBaseHighBrush}"/>
@@ -43,6 +103,16 @@
                             </Style>
                         </TreeView.ItemContainerStyle>
                     </TreeView>
+                    
+                    <!-- Status Bar -->
+                    <Border Grid.Row="3" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" 
+                            Padding="10,6" BorderThickness="0,1,0,0" 
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                        <TextBlock x:Name="ObjectBrowserStatusText" 
+                                   Text="Ready" 
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                    </Border>
                 </Grid>
             </TabItem>
             
@@ -168,58 +238,58 @@
             </Grid.RowDefinitions>
 
             <!-- Toolbar - Word-inspired ribbon style -->
-            <ToolBar Grid.Row="0" Height="48" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+            <ToolBar Grid.Row="0" MinHeight="48" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="4,2">
                 <Button x:Name="ExecuteButton" Click="Execute_Click" Padding="15,8" ToolTip="Execute SQL Query (F5)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="▶" FontSize="16" Margin="0,0,8,0" Foreground="Green"/>
-                        <TextBlock Text="Execute" VerticalAlignment="Center"/>
+                        <TextBlock Text="Execute" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="5,0"/>
                 <Button x:Name="FormatButton" Click="Format_Click" Padding="15,8" ToolTip="Format SQL Code">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="✨" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Format" VerticalAlignment="Center"/>
+                        <TextBlock Text="Format" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="5,0"/>
                 <Button x:Name="ClearButton" Click="Clear_Click" Padding="15,8" ToolTip="Clear Editor and Results">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🗑" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Clear" VerticalAlignment="Center"/>
+                        <TextBlock Text="Clear" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="5,0"/>
                 <Button x:Name="ExportButton" Click="Export_Click" Padding="15,8" ToolTip="Export Results">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="💾" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Export" VerticalAlignment="Center"/>
+                        <TextBlock Text="Export" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="5,0"/>
                 <Button x:Name="OpenButton" Click="Open_Click" Padding="15,8" ToolTip="Open SQL Script (Ctrl+O)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📂" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Open" VerticalAlignment="Center"/>
+                        <TextBlock Text="Open" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Button x:Name="SaveButton" Click="Save_Click" Padding="15,8" ToolTip="Save SQL Script (Ctrl+S)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="💾" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Save" VerticalAlignment="Center"/>
+                        <TextBlock Text="Save" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="10,0"/>
                 <Button x:Name="CommitButton" Click="Commit_Click" Padding="15,8" ToolTip="Commit Transaction (Ctrl+Shift+C)" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="✅" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Commit" VerticalAlignment="Center"/>
+                        <TextBlock Text="Commit" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Button x:Name="RollbackButton" Click="Rollback_Click" Padding="15,8" ToolTip="Rollback Transaction (Ctrl+Shift+R)" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="↩️" FontSize="16" Margin="0,0,8,0"/>
-                        <TextBlock Text="Rollback" VerticalAlignment="Center"/>
+                        <TextBlock Text="Rollback" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                     </StackPanel>
                 </Button>
                 <Separator Margin="10,0"/>
@@ -302,7 +372,7 @@
             </Border>
 
             <!-- Status Bar with Pagination Controls -->
-            <StatusBar Grid.Row="4" Height="32" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+            <StatusBar Grid.Row="4" MinHeight="32" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="4,2">
                 <StatusBarItem>
                     <TextBlock x:Name="RowCountText" Text="No results" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </StatusBarItem>
@@ -312,7 +382,7 @@
                 </StatusBarItem>
                 <StatusBarItem>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button x:Name="PreviousButton" Content="◀ Previous" Width="90" Height="24" 
+                        <Button x:Name="PreviousButton" Content="◀ Previous" MinWidth="90" MinHeight="26" Padding="8,4" 
                                 Click="Previous_Click" IsEnabled="False" Margin="0,0,5,0"
                                 ToolTip="Load previous page of results"
                                 FontWeight="SemiBold"/>
@@ -322,7 +392,7 @@
                             <TextBlock x:Name="PageInfoText" Text="Page 1" VerticalAlignment="Center" 
                                        MinWidth="80" TextAlignment="Center" FontWeight="Bold"/>
                         </Border>
-                        <Button x:Name="NextButton" Content="Next ▶" Width="90" Height="24" 
+                        <Button x:Name="NextButton" Content="Next ▶" MinWidth="90" MinHeight="26" Padding="8,4" 
                                 Click="Next_Click" IsEnabled="False" Margin="5,0,0,0"
                                 ToolTip="Load next page of results"
                                 FontWeight="SemiBold"/>

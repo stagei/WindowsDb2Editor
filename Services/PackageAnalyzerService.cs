@@ -10,9 +10,9 @@ using WindowsDb2Editor.Data;
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// Model for package information
+/// Model for package analysis information
 /// </summary>
-public class PackageInfo
+public class PackageAnalysisInfo
 {
     public string Schema { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -34,7 +34,7 @@ public class PackageAnalyzerService
     /// <summary>
     /// Get all packages in a schema
     /// </summary>
-    public async Task<List<PackageInfo>> GetPackagesAsync(
+    public async Task<List<PackageAnalysisInfo>> GetPackagesAsync(
         DB2ConnectionManager connectionManager,
         string schema)
     {
@@ -56,11 +56,11 @@ public class PackageAnalyzerService
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} packages in schema {Schema}", result.Rows.Count, schema);
             
-            var packages = new List<PackageInfo>();
+            var packages = new List<PackageAnalysisInfo>();
             
             foreach (DataRow row in result.Rows)
             {
-                packages.Add(new PackageInfo
+                packages.Add(new PackageAnalysisInfo
                 {
                     Schema = row["PKGSCHEMA"]?.ToString() ?? string.Empty,
                     Name = row["PKGNAME"]?.ToString() ?? string.Empty,

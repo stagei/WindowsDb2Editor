@@ -7,9 +7,9 @@ namespace WindowsDb2Editor.Models;
 /// </summary>
 public enum UserAccessLevel
 {
-    Low,      // Read-only, not in DBAUTH
-    Middle,   // Standard user, in DBAUTH but not DBA
-    DBA       // Full access, has DBA authority
+    Standard = 1,  // Standard user - read-only, minimal complexity
+    Advanced = 2,  // Advanced user - full DBA operations
+    DBA = 3        // Database administrator - all features and security
 }
 
 /// <summary>
@@ -37,8 +37,8 @@ public class UserPermissions
             return AccessLevel switch
             {
                 UserAccessLevel.DBA => "🛡️ DBA",
-                UserAccessLevel.Middle => "👤 USER",
-                UserAccessLevel.Low => "🔒 READ-ONLY",
+                UserAccessLevel.Advanced => "👤 ADVANCED",
+                UserAccessLevel.Standard => "🔒 STANDARD",
                 _ => "❓ UNKNOWN"
             };
         }
@@ -54,8 +54,8 @@ public class UserPermissions
             return AccessLevel switch
             {
                 UserAccessLevel.DBA => "Green",
-                UserAccessLevel.Middle => "Orange",
-                UserAccessLevel.Low => "Red",
+                UserAccessLevel.Advanced => "Orange",
+                UserAccessLevel.Standard => "Blue",
                 _ => "Gray"
             };
         }
@@ -71,8 +71,8 @@ public class UserPermissions
             return AccessLevel switch
             {
                 UserAccessLevel.DBA => "Full database administrator access - All operations allowed",
-                UserAccessLevel.Middle => "Standard user access - DML allowed, DDL blocked",
-                UserAccessLevel.Low => "Read-only access - SELECT statements only",
+                UserAccessLevel.Advanced => "Advanced user access - DML/DDL allowed, full DBA features",
+                UserAccessLevel.Standard => "Standard user access - Read-only operations, simplified interface",
                 _ => "Unknown access level"
             };
         }

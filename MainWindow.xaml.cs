@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly ThemeService _themeService;
     private readonly ConnectionStorageService _connectionStorageService;
     private readonly PreferencesService _preferencesService;
+    private readonly ConnectionHistoryService _historyService;
 
     public MainWindow()
     {
@@ -30,13 +31,26 @@ public partial class MainWindow : Window
         _themeService.InitializeTheme();
         _connectionStorageService = new ConnectionStorageService();
         _preferencesService = new PreferencesService();
+        _historyService = new ConnectionHistoryService();
 
         RegisterKeyboardShortcuts();
-        UpdatePlaceholderVisibility();
+        UpdateWelcomePanelVisibility();
         UpdateThemeMenuText();
         PopulateRecentConnections();
 
         Logger.Info("MainWindow initialized successfully");
+    }
+    
+    private void UpdateWelcomePanelVisibility()
+    {
+        var hasConnections = ConnectionTabs.Items.Count > 0;
+        WelcomePanel.Visibility = hasConnections ? Visibility.Collapsed : Visibility.Visible;
+        ConnectionTabs.Visibility = hasConnections ? Visibility.Visible : Visibility.Collapsed;
+        
+        if (!hasConnections)
+        {
+            WelcomePanel.LoadRecentConnections();
+        }
     }
 
     private void RegisterKeyboardShortcuts()
@@ -116,7 +130,10 @@ public partial class MainWindow : Window
             ConnectionTabs.Items.Add(tabItem);
             ConnectionTabs.SelectedItem = tabItem;
 
-            UpdatePlaceholderVisibility();
+            // Record connection usage in history
+            _historyService.RecordConnectionUsed(connection.Name);
+            
+            UpdateWelcomePanelVisibility();
             
             // RBAC: Update menu visibility based on user's access level (if determined)
             if (connection.IsAccessLevelDetermined)
@@ -130,6 +147,53 @@ public partial class MainWindow : Window
         {
             Logger.Error(ex, "Failed to add connection tab");
             MessageBox.Show($"Failed to create connection tab: {ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create a new tab with SQL content (used for DDL generation)
+    /// </summary>
+    public void CreateNewTabWithSql(string sqlContent, string tabName)
+    {
+        Logger.Info("Creating new tab with SQL content: {TabName}", tabName);
+        
+        try
+        {
+            // Get the currently active tab's connection
+            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            {
+                var connection = activeTab.Connection;
+                
+                // Create a new tab with the same connection
+                var newTabControl = new Controls.ConnectionTabControl(connection);
+                
+                var newTabItem = new TabItem
+                {
+                    Header = CreateTabHeader($"{tabName} - {connection.GetDisplayName()}"),
+                    Content = newTabControl
+                };
+
+                ConnectionTabs.Items.Add(newTabItem);
+                ConnectionTabs.SelectedItem = newTabItem;
+                
+                // Set the SQL content
+                newTabControl.SetSqlEditorText(sqlContent);
+                
+                Logger.Info("New tab created successfully with SQL content");
+            }
+            else
+            {
+                Logger.Warn("No active connection tab found");
+                MessageBox.Show("No active connection found.", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create new tab with SQL");
+            MessageBox.Show($"Failed to create new tab: {ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -230,7 +294,7 @@ public partial class MainWindow : Window
             }
 
             ConnectionTabs.Items.Remove(tabItem);
-            UpdatePlaceholderVisibility();
+            UpdateWelcomePanelVisibility();
 
             Logger.Info("Tab closed successfully");
         }
@@ -240,23 +304,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void UpdatePlaceholderVisibility()
-    {
-        var hasNoTabs = ConnectionTabs.Items.Count == 0;
-        PlaceholderGrid.Visibility = hasNoTabs ? Visibility.Visible : Visibility.Collapsed;
-        ConnectionTabs.Visibility = hasNoTabs ? Visibility.Collapsed : Visibility.Visible;
-        MainStatusBar.Visibility = hasNoTabs ? Visibility.Collapsed : Visibility.Visible;
-
-        UpdateConnectionCount();
-        Logger.Debug($"Placeholder visibility: {PlaceholderGrid.Visibility}, Tab count: {ConnectionTabs.Items.Count}");
-    }
-
-    private void UpdateConnectionCount()
-    {
-        var count = ConnectionTabs.Items.Count;
-        ConnectionCountText.Text = $"{count} connection{(count != 1 ? "s" : "")}";
-        Logger.Debug($"Connection count updated: {count}");
-    }
 
     private void ConnectionTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -371,24 +418,19 @@ public partial class MainWindow : Window
         OpenMonitorPanel<SourceCodeBrowserPanel>("Source Code Browser", 1200, 700);
     }
     
+    // DDL Generator is now accessed via context menu on individual objects in the Object Browser
+    // Right-click any object and select "Generate DDL" → "Generate CREATE Statement..." or "Generate DROP Statement..."
     private void DdlGenerator_Click(object sender, RoutedEventArgs e)
     {
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab || activeTab.ConnectionManager == null)
-        {
-            MessageBox.Show("No active database connection.", "DDL Generator", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-        
-        try
-        {
-            var dialog = new Dialogs.DdlGeneratorDialog(activeTab.ConnectionManager) { Owner = this };
-            dialog.ShowDialog();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to open DDL Generator");
-            MessageBox.Show($"Failed to open DDL Generator:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        MessageBox.Show(
+            "DDL Generation is now available via context menu!\n\n" +
+            "Right-click any database object in the Object Browser and select:\n" +
+            "• Generate DDL → Generate CREATE Statement...\n" +
+            "• Generate DDL → Generate DROP Statement...\n\n" +
+            "The generated DDL will open in a new tab.",
+            "DDL Generator", 
+            MessageBoxButton.OK, 
+            MessageBoxImage.Information);
     }
     
     private async void CommentManager_Click(object sender, RoutedEventArgs e)
@@ -575,6 +617,32 @@ public partial class MainWindow : Window
         }
     }
 
+    // WelcomePanel Event Handlers
+    private void WelcomePanel_ConnectionRequested(object? sender, Models.DB2Connection connection)
+    {
+        Logger.Info("Connection requested from welcome panel: {ConnectionName}", connection.Name);
+        AddConnectionTab(connection);
+    }
+    
+    private void WelcomePanel_NewConnectionRequested(object? sender, EventArgs e)
+    {
+        Logger.Info("New connection requested from welcome panel");
+        NewConnection_Click(sender ?? this, new RoutedEventArgs());
+    }
+    
+    private void WelcomePanel_ManageConnectionsRequested(object? sender, EventArgs e)
+    {
+        Logger.Info("Manage connections requested from welcome panel");
+        // TODO: Create a connection management dialog
+        MessageBox.Show(
+            "Connection management coming soon!\n\n" +
+            "For now, use File → New Connection to create connections,\n" +
+            "and right-click on recent connections to edit or delete them.",
+            "Manage Connections",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+    
     private void About_Click(object sender, RoutedEventArgs e)
     {
         Logger.Debug("About dialog requested");
@@ -602,12 +670,12 @@ public partial class MainWindow : Window
         
         try
         {
-            var recentConnections = _connectionStorageService.LoadConnections();
+            var recentHistories = _historyService.GetRecentConnections(10);
             
             // Clear existing items
             RecentConnectionsMenuItem.Items.Clear();
             
-            if (recentConnections.Count == 0)
+            if (recentHistories.Count == 0)
             {
                 var noConnectionsItem = new MenuItem
                 {
@@ -619,17 +687,47 @@ public partial class MainWindow : Window
             }
             else
             {
-                Logger.Info("Found {Count} recent connections", recentConnections.Count);
+                Logger.Info("Found {Count} recent connections", recentHistories.Count);
                 
-                foreach (var savedConnection in recentConnections)
+                foreach (var history in recentHistories)
                 {
+                    // Get full connection with decrypted password
+                    var connection = _connectionStorageService.GetConnection(history.ProfileName);
+                    if (connection == null) continue;
+                    
                     var menuItem = new MenuItem
                     {
-                        Header = $"{savedConnection.Name} ({savedConnection.Database}@{savedConnection.Server})",
-                        Tag = savedConnection.Name
+                        Header = $"{connection.Name} ({connection.Database}@{connection.Server}) - {history.LastUsedRelative}",
+                        Tag = connection
                     };
                     
+                    // Create submenu with options
+                    var connectItem = new MenuItem { Header = "🔗 Connect", Tag = connection };
+                    connectItem.Click += RecentConnection_Click;
+                    
+                    var editItem = new MenuItem { Header = "✏️ Edit", Tag = connection };
+                    editItem.Click += RecentConnectionEdit_Click;
+                    
+                    var copyItem = new MenuItem { Header = "📋 Duplicate", Tag = connection };
+                    copyItem.Click += RecentConnectionCopy_Click;
+                    
+                    var testItem = new MenuItem { Header = "🧪 Test Connection", Tag = connection };
+                    testItem.Click += RecentConnectionTest_Click;
+                    
+                    var deleteItem = new MenuItem { Header = "🗑️ Delete", Tag = connection };
+                    deleteItem.Click += RecentConnectionDelete_Click;
+                    
+                    menuItem.Items.Add(connectItem);
+                    menuItem.Items.Add(new Separator());
+                    menuItem.Items.Add(editItem);
+                    menuItem.Items.Add(copyItem);
+                    menuItem.Items.Add(testItem);
+                    menuItem.Items.Add(new Separator());
+                    menuItem.Items.Add(deleteItem);
+                    
+                    // Double-click on main item = connect
                     menuItem.Click += RecentConnection_Click;
+                    
                     RecentConnectionsMenuItem.Items.Add(menuItem);
                 }
                 
@@ -638,7 +736,7 @@ public partial class MainWindow : Window
                 
                 var clearHistoryItem = new MenuItem
                 {
-                    Header = "Clear Recent Connections"
+                    Header = "🗑️ Clear History"
                 };
                 clearHistoryItem.Click += ClearRecentConnections_Click;
                 RecentConnectionsMenuItem.Items.Add(clearHistoryItem);
@@ -655,43 +753,161 @@ public partial class MainWindow : Window
     /// </summary>
     private void RecentConnection_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string connectionName)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
         {
             return;
         }
         
-        Logger.Info("Opening recent connection: {Name}", connectionName);
+        Logger.Info("Opening recent connection: {Name}", connection.Name);
         
         try
         {
-            // Get connection with decrypted password
-            var connection = _connectionStorageService.GetConnection(connectionName);
-            
-            if (connection == null)
-            {
-                Logger.Warn("Recent connection not found: {Name}", connectionName);
-                MessageBox.Show($"Connection '{connectionName}' not found in saved connections.",
-                    "Connection Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-                
-                // Refresh menu
-                PopulateRecentConnections();
-                return;
-            }
-            
             // Open tab with this connection
             AddConnectionTab(connection);
-            
-            // Update last used timestamp
-            _connectionStorageService.UpdateLastUsed(connectionName);
             
             // Refresh menu to update order
             PopulateRecentConnections();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to open recent connection: {Name}", connectionName);
+            Logger.Error(ex, "Failed to open recent connection: {Name}", connection.Name);
             MessageBox.Show($"Failed to open connection:\n\n{ex.Message}",
                 "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private void RecentConnectionEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+            return;
+        
+        Logger.Info("Editing recent connection: {Name}", connection.Name);
+        
+        var dialog = new Dialogs.ConnectionDialog();
+        dialog.LoadConnection(connection);
+        dialog.Owner = this;
+        
+        if (dialog.ShowDialog() == true && dialog.Connection != null)
+        {
+            // Update connection - delete old if name changed, save new
+            if (connection.Name != dialog.Connection.Name)
+            {
+                _connectionStorageService.DeleteConnection(connection.Name);
+            }
+            
+            _connectionStorageService.SaveConnection(dialog.Connection);
+            PopulateRecentConnections();
+            
+            MessageBox.Show(
+                $"Connection '{dialog.Connection.Name}' updated successfully.",
+                "Connection Updated",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+    
+    private void RecentConnectionCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+            return;
+        
+        Logger.Info("Duplicating recent connection: {Name}", connection.Name);
+        
+        var copy = new Models.DB2Connection
+        {
+            Name = $"{connection.Name} (Copy)",
+            Server = connection.Server,
+            Port = connection.Port,
+            Database = connection.Database,
+            Username = connection.Username,
+            Password = connection.Password,
+            SavePassword = connection.SavePassword,
+            IsReadOnly = connection.IsReadOnly,
+            AutoCommit = connection.AutoCommit
+        };
+        
+        var dialog = new Dialogs.ConnectionDialog();
+        dialog.LoadConnection(copy);
+        dialog.Owner = this;
+        
+        if (dialog.ShowDialog() == true && dialog.Connection != null)
+        {
+            _connectionStorageService.SaveConnection(dialog.Connection);
+            PopulateRecentConnections();
+            
+            MessageBox.Show(
+                $"Connection '{dialog.Connection.Name}' created successfully.",
+                "Connection Duplicated",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+    
+    private async void RecentConnectionTest_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+            return;
+        
+        Logger.Info("Testing recent connection: {Name}", connection.Name);
+        
+        try
+        {
+            var connectionManager = new Data.DB2ConnectionManager(connection);
+            var result = await connectionManager.TestConnectionAsync();
+            
+            if (result)
+            {
+                MessageBox.Show(
+                    $"✅ Connection to '{connection.Name}' successful!",
+                    "Connection Test",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"❌ Connection to '{connection.Name}' failed.",
+                    "Connection Test",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Connection test failed for {Name}", connection.Name);
+            MessageBox.Show(
+                $"❌ Connection test failed:\n\n{ex.Message}",
+                "Connection Test Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    private void RecentConnectionDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+            return;
+        
+        Logger.Info("Deleting recent connection: {Name}", connection.Name);
+        
+        var result = MessageBox.Show(
+            $"Permanently delete connection '{connection.Name}'?\n\n" +
+            "This action cannot be undone.",
+            "Delete Connection",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        
+        if (result == MessageBoxResult.Yes)
+        {
+            _connectionStorageService.DeleteConnection(connection.Name);
+            _historyService.RemoveConnection(connection.Name);
+            PopulateRecentConnections();
+            
+            MessageBox.Show(
+                $"Connection '{connection.Name}' deleted successfully.",
+                "Connection Deleted",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
     }
     

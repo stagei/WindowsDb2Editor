@@ -11,6 +11,7 @@ public class AppSettings
     public LoggingSettings Logging { get; set; } = new();
     public ConnectionStringsSettings ConnectionStrings { get; set; } = new();
     public FeatureSettings Features { get; set; } = new();
+    public ObjectBrowserSettings ObjectBrowser { get; set; } = new();
 }
 
 public class ApplicationSettings
@@ -65,5 +66,13 @@ public class FeatureSettings
     public bool EnableSqlFormatter { get; set; } = true;
     public bool EnableDatabaseBrowser { get; set; } = true;
     public bool EnableExport { get; set; } = true;
+}
+
+public class ObjectBrowserSettings
+{
+    public bool AutoGrowWidth { get; set; } = true;
+    public int InitialWidth { get; set; } = 250;
+    public int MinWidth { get; set; } = 150;
+    public int MaxWidth { get; set; } = 800;
 }
 

@@ -19,7 +19,7 @@ public partial class PackageAnalyzerPanel : UserControl
     private readonly PackageAnalyzerService _packageService;
     private readonly MetadataLoaderService _metadataService;
     private DB2ConnectionManager? _connectionManager;
-    private List<PackageInfo> _packages = new();
+    private List<PackageAnalysisInfo> _packages = new();
     
     public PackageAnalyzerPanel()
     {

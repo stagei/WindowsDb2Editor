@@ -56,7 +56,7 @@ public class DB2ConnectionManager : IDisposable
     /// <summary>
     /// Open database connection
     /// </summary>
-    public async Task OpenAsync()
+    public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         if (_db2Connection != null && _db2Connection.State == ConnectionState.Open)
         {
@@ -70,7 +70,14 @@ public class DB2ConnectionManager : IDisposable
         try
         {
             _db2Connection = new DB2Conn(_connectionInfo.GetConnectionString());
-            await _db2Connection.OpenAsync();
+            
+            // Check cancellation before opening
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            await _db2Connection.OpenAsync(cancellationToken);
+            
+            // Check cancellation after opening
+            cancellationToken.ThrowIfCancellationRequested();
             
             Logger.Info($"DB2 connection opened successfully - State: {_db2Connection.State}");
             Logger.Debug($"DB2 Server Version: {_db2Connection.ServerVersion}");
@@ -78,12 +85,36 @@ public class DB2ConnectionManager : IDisposable
             // Feature #2: Set auto-commit mode
             await SetAutoCommitModeAsync(_connectionInfo.AutoCommit);
             
+            // Check cancellation after auto-commit setup
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // Feature #2: Log connection mode
             Logger.Info("Connection mode - ReadOnly: {ReadOnly}, AutoCommit: {AutoCommit}", 
                 _connectionInfo.IsReadOnly, _connectionInfo.AutoCommit);
             
             // RBAC: Determine user's access level
             await DetermineUserAccessLevelAsync();
+            
+            // Final cancellation check
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Warn("Connection was cancelled by user");
+            if (_db2Connection != null)
+            {
+                try
+                {
+                    _db2Connection.Close();
+                    _db2Connection.Dispose();
+                    _db2Connection = null;
+                }
+                catch (Exception cleanupEx)
+                {
+                    Logger.Error(cleanupEx, "Error cleaning up cancelled connection");
+                }
+            }
+            throw;
         }
         catch (DB2Exception db2Ex)
         {
@@ -127,7 +158,7 @@ public class DB2ConnectionManager : IDisposable
             var accessLevel = _connectionInfo.Permissions.AccessLevel;
             var sqlUpper = sql.Trim().ToUpperInvariant();
             
-            if (accessLevel == UserAccessLevel.Low)
+            if (accessLevel == UserAccessLevel.Standard)
             {
                 Logger.Warn("LOW level user {Username} attempted to execute modifying SQL", 
                     _connectionInfo.Permissions.Username);
@@ -137,7 +168,7 @@ public class DB2ConnectionManager : IDisposable
                     "Contact your database administrator to request additional privileges.");
             }
             
-            if (accessLevel == UserAccessLevel.Middle)
+            if (accessLevel == UserAccessLevel.Advanced)
             {
                 // Check if it's DDL (not allowed for Middle level)
                 var ddlKeywords = new[] { "CREATE", "DROP", "ALTER", "TRUNCATE", "GRANT", "REVOKE" };
@@ -380,7 +411,7 @@ public class DB2ConnectionManager : IDisposable
             _connectionInfo.Permissions = new UserPermissions
             {
                 Username = _connectionInfo.Username,
-                AccessLevel = UserAccessLevel.Low
+                AccessLevel = UserAccessLevel.Standard
             };
         }
     }
@@ -425,7 +456,7 @@ public class DB2ConnectionManager : IDisposable
             sqlUpper.Substring(0, Math.Min(50, sqlUpper.Length)));
         
         // RBAC: For LOW level users, everything except SELECT is modifying
-        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Low)
+        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Standard)
         {
             var isSelect = sqlUpper.StartsWith("SELECT") || 
                           sqlUpper.StartsWith("WITH") || // CTE
@@ -437,7 +468,7 @@ public class DB2ConnectionManager : IDisposable
         }
         
         // RBAC: For MIDDLE level users, DDL is modifying (DML is allowed)
-        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Middle)
+        if (_connectionInfo.Permissions?.AccessLevel == UserAccessLevel.Advanced)
         {
             var ddlKeywords = new[] { "CREATE", "DROP", "ALTER", "TRUNCATE", "GRANT", "REVOKE" };
             var isModifying = ddlKeywords.Any(keyword => 
@@ -545,6 +576,22 @@ public class DB2ConnectionManager : IDisposable
     public bool IsConnected => _db2Connection != null && _db2Connection.State == ConnectionState.Open;
 
     /// <summary>
+    /// Create a DB2Command for custom query execution
+    /// </summary>
+    public DB2Command CreateCommand(string sql)
+    {
+        if (_db2Connection == null || _db2Connection.State != ConnectionState.Open)
+        {
+            throw new InvalidOperationException("Connection is not open. Call ConnectAsync first.");
+        }
+        
+        var command = _db2Connection.CreateCommand();
+        command.CommandText = sql;
+        command.CommandTimeout = _connectionInfo.ConnectionTimeout;
+        return command;
+    }
+
+    /// <summary>
     /// Execute scalar query (return single value)
     /// </summary>
     public async Task<object?> ExecuteScalarAsync(string sql)
@@ -598,8 +645,8 @@ public class DB2ConnectionManager : IDisposable
         try
         {
             var sql = schema != null
-                ? $"SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{schema}' AND TYPE = 'T' ORDER BY TABNAME"
-                : "SELECT TABSCHEMA || '.' || TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME";
+                ? $"SELECT TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = '{schema}' AND TYPE = 'T' ORDER BY TABNAME"
+                : "SELECT TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME";
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -627,9 +674,9 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = $@"SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, REMARKS 
+            var sql = $@"SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT), TRIM(REMARKS)
                         FROM SYSCAT.COLUMNS 
-                        WHERE TABNAME = '{tableName}' 
+                        WHERE TRIM(TABNAME) = '{tableName}' 
                         ORDER BY COLNO";
 
             var dataTable = await ExecuteQueryAsync(sql);
@@ -654,7 +701,7 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = "SELECT SCHEMANAME FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME";
+            var sql = "SELECT TRIM(SCHEMANAME) FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME";
             var dataTable = await ExecuteQueryAsync(sql);
 
             foreach (DataRow row in dataTable.Rows)
@@ -707,8 +754,8 @@ public class DB2ConnectionManager : IDisposable
         try
         {
             var sql = schema != null
-                ? $"SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{schema}' ORDER BY VIEWNAME"
-                : "SELECT VIEWSCHEMA || '.' || VIEWNAME FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME";
+                ? $"SELECT TRIM(VIEWNAME) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = '{schema}' ORDER BY VIEWNAME"
+                : "SELECT TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME";
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -739,8 +786,8 @@ public class DB2ConnectionManager : IDisposable
         try
         {
             var sql = schema != null
-                ? $"SELECT PROCNAME FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = '{schema}' ORDER BY PROCNAME"
-                : "SELECT PROCSCHEMA || '.' || PROCNAME FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME";
+                ? $"SELECT TRIM(PROCNAME) FROM SYSCAT.PROCEDURES WHERE TRIM(PROCSCHEMA) = '{schema}' ORDER BY PROCNAME"
+                : "SELECT TRIM(PROCSCHEMA) || '.' || TRIM(PROCNAME) FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME";
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -768,7 +815,7 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = $"SELECT TEXT FROM SYSCAT.VIEWS WHERE VIEWNAME = '{viewName}'";
+            var sql = $"SELECT TRIM(TEXT) FROM SYSCAT.VIEWS WHERE TRIM(VIEWNAME) = '{viewName}'";
             var result = await ExecuteScalarAsync(sql);
 
             var definition = result?.ToString() ?? string.Empty;

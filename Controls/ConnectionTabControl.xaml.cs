@@ -3,9 +3,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using Microsoft.Extensions.Configuration;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Dialogs;
@@ -24,6 +26,8 @@ public partial class ConnectionTabControl : UserControl
     private readonly ExportService _exportService;
     private readonly PreferencesService _preferencesService;
     private readonly SqlSafetyValidatorService _safetyValidator;
+    private ObjectBrowserService? _objectBrowserService;
+    private UserAccessLevel _userAccessLevel = UserAccessLevel.Standard;
     
     // Pagination state
     private string _lastExecutedSql = string.Empty;
@@ -60,9 +64,313 @@ public partial class ConnectionTabControl : UserControl
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
         RegisterResultsGridEvents();
+        RegisterObjectBrowserKeyboardShortcuts();
+        RegisterDragDropHandlers();
+        InitializeObjectBrowserAutoGrow();
         _ = ConnectToDatabase();
         
         Logger.Debug($"Pagination enabled with max rows: {_preferencesService.Preferences.MaxRowsPerQuery}");
+    }
+    
+    private ObjectBrowserSettings? _objectBrowserSettings;
+    private DateTime _lastAutoGrowUpdate = DateTime.MinValue;
+    
+    /// <summary>
+    /// Initialize auto-grow width for object browser
+    /// </summary>
+    private void InitializeObjectBrowserAutoGrow()
+    {
+        try
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+            
+            var config = configuration.Get<AppSettings>();
+            _objectBrowserSettings = config?.ObjectBrowser;
+            
+            if (_objectBrowserSettings?.AutoGrowWidth == true)
+            {
+                Logger.Debug("Object browser auto-grow enabled (Min: {Min}px, Max: {Max}px)", 
+                    _objectBrowserSettings.MinWidth, _objectBrowserSettings.MaxWidth);
+                
+                DatabaseTreeView.Loaded += (s, e) => AutoAdjustObjectBrowserWidth();
+                
+                // Use a throttled approach to avoid excessive layout updates
+                DatabaseTreeView.SizeChanged += (s, e) =>
+                {
+                    if ((DateTime.Now - _lastAutoGrowUpdate).TotalMilliseconds > 500)
+                    {
+                        AutoAdjustObjectBrowserWidth();
+                        _lastAutoGrowUpdate = DateTime.Now;
+                    }
+                };
+            }
+            else
+            {
+                Logger.Debug("Object browser auto-grow disabled");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to initialize object browser auto-grow");
+        }
+    }
+    
+    /// <summary>
+    /// Auto-adjust object browser column width to fit content
+    /// </summary>
+    private void AutoAdjustObjectBrowserWidth()
+    {
+        try
+        {
+            if (_objectBrowserSettings?.AutoGrowWidth != true)
+                return;
+            
+            double maxWidth = _objectBrowserSettings.MaxWidth;
+            double minWidth = _objectBrowserSettings.MinWidth;
+            
+            // Calculate the widest item in the tree
+            double maxItemWidth = CalculateTreeViewMaxWidth(DatabaseTreeView);
+            
+            // Add padding for scrollbar and margins (35px)
+            maxItemWidth += 35;
+            
+            // Clamp to min/max bounds
+            double newWidth = Math.Max(minWidth, Math.Min(maxWidth, maxItemWidth));
+            
+            // Only update if significantly different to avoid constant layout updates
+            if (Math.Abs(ObjectBrowserColumn.Width.Value - newWidth) > 10)
+            {
+                ObjectBrowserColumn.Width = new GridLength(newWidth);
+                Logger.Debug($"Object browser width auto-adjusted to {newWidth:F0}px (content width: {maxItemWidth:F0}px)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to auto-adjust object browser width");
+        }
+    }
+    
+    /// <summary>
+    /// Calculate maximum width of items in TreeView
+    /// </summary>
+    private double CalculateTreeViewMaxWidth(TreeView treeView)
+    {
+        double maxWidth = 0;
+        
+        foreach (var item in treeView.Items)
+        {
+            if (item is TreeViewItem treeViewItem)
+            {
+                double itemWidth = MeasureTreeViewItemWidth(treeViewItem, 0);
+                maxWidth = Math.Max(maxWidth, itemWidth);
+            }
+        }
+        
+        return maxWidth;
+    }
+    
+    /// <summary>
+    /// Measure width of a TreeViewItem including its indentation
+    /// </summary>
+    private double MeasureTreeViewItemWidth(TreeViewItem item, int depth)
+    {
+        double maxWidth = 0;
+        
+        // Measure current item
+        if (item.Header is string headerText)
+        {
+            var formattedText = new FormattedText(
+                headerText,
+                System.Globalization.CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface("Segoe UI"),
+                12,
+                System.Windows.Media.Brushes.Black,
+                VisualTreeHelper.GetDpi(item).PixelsPerDip);
+            
+            // Add indentation (19px per level is WPF default)
+            double itemWidth = formattedText.Width + (depth * 19) + 40; // 40px for icon/padding
+            maxWidth = Math.Max(maxWidth, itemWidth);
+        }
+        else if (item.Header is StackPanel panel)
+        {
+            // Estimate width for StackPanel headers
+            double itemWidth = 200 + (depth * 19); // Rough estimate
+            maxWidth = Math.Max(maxWidth, itemWidth);
+        }
+        
+        // Measure children if expanded
+        if (item.IsExpanded)
+        {
+            foreach (var child in item.Items)
+            {
+                if (child is TreeViewItem childItem)
+                {
+                    double childWidth = MeasureTreeViewItemWidth(childItem, depth + 1);
+                    maxWidth = Math.Max(maxWidth, childWidth);
+                }
+            }
+        }
+        
+        return maxWidth;
+    }
+    
+    /// <summary>
+    /// Set SQL editor text (used when opening DDL in new tab)
+    /// </summary>
+    public void SetSqlEditorText(string text)
+    {
+        SqlEditor.Text = text;
+        Logger.Debug("SQL editor text set programmatically");
+    }
+    
+    /// <summary>
+    /// Register keyboard shortcuts for object browser
+    /// </summary>
+    private void RegisterObjectBrowserKeyboardShortcuts()
+    {
+        Logger.Debug("Registering object browser keyboard shortcuts");
+        
+        // Ctrl+F to focus search box
+        var focusSearchCommand = new RoutedCommand();
+        focusSearchCommand.InputGestures.Add(new KeyGesture(Key.F, ModifierKeys.Control));
+        CommandBindings.Add(new CommandBinding(focusSearchCommand, (s, e) =>
+        {
+            ObjectSearchBox.Focus();
+            ObjectSearchBox.SelectAll();
+            Logger.Debug("Object search box focused via Ctrl+F");
+        }));
+        
+        // F5 to refresh object browser
+        DatabaseTreeView.KeyDown += (s, e) =>
+        {
+            if (e.Key == Key.F5)
+            {
+                RefreshObjectBrowser_Click(s, e);
+                e.Handled = true;
+            }
+        };
+        
+        // Enter to expand/collapse selected node
+        DatabaseTreeView.KeyDown += (s, e) =>
+        {
+            if (e.Key == Key.Enter && DatabaseTreeView.SelectedItem is TreeViewItem item)
+            {
+                item.IsExpanded = !item.IsExpanded;
+                e.Handled = true;
+            }
+        };
+        
+        // Ctrl+C to copy selected object name
+        DatabaseTreeView.KeyDown += (s, e) =>
+        {
+            if (e.Key == Key.C && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is DatabaseObject obj)
+                {
+                    Clipboard.SetText(obj.FullName);
+                    ObjectBrowserStatusText.Text = $"Copied: {obj.FullName}";
+                    Logger.Debug("Copied object name: {Name}", obj.FullName);
+                    e.Handled = true;
+                }
+            }
+        };
+    }
+    
+    /// <summary>
+    /// Register drag-and-drop handlers for object browser
+    /// </summary>
+    private void RegisterDragDropHandlers()
+    {
+        Logger.Debug("Registering drag-and-drop handlers for object browser");
+        
+        // Enable drop on SQL editor
+        SqlEditor.AllowDrop = true;
+        SqlEditor.Drop += SqlEditor_Drop;
+        SqlEditor.DragOver += SqlEditor_DragOver;
+    }
+    
+    /// <summary>
+    /// Handle mouse move to initiate drag operation
+    /// </summary>
+    private void ObjectNode_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && sender is TreeViewItem item && item.Tag is DatabaseObject obj)
+        {
+            Logger.Debug("Initiating drag operation for object: {Name}", obj.FullName);
+            
+            // Create drag data
+            var dragData = new DataObject();
+            dragData.SetText(obj.FullName);
+            dragData.SetData("DatabaseObject", obj);
+            
+            // Start drag operation
+            DragDrop.DoDragDrop(item, dragData, DragDropEffects.Copy);
+        }
+    }
+    
+    /// <summary>
+    /// Handle drag over SQL editor
+    /// </summary>
+    private void SqlEditor_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.Text) || e.Data.GetDataPresent("DatabaseObject"))
+        {
+            e.Effects = DragDropEffects.Copy;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+    
+    /// <summary>
+    /// Handle drop on SQL editor
+    /// </summary>
+    private void SqlEditor_Drop(object sender, DragEventArgs e)
+    {
+        try
+        {
+            if (e.Data.GetData("DatabaseObject") is DatabaseObject obj)
+            {
+                Logger.Debug("Dropped database object: {Name}", obj.FullName);
+                
+                // Generate appropriate SQL based on object type
+                string sql = obj.Type switch
+                {
+                    ObjectType.Tables or ObjectType.Views => $"SELECT * FROM {obj.FullName};",
+                    ObjectType.Procedures => $"CALL {obj.FullName}();",
+                    ObjectType.Functions => $"VALUES {obj.FullName}();",
+                    _ => obj.FullName
+                };
+                
+                // Insert at cursor position
+                var caretOffset = SqlEditor.CaretOffset;
+                SqlEditor.Document.Insert(caretOffset, sql + "\n");
+                SqlEditor.CaretOffset = caretOffset + sql.Length + 1;
+                
+                ObjectBrowserStatusText.Text = $"Inserted: {sql}";
+            }
+            else if (e.Data.GetDataPresent(DataFormats.Text))
+            {
+                var text = e.Data.GetData(DataFormats.Text) as string;
+                if (!string.IsNullOrEmpty(text))
+                {
+                    var caretOffset = SqlEditor.CaretOffset;
+                    SqlEditor.Document.Insert(caretOffset, text);
+                    SqlEditor.CaretOffset = caretOffset + text.Length;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to handle drop operation");
+            ObjectBrowserStatusText.Text = "Failed to insert object";
+        }
     }
     
     /// <summary>
@@ -213,9 +521,90 @@ public partial class ConnectionTabControl : UserControl
         Logger.Info($"Connecting to database: {_connection.GetDisplayName()}");
         StatusText.Text = "Connecting...";
 
+        // Get expected connection time from statistics
+        var statsService = new ConnectionStatisticsService();
+        var expectation = await statsService.GetExpectedConnectionTimeAsync(_connection.Server);
+        
+        Logger.Debug("Connection expectation: {Expected}ms (HasHistory: {HasHistory}, Total: {Total})", 
+            expectation.ExpectedTimeMs, expectation.HasHistory, expectation.TotalConnections);
+
+        // Create and show connection progress dialog
+        var progressDialog = new ConnectionProgressDialog(
+            _connection.GetDisplayName(), 
+            expectation.ExpectedTimeMs,
+            expectation.HasHistory)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        bool connectionSuccessful = false;
+        
+        // Start connection in background task
+        var connectionTask = Task.Run(async () =>
+        {
+            try
+            {
+                progressDialog.UpdateStatus("Establishing connection...");
+                progressDialog.UpdateDetail($"Server: {_connection.Server}:{_connection.Port}");
+                progressDialog.StartProgress(); // Start progress bar timer
+                
+                await _connectionManager.OpenAsync(progressDialog.CancellationToken);
+                
+                progressDialog.UpdateStatus("Connection established successfully!");
+                progressDialog.UpdateDetail("Loading database objects...");
+                
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Warn("Connection cancelled by user");
+                progressDialog.UpdateStatus("Connection aborted by user");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to connect to database");
+                progressDialog.UpdateStatus("Connection failed");
+                progressDialog.UpdateDetail(ex.Message);
+                await Task.Delay(2000); // Show error for 2 seconds
+                return false;
+            }
+        });
+
+        // Show dialog and wait for connection or abort
+        var showDialogTask = Task.Run(() => progressDialog.ShowDialog());
+        
+        // Wait for either connection to complete or dialog to close
+        await Task.WhenAny(connectionTask, showDialogTask);
+        
         try
         {
-            await _connectionManager.OpenAsync();
+            connectionSuccessful = await connectionTask;
+        }
+        catch (OperationCanceledException)
+        {
+            connectionSuccessful = false;
+        }
+
+        // Record connection time if successful
+        int connectionTimeMs = progressDialog.ElapsedTimeMs;
+        if (connectionSuccessful)
+        {
+            Logger.Info("Connection successful in {Time}ms", connectionTimeMs);
+            _ = statsService.RecordConnectionTimeAsync(_connection.Server, connectionTimeMs);
+        }
+
+        // Close dialog if still open
+        progressDialog.Dispatcher.Invoke(() =>
+        {
+            if (progressDialog.IsVisible)
+            {
+                progressDialog.Close();
+            }
+        });
+
+        if (connectionSuccessful)
+        {
             StatusText.Text = $"Connected to {_connection.GetDisplayName()}";
             Logger.Info("Database connection established");
 
@@ -248,64 +637,91 @@ public partial class ConnectionTabControl : UserControl
                 }
             });
         }
-        catch (Exception ex)
+        else
         {
-            Logger.Error(ex, "Failed to connect to database");
-            StatusText.Text = "Connection failed";
-            MessageBox.Show($"Failed to connect: {ex.Message}", "Connection Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Connection failed or aborted";
+            
+            if (!progressDialog.WasAborted)
+            {
+                MessageBox.Show($"Failed to connect to {_connection.GetDisplayName()}.\n\nPlease check your connection settings and try again.", 
+                    "Connection Error",
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
+            }
+            else
+            {
+                Logger.Info("Connection aborted by user");
+            }
         }
     }
 
     private async Task LoadDatabaseObjectsAsync()
     {
-        Logger.Debug("Loading database objects into TreeView");
+        Logger.Debug("Loading enhanced object browser with top-level categories");
+        ObjectBrowserStatusText.Text = "Loading database objects...";
 
         try
         {
+            // Initialize ObjectBrowserService
+            _objectBrowserService = new ObjectBrowserService(_connectionManager);
+            
+            // Determine user access level
+            _userAccessLevel = await _objectBrowserService.GetUserAccessLevelAsync();
+            Logger.Info($"User access level determined: {_userAccessLevel}");
+            
+            // Update database info header
+            DatabaseInfoText.Text = $"🗄️ Database: {_connection.Database}";
+            ConnectionInfoText.Text = $"Server: {_connection.Server}:{_connection.Port} | Access: {_userAccessLevel}";
+            
             DatabaseTreeView.Items.Clear();
             
-            // Add a loading indicator
+            // Add loading indicator
             var loadingNode = new TreeViewItem
             {
-                Header = "⏳ Loading schemas...",
+                Header = "⏳ Loading categories...",
                 IsEnabled = false
             };
             DatabaseTreeView.Items.Add(loadingNode);
             
-            var schemas = await _connectionManager.GetSchemasAsync();
-            Logger.Info($"Loaded {schemas.Count} schemas");
+            // Load top-level categories filtered by access level
+            var categories = await _objectBrowserService.GetTopLevelCategoriesAsync(_userAccessLevel);
+            Logger.Info($"Loaded {categories.Count} categories for access level {_userAccessLevel}");
 
             DatabaseTreeView.Items.Clear();
 
-            if (schemas.Count == 0)
+            if (categories.Count == 0)
             {
-                var noSchemaNode = new TreeViewItem
+                var noDataNode = new TreeViewItem
                 {
-                    Header = "⚠ No schemas found or insufficient permissions",
+                    Header = "⚠ No categories available",
                     IsEnabled = false
                 };
-                DatabaseTreeView.Items.Add(noSchemaNode);
-                Logger.Warn("No schemas returned from database");
+                DatabaseTreeView.Items.Add(noDataNode);
+                ObjectBrowserStatusText.Text = "No database objects available";
                 return;
             }
 
-            foreach (var schema in schemas.Take(20)) // Limit to first 20 schemas for performance
+            // Add each category as a top-level node
+            foreach (var category in categories)
             {
-                var schemaNode = new TreeViewItem
+                var categoryNode = new TreeViewItem
                 {
-                    Header = $"📁 {schema}",
-                    Tag = schema
+                    Header = $"{category.Icon} {category.Name} ({category.Count})",
+                    Tag = category
                 };
 
-                // Add a placeholder to make it expandable
-                schemaNode.Items.Add("Loading...");
-                schemaNode.Expanded += SchemaNode_Expanded;
+                // Add placeholder for lazy loading
+                if (category.IsLazyLoad && category.Count > 0)
+                {
+                    categoryNode.Items.Add("Loading...");
+                    categoryNode.Expanded += CategoryNode_Expanded;
+                }
 
-                DatabaseTreeView.Items.Add(schemaNode);
+                DatabaseTreeView.Items.Add(categoryNode);
             }
 
-            Logger.Debug($"Added {DatabaseTreeView.Items.Count} schemas to TreeView");
+            ObjectBrowserStatusText.Text = $"Ready - {categories.Count} categories loaded";
+            Logger.Debug($"Added {categories.Count} categories to TreeView");
         }
         catch (Exception ex)
         {
@@ -323,45 +739,1104 @@ public partial class ConnectionTabControl : UserControl
         }
     }
 
-    private async void SchemaNode_Expanded(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Handle category node expansion (lazy load children)
+    /// </summary>
+    private async void CategoryNode_Expanded(object sender, RoutedEventArgs e)
     {
-        if (sender is not TreeViewItem schemaNode) return;
-        if (schemaNode.Tag is not string schema) return;
+        if (sender is not TreeViewItem categoryNode) return;
+        if (categoryNode.Tag is not CategoryNode category) return;
+        if (_objectBrowserService == null) return;
 
         // Check if already loaded
-        if (schemaNode.Items.Count == 1 && schemaNode.Items[0] is string placeholder && placeholder == "Loading...")
+        if (categoryNode.Items.Count == 1 && categoryNode.Items[0] is string)
         {
-            Logger.Debug($"Expanding schema: {schema}");
-            schemaNode.Items.Clear();
+            Logger.Debug($"Expanding category: {category.Name}");
+            categoryNode.Items.Clear();
+            ObjectBrowserStatusText.Text = $"Loading {category.Name}...";
 
             try
             {
-                var tables = await _connectionManager.GetTablesAsync(schema);
-                Logger.Debug($"Found {tables.Count} tables in schema {schema}");
-
-                foreach (var table in tables)
+                if (category.Type == CategoryType.Schemas)
                 {
-                    var tableNode = new TreeViewItem
+                    var schemas = await _objectBrowserService.GetAllSchemasAsync();
+                    Logger.Debug($"Found {schemas.Count} schemas");
+
+                    foreach (var schemaNode in schemas)
                     {
-                        Header = $"📄 {table}",
-                        Tag = $"{schema}.{table}"
-                    };
+                        var icon = schemaNode.Type == "SYSTEM" ? ObjectBrowserIcons.SystemSchema : ObjectBrowserIcons.Schema;
+                        var schemaType = schemaNode.Type == "SYSTEM" ? "System Schema" : "User Schema";
+                        var node = new TreeViewItem
+                        {
+                            Header = $"{icon} {schemaNode.SchemaName}",
+                            Tag = schemaNode,
+                            ToolTip = $"Schema: {schemaNode.SchemaName}\nType: {schemaType}"
+                        };
 
-                    tableNode.MouseDoubleClick += TableNode_DoubleClick;
-                    tableNode.ContextMenu = CreateTableContextMenu($"{schema}.{table}");
-                    schemaNode.Items.Add(tableNode);
+                        // Add placeholder for lazy loading
+                        node.Items.Add("Loading...");
+                        node.Expanded += SchemaNode_Expanded;
+                        // Removed click handler - schemas should expand, not show dialog
+                        categoryNode.Items.Add(node);
+                    }
                 }
-
-                if (tables.Count == 0)
+                else if (category.Type == CategoryType.Tablespaces)
                 {
-                    schemaNode.Items.Add(new TreeViewItem { Header = "(No tables)", IsEnabled = false });
+                    var tablespaces = await _objectBrowserService.GetTablespacesAsync();
+                    foreach (var ts in tablespaces)
+                    {
+                        var node = new TreeViewItem
+                        {
+                            Header = $"{ObjectBrowserIcons.Tablespaces} {ts.TablespaceName} ({ts.PageSize} bytes)",
+                            Tag = ts,
+                            ToolTip = $"Tablespace: {ts.TablespaceName}\nType: {ts.TablespaceType}\nPage Size: {ts.PageSize} bytes\nOwner: {ts.Owner}"
+                        };
+                        node.PreviewMouseLeftButtonDown += TablespaceNode_Click;
+                        categoryNode.Items.Add(node);
+                    }
                 }
+                else if (category.Type == CategoryType.Aliases)
+                {
+                    // Show all aliases across all schemas
+                    var schemas = await _objectBrowserService.GetAllSchemasAsync();
+                    foreach (var schemaNode in schemas.Where(s => s.Type != "SYSTEM"))
+                    {
+                        var aliases = await _objectBrowserService.GetSynonymsAsync(schemaNode.SchemaName);
+                        foreach (var alias in aliases)
+                        {
+                            var node = new TreeViewItem
+                            {
+                                Header = $"{alias.Icon} {alias.FullName} → {alias.TableSpace}",
+                                Tag = alias
+                            };
+                            categoryNode.Items.Add(node);
+                        }
+                    }
+                }
+                else if (category.Type == CategoryType.Packages)
+                {
+                    // Show all packages across all schemas
+                    var packages = await _objectBrowserService.GetPackagesAsync();
+                    foreach (var pkg in packages)
+                    {
+                        var node = new TreeViewItem
+                        {
+                            Header = $"{ObjectBrowserIcons.Package} {pkg.PackageSchema}.{pkg.PackageName}",
+                            Tag = pkg
+                        };
+                        node.MouseDoubleClick += PackageNode_DoubleClick;
+                        node.PreviewMouseLeftButtonDown += PackageNode_Click;
+                        categoryNode.Items.Add(node);
+                    }
+                }
+                else if (category.Type == CategoryType.UserDefinedTypes)
+                {
+                    // Show all user-defined types across all schemas
+                    var schemas = await _objectBrowserService.GetAllSchemasAsync();
+                    foreach (var schemaNode in schemas.Where(s => s.Type != "SYSTEM"))
+                    {
+                        var types = await _objectBrowserService.GetTypesAsync(schemaNode.SchemaName);
+                        foreach (var type in types)
+                        {
+                            var node = new TreeViewItem
+                            {
+                                Header = $"{type.Icon} {type.FullName}",
+                                Tag = type
+                            };
+                            categoryNode.Items.Add(node);
+                        }
+                    }
+                }
+                else if (category.Type == CategoryType.Security)
+                {
+                    // Security category: Roles, Groups, Users
+                    var rolesNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Roles} Roles", Tag = "Roles" };
+                    rolesNode.Items.Add("Loading...");
+                    rolesNode.Expanded += SecuritySubCategoryNode_Expanded;
+                    categoryNode.Items.Add(rolesNode);
+                    
+                    var groupsNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Groups} Groups", Tag = "Groups" };
+                    groupsNode.Items.Add("Loading...");
+                    groupsNode.Expanded += SecuritySubCategoryNode_Expanded;
+                    categoryNode.Items.Add(groupsNode);
+                    
+                    var usersNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Users} Users", Tag = "Users" };
+                    usersNode.Items.Add("Loading...");
+                    usersNode.Expanded += SecuritySubCategoryNode_Expanded;
+                    categoryNode.Items.Add(usersNode);
+                }
+
+                if (categoryNode.Items.Count == 0)
+                {
+                    categoryNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Empty} No items", IsEnabled = false });
+                }
+
+                ObjectBrowserStatusText.Text = $"Loaded {categoryNode.Items.Count} items in {category.Name}";
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Failed to load tables for schema {schema}");
-                schemaNode.Items.Add(new TreeViewItem { Header = "(Error loading tables)", IsEnabled = false });
+                Logger.Error(ex, $"Failed to load category {category.Name}");
+                categoryNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Error} Error loading", IsEnabled = false });
+                ObjectBrowserStatusText.Text = $"Error loading {category.Name}";
             }
+        }
+    }
+
+    /// <summary>
+    /// Handle schema node expansion (lazy load object types)
+    /// </summary>
+    private async void SchemaNode_Expanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TreeViewItem schemaTreeNode) return;
+        if (schemaTreeNode.Tag is not SchemaNode schemaNode) return;
+        if (_objectBrowserService == null) return;
+
+        // Check if already loaded
+        if (schemaTreeNode.Items.Count == 1 && schemaTreeNode.Items[0] is string)
+        {
+            Logger.Debug($"Expanding schema: {schemaNode.SchemaName}");
+            schemaTreeNode.Items.Clear();
+            ObjectBrowserStatusText.Text = $"Loading objects in {schemaNode.SchemaName}...";
+
+            try
+            {
+                // Get object counts for this schema
+                var objectCounts = await _objectBrowserService.GetSchemaObjectCountsAsync(schemaNode.SchemaName, _userAccessLevel);
+
+                foreach (var kvp in objectCounts)
+                {
+                    if (kvp.Value == 0) continue; // Skip empty categories
+
+                    var objectType = kvp.Key;
+                    var count = kvp.Value;
+                    var icon = GetObjectTypeIcon(objectType);
+                    var typeName = GetObjectTypeName(objectType);
+
+                    var typeNode = new TreeViewItem
+                    {
+                        Header = $"{icon} {typeName} ({count})",
+                        Tag = new { Schema = schemaNode.SchemaName, ObjectType = objectType }
+                    };
+
+                    // Add placeholder for lazy loading
+                    typeNode.Items.Add("Loading...");
+                    typeNode.Expanded += ObjectTypeNode_Expanded;
+                    schemaTreeNode.Items.Add(typeNode);
+                }
+
+                if (schemaTreeNode.Items.Count == 0)
+                {
+                    schemaTreeNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Empty} No objects", IsEnabled = false });
+                }
+
+                ObjectBrowserStatusText.Text = $"Loaded {schemaTreeNode.Items.Count} object types in {schemaNode.SchemaName}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to load schema {schemaNode.SchemaName}");
+                schemaTreeNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Error} Error loading", IsEnabled = false });
+                ObjectBrowserStatusText.Text = $"Error loading {schemaNode.SchemaName}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle object type node expansion (load actual objects)
+    /// </summary>
+    private async void ObjectTypeNode_Expanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TreeViewItem typeNode) return;
+        if (_objectBrowserService == null) return;
+        
+        // Extract schema and objectType from anonymous type stored in Tag
+        var tagType = typeNode.Tag?.GetType();
+        if (tagType == null) return;
+        
+        var schemaProperty = tagType.GetProperty("Schema");
+        var objectTypeProperty = tagType.GetProperty("ObjectType");
+        if (schemaProperty == null || objectTypeProperty == null) return;
+        
+        string? schema = schemaProperty.GetValue(typeNode.Tag) as string;
+        if (schema == null) return;
+        
+        var objectTypeValue = objectTypeProperty.GetValue(typeNode.Tag);
+        if (objectTypeValue is not ObjectType objectType) return;
+
+        // Check if already loaded
+        if (typeNode.Items.Count == 1 && typeNode.Items[0] is string)
+        {
+            Logger.Debug($"Expanding object type: {objectType} in schema {schema}");
+            typeNode.Items.Clear();
+            ObjectBrowserStatusText.Text = $"Loading {objectType}...";
+
+            try
+            {
+                List<DatabaseObject> objects = objectType switch
+                {
+                    ObjectType.Tables => await _objectBrowserService.GetTablesAsync(schema),
+                    ObjectType.Views => await _objectBrowserService.GetViewsAsync(schema),
+                    ObjectType.Procedures => await _objectBrowserService.GetProceduresAsync(schema),
+                    ObjectType.Functions => await _objectBrowserService.GetFunctionsAsync(schema),
+                    ObjectType.Indexes => await _objectBrowserService.GetIndexesAsync(schema),
+                    ObjectType.Triggers => await _objectBrowserService.GetTriggersAsync(schema),
+                    ObjectType.Sequences => await _objectBrowserService.GetSequencesAsync(schema),
+                    ObjectType.Synonyms => await _objectBrowserService.GetSynonymsAsync(schema),
+                    ObjectType.Types => await _objectBrowserService.GetTypesAsync(schema),
+                    ObjectType.Packages => await _objectBrowserService.GetPackagesForSchemaAsync(schema),
+                    _ => new List<DatabaseObject>()
+                };
+
+                foreach (var obj in objects)
+                {
+                    var objectNode = new TreeViewItem
+                    {
+                        Header = GetObjectNodeHeader(obj),
+                        Tag = obj,
+                        ToolTip = CreateObjectTooltip(obj),
+                        AllowDrop = false
+                    };
+
+                    objectNode.MouseDoubleClick += ObjectNode_DoubleClick;
+                    objectNode.PreviewMouseLeftButtonDown += ObjectNode_Click;
+                    objectNode.ContextMenu = CreateObjectContextMenu(obj);
+                    objectNode.MouseMove += ObjectNode_MouseMove;
+                    typeNode.Items.Add(objectNode);
+                }
+
+                if (typeNode.Items.Count == 0)
+                {
+                    typeNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Empty} No items", IsEnabled = false });
+                }
+
+                ObjectBrowserStatusText.Text = $"Loaded {typeNode.Items.Count} {objectType}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to load {objectType} in schema {schema}");
+                typeNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Error} Error loading", IsEnabled = false });
+                ObjectBrowserStatusText.Text = $"Error loading {objectType}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle security sub-category expansion (Roles, Groups, Users)
+    /// </summary>
+    private async void SecuritySubCategoryNode_Expanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TreeViewItem subCategoryNode) return;
+        if (subCategoryNode.Tag is not string subCategoryType) return;
+        if (_objectBrowserService == null) return;
+
+        // Check if already loaded
+        if (subCategoryNode.Items.Count == 1 && subCategoryNode.Items[0] is string)
+        {
+            Logger.Debug($"Expanding security sub-category: {subCategoryType}");
+            subCategoryNode.Items.Clear();
+            ObjectBrowserStatusText.Text = $"Loading {subCategoryType}...";
+
+            try
+            {
+                List<SecurityPrincipal> principals = subCategoryType switch
+                {
+                    "Roles" => await _objectBrowserService.GetRolesAsync(),
+                    "Groups" => await _objectBrowserService.GetGroupsAsync(),
+                    "Users" => await _objectBrowserService.GetUsersAsync(),
+                    _ => new List<SecurityPrincipal>()
+                };
+
+                foreach (var principal in principals)
+                {
+                    var node = new TreeViewItem
+                    {
+                        Header = $"{principal.Icon} {principal.Name}",
+                        Tag = principal
+                    };
+                    
+                    // Add placeholder for privilege categories
+                    node.Items.Add("Loading...");
+                    node.Expanded += SecurityPrincipalNode_Expanded;
+                    node.PreviewMouseLeftButtonDown += SecurityPrincipalNode_Click;
+                    
+                    subCategoryNode.Items.Add(node);
+                }
+
+                if (subCategoryNode.Items.Count == 0)
+                {
+                    subCategoryNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Empty} No items", IsEnabled = false });
+                }
+
+                ObjectBrowserStatusText.Text = $"Loaded {subCategoryNode.Items.Count} {subCategoryType}";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to load {subCategoryType}");
+                subCategoryNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Error} Error loading", IsEnabled = false });
+                ObjectBrowserStatusText.Text = $"Error loading {subCategoryType}";
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handle security principal expansion (show privilege categories)
+    /// </summary>
+    private async void SecurityPrincipalNode_Expanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TreeViewItem principalNode) return;
+        if (principalNode.Tag is not SecurityPrincipal principal) return;
+        if (_objectBrowserService == null) return;
+
+        // Check if already loaded
+        if (principalNode.Items.Count == 1 && principalNode.Items[0] is string)
+        {
+            Logger.Debug($"Expanding security principal: {principal.Name}");
+            principalNode.Items.Clear();
+            ObjectBrowserStatusText.Text = $"Loading privileges for {principal.Name}...";
+
+            try
+            {
+                // Get privilege counts for this principal
+                Dictionary<PrivilegeCategoryType, int> privilegeCounts = principal.Type switch
+                {
+                    SecurityPrincipalType.Role => await _objectBrowserService.GetRolePrivilegeCountsAsync(principal.Name),
+                    SecurityPrincipalType.Group => await _objectBrowserService.GetGroupPrivilegeCountsAsync(principal.Name),
+                    SecurityPrincipalType.User => await _objectBrowserService.GetUserPrivilegeCountsAsync(principal.Name),
+                    _ => new Dictionary<PrivilegeCategoryType, int>()
+                };
+
+                // Add privilege categories with counts
+                foreach (var kvp in privilegeCounts.Where(p => p.Value > 0).OrderByDescending(p => p.Value))
+                {
+                    var icon = GetPrivilegeCategoryIcon(kvp.Key);
+                    var name = GetPrivilegeCategoryName(kvp.Key);
+                    
+                    var privilegeNode = new TreeViewItem
+                    {
+                        Header = $"{icon} {name} ({kvp.Value})",
+                        Tag = new { Principal = principal, Category = kvp.Key }
+                    };
+                    
+                    principalNode.Items.Add(privilegeNode);
+                }
+
+                if (principalNode.Items.Count == 0)
+                {
+                    principalNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Empty} No privileges", IsEnabled = false });
+                }
+
+                ObjectBrowserStatusText.Text = $"Loaded {principalNode.Items.Count} privilege categories";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Failed to load privileges for {principal.Name}");
+                principalNode.Items.Add(new TreeViewItem { Header = $"{ObjectBrowserIcons.Error} Error loading", IsEnabled = false });
+                ObjectBrowserStatusText.Text = $"Error loading privileges";
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Get icon for privilege category
+    /// </summary>
+    private string GetPrivilegeCategoryIcon(PrivilegeCategoryType category)
+    {
+        return category switch
+        {
+            PrivilegeCategoryType.Users => ObjectBrowserIcons.Users,
+            PrivilegeCategoryType.Tables => ObjectBrowserIcons.TablesPrivileges,
+            PrivilegeCategoryType.Views => ObjectBrowserIcons.ViewsPrivileges,
+            PrivilegeCategoryType.MQTs => ObjectBrowserIcons.MQTsPrivileges,
+            PrivilegeCategoryType.Columns => ObjectBrowserIcons.ColumnsPrivileges,
+            PrivilegeCategoryType.Indexes => ObjectBrowserIcons.IndexesPrivileges,
+            PrivilegeCategoryType.Functions => ObjectBrowserIcons.FunctionsPrivileges,
+            PrivilegeCategoryType.Modules => ObjectBrowserIcons.ModulesPrivileges,
+            PrivilegeCategoryType.Packages => ObjectBrowserIcons.PackagesPrivileges,
+            PrivilegeCategoryType.Procedures => ObjectBrowserIcons.ProceduresPrivileges,
+            PrivilegeCategoryType.Schemas => ObjectBrowserIcons.SchemasPrivileges,
+            PrivilegeCategoryType.Sequences => ObjectBrowserIcons.SequencesPrivileges,
+            PrivilegeCategoryType.Tablespaces => ObjectBrowserIcons.TablespacesPrivileges,
+            PrivilegeCategoryType.Variables => ObjectBrowserIcons.VariablesPrivileges,
+            PrivilegeCategoryType.XmlSchemas => ObjectBrowserIcons.XmlSchemasPrivileges,
+            _ => "📋"
+        };
+    }
+    
+    /// <summary>
+    /// Get display name for privilege category
+    /// </summary>
+    private string GetPrivilegeCategoryName(PrivilegeCategoryType category)
+    {
+        return category switch
+        {
+            PrivilegeCategoryType.Users => "Users",
+            PrivilegeCategoryType.Tables => "Tables Privileges",
+            PrivilegeCategoryType.Views => "Views Privileges",
+            PrivilegeCategoryType.MQTs => "MQTs Privileges",
+            PrivilegeCategoryType.Columns => "Columns Privileges",
+            PrivilegeCategoryType.Indexes => "Indexes Privileges",
+            PrivilegeCategoryType.Functions => "Functions Privileges",
+            PrivilegeCategoryType.Modules => "Modules Privileges",
+            PrivilegeCategoryType.Packages => "Packages Privileges",
+            PrivilegeCategoryType.Procedures => "Procedures Privileges",
+            PrivilegeCategoryType.Schemas => "Schemas Privileges",
+            PrivilegeCategoryType.Sequences => "Sequences Privileges",
+            PrivilegeCategoryType.Tablespaces => "Tablespaces Privileges",
+            PrivilegeCategoryType.Variables => "Variables Privileges",
+            PrivilegeCategoryType.XmlSchemas => "XML Schemas Privileges",
+            _ => "Unknown"
+        };
+    }
+
+    /// <summary>
+    /// Helper to get icon for object type
+    /// </summary>
+    private string GetObjectTypeIcon(ObjectType objectType)
+    {
+        return objectType switch
+        {
+            ObjectType.Tables => ObjectBrowserIcons.Table,
+            ObjectType.Views => ObjectBrowserIcons.View,
+            ObjectType.Procedures => ObjectBrowserIcons.Procedure,
+            ObjectType.Functions => ObjectBrowserIcons.Function,
+            ObjectType.Indexes => ObjectBrowserIcons.Index,
+            ObjectType.Triggers => ObjectBrowserIcons.Trigger,
+            ObjectType.Sequences => ObjectBrowserIcons.Sequence,
+            ObjectType.Synonyms => ObjectBrowserIcons.Synonym,
+            ObjectType.Types => ObjectBrowserIcons.Type,
+            ObjectType.Packages => ObjectBrowserIcons.Package,
+            _ => "❓"
+        };
+    }
+
+    /// <summary>
+    /// Helper to get display name for object type
+    /// </summary>
+    private string GetObjectTypeName(ObjectType objectType)
+    {
+        return objectType switch
+        {
+            ObjectType.Tables => "Tables",
+            ObjectType.Views => "Views",
+            ObjectType.Procedures => "Procedures",
+            ObjectType.Functions => "Functions",
+            ObjectType.Indexes => "Indexes",
+            ObjectType.Triggers => "Triggers",
+            ObjectType.Sequences => "Sequences",
+            ObjectType.Synonyms => "Synonyms",
+            ObjectType.Types => "Types",
+            ObjectType.Packages => "Packages",
+            _ => "Unknown"
+        };
+    }
+
+    /// <summary>
+    /// Get formatted header for object node
+    /// </summary>
+    private string GetObjectNodeHeader(DatabaseObject obj)
+    {
+        return obj.Type switch
+        {
+            ObjectType.Tables => $"{obj.Icon} {obj.Name} {(obj.RowCount.HasValue ? $"[{obj.RowCount:N0} rows]" : "")}",
+            ObjectType.Procedures or ObjectType.Functions => $"{obj.Icon} {obj.Name} ({obj.ParameterCount ?? 0} params)",
+            _ => $"{obj.Icon} {obj.Name}"
+        };
+    }
+    
+    /// <summary>
+    /// Create tooltip with metadata for database object
+    /// </summary>
+    private string CreateObjectTooltip(DatabaseObject obj)
+    {
+        var tooltip = $"Full Name: {obj.FullName}\n";
+        tooltip += $"Type: {obj.Type}\n";
+        
+        if (!string.IsNullOrEmpty(obj.Owner))
+            tooltip += $"Owner: {obj.Owner}\n";
+        
+        if (obj.CreatedAt.HasValue)
+            tooltip += $"Created: {obj.CreatedAt:yyyy-MM-dd HH:mm:ss}\n";
+        
+        if (obj.RowCount.HasValue)
+            tooltip += $"Row Count: {obj.RowCount:N0}\n";
+        
+        if (obj.ParameterCount.HasValue)
+            tooltip += $"Parameters: {obj.ParameterCount}\n";
+        
+        if (!string.IsNullOrEmpty(obj.TableSpace))
+            tooltip += $"Tablespace/Target: {obj.TableSpace}\n";
+        
+        if (!string.IsNullOrEmpty(obj.Language))
+            tooltip += $"Language: {obj.Language}\n";
+        
+        if (!string.IsNullOrEmpty(obj.Remarks))
+            tooltip += $"\nRemarks: {obj.Remarks}";
+        
+        return tooltip.TrimEnd();
+    }
+
+    /// <summary>
+    /// Handle double-click on object node - open properties dialog
+    /// </summary>
+    private void ObjectNode_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem objectNode && objectNode.Tag is DatabaseObject obj)
+        {
+            Logger.Debug($"Object double-clicked: {obj.FullName} - opening properties");
+            ShowObjectDetails(obj);
+            e.Handled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Handle single-click on object node - insert name at cursor position
+    /// </summary>
+    private void ObjectNode_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem objectNode && objectNode.Tag is DatabaseObject obj)
+        {
+            // Only handle single clicks, not double clicks or expansion/collapse
+            if (e.ClickCount == 1)
+            {
+                Logger.Debug($"Object clicked: {obj.FullName} - inserting at cursor");
+                InsertTextAtCursor(obj.FullName);
+                e.Handled = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Insert text at the current cursor position in SQL editor
+    /// </summary>
+    private void InsertTextAtCursor(string text)
+    {
+        var cursorPosition = SqlEditor.CaretOffset;
+        SqlEditor.Document.Insert(cursorPosition, text);
+        SqlEditor.CaretOffset = cursorPosition + text.Length; // Move cursor after inserted text
+        SqlEditor.Focus();
+        Logger.Debug($"Inserted '{text}' at position {cursorPosition}");
+    }
+    
+    /// <summary>
+    /// Handle click on security principal node to show details
+    /// </summary>
+    private void SecurityPrincipalNode_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem principalNode && principalNode.Tag is SecurityPrincipal principal)
+        {
+            // Only handle direct clicks, not expansion/collapse
+            if (e.ClickCount == 1)
+            {
+                Logger.Debug($"Security principal clicked: {principal.Name}");
+                ShowSecurityPrincipalDetails(principal);
+                e.Handled = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handle double-click on package node - open properties dialog
+    /// </summary>
+    private void PackageNode_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem packageNode && packageNode.Tag is PackageInfo package)
+        {
+            Logger.Debug($"Package double-clicked: {package.PackageSchema}.{package.PackageName} - opening properties");
+            ShowPackageDetails(package);
+            e.Handled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Handle single-click on package node - insert name at cursor position
+    /// </summary>
+    private void PackageNode_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem packageNode && packageNode.Tag is PackageInfo package)
+        {
+            if (e.ClickCount == 1)
+            {
+                Logger.Debug($"Package clicked: {package.PackageSchema}.{package.PackageName} - inserting at cursor");
+                InsertTextAtCursor($"{package.PackageSchema}.{package.PackageName}");
+                e.Handled = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Show details dialog for a database object
+    /// </summary>
+    private void ShowObjectDetails(DatabaseObject obj)
+    {
+        try
+        {
+            Logger.Info("Showing details for {Type}: {Name}", obj.Type, obj.FullName);
+            
+            Window? dialog = obj.Type switch
+            {
+                ObjectType.Tables => new TableDetailsDialog(_connectionManager, obj.FullName),
+                ObjectType.Views or ObjectType.Procedures or ObjectType.Functions or
+                ObjectType.Indexes or ObjectType.Triggers or ObjectType.Sequences or
+                ObjectType.Synonyms or ObjectType.Types => new ObjectDetailsDialog(_connectionManager, obj, _connection),
+                ObjectType.Packages => CreatePackageDialog(obj),
+                _ => null
+            };
+            
+            if (dialog != null)
+            {
+                dialog.Owner = Window.GetWindow(this);
+                dialog.ShowDialog();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show object details");
+            MessageBox.Show($"Failed to show details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create package dialog from DatabaseObject
+    /// </summary>
+    private Window CreatePackageDialog(DatabaseObject obj)
+    {
+        // Need to fetch full package info from database
+        var packageInfo = new PackageInfo
+        {
+            PackageSchema = obj.SchemaName,
+            PackageName = obj.Name,
+            Owner = obj.Owner ?? string.Empty,
+            CreateTime = obj.CreatedAt,
+            Remarks = obj.Remarks
+            // BoundBy and Isolation will be fetched by the dialog if needed
+        };
+        
+        var dialog = new PackageDetailsDialog(_connectionManager, packageInfo);
+        
+        // Subscribe to SqlTextRequested event
+        dialog.SqlTextRequested += (sender, sqlText) =>
+        {
+            InsertTextAtCursor(sqlText + "\n");
+            Logger.Info("Package SQL statement inserted into editor");
+        };
+        
+        return dialog;
+    }
+    
+    /// <summary>
+    /// Show details dialog for a security principal
+    /// </summary>
+    private void ShowSecurityPrincipalDetails(SecurityPrincipal principal)
+    {
+        try
+        {
+            Logger.Info("Showing details for {Type}: {Name}", principal.Type, principal.Name);
+            
+            var dialog = new UserDetailsDialog(_connectionManager, principal);
+            dialog.Owner = Window.GetWindow(this);
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show security principal details");
+            MessageBox.Show($"Failed to show details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Show details dialog for a package
+    /// </summary>
+    private void ShowPackageDetails(PackageInfo package)
+    {
+        try
+        {
+            Logger.Info("Showing details for package: {Schema}.{Name}", package.PackageSchema, package.PackageName);
+            
+            var dialog = new PackageDetailsDialog(_connectionManager, package);
+            dialog.Owner = Window.GetWindow(this);
+            
+            // Subscribe to the SqlTextRequested event to insert SQL into editor
+            dialog.SqlTextRequested += (sender, sqlText) =>
+            {
+                InsertTextAtCursor(sqlText + "\n");
+                Logger.Info("Package SQL statement inserted into editor");
+            };
+            
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show package details");
+            MessageBox.Show($"Failed to show details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Handle click on schema node
+    /// </summary>
+    private void SchemaNode_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem schemaTreeNode && schemaTreeNode.Tag is SchemaNode schemaNode)
+        {
+            // Only handle direct clicks, not expansion/collapse
+            if (e.ClickCount == 1)
+            {
+                Logger.Debug($"Schema clicked: {schemaNode.SchemaName}");
+                ShowSchemaDetails(schemaNode);
+                e.Handled = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handle click on tablespace node
+    /// </summary>
+    private void TablespaceNode_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem tsNode && tsNode.Tag is TablespaceInfo tablespace)
+        {
+            Logger.Debug($"Tablespace clicked: {tablespace.TablespaceName}");
+            ShowTablespaceDetails(tablespace);
+            e.Handled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Show details for a schema
+    /// </summary>
+    private void ShowSchemaDetails(SchemaNode schema)
+    {
+        try
+        {
+            var message = $"Schema: {schema.SchemaName}\n" +
+                         $"Type: {schema.Type}\n";
+            
+            // Show object counts by type
+            if (schema.ObjectTypes.Any())
+            {
+                message += $"\nObject Types:\n";
+                foreach (var objType in schema.ObjectTypes)
+                {
+                    message += $"  {objType.Icon} {objType.Name}: {objType.Count}\n";
+                }
+            }
+            
+            MessageBox.Show(message.TrimEnd(), $"Schema Details - {schema.SchemaName}", 
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            Logger.Info("Showed schema details for: {Schema}", schema.SchemaName);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show schema details");
+            MessageBox.Show($"Failed to show details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Show details for a tablespace
+    /// </summary>
+    private void ShowTablespaceDetails(TablespaceInfo tablespace)
+    {
+        try
+        {
+            var message = $"Tablespace: {tablespace.TablespaceName}\n" +
+                         $"Type: {tablespace.TablespaceType}\n" +
+                         $"Data Type: {tablespace.DataType}\n" +
+                         $"Page Size: {tablespace.PageSize} bytes\n" +
+                         $"Owner: {tablespace.Owner}\n";
+            
+            if (tablespace.CreateTime.HasValue)
+                message += $"Created: {tablespace.CreateTime:yyyy-MM-dd HH:mm:ss}\n";
+            
+            if (!string.IsNullOrEmpty(tablespace.Remarks))
+                message += $"\nRemarks: {tablespace.Remarks}";
+            
+            MessageBox.Show(message.TrimEnd(), $"Tablespace Details - {tablespace.TablespaceName}", 
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            Logger.Info("Showed tablespace details for: {Tablespace}", tablespace.TablespaceName);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show tablespace details");
+            MessageBox.Show($"Failed to show details:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Create context menu for database object
+    /// </summary>
+    private ContextMenu CreateObjectContextMenu(DatabaseObject obj)
+    {
+        var contextMenu = new ContextMenu();
+
+        // Properties (always first - for all users) - DDL is now inside Properties dialog
+        var propsItem = new MenuItem { Header = "⚙️ Properties..." };
+        propsItem.Click += (s, e) => ShowObjectDetails(obj);
+        contextMenu.Items.Add(propsItem);
+        
+        contextMenu.Items.Add(new Separator());
+
+        // Browse Data (Tables/Views only)
+        if (obj.Type == ObjectType.Tables || obj.Type == ObjectType.Views)
+        {
+            var browseItem = new MenuItem { Header = "📊 Browse Data (SELECT *)" };
+            browseItem.Click += (s, e) =>
+            {
+                SqlEditor.Text = $"SELECT * FROM {obj.FullName};";
+                Execute_Click(s, e);
+            };
+            contextMenu.Items.Add(browseItem);
+            
+            var countItem = new MenuItem { Header = "🔢 Count Rows (SELECT COUNT(*))" };
+            countItem.Click += (s, e) =>
+            {
+                SqlEditor.Text = $"SELECT COUNT(*) AS ROW_COUNT FROM {obj.FullName};";
+                Execute_Click(s, e);
+            };
+            contextMenu.Items.Add(countItem);
+            
+            contextMenu.Items.Add(new Separator());
+        }
+
+        // View Definition (Views/Procedures/Functions)
+        if (obj.Type == ObjectType.Views || obj.Type == ObjectType.Procedures || obj.Type == ObjectType.Functions)
+        {
+            var viewDefItem = new MenuItem { Header = "📄 View Source Code..." };
+            viewDefItem.Click += async (s, e) =>
+            {
+                try
+                {
+                    string? definition = null;
+                    if (obj.Type == ObjectType.Views)
+                    {
+                        definition = await _connectionManager.GetViewDefinitionAsync(obj.Name);
+                    }
+                    else if (obj.Type == ObjectType.Procedures || obj.Type == ObjectType.Functions)
+                    {
+                        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{obj.SchemaName}' AND ROUTINENAME = '{obj.Name}'";
+                        var result = await _connectionManager.ExecuteScalarAsync(sql);
+                        definition = result?.ToString();
+                    }
+                    
+                    if (!string.IsNullOrEmpty(definition))
+                    {
+                        SqlEditor.Text = definition;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Source code not available.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Failed to get source code for {Name}", obj.FullName);
+                    MessageBox.Show($"Failed to retrieve source code: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
+            contextMenu.Items.Add(viewDefItem);
+            contextMenu.Items.Add(new Separator());
+        }
+
+        // Generate SELECT statement
+        if (obj.Type == ObjectType.Tables || obj.Type == ObjectType.Views)
+        {
+            var generateSelectItem = new MenuItem { Header = "📝 Generate SELECT Statement" };
+            generateSelectItem.Click += (s, e) => SqlEditor.AppendText($"\nSELECT * FROM {obj.FullName};\n");
+            contextMenu.Items.Add(generateSelectItem);
+        }
+
+        // Copy Name
+        var copyItem = new MenuItem { Header = "📋 Copy Full Name" };
+        copyItem.Click += (s, e) => Clipboard.SetText(obj.FullName);
+        contextMenu.Items.Add(copyItem);
+        
+        // Copy as CSV (for results)
+        if (obj.Type == ObjectType.Tables || obj.Type == ObjectType.Views)
+        {
+            var copySchemaItem = new MenuItem { Header = "📋 Copy Schema Name" };
+            copySchemaItem.Click += (s, e) => Clipboard.SetText(obj.SchemaName);
+            contextMenu.Items.Add(copySchemaItem);
+            
+            var copyTableItem = new MenuItem { Header = "📋 Copy Table Name" };
+            copyTableItem.Click += (s, e) => Clipboard.SetText(obj.Name);
+            contextMenu.Items.Add(copyTableItem);
+        }
+
+        return contextMenu;
+    }
+    
+    /// <summary>
+    /// Generate CREATE DDL and open in new tab
+    /// </summary>
+    private async Task GenerateCreateDdlAsync(DatabaseObject obj)
+    {
+        try
+        {
+            Logger.Info("Generating CREATE DDL for {Type}: {Name}", obj.Type, obj.FullName);
+            
+            var ddlService = new DdlGeneratorService(_connectionManager);
+            var (createDdl, _) = await ddlService.GenerateDdlAsync(obj);
+            
+            // Request new tab from MainWindow
+            if (Window.GetWindow(this) is MainWindow mainWindow)
+            {
+                mainWindow.CreateNewTabWithSql(createDdl, $"CREATE {obj.Name}");
+            }
+            else
+            {
+                // Fallback: append to current editor
+                SqlEditor.AppendText($"\n{createDdl}\n");
+            }
+            
+            Logger.Info("CREATE DDL generated successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate CREATE DDL for {Name}", obj.FullName);
+            MessageBox.Show($"Failed to generate CREATE DDL:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Generate DROP DDL and open in new tab
+    /// </summary>
+    private async Task GenerateDropDdlAsync(DatabaseObject obj)
+    {
+        try
+        {
+            Logger.Info("Generating DROP DDL for {Type}: {Name}", obj.Type, obj.FullName);
+            
+            var ddlService = new DdlGeneratorService(_connectionManager);
+            var (_, dropDdl) = await ddlService.GenerateDdlAsync(obj);
+            
+            // Request new tab from MainWindow
+            if (Window.GetWindow(this) is MainWindow mainWindow)
+            {
+                mainWindow.CreateNewTabWithSql(dropDdl, $"DROP {obj.Name}");
+            }
+            else
+            {
+                // Fallback: append to current editor
+                SqlEditor.AppendText($"\n{dropDdl}\n");
+            }
+            
+            Logger.Info("DROP DDL generated successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate DROP DDL for {Name}", obj.FullName);
+            MessageBox.Show($"Failed to generate DROP DDL:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Handle search box text changed
+    /// </summary>
+    private void ObjectSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = ObjectSearchBox.Text?.Trim() ?? string.Empty;
+        
+        if (string.IsNullOrEmpty(searchText))
+        {
+            // Show all items and reset expansion
+            SetTreeViewItemsVisibility(DatabaseTreeView.Items, true);
+            ObjectBrowserStatusText.Text = "Ready";
+            return;
+        }
+
+        Logger.Debug($"Searching objects: {searchText}");
+        int visibleCount = 0;
+
+        // Recursive search through all tree nodes
+        foreach (TreeViewItem item in DatabaseTreeView.Items)
+        {
+            if (SearchAndFilterTreeViewItem(item, searchText))
+            {
+                visibleCount++;
+            }
+        }
+
+        ObjectBrowserStatusText.Text = visibleCount > 0 
+            ? $"Found {visibleCount} matching items" 
+            : "No matches found";
+    }
+    
+    /// <summary>
+    /// Recursively search and filter tree view items
+    /// </summary>
+    private bool SearchAndFilterTreeViewItem(TreeViewItem item, string searchText)
+    {
+        var header = item.Header?.ToString() ?? string.Empty;
+        bool matchesSearch = header.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+        bool hasVisibleChildren = false;
+
+        // Check if any children match
+        if (item.Items.Count > 0 && item.Items[0] is not string)
+        {
+            foreach (TreeViewItem child in item.Items.OfType<TreeViewItem>())
+            {
+                if (SearchAndFilterTreeViewItem(child, searchText))
+                {
+                    hasVisibleChildren = true;
+                }
+            }
+        }
+
+        // Show item if it matches or has visible children
+        bool shouldBeVisible = matchesSearch || hasVisibleChildren;
+        item.Visibility = shouldBeVisible ? Visibility.Visible : Visibility.Collapsed;
+
+        // Auto-expand if it has matching children
+        if (hasVisibleChildren && !matchesSearch)
+        {
+            item.IsExpanded = true;
+        }
+
+        return shouldBeVisible;
+    }
+    
+    /// <summary>
+    /// Set visibility for all tree view items
+    /// </summary>
+    private void SetTreeViewItemsVisibility(ItemCollection items, bool visible)
+    {
+        foreach (TreeViewItem item in items.OfType<TreeViewItem>())
+        {
+            item.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            
+            if (item.Items.Count > 0 && item.Items[0] is not string)
+            {
+                SetTreeViewItemsVisibility(item.Items, visible);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle refresh button click
+    /// </summary>
+    private async void RefreshObjectBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Refreshing object browser");
+        ObjectBrowserStatusText.Text = "Refreshing...";
+        
+        try
+        {
+            await LoadDatabaseObjectsAsync();
+            ObjectBrowserStatusText.Text = "Refresh complete";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to refresh object browser");
+            ObjectBrowserStatusText.Text = "Refresh failed";
+            MessageBox.Show($"Failed to refresh: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

@@ -1,352 +1,414 @@
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Models;
+using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// Service for generating DDL statements
+/// Service for generating DDL (CREATE and DROP) statements for DB2 objects
 /// </summary>
 public class DdlGeneratorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    
-    /// <summary>
-    /// Generate complete DDL for a table
-    /// </summary>
-    public async Task<string> GenerateTableDdlAsync(
-        DB2ConnectionManager connectionManager,
-        string schema,
-        string tableName)
+    private readonly DB2ConnectionManager _connectionManager;
+
+    public DdlGeneratorService(DB2ConnectionManager connectionManager)
     {
-        Logger.Info("Generating DDL for table: {Schema}.{Table}", schema, tableName);
-        
-        try
-        {
-            var ddl = new StringBuilder();
-            ddl.AppendLine($"-- DDL for table {schema}.{tableName}");
-            ddl.AppendLine($"-- Generated: {DateTime.Now}");
-            ddl.AppendLine();
-            
-            // Get table info
-            var tableInfo = await GetTableInfoAsync(connectionManager, schema, tableName);
-            
-            // Get columns
-            var columns = await GetColumnsAsync(connectionManager, schema, tableName);
-            
-            // Generate CREATE TABLE
-            ddl.AppendLine(GenerateCreateTableStatement(schema, tableName, columns, tableInfo));
-            ddl.AppendLine();
-            
-            // Get and generate primary key
-            var primaryKey = await GetPrimaryKeyAsync(connectionManager, schema, tableName);
-            if (!string.IsNullOrEmpty(primaryKey))
-            {
-                ddl.AppendLine(primaryKey);
-                ddl.AppendLine();
-            }
-            
-            // Get and generate foreign keys
-            var foreignKeys = await GetForeignKeysAsync(connectionManager, schema, tableName);
-            if (!string.IsNullOrEmpty(foreignKeys))
-            {
-                ddl.AppendLine(foreignKeys);
-                ddl.AppendLine();
-            }
-            
-            // Get and generate indexes
-            var indexes = await GetIndexesAsync(connectionManager, schema, tableName);
-            if (!string.IsNullOrEmpty(indexes))
-            {
-                ddl.AppendLine(indexes);
-                ddl.AppendLine();
-            }
-            
-            Logger.Info("DDL generated successfully for {Schema}.{Table}", schema, tableName);
-            return ddl.ToString();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to generate DDL for {Schema}.{Table}", schema, tableName);
-            throw;
-        }
+        _connectionManager = connectionManager;
     }
-    
+
     /// <summary>
-    /// Get table information
+    /// Generate DDL for a database object
     /// </summary>
-    private async Task<DataRow?> GetTableInfoAsync(DB2ConnectionManager connectionManager, string schema, string tableName)
+    public async Task<(string createDdl, string dropDdl)> GenerateDdlAsync(DatabaseObject obj)
     {
-        var sql = $@"
-            SELECT * FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = '{schema}'
-              AND TABNAME = '{tableName}'
-        ";
+        Logger.Info("Generating DDL for {Type}: {Name}", obj.Type, obj.FullName);
         
-        var result = await connectionManager.ExecuteQueryAsync(sql);
-        return result.Rows.Count > 0 ? result.Rows[0] : null;
-    }
-    
-    /// <summary>
-    /// Get column definitions
-    /// </summary>
-    private async Task<DataTable> GetColumnsAsync(DB2ConnectionManager connectionManager, string schema, string tableName)
-    {
-        var sql = $@"
-            SELECT * FROM SYSCAT.COLUMNS
-            WHERE TABSCHEMA = '{schema}'
-              AND TABNAME = '{tableName}'
-            ORDER BY COLNO
-        ";
-        
-        return await connectionManager.ExecuteQueryAsync(sql);
-    }
-    
-    /// <summary>
-    /// Generate CREATE TABLE statement
-    /// </summary>
-    private string GenerateCreateTableStatement(string schema, string tableName, DataTable columns, DataRow? tableInfo)
-    {
-        var ddl = new StringBuilder();
-        ddl.AppendLine($"CREATE TABLE {schema}.{tableName} (");
-        
-        var columnDefs = new List<string>();
-        
-        foreach (DataRow column in columns.Rows)
+        return obj.Type switch
         {
-            var colName = column["COLNAME"]?.ToString();
-            var typeName = column["TYPENAME"]?.ToString();
-            var length = column["LENGTH"]?.ToString();
-            var scale = column["SCALE"]?.ToString();
-            var nulls = column["NULLS"]?.ToString();
-            var defaultVal = column["DEFAULT"]?.ToString();
+            ObjectType.Tables => await GenerateTableDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Views => await GenerateViewDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Indexes => await GenerateIndexDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Sequences => await GenerateSequenceDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Synonyms => await GenerateSynonymDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Triggers => await GenerateTriggerDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Procedures => await GenerateProcedureDdlAsync(obj.SchemaName, obj.Name),
+            ObjectType.Functions => await GenerateFunctionDdlAsync(obj.SchemaName, obj.Name),
+            _ => throw new NotSupportedException($"DDL generation not supported for {obj.Type}")
+        };
+    }
+
+    /// <summary>
+    /// Generate CREATE and DROP DDL for a table
+    /// </summary>
+    private async Task<(string, string)> GenerateTableDdlAsync(string schema, string tableName)
+    {
+        Logger.Debug("Generating table DDL for {Schema}.{Table}", schema, tableName);
+        
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE TABLE DDL for {schema}.{tableName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine($"CREATE TABLE {schema}.{tableName}");
+        createDdl.AppendLine("(");
+        
+        // Get columns
+        var columnsSql = @"
+            SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, IDENTITY
+            FROM SYSCAT.COLUMNS
+            WHERE TABSCHEMA = ? AND TABNAME = ?
+            ORDER BY COLNO";
+        
+        using var colCommand = _connectionManager.CreateCommand(columnsSql);
+        colCommand.Parameters.Add(new DB2Parameter("@schema", schema));
+        colCommand.Parameters.Add(new DB2Parameter("@table", tableName));
+        
+        using var colReader = await colCommand.ExecuteReaderAsync();
+        var first = true;
+        
+        while (await colReader.ReadAsync())
+        {
+            if (!first) createDdl.AppendLine(",");
+            first = false;
             
-            var colDef = new StringBuilder();
-            colDef.Append($"   \"{colName}\" {typeName}");
+            var colName = colReader.GetString(0);
+            var typeName = colReader.GetString(1);
+            var length = colReader.IsDBNull(2) ? 0 : colReader.GetInt32(2);
+            var scale = colReader.IsDBNull(3) ? 0 : colReader.GetInt16(3);
+            var nulls = colReader.GetString(4);
+            var defaultVal = colReader.IsDBNull(5) ? null : colReader.GetString(5);
+            var identity = colReader.GetString(6);
             
-            // Add length/scale for appropriate types
-            if (typeName == "VARCHAR" || typeName == "CHAR")
-            {
-                colDef.Append($"({length})");
-            }
+            createDdl.Append($"    {colName} {typeName}");
+            
+            if (typeName.Contains("CHAR") || typeName == "VARCHAR" || typeName == "VARGRAPHIC")
+                createDdl.Append($"({length})");
             else if (typeName == "DECIMAL" || typeName == "NUMERIC")
-            {
-                colDef.Append($"({length},{scale})");
-            }
+                createDdl.Append($"({length},{scale})");
             
-            // Add NOT NULL
+            if (identity == "Y")
+                createDdl.Append(" GENERATED ALWAYS AS IDENTITY");
+            
             if (nulls == "N")
-            {
-                colDef.Append(" NOT NULL");
-            }
+                createDdl.Append(" NOT NULL");
             
-            // Add DEFAULT
             if (!string.IsNullOrEmpty(defaultVal))
+                createDdl.Append($" DEFAULT {defaultVal}");
+        }
+        
+        createDdl.AppendLine();
+        createDdl.AppendLine(");");
+        
+        // Get primary key
+        var pkSql = @"
+            SELECT CONSTNAME, COLNAMES
+            FROM SYSCAT.TABCONST
+            WHERE TABSCHEMA = ? AND TABNAME = ? AND TYPE = 'P'";
+        
+        using var pkCommand = _connectionManager.CreateCommand(pkSql);
+        pkCommand.Parameters.Add(new DB2Parameter("@schema", schema));
+        pkCommand.Parameters.Add(new DB2Parameter("@table", tableName));
+        
+        var pkName = await pkCommand.ExecuteScalarAsync();
+        if (pkName != null)
+        {
+            createDdl.AppendLine();
+            createDdl.AppendLine($"-- Primary Key");
+            createDdl.AppendLine($"ALTER TABLE {schema}.{tableName}");
+            createDdl.AppendLine($"    ADD CONSTRAINT {pkName}");
+            
+            using var pkReader = await pkCommand.ExecuteReaderAsync();
+            if (await pkReader.ReadAsync())
             {
-                colDef.Append($" WITH DEFAULT {defaultVal}");
+                var colNames = pkReader.GetString(1);
+                createDdl.AppendLine($"    PRIMARY KEY ({colNames.Replace("+", ", ")});");
             }
-            
-            columnDefs.Add(colDef.ToString());
         }
         
-        ddl.AppendLine(string.Join(",\n", columnDefs));
-        ddl.Append("   )");
+        // Generate DROP
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP TABLE DDL for {schema}.{tableName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP TABLE {schema}.{tableName};");
         
-        // Add DATA CAPTURE
-        if (tableInfo != null)
-        {
-            var dataCapture = tableInfo["DATACAPTURE"]?.ToString();
-            if (dataCapture == "Y" || dataCapture == "L")
-            {
-                ddl.AppendLine();
-                ddl.Append("   DATA CAPTURE CHANGES");
-            }
-            
-            var tbspace = tableInfo["TBSPACE"]?.ToString();
-            if (!string.IsNullOrEmpty(tbspace))
-            {
-                ddl.AppendLine();
-                ddl.Append($"IN {tbspace}");
-            }
-        }
-        
-        ddl.AppendLine(";");
-        
-        return ddl.ToString();
+        return (createDdl.ToString(), dropDdl.ToString());
     }
-    
+
     /// <summary>
-    /// Get and generate primary key DDL
+    /// Generate CREATE and DROP DDL for a view
     /// </summary>
-    private async Task<string> GetPrimaryKeyAsync(DB2ConnectionManager connectionManager, string schema, string tableName)
+    private async Task<(string, string)> GenerateViewDdlAsync(string schema, string viewName)
     {
-        var sql = $@"
-            SELECT CONSTNAME, COLNAME
-            FROM SYSCAT.KEYCOLUSE
-            WHERE TABSCHEMA = '{schema}'
-              AND TABNAME = '{tableName}'
-            ORDER BY COLSEQ
-        ";
+        Logger.Debug("Generating view DDL for {Schema}.{View}", schema, viewName);
         
-        var result = await connectionManager.ExecuteQueryAsync(sql);
+        var sql = @"
+            SELECT TEXT
+            FROM SYSCAT.VIEWS
+            WHERE VIEWSCHEMA = ? AND VIEWNAME = ?";
         
-        if (result.Rows.Count == 0)
-            return string.Empty;
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@view", viewName));
         
-        var constraintName = result.Rows[0]["CONSTNAME"]?.ToString();
-        var columns = new List<string>();
+        var text = await command.ExecuteScalarAsync();
         
-        foreach (DataRow row in result.Rows)
-        {
-            columns.Add(row["COLNAME"]?.ToString() ?? string.Empty);
-        }
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE VIEW DDL for {schema}.{viewName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine($"CREATE VIEW {schema}.{viewName} AS");
+        createDdl.AppendLine(text?.ToString() ?? "");
+        createDdl.AppendLine(";");
         
-        return $"-- Primary Key\nALTER TABLE {schema}.{tableName} ADD CONSTRAINT {constraintName} PRIMARY KEY ({string.Join(", ", columns)});";
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP VIEW DDL for {schema}.{viewName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP VIEW {schema}.{viewName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
     }
-    
+
     /// <summary>
-    /// Get and generate foreign keys DDL
+    /// Generate CREATE and DROP DDL for an index
     /// </summary>
-    private async Task<string> GetForeignKeysAsync(DB2ConnectionManager connectionManager, string schema, string tableName)
+    private async Task<(string, string)> GenerateIndexDdlAsync(string schema, string indexName)
     {
-        var sql = $@"
-            SELECT *
-            FROM SYSCAT.REFERENCES
-            WHERE TABSCHEMA = '{schema}'
-              AND TABNAME = '{tableName}'
-        ";
+        Logger.Debug("Generating index DDL for {Schema}.{Index}", schema, indexName);
         
-        var result = await connectionManager.ExecuteQueryAsync(sql);
+        var sql = @"
+            SELECT TABSCHEMA, TABNAME, UNIQUERULE, COLNAMES, INDEXTYPE
+            FROM SYSCAT.INDEXES
+            WHERE INDSCHEMA = ? AND INDNAME = ?";
         
-        if (result.Rows.Count == 0)
-            return string.Empty;
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@index", indexName));
         
-        var ddl = new StringBuilder();
-        ddl.AppendLine("-- Foreign Keys");
+        using var reader = await command.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            throw new Exception($"Index {schema}.{indexName} not found");
         
-        foreach (DataRow row in result.Rows)
-        {
-            var constName = row["CONSTNAME"]?.ToString();
-            var refSchema = row["REFTABSCHEMA"]?.ToString();
-            var refTable = row["REFTABNAME"]?.ToString();
-            var fkCols = row["FK_COLNAMES"]?.ToString();
-            var pkCols = row["PK_COLNAMES"]?.ToString();
-            var deleteRule = row["DELETERULE"]?.ToString();
-            var updateRule = row["UPDATERULE"]?.ToString();
-            
-            ddl.AppendLine($"ALTER TABLE {schema}.{tableName}");
-            ddl.AppendLine($"  ADD CONSTRAINT {constName}");
-            ddl.AppendLine($"  FOREIGN KEY ({fkCols})");
-            ddl.AppendLine($"  REFERENCES {refSchema}.{refTable} ({pkCols})");
-            ddl.AppendLine($"  ON DELETE {deleteRule}");
-            ddl.AppendLine($"  ON UPDATE {updateRule};");
-            ddl.AppendLine();
-        }
+        var tabSchema = reader.GetString(0);
+        var tabName = reader.GetString(1);
+        var uniqueRule = reader.GetString(2);
+        var colNames = reader.GetString(3);
+        var indexType = reader.GetString(4);
         
-        return ddl.ToString();
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE INDEX DDL for {schema}.{indexName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        
+        if (uniqueRule == "U")
+            createDdl.Append("CREATE UNIQUE INDEX ");
+        else
+            createDdl.Append("CREATE INDEX ");
+        
+        createDdl.AppendLine($"{schema}.{indexName}");
+        createDdl.AppendLine($"    ON {tabSchema}.{tabName}");
+        createDdl.AppendLine($"    ({colNames.Replace("+", ", ")});");
+        
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP INDEX DDL for {schema}.{indexName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP INDEX {schema}.{indexName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
     }
-    
+
     /// <summary>
-    /// Get and generate indexes DDL
+    /// Generate CREATE and DROP DDL for a sequence
     /// </summary>
-    private async Task<string> GetIndexesAsync(DB2ConnectionManager connectionManager, string schema, string tableName)
+    private async Task<(string, string)> GenerateSequenceDdlAsync(string schema, string seqName)
     {
-        var sql = $@"
-            SELECT DISTINCT
-                i.INDNAME, i.UNIQUERULE, i.INDEXTYPE,
-                ic.COLNAME, ic.COLORDER
-            FROM SYSCAT.INDEXES i
-            LEFT JOIN SYSCAT.INDEXCOLUSE ic
-              ON i.INDSCHEMA = ic.INDSCHEMA AND i.INDNAME = ic.INDNAME
-            WHERE i.TABSCHEMA = '{schema}'
-              AND i.TABNAME = '{tableName}'
-              AND i.UNIQUERULE <> 'P'
-            ORDER BY i.INDNAME, ic.COLSEQ
-        ";
+        Logger.Debug("Generating sequence DDL for {Schema}.{Sequence}", schema, seqName);
         
-        var result = await connectionManager.ExecuteQueryAsync(sql);
+        var sql = @"
+            SELECT START, INCREMENT, MINVALUE, MAXVALUE, CYCLE, CACHE, ORDER
+            FROM SYSCAT.SEQUENCES
+            WHERE SEQSCHEMA = ? AND SEQNAME = ?";
         
-        if (result.Rows.Count == 0)
-            return string.Empty;
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@seq", seqName));
         
-        var ddl = new StringBuilder();
-        ddl.AppendLine("-- Indexes");
+        using var reader = await command.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            throw new Exception($"Sequence {schema}.{seqName} not found");
         
-        var indexGroups = result.AsEnumerable()
-            .GroupBy(r => r["INDNAME"]?.ToString());
+        var start = reader.IsDBNull(0) ? 1 : reader.GetInt64(0);
+        var increment = reader.IsDBNull(1) ? 1 : reader.GetInt64(1);
+        var minValue = reader.IsDBNull(2) ? 1 : reader.GetInt64(2);
+        var maxValue = reader.IsDBNull(3) ? long.MaxValue : reader.GetInt64(3);
+        var cycle = reader.IsDBNull(4) ? "N" : reader.GetString(4);
+        var cache = reader.IsDBNull(5) ? 20 : reader.GetInt64(5);
+        var order = reader.IsDBNull(6) ? "N" : reader.GetString(6);
         
-        foreach (var group in indexGroups)
-        {
-            var indexName = group.Key;
-            var firstRow = group.First();
-            var uniqueRule = firstRow["UNIQUERULE"]?.ToString();
-            
-            var columns = group.Select(r => new
-            {
-                Name = r["COLNAME"]?.ToString(),
-                Order = r["COLORDER"]?.ToString()
-            }).ToList();
-            
-            var columnDefs = columns.Select(c => $"{c.Name} {(c.Order == "D" ? "DESC" : "ASC")}");
-            
-            var unique = uniqueRule == "U" ? "UNIQUE " : "";
-            ddl.AppendLine($"CREATE {unique}INDEX {indexName} ON {schema}.{tableName} ({string.Join(", ", columnDefs)});");
-        }
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE SEQUENCE DDL for {schema}.{seqName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine($"CREATE SEQUENCE {schema}.{seqName}");
+        createDdl.AppendLine($"    START WITH {start}");
+        createDdl.AppendLine($"    INCREMENT BY {increment}");
+        createDdl.AppendLine($"    MINVALUE {minValue}");
+        createDdl.AppendLine($"    MAXVALUE {maxValue}");
+        createDdl.AppendLine($"    {(cycle == "Y" ? "CYCLE" : "NO CYCLE")}");
+        createDdl.AppendLine($"    CACHE {cache}");
+        createDdl.AppendLine($"    {(order == "Y" ? "ORDER" : "NO ORDER")};");
         
-        return ddl.ToString();
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP SEQUENCE DDL for {schema}.{seqName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP SEQUENCE {schema}.{seqName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
     }
-    
+
     /// <summary>
-    /// Generate DDL for entire schema
+    /// Generate CREATE and DROP DDL for a synonym
     /// </summary>
-    public async Task<string> GenerateSchemaDdlAsync(
-        DB2ConnectionManager connectionManager,
-        string schema)
+    private async Task<(string, string)> GenerateSynonymDdlAsync(string schema, string synonymName)
     {
-        Logger.Info("Generating DDL for entire schema: {Schema}", schema);
+        Logger.Debug("Generating synonym DDL for {Schema}.{Synonym}", schema, synonymName);
         
-        try
-        {
-            var ddl = new StringBuilder();
-            ddl.AppendLine($"-- DDL for schema {schema}");
-            ddl.AppendLine($"-- Generated: {DateTime.Now}");
-            ddl.AppendLine();
-            
-            // Get all tables in schema
-            var tablesSql = $@"
-                SELECT TABNAME
-                FROM SYSCAT.TABLES
-                WHERE TABSCHEMA = '{schema}'
-                  AND TYPE = 'T'
-                ORDER BY TABNAME
-            ";
-            
-            var tables = await connectionManager.ExecuteQueryAsync(tablesSql);
-            Logger.Info("Found {Count} tables in schema {Schema}", tables.Rows.Count, schema);
-            
-            // Generate DDL for each table
-            foreach (DataRow table in tables.Rows)
-            {
-                var tableName = table["TABNAME"]?.ToString() ?? string.Empty;
-                var tableDdl = await GenerateTableDdlAsync(connectionManager, schema, tableName);
-                ddl.AppendLine(tableDdl);
-                ddl.AppendLine("-- " + new string('-', 80));
-                ddl.AppendLine();
-            }
-            
-            Logger.Info("Schema DDL generated for {Count} tables", tables.Rows.Count);
-            return ddl.ToString();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to generate schema DDL for {Schema}", schema);
-            throw;
-        }
+        var sql = @"
+            SELECT BASE_TABSCHEMA, BASE_TABNAME
+            FROM SYSCAT.TABLES
+            WHERE TABSCHEMA = ? AND TABNAME = ? AND TYPE = 'A'";
+        
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@synonym", synonymName));
+        
+        using var reader = await command.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            throw new Exception($"Synonym {schema}.{synonymName} not found");
+        
+        var baseSchema = reader.GetString(0);
+        var baseName = reader.GetString(1);
+        
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE ALIAS DDL for {schema}.{synonymName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine($"CREATE ALIAS {schema}.{synonymName}");
+        createDdl.AppendLine($"    FOR {baseSchema}.{baseName};");
+        
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP ALIAS DDL for {schema}.{synonymName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP ALIAS {schema}.{synonymName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
+    }
+
+    /// <summary>
+    /// Generate CREATE and DROP DDL for a trigger
+    /// </summary>
+    private async Task<(string, string)> GenerateTriggerDdlAsync(string schema, string triggerName)
+    {
+        Logger.Debug("Generating trigger DDL for {Schema}.{Trigger}", schema, triggerName);
+        
+        var sql = @"
+            SELECT TEXT
+            FROM SYSCAT.TRIGGERS
+            WHERE TRIGSCHEMA = ? AND TRIGNAME = ?";
+        
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@trigger", triggerName));
+        
+        var text = await command.ExecuteScalarAsync();
+        
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE TRIGGER DDL for {schema}.{triggerName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine(text?.ToString() ?? $"-- Trigger text not available");
+        
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP TRIGGER DDL for {schema}.{triggerName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP TRIGGER {schema}.{triggerName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
+    }
+
+    /// <summary>
+    /// Generate CREATE and DROP DDL for a procedure
+    /// </summary>
+    private async Task<(string, string)> GenerateProcedureDdlAsync(string schema, string procName)
+    {
+        Logger.Debug("Generating procedure DDL for {Schema}.{Procedure}", schema, procName);
+        
+        var sql = @"
+            SELECT TEXT
+            FROM SYSCAT.ROUTINES
+            WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'P'";
+        
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@proc", procName));
+        
+        var text = await command.ExecuteScalarAsync();
+        
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE PROCEDURE DDL for {schema}.{procName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine(text?.ToString() ?? $"-- Procedure text not available");
+        
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP PROCEDURE DDL for {schema}.{procName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP PROCEDURE {schema}.{procName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
+    }
+
+    /// <summary>
+    /// Generate CREATE and DROP DDL for a function
+    /// </summary>
+    private async Task<(string, string)> GenerateFunctionDdlAsync(string schema, string funcName)
+    {
+        Logger.Debug("Generating function DDL for {Schema}.{Function}", schema, funcName);
+        
+        var sql = @"
+            SELECT TEXT
+            FROM SYSCAT.ROUTINES
+            WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'F'";
+        
+        using var command = _connectionManager.CreateCommand(sql);
+        command.Parameters.Add(new DB2Parameter("@schema", schema));
+        command.Parameters.Add(new DB2Parameter("@func", funcName));
+        
+        var text = await command.ExecuteScalarAsync();
+        
+        var createDdl = new StringBuilder();
+        createDdl.AppendLine($"-- CREATE FUNCTION DDL for {schema}.{funcName}");
+        createDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        createDdl.AppendLine();
+        createDdl.AppendLine(text?.ToString() ?? $"-- Function text not available");
+        
+        var dropDdl = new StringBuilder();
+        dropDdl.AppendLine($"-- DROP FUNCTION DDL for {schema}.{funcName}");
+        dropDdl.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        dropDdl.AppendLine();
+        dropDdl.AppendLine($"DROP FUNCTION {schema}.{funcName};");
+        
+        return (createDdl.ToString(), dropDdl.ToString());
     }
 }
-

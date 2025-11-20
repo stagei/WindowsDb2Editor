@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowsDb2Editor"
+        xmlns:controls="clr-namespace:WindowsDb2Editor.Controls"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         mc:Ignorable="d"
@@ -147,86 +148,33 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- Welcome Panel (shown when no connections) -->
+            <controls:WelcomePanel x:Name="WelcomePanel" 
+                               Grid.Row="0"
+                               Visibility="Visible"
+                               ConnectionRequested="WelcomePanel_ConnectionRequested"
+                               NewConnectionRequested="WelcomePanel_NewConnectionRequested"
+                               ManageConnectionsRequested="WelcomePanel_ManageConnectionsRequested"/>
+
             <!-- Tab Control for Connections -->
-            <TabControl Grid.Row="0" x:Name="ConnectionTabs" Margin="5" SelectionChanged="ConnectionTabs_SelectionChanged">
+            <TabControl Grid.Row="0" x:Name="ConnectionTabs" Margin="5" SelectionChanged="ConnectionTabs_SelectionChanged"
+                       Visibility="Collapsed">
                 <!-- Tabs will be added dynamically -->
             </TabControl>
 
             <!-- Status Bar -->
-            <StatusBar Grid.Row="0" x:Name="MainStatusBar" Height="25" VerticalAlignment="Bottom" 
-                       Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Visibility="Collapsed">
+            <StatusBar Grid.Row="0" x:Name="MainStatusBar" MinHeight="28" VerticalAlignment="Bottom" 
+                       Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Visibility="Collapsed"
+                       Padding="4,2">
                 <StatusBarItem>
-                    <TextBlock x:Name="StatusBarText" Text="Ready"/>
+                    <TextBlock x:Name="StatusBarText" Text="Ready" TextWrapping="NoWrap"/>
                 </StatusBarItem>
                 <Separator/>
                 <StatusBarItem>
-                    <TextBlock x:Name="ConnectionCountText" Text="0 connections"/>
+                    <TextBlock x:Name="ConnectionCountText" Text="0 connections" TextWrapping="NoWrap"/>
                 </StatusBarItem>
             </StatusBar>
         </Grid>
 
-        <!-- Placeholder when no tabs - Word-inspired welcome screen -->
-        <Grid Grid.Row="1" x:Name="PlaceholderGrid" Visibility="Visible" 
-              Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="600">
-                <!-- App Icon/Title -->
-                <TextBlock Text="WindowsDb2Editor" 
-                          FontSize="32" 
-                          FontWeight="Bold" 
-                          HorizontalAlignment="Center" 
-                          Margin="0,0,0,10"
-                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                
-                <TextBlock Text="Modern DB2 Database Manager for Windows 11" 
-                          FontSize="14" 
-                          HorizontalAlignment="Center" 
-                          Margin="0,0,0,40"
-                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                
-                <!-- Quick Start Card -->
-                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                        CornerRadius="8"
-                        Padding="30"
-                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                        BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="Get Started" 
-                                  FontSize="18" 
-                                  FontWeight="SemiBold" 
-                                  Margin="0,0,0,20"
-                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                        
-                        <Button Content="➕  New Connection" 
-                                Click="NewConnection_Click" 
-                                Padding="20,12" 
-                                FontSize="14"
-                                MinWidth="200"
-                                HorizontalAlignment="Center"
-                                Margin="0,0,0,10"/>
-                        
-                        <TextBlock Text="Ctrl+N" 
-                                  FontSize="12" 
-                                  HorizontalAlignment="Center"
-                                  Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                    </StackPanel>
-                </Border>
-                
-                <!-- Features List -->
-                <StackPanel Margin="0,30,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <StackPanel Margin="0,0,30,0">
-                        <TextBlock Text="✓" FontSize="20" HorizontalAlignment="Center" Foreground="Green"/>
-                        <TextBlock Text="Multiple Tabs" FontSize="12" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,30,0">
-                        <TextBlock Text="✓" FontSize="20" HorizontalAlignment="Center" Foreground="Green"/>
-                        <TextBlock Text="SQL Formatting" FontSize="12" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel>
-                        <TextBlock Text="✓" FontSize="20" HorizontalAlignment="Center" Foreground="Green"/>
-                        <TextBlock Text="Dark/Light Theme" FontSize="12" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </StackPanel>
-            </StackPanel>
-        </Grid>
     </Grid>
 </Window>

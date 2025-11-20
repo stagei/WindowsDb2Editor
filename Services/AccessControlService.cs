@@ -44,7 +44,7 @@ public class AccessControlService
             if (result.Rows.Count == 0)
             {
                 // User not in DBAUTH - LOW level (read-only)
-                permissions.AccessLevel = UserAccessLevel.Low;
+                permissions.AccessLevel = UserAccessLevel.Standard;
                 permissions.CanExecuteDDL = false;
                 permissions.CanExecuteDML = false;
                 permissions.CanForceDisconnect = false;
@@ -78,7 +78,7 @@ public class AccessControlService
                 else
                 {
                     // Middle level - standard user
-                    permissions.AccessLevel = UserAccessLevel.Middle;
+                    permissions.AccessLevel = UserAccessLevel.Advanced;
                     permissions.CanExecuteDDL = false;
                     permissions.CanExecuteDML = true;  // Can do DML but not DDL
                     permissions.CanForceDisconnect = false;
@@ -119,7 +119,7 @@ public class AccessControlService
             return new UserPermissions
             {
                 Username = fullUsername,
-                AccessLevel = UserAccessLevel.Low,
+                AccessLevel = UserAccessLevel.Standard,
                 CanExecuteDDL = false,
                 CanExecuteDML = false,
                 CanForceDisconnect = false,
