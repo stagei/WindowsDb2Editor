@@ -33,6 +33,14 @@ public partial class PackageDetailsDialog : Window
         PackageNameText.Text = package.PackageName;
         PackageInfoText.Text = $"Schema: {package.PackageSchema} • Full Name: {package.PackageSchema}.{package.PackageName}";
 
+        // Wire up selection changed event for buttons
+        StatementsGrid.SelectionChanged += (s, e) =>
+        {
+            var hasSelection = StatementsGrid.SelectedItem != null;
+            ViewStatementButton.IsEnabled = hasSelection;
+            AddToEditorButton.IsEnabled = hasSelection;
+        };
+
         LoadPackageDetails();
         _ = LoadStatementsAsync();
     }
