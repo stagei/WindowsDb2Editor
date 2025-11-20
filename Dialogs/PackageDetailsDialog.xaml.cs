@@ -63,15 +63,16 @@ public partial class PackageDetailsDialog : Window
         try
         {
             // Query SYSCAT.STATEMENTS to get all SQL statements in this package
-            var sql = @"
-                SELECT 
-                    TRIM(STMTNO) AS StmtNo,
-                    TRIM(SECTNO) AS SectionNo,
-                    TRIM(SEQNO) AS SeqNo,
-                    TRIM(TEXT) AS StatementText
-                FROM SYSCAT.STATEMENTS
-                WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?
-                ORDER BY STMTNO, SECTNO, SEQNO";
+                var sql = @"
+                    SELECT 
+                        TRIM(S.STMTNO) AS StmtNo,
+                        TRIM(S.SECTNO) AS SectionNo,
+                        TRIM(S.SEQNO) AS SeqNo,
+                        TRIM(S.TEXT) AS StatementText
+                    FROM SYSCAT.STATEMENTS S
+                    JOIN SYSCAT.PACKAGES P ON S.PKGSCHEMA = P.PKGSCHEMA AND S.PKGNAME = P.PKGNAME
+                    WHERE TRIM(S.PKGSCHEMA) = ? AND TRIM(S.PKGNAME) = ?
+                    ORDER BY S.STMTNO, S.SECTNO, S.SEQNO";
 
             using var command = _connectionManager.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@pkgschema", _package.PackageSchema));

@@ -442,158 +442,536 @@ public class DB2MetadataService
     }
     
     /// <summary>
-    /// Build common query patterns for SYSCAT tables
+    /// Build common query patterns for SYSCAT tables (based on proven patterns from Db2CreateDBQA_NonRelated.sql)
     /// </summary>
     private Dictionary<string, object> BuildQueryPatterns()
     {
-        Logger.Debug("Building SYSCAT query patterns");
+        Logger.Debug("Building SYSCAT query patterns from proven templates");
         
         return new Dictionary<string, object>
         {
-            ["description"] = "Common query patterns for DB2 SYSCAT system catalog",
+            ["description"] = "Proven query patterns for DB2 SYSCAT system catalog (from Db2CreateDBQA_NonRelated.sql)",
+            ["version"] = "1.0",
+            ["source"] = "Db2CreateDBQA_NonRelated.sql - Production tested patterns",
             ["patterns"] = new Dictionary<string, object>
             {
-                ["find_foreign_keys_to_table"] = new
+                ["get_views_for_schema"] = new
                 {
-                    description = "Find all foreign keys that reference a specific table",
-                    query = @"SELECT 
-    R.CONSTNAME AS FK_NAME,
-    R.TABSCHEMA AS FK_SCHEMA,
-    R.TABNAME AS FK_TABLE,
-    R.REFTABSCHEMA AS PK_SCHEMA,
-    R.REFTABNAME AS PK_TABLE,
-    R.REFKEYNAME AS PK_CONSTRAINT,
-    R.DELETERULE,
-    R.UPDATERULE,
-    K.COLNAME AS FK_COLUMN
-FROM SYSCAT.REFERENCES R
-INNER JOIN SYSCAT.KEYCOLUSE K 
-    ON R.CONSTNAME = K.CONSTNAME 
-    AND R.TABSCHEMA = K.TABSCHEMA 
-    AND R.TABNAME = K.TABNAME
-WHERE R.REFTABSCHEMA = ? AND R.REFTABNAME = ?
-ORDER BY R.CONSTNAME, K.COLSEQ",
-                    parameters = new[] { "REFTABSCHEMA", "REFTABNAME" }
+                    description = "Get all views in a schema (PROVEN PATTERN: Line 544-558)",
+                    query = @"SELECT
+    'VIEW' AS TYPE,
+    V.VIEWSCHEMA AS SCHEMA,
+    V.VIEWNAME AS NAME,
+    TRIM(V.DEFINER) AS LAST_CHANGE_BY,
+    T.ALTER_TIME AS LAST_CHANGED_DATETIME,
+    TRIM(T.REMARKS) AS REMARKS,
+    V.TEXT
+FROM SYSCAT.TABLES T 
+JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME
+WHERE T.TYPE = 'V' AND T.TABSCHEMA = ?
+ORDER BY V.VIEWNAME",
+                    parameters = new[] { "TABSCHEMA" },
+                    notes = new[]
+                    {
+                        "CRITICAL: Start from SYSCAT.TABLES (not SYSCAT.VIEWS) and join to VIEWS",
+                        "Filter by T.TYPE = 'V' to get views",
+                        "REMARKS comes from SYSCAT.TABLES, not SYSCAT.VIEWS",
+                        "Use DEFINER (not OWNER) from TABLES for consistency",
+                        "ALTER_TIME comes from TABLES"
+                    }
                 },
-                ["find_foreign_keys_from_table"] = new
+                ["get_mqts_for_schema"] = new
                 {
-                    description = "Find all foreign keys FROM a specific table (that reference other tables)",
-                    query = @"SELECT 
-    R.CONSTNAME AS FK_NAME,
-    R.TABSCHEMA AS FK_SCHEMA,
-    R.TABNAME AS FK_TABLE,
-    R.REFTABSCHEMA AS PK_SCHEMA,
-    R.REFTABNAME AS PK_TABLE,
-    K.COLNAME AS FK_COLUMN
-FROM SYSCAT.REFERENCES R
-INNER JOIN SYSCAT.KEYCOLUSE K 
-    ON R.CONSTNAME = K.CONSTNAME
-WHERE R.TABSCHEMA = ? AND R.TABNAME = ?
-ORDER BY R.CONSTNAME, K.COLSEQ",
-                    parameters = new[] { "TABSCHEMA", "TABNAME" }
+                    description = "Get Materialized Query Tables (MQTs) in a schema (PROVEN PATTERN: Line 562-574)",
+                    query = @"SELECT
+    'MQT' AS TYPE,
+    V.VIEWSCHEMA AS SCHEMA,
+    V.VIEWNAME AS NAME,
+    TRIM(V.DEFINER) AS LAST_CHANGE_BY,
+    T.ALTER_TIME AS LAST_CHANGED_DATETIME,
+    T.REFRESH,
+    V.TEXT
+FROM SYSCAT.TABLES T 
+JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME
+WHERE T.TYPE = 'S' AND T.TABSCHEMA = ?
+ORDER BY V.VIEWNAME",
+                    parameters = new[] { "TABSCHEMA" },
+                    notes = new[]
+                    {
+                        "MQTs have T.TYPE = 'S' (Staging/Summary table)",
+                        "Still need join between TABLES and VIEWS for MQTs"
+                    }
                 },
-                ["check_if_fk_is_indexed"] = new
+                ["get_create_table_ddl"] = new
                 {
-                    description = "Check if foreign key columns are indexed (important for performance)",
-                    query = @"SELECT 
-    R.CONSTNAME AS FK_NAME,
-    R.TABSCHEMA,
-    R.TABNAME,
-    K.COLNAME AS FK_COLUMN,
-    I.INDNAME AS INDEX_NAME,
-    CASE WHEN I.INDNAME IS NULL THEN 'NO' ELSE 'YES' END AS IS_INDEXED
-FROM SYSCAT.REFERENCES R
-INNER JOIN SYSCAT.KEYCOLUSE K 
-    ON R.CONSTNAME = K.CONSTNAME
-LEFT JOIN SYSCAT.INDEXES I 
-    ON R.TABSCHEMA = I.TABSCHEMA 
-    AND R.TABNAME = I.TABNAME 
-    AND I.COLNAMES LIKE K.COLNAME || '%'
-WHERE R.TABSCHEMA = ? AND R.TABNAME = ?
-ORDER BY R.CONSTNAME, K.COLSEQ",
+                    description = "Generate CREATE TABLE DDL (PROVEN PATTERN: Line 170-188)",
+                    query = @"SELECT
+    X.TABSCHEMA,
+    Y.TYPE AS TAB_TYPE,
+    Y.REFRESH,
+    X.TABNAME,
+    Y.ALTER_TIME AS LAST_CHANGED_DATETIME,
+    Y.DEFINER AS LAST_CHANGE_BY,
+    VARCHAR(
+        'CREATE TABLE ' || TRIM(X.TABSCHEMA) || '.' || TRIM(X.TABNAME) || ' (' || CHR(10) || 
+        '#COLUMN_INFO#' || CHR(10) || 
+        '   ) ' || CHR(10) || 
+        CASE WHEN Y.DATACAPTURE = 'Y' THEN '   DATA CAPTURE CHANGES ' ELSE '   ' END || 
+        'IN ' || TRIM(Y.TBSPACE) || ';' || CHR(10)
+    ) AS TEXT
+FROM SYSCAT.COLUMNS X
+JOIN SYSCAT.TABLES Y ON X.TABSCHEMA = Y.TABSCHEMA AND X.TABNAME = Y.TABNAME 
+    AND Y.TYPE IN ('T')
+WHERE X.TABSCHEMA = ?
+GROUP BY X.TABSCHEMA, Y.TYPE, Y.REFRESH, X.TABNAME, Y.DATACAPTURE, Y.TBSPACE, Y.ALTER_TIME, Y.DEFINER",
+                    parameters = new[] { "TABSCHEMA" },
+                    notes = new[]
+                    {
+                        "Join COLUMNS to TABLES to get table list",
+                        "GROUP BY to get unique table rows",
+                        "Include DATACAPTURE, TBSPACE, ALTER_TIME, DEFINER",
+                        "#COLUMN_INFO# placeholder for column definitions"
+                    }
+                },
+                ["get_column_definitions"] = new
+                {
+                    description = "Generate column definitions with proper data types (PROVEN PATTERN: Line 206-241)",
+                    query = @"SELECT
+    X.TABSCHEMA,
+    X.TABNAME,
+    X.COLNO,
+    '""' || X.COLNAME || '"" ' || X.TYPENAME || ' ' || 
+    CASE
+        WHEN X.TYPENAME = 'INTEGER' THEN ''
+        WHEN X.TYPENAME = 'DECIMAL' THEN '(' || X.LENGTH || ',' || TRIM(CHAR(X.SCALE)) || ')'
+        WHEN X.TYPENAME = 'TIMESTAMP' THEN '(' || TRIM(CHAR(X.SCALE)) || ')'
+        WHEN X.TYPENAME = 'DATE' THEN ''
+        ELSE '(' || X.LENGTH || ')'
+    END || 
+    CASE WHEN X.NULLS = 'N' THEN ' NOT NULL' ELSE '' END ||
+    CASE WHEN X.DEFAULT IS NOT NULL THEN ' WITH DEFAULT ' || TRIM(X.DEFAULT) ELSE '' END
+    AS TEXT
+FROM SYSCAT.COLUMNS X
+JOIN SYSCAT.TABLES Y ON X.TABSCHEMA = Y.TABSCHEMA AND X.TABNAME = Y.TABNAME 
+    AND Y.TYPE IN ('T')
+WHERE X.TABSCHEMA = ? AND X.TABNAME = ?
+ORDER BY X.COLNO",
                     parameters = new[] { "TABSCHEMA", "TABNAME" },
-                    note = "Unindexed foreign keys can cause performance issues during JOINs and DELETE/UPDATE cascade operations"
+                    notes = new[]
+                    {
+                        "Quote column names with double quotes",
+                        "Handle type-specific length/scale logic",
+                        "Include NULLS and DEFAULT clauses",
+                        "Order by COLNO for proper column sequence"
+                    }
                 },
-                ["find_packages_using_table"] = new
+                ["get_primary_key_ddl"] = new
                 {
-                    description = "Find all DB2 packages that reference a specific table",
-                    query = @"SELECT DISTINCT
-    PD.PKGSCHEMA,
-    PD.PKGNAME,
-    P.OWNER,
-    P.VALID,
-    P.CREATE_TIME,
-    P.LAST_BIND_TIME
-FROM SYSCAT.PACKAGEDEP PD
-INNER JOIN SYSCAT.PACKAGES P 
-    ON PD.PKGSCHEMA = P.PKGSCHEMA 
-    AND PD.PKGNAME = P.PKGNAME
-WHERE PD.BTYPE = 'T' 
-    AND PD.BSCHEMA = ? 
-    AND PD.BNAME = ?
-ORDER BY PD.PKGSCHEMA, PD.PKGNAME",
-                    parameters = new[] { "BSCHEMA", "BNAME" },
-                    note = "BTYPE = 'T' means Table dependency"
+                    description = "Generate PRIMARY KEY DDL (PROVEN PATTERN: Line 247-268)",
+                    query = @"SELECT
+    TABSCHEMA,
+    TABNAME,
+    CONSTNAME,
+    VARCHAR(
+        'ALTER TABLE ' || TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) || 
+        ' ADD PRIMARY KEY (' || 
+        LISTAGG(TRIM(COLNAME), ', ') WITHIN GROUP (ORDER BY COLSEQ) || 
+        ');'
+    ) AS TEXT
+FROM SYSCAT.KEYCOLUSE
+WHERE TABSCHEMA = ? AND TABNAME = ?
+GROUP BY TABSCHEMA, TABNAME, CONSTNAME",
+                    parameters = new[] { "TABSCHEMA", "TABNAME" },
+                    notes = new[]
+                    {
+                        "Use SYSCAT.KEYCOLUSE directly",
+                        "Use LISTAGG to combine columns in proper order",
+                        "ORDER BY COLSEQ for correct column order"
+                    }
                 },
-                ["find_views_using_table"] = new
+                ["get_foreign_key_ddl"] = new
                 {
-                    description = "Find all views that depend on a specific table",
-                    query = @"SELECT DISTINCT
-    TD.BSCHEMA AS VIEW_SCHEMA,
-    TD.BNAME AS VIEW_NAME,
-    V.OWNER,
-    V.READONLY,
-    V.VALID
-FROM SYSCAT.TABDEP TD
-INNER JOIN SYSCAT.VIEWS V 
-    ON TD.BSCHEMA = V.VIEWSCHEMA 
-    AND TD.BNAME = V.VIEWNAME
-WHERE TD.BTYPE = 'V' 
-    AND TD.TABSCHEMA = ? 
-    AND TD.TABNAME = ?
-ORDER BY TD.BSCHEMA, TD.BNAME",
+                    description = "Generate FOREIGN KEY DDL with DELETE/UPDATE rules (PROVEN PATTERN: Line 274-396)",
+                    query = @"SELECT
+    FK.TABSCHEMA,
+    FK.TABNAME,
+    FK.CONSTNAME,
+    VARCHAR(
+        'ALTER TABLE ' || TRIM(FK.TABSCHEMA) || '.' || TRIM(FK.TABNAME) || 
+        ' ADD CONSTRAINT ' || TRIM(FK.CONSTNAME) || ' FOREIGN KEY (' || 
+        RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            TRIM(FK.FK_COLNAMES), '  ', ' '), '  ', ' '), '  ', ' '), '  ', ' '), ' ', ',')) ||
+        ') REFERENCES ' || TRIM(FK.REFTABSCHEMA) || '.' || TRIM(FK.REFTABNAME) || 
+        ' (' || 
+        RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            TRIM(FK.PK_COLNAMES), '  ', ' '), '  ', ' '), '  ', ' '), '  ', ' '), ' ', ',')) ||
+        ') ' ||
+        CASE FK.DELETERULE
+            WHEN 'C' THEN ' ON DELETE CASCADE'
+            WHEN 'R' THEN ' ON DELETE RESTRICT'
+            WHEN 'N' THEN ' ON DELETE SET NULL'
+            WHEN 'A' THEN ' ON DELETE NO ACTION'
+            ELSE ''
+        END ||
+        CASE FK.UPDATERULE
+            WHEN 'R' THEN ' ON UPDATE RESTRICT'
+            WHEN 'C' THEN ' ON UPDATE CASCADE'
+            WHEN 'N' THEN ' ON UPDATE SET NULL'
+            WHEN 'A' THEN ' ON UPDATE NO ACTION'
+            ELSE ''
+        END || ';'
+    ) AS TEXT
+FROM SYSCAT.REFERENCES FK
+WHERE FK.TABSCHEMA = ? AND FK.TABNAME = ?",
+                    parameters = new[] { "TABSCHEMA", "TABNAME" },
+                    notes = new[]
+                    {
+                        "Use FK_COLNAMES and PK_COLNAMES directly from SYSCAT.REFERENCES",
+                        "Multiple REPLACE calls to handle space padding in CHAR columns",
+                        "Include DELETERULE and UPDATERULE with proper CASE statements",
+                        "DELETE rules: C=CASCADE, R=RESTRICT, N=SET NULL, A=NO ACTION",
+                        "UPDATE rules: Same as DELETE rules"
+                    }
+                },
+                ["get_index_ddl"] = new
+                {
+                    description = "Generate INDEX DDL with all options (PROVEN PATTERN: Line 402-465)",
+                    query = @"SELECT
+    I.TABSCHEMA,
+    I.TABNAME,
+    I.INDNAME AS CONSTNAME,
+    I.CREATE_TIME AS LAST_CHANGED_DATETIME,
+    I.DEFINER AS LAST_CHANGE_BY,
+    CASE 
+        WHEN I.UNIQUERULE = 'P' THEN 'PRIMARY_KEY_INDEX'
+        WHEN I.UNIQUERULE = 'U' THEN 'UNIQUE_INDEX'
+        WHEN I.INDEXTYPE = 'REF' THEN 'REF_INDEX'
+        WHEN I.INDEXTYPE = 'DIM' THEN 'DIMENSION_INDEX'
+        ELSE 'INDEX'
+    END AS TYPE,
+    VARCHAR(
+        'CREATE ' || 
+        CASE WHEN I.UNIQUERULE IN ('U', 'P') THEN 'UNIQUE ' ELSE '' END || 
+        CASE 
+            WHEN I.INDEXTYPE = 'REF' THEN 'REF '
+            WHEN I.INDEXTYPE = 'DIM' THEN 'DIMENSION '
+            ELSE ''
+        END ||
+        'INDEX ' || TRIM(I.INDSCHEMA) || '.' || TRIM(I.INDNAME) || 
+        ' ON ' || TRIM(I.TABSCHEMA) || '.' || TRIM(I.TABNAME) || 
+        ' (' || LISTAGG(C.COLNAME || ' ' || 
+            CASE WHEN C.COLORDER = 'A' THEN 'ASC' ELSE 'DESC' END, ', ') 
+            WITHIN GROUP (ORDER BY C.COLSEQ) || ')' ||
+        CASE WHEN I.COMPRESSION = 'Y' THEN ' COMPRESSION' ELSE '' END || 
+        CASE WHEN I.MINPCTUSED > 0 THEN ' MINPCTUSED ' || TRIM(CHAR(I.MINPCTUSED)) ELSE '' END || ';'
+    ) AS TEXT
+FROM SYSCAT.INDEXCOLUSE C
+JOIN SYSCAT.INDEXES I ON C.INDNAME = I.INDNAME
+WHERE I.TABSCHEMA = ? AND I.TABNAME = ?
+GROUP BY I.INDNAME, I.INDSCHEMA, I.TABSCHEMA, I.TABNAME, I.INDEXTYPE, 
+         I.COMPRESSION, I.MINPCTUSED, I.UNIQUERULE, I.CREATE_TIME, I.DEFINER",
+                    parameters = new[] { "TABSCHEMA", "TABNAME" },
+                    notes = new[]
+                    {
+                        "Join SYSCAT.INDEXCOLUSE to SYSCAT.INDEXES",
+                        "Use LISTAGG with COLORDER (A=ASC, D=DESC)",
+                        "GROUP BY all index properties",
+                        "Include COMPRESSION and MINPCTUSED options",
+                        "Handle UNIQUERULE: P=Primary, U=Unique",
+                        "Handle INDEXTYPE: REF, DIM, or regular"
+                    }
+                },
+                ["get_package_sql_statements"] = new
+                {
+                    description = "Get SQL statements from packages (PROVEN PATTERN: Line 680-692)",
+                    query = @"SELECT
+    Z.PKGSCHEMA,
+    Z.PKGNAME,
+    Z.LASTUSED,
+    X.TEXT
+FROM SYSCAT.STATEMENTS X
+JOIN SYSCAT.PACKAGES Z ON X.PKGSCHEMA = Z.PKGSCHEMA AND X.PKGNAME = Z.PKGNAME
+WHERE Z.PKGSCHEMA = ? AND Z.PKGNAME = ?
+ORDER BY X.STMTNO, X.SECTNO, X.SEQNO",
+                    parameters = new[] { "PKGSCHEMA", "PKGNAME" },
+                    notes = new[]
+                    {
+                        "CRITICAL: Join SYSCAT.STATEMENTS to SYSCAT.PACKAGES",
+                        "Match on both PKGSCHEMA and PKGNAME",
+                        "Order by STMTNO, SECTNO, SEQNO for proper statement sequence"
+                    }
+                },
+                ["get_drop_view_ddl"] = new
+                {
+                    description = "Generate DROP VIEW DDL (PROVEN PATTERN: Line 846-856)",
+                    query = @"SELECT
+    VIEWSCHEMA AS SCHEMA_NAME,
+    VIEWNAME AS OBJECT_NAME,
+    'VIEW' AS OBJECT_TYPE,
+    'DROP VIEW ' || TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) || ';' AS DROP_STATEMENT
+FROM SYSCAT.TABLES T 
+JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME 
+WHERE T.TYPE = 'V' AND T.TABSCHEMA = ?",
+                    parameters = new[] { "TABSCHEMA" },
+                    notes = new[]
+                    {
+                        "Always join TABLES and VIEWS (consistent pattern)",
+                        "Filter by T.TYPE = 'V'"
+                    }
+                },
+                ["get_table_remarks_ddl"] = new
+                {
+                    description = "Generate COMMENT ON TABLE DDL (PROVEN PATTERN: Line 470-480)",
+                    query = @"SELECT
+    T.TABSCHEMA,
+    T.TABNAME,
+    VARCHAR('COMMENT ON TABLE ' || TRIM(T.TABSCHEMA) || '.' || TRIM(T.TABNAME) || 
+            ' IS ''' || T.REMARKS || ''';') AS TEXT
+FROM SYSCAT.TABLES T
+WHERE T.REMARKS IS NOT NULL AND TRIM(T.REMARKS) <> ''
+AND T.TABSCHEMA = ? AND T.TABNAME = ?",
                     parameters = new[] { "TABSCHEMA", "TABNAME" }
                 },
-                ["find_procedures_using_table"] = new
+                ["get_column_remarks_ddl"] = new
                 {
-                    description = "Find all procedures/functions that reference a specific table",
-                    query = @"SELECT DISTINCT
-    RD.BSCHEMA AS ROUTINE_SCHEMA,
-    RD.BNAME AS ROUTINE_NAME,
-    R.ROUTINETYPE,
-    R.LANGUAGE,
-    R.VALID
-FROM SYSCAT.ROUTINEDEP RD
-INNER JOIN SYSCAT.ROUTINES R 
-    ON RD.BSCHEMA = R.ROUTINESCHEMA 
-    AND RD.BNAME = R.ROUTINENAME
-WHERE RD.BTYPE IN ('T', 'V') 
-    AND RD.TABSCHEMA = ? 
-    AND RD.TABNAME = ?
-ORDER BY RD.BSCHEMA, RD.BNAME",
+                    description = "Generate COMMENT ON COLUMN DDL (PROVEN PATTERN: Line 486-497)",
+                    query = @"SELECT
+    C.TABSCHEMA,
+    C.TABNAME,
+    C.COLNAME,
+    VARCHAR('COMMENT ON COLUMN ' || TRIM(C.TABSCHEMA) || '.' || TRIM(C.TABNAME) || '.' || 
+            C.COLNAME || ' IS ''' || C.REMARKS || ''';') AS TEXT
+FROM SYSCAT.COLUMNS C
+WHERE C.REMARKS IS NOT NULL AND TRIM(C.REMARKS) <> ''
+AND C.TABSCHEMA = ? AND C.TABNAME = ?
+ORDER BY C.COLNO",
                     parameters = new[] { "TABSCHEMA", "TABNAME" }
                 },
-                ["get_complete_table_definition"] = new
+                ["get_update_statistics_ddl"] = new
                 {
-                    description = "Get complete table definition including columns, keys, indexes, and constraints",
-                    query = @"-- Get table properties
-SELECT * FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?;
+                    description = "Generate RUNSTATS commands (PROVEN PATTERN: Line 149-164)",
+                    query = @"SELECT
+    TABSCHEMA,
+    TABNAME,
+    STATS_TIME,
+    'CALL SYSPROC.ADMIN_CMD(' || x'27' || 
+    'RUNSTATS ON TABLE ' || RTRIM(TABSCHEMA) || '.' || RTRIM(TABNAME) || 
+    ' WITH DISTRIBUTION AND DETAILED INDEXES ALL' || x'27' || ');' AS TEXT
+FROM SYSCAT.TABLES
+WHERE TABSCHEMA = ? AND TYPE = 'T'",
+                    parameters = new[] { "TABSCHEMA" }
+                },
+                ["get_data_capture_ddl"] = new
+                {
+                    description = "Generate ALTER TABLE DATA CAPTURE DDL (PROVEN PATTERN: Line 890-923)",
+                    query = @"SELECT
+    Y.TABSCHEMA,
+    Y.TABNAME,
+    Y.DATACAPTURE,
+    CASE Y.DATACAPTURE
+        WHEN 'N' THEN 'No data capture'
+        WHEN 'Y' THEN 'Data capture enabled for changes'
+        WHEN 'L' THEN 'Data capture for load'
+        ELSE 'Unknown value'
+    END AS DATACAPTURE_DESCRIPTION,
+    VARCHAR(CASE Y.DATACAPTURE
+        WHEN 'Y' THEN ''
+        ELSE 'ALTER TABLE ' || TRIM(Y.TABSCHEMA) || '.' || TRIM(Y.TABNAME) || 
+             '  DATA CAPTURE CHANGES;'
+    END) AS SQL_SCRIPT
+FROM SYSCAT.TABLES Y
+WHERE Y.TYPE = 'T' AND Y.TABSCHEMA = ?
+ORDER BY Y.DATACAPTURE",
+                    parameters = new[] { "TABSCHEMA" }
+                }
+            }
+        };
+    }
+    
+    /// <summary>
+    /// Save metadata with relationships and query patterns
+    /// </summary>
+    private async Task SaveMetadataWithRelationshipsAsync(
+        string fileName, 
+        DataTable syscatTables, 
+        string version,
+        Dictionary<string, object> relationships,
+        Dictionary<string, object> queryPatterns)
+    {
+        var filePath = Path.Combine(_metadataFolder, fileName);
+        Logger.Debug("Saving metadata with relationships to: {File}", filePath);
+        
+        // Convert DataTable to JSON
+        var rows = ConvertToList(syscatTables);
+        
+        var metadata = new
+        {
+            CollectedAt = DateTime.UtcNow,
+            DB2Version = version,
+            Description = "DB2 System Catalog (SYSCAT) metadata including table relationships and query patterns",
+            SystemTables = new
+            {
+                Count = syscatTables.Rows.Count,
+                Columns = syscatTables.Columns.Cast<DataColumn>().Select(c => new
+                {
+                    c.ColumnName,
+                    DataType = c.DataType.Name
+                }).ToList(),
+                Data = rows
+            },
+            Relationships = relationships,
+            QueryPatterns = queryPatterns
+        };
+        
+        var options = new JsonSerializerOptions 
+        { 
+            WriteIndented = true 
+        };
+        var json = JsonSerializer.Serialize(metadata, options);
+        
+        await File.WriteAllTextAsync(filePath, json);
+        Logger.Info("Metadata saved with relationships: {File} ({Size} bytes)", fileName, json.Length);
+    }
+}
 
--- Get columns
-SELECT * FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO;
 
--- Get constraints
-SELECT * FROM SYSCAT.TABCONST WHERE TABSCHEMA = ? AND TABNAME = ?;
-
--- Get indexes
-SELECT * FROM SYSCAT.INDEXES WHERE TABSCHEMA = ? AND TABNAME = ?;
-
--- Get foreign keys (outgoing)
-SELECT * FROM SYSCAT.REFERENCES WHERE TABSCHEMA = ? AND TABNAME = ?;
-
--- Get triggers
-SELECT * FROM SYSCAT.TRIGGERS WHERE TABSCHEMA = ? AND TABNAME = ?;",
+        WHEN I.INDEXTYPE = 'DIM' THEN 'DIMENSION_INDEX'
+        ELSE 'INDEX'
+    END AS TYPE,
+    VARCHAR(
+        'CREATE ' || 
+        CASE WHEN I.UNIQUERULE IN ('U', 'P') THEN 'UNIQUE ' ELSE '' END || 
+        CASE 
+            WHEN I.INDEXTYPE = 'REF' THEN 'REF '
+            WHEN I.INDEXTYPE = 'DIM' THEN 'DIMENSION '
+            ELSE ''
+        END ||
+        'INDEX ' || TRIM(I.INDSCHEMA) || '.' || TRIM(I.INDNAME) || 
+        ' ON ' || TRIM(I.TABSCHEMA) || '.' || TRIM(I.TABNAME) || 
+        ' (' || LISTAGG(C.COLNAME || ' ' || 
+            CASE WHEN C.COLORDER = 'A' THEN 'ASC' ELSE 'DESC' END, ', ') 
+            WITHIN GROUP (ORDER BY C.COLSEQ) || ')' ||
+        CASE WHEN I.COMPRESSION = 'Y' THEN ' COMPRESSION' ELSE '' END || 
+        CASE WHEN I.MINPCTUSED > 0 THEN ' MINPCTUSED ' || TRIM(CHAR(I.MINPCTUSED)) ELSE '' END || ';'
+    ) AS TEXT
+FROM SYSCAT.INDEXCOLUSE C
+JOIN SYSCAT.INDEXES I ON C.INDNAME = I.INDNAME
+WHERE I.TABSCHEMA = ? AND I.TABNAME = ?
+GROUP BY I.INDNAME, I.INDSCHEMA, I.TABSCHEMA, I.TABNAME, I.INDEXTYPE, 
+         I.COMPRESSION, I.MINPCTUSED, I.UNIQUERULE, I.CREATE_TIME, I.DEFINER",
+                    parameters = new[] { "TABSCHEMA", "TABNAME" },
+                    notes = new[]
+                    {
+                        "Join SYSCAT.INDEXCOLUSE to SYSCAT.INDEXES",
+                        "Use LISTAGG with COLORDER (A=ASC, D=DESC)",
+                        "GROUP BY all index properties",
+                        "Include COMPRESSION and MINPCTUSED options",
+                        "Handle UNIQUERULE: P=Primary, U=Unique",
+                        "Handle INDEXTYPE: REF, DIM, or regular"
+                    }
+                },
+                ["get_package_sql_statements"] = new
+                {
+                    description = "Get SQL statements from packages (PROVEN PATTERN: Line 680-692)",
+                    query = @"SELECT
+    Z.PKGSCHEMA,
+    Z.PKGNAME,
+    Z.LASTUSED,
+    X.TEXT
+FROM SYSCAT.STATEMENTS X
+JOIN SYSCAT.PACKAGES Z ON X.PKGSCHEMA = Z.PKGSCHEMA AND X.PKGNAME = Z.PKGNAME
+WHERE Z.PKGSCHEMA = ? AND Z.PKGNAME = ?
+ORDER BY X.STMTNO, X.SECTNO, X.SEQNO",
+                    parameters = new[] { "PKGSCHEMA", "PKGNAME" },
+                    notes = new[]
+                    {
+                        "CRITICAL: Join SYSCAT.STATEMENTS to SYSCAT.PACKAGES",
+                        "Match on both PKGSCHEMA and PKGNAME",
+                        "Order by STMTNO, SECTNO, SEQNO for proper statement sequence"
+                    }
+                },
+                ["get_drop_view_ddl"] = new
+                {
+                    description = "Generate DROP VIEW DDL (PROVEN PATTERN: Line 846-856)",
+                    query = @"SELECT
+    VIEWSCHEMA AS SCHEMA_NAME,
+    VIEWNAME AS OBJECT_NAME,
+    'VIEW' AS OBJECT_TYPE,
+    'DROP VIEW ' || TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) || ';' AS DROP_STATEMENT
+FROM SYSCAT.TABLES T 
+JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME 
+WHERE T.TYPE = 'V' AND T.TABSCHEMA = ?",
+                    parameters = new[] { "TABSCHEMA" },
+                    notes = new[]
+                    {
+                        "Always join TABLES and VIEWS (consistent pattern)",
+                        "Filter by T.TYPE = 'V'"
+                    }
+                },
+                ["get_table_remarks_ddl"] = new
+                {
+                    description = "Generate COMMENT ON TABLE DDL (PROVEN PATTERN: Line 470-480)",
+                    query = @"SELECT
+    T.TABSCHEMA,
+    T.TABNAME,
+    VARCHAR('COMMENT ON TABLE ' || TRIM(T.TABSCHEMA) || '.' || TRIM(T.TABNAME) || 
+            ' IS ''' || T.REMARKS || ''';') AS TEXT
+FROM SYSCAT.TABLES T
+WHERE T.REMARKS IS NOT NULL AND TRIM(T.REMARKS) <> ''
+AND T.TABSCHEMA = ? AND T.TABNAME = ?",
                     parameters = new[] { "TABSCHEMA", "TABNAME" }
+                },
+                ["get_column_remarks_ddl"] = new
+                {
+                    description = "Generate COMMENT ON COLUMN DDL (PROVEN PATTERN: Line 486-497)",
+                    query = @"SELECT
+    C.TABSCHEMA,
+    C.TABNAME,
+    C.COLNAME,
+    VARCHAR('COMMENT ON COLUMN ' || TRIM(C.TABSCHEMA) || '.' || TRIM(C.TABNAME) || '.' || 
+            C.COLNAME || ' IS ''' || C.REMARKS || ''';') AS TEXT
+FROM SYSCAT.COLUMNS C
+WHERE C.REMARKS IS NOT NULL AND TRIM(C.REMARKS) <> ''
+AND C.TABSCHEMA = ? AND C.TABNAME = ?
+ORDER BY C.COLNO",
+                    parameters = new[] { "TABSCHEMA", "TABNAME" }
+                },
+                ["get_update_statistics_ddl"] = new
+                {
+                    description = "Generate RUNSTATS commands (PROVEN PATTERN: Line 149-164)",
+                    query = @"SELECT
+    TABSCHEMA,
+    TABNAME,
+    STATS_TIME,
+    'CALL SYSPROC.ADMIN_CMD(' || x'27' || 
+    'RUNSTATS ON TABLE ' || RTRIM(TABSCHEMA) || '.' || RTRIM(TABNAME) || 
+    ' WITH DISTRIBUTION AND DETAILED INDEXES ALL' || x'27' || ');' AS TEXT
+FROM SYSCAT.TABLES
+WHERE TABSCHEMA = ? AND TYPE = 'T'",
+                    parameters = new[] { "TABSCHEMA" }
+                },
+                ["get_data_capture_ddl"] = new
+                {
+                    description = "Generate ALTER TABLE DATA CAPTURE DDL (PROVEN PATTERN: Line 890-923)",
+                    query = @"SELECT
+    Y.TABSCHEMA,
+    Y.TABNAME,
+    Y.DATACAPTURE,
+    CASE Y.DATACAPTURE
+        WHEN 'N' THEN 'No data capture'
+        WHEN 'Y' THEN 'Data capture enabled for changes'
+        WHEN 'L' THEN 'Data capture for load'
+        ELSE 'Unknown value'
+    END AS DATACAPTURE_DESCRIPTION,
+    VARCHAR(CASE Y.DATACAPTURE
+        WHEN 'Y' THEN ''
+        ELSE 'ALTER TABLE ' || TRIM(Y.TABSCHEMA) || '.' || TRIM(Y.TABNAME) || 
+             '  DATA CAPTURE CHANGES;'
+    END) AS SQL_SCRIPT
+FROM SYSCAT.TABLES Y
+WHERE Y.TYPE = 'T' AND Y.TABSCHEMA = ?
+ORDER BY Y.DATACAPTURE",
+                    parameters = new[] { "TABSCHEMA" }
                 }
             }
         };

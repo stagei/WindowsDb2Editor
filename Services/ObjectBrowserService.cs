@@ -502,16 +502,18 @@ public class ObjectBrowserService
         {
             var sql = @"
                 SELECT 
-                    TRIM(VIEWNAME),
-                    TRIM(OWNER),
-                    TRIM(REMARKS)
-                FROM SYSCAT.VIEWS
-                WHERE TRIM(VIEWSCHEMA) = ?
-                ORDER BY VIEWNAME";
+                    TRIM(V.VIEWNAME) AS VIEWNAME,
+                    TRIM(T.DEFINER) AS OWNER,
+                    TRIM(T.REMARKS) AS REMARKS
+                FROM SYSCAT.TABLES T
+                JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA 
+                    AND T.TABNAME = V.VIEWNAME
+                WHERE T.TYPE = 'V' AND T.TABSCHEMA = ?
+                ORDER BY V.VIEWNAME";
             
             var views = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            command.Parameters.Add(new DB2Parameter("schemaName", schemaName.Trim()));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -614,22 +616,22 @@ public class ObjectBrowserService
         {
             var sql = @"
                 SELECT 
-                    TRIM(ROUTINENAME),
-                    TRIM(SPECIFICNAME),
-                    TRIM(LANGUAGE),
+                    TRIM(ROUTINENAME) AS ROUTINENAME,
+                    TRIM(SPECIFICNAME) AS SPECIFICNAME,
+                    TRIM(LANGUAGE) AS LANGUAGE,
                     PARM_COUNT,
-                    TRIM(FUNCTIONTYPE),
+                    TRIM(FUNCTIONTYPE) AS FUNCTIONTYPE,
                     CREATE_TIME,
-                    TRIM(OWNER),
-                    TRIM(REMARKS)
+                    TRIM(OWNER) AS OWNER,
+                    TRIM(REMARKS) AS REMARKS
                 FROM SYSCAT.ROUTINES
-                WHERE TRIM(ROUTINESCHEMA) = ?
+                WHERE ROUTINESCHEMA = ?
                   AND ROUTINETYPE = 'F'
                 ORDER BY ROUTINENAME";
             
             var functions = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            command.Parameters.Add(new DB2Parameter("schemaName", schemaName.Trim()));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())

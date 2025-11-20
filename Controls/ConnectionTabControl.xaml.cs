@@ -95,7 +95,14 @@ public partial class ConnectionTabControl : UserControl
                 Logger.Debug("Object browser auto-grow enabled (Min: {Min}px, Max: {Max}px)", 
                     _objectBrowserSettings.MinWidth, _objectBrowserSettings.MaxWidth);
                 
-                DatabaseTreeView.Loaded += (s, e) => AutoAdjustObjectBrowserWidth();
+                DatabaseTreeView.Loaded += (s, e) =>
+                {
+                    // Use Dispatcher to ensure UI is fully rendered before measuring
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        AutoAdjustObjectBrowserWidth();
+                    }), System.Windows.Threading.DispatcherPriority.Loaded);
+                };
                 
                 // Use a throttled approach to avoid excessive layout updates
                 DatabaseTreeView.SizeChanged += (s, e) =>
@@ -722,6 +729,9 @@ public partial class ConnectionTabControl : UserControl
 
             ObjectBrowserStatusText.Text = $"Ready - {categories.Count} categories loaded";
             Logger.Debug($"Added {categories.Count} categories to TreeView");
+            
+            // Trigger auto-grow width adjustment after loading
+            AutoAdjustObjectBrowserWidth();
         }
         catch (Exception ex)
         {
@@ -872,6 +882,9 @@ public partial class ConnectionTabControl : UserControl
                 }
 
                 ObjectBrowserStatusText.Text = $"Loaded {categoryNode.Items.Count} items in {category.Name}";
+                
+                // Trigger auto-grow width adjustment after expanding category
+                AutoAdjustObjectBrowserWidth();
             }
             catch (Exception ex)
             {
@@ -930,6 +943,9 @@ public partial class ConnectionTabControl : UserControl
                 }
 
                 ObjectBrowserStatusText.Text = $"Loaded {schemaTreeNode.Items.Count} object types in {schemaNode.SchemaName}";
+                
+                // Trigger auto-grow width adjustment after expanding schema
+                AutoAdjustObjectBrowserWidth();
             }
             catch (Exception ex)
             {
