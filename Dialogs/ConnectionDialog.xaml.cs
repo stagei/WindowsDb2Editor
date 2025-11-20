@@ -131,5 +131,22 @@ public partial class ConnectionDialog : Window
             AutoCommit = AutoCommitCheckBox.IsChecked ?? true  // Feature #2
         };
     }
+    
+    /// <summary>
+    /// Validates that port input is numeric only
+    /// </summary>
+    private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // Only allow digits
+        e.Handled = !IsNumeric(e.Text);
+    }
+    
+    /// <summary>
+    /// Checks if text contains only numeric characters
+    /// </summary>
+    private bool IsNumeric(string text)
+    {
+        return int.TryParse(text, out _);
+    }
 }
 

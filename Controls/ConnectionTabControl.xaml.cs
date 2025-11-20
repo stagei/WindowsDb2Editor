@@ -23,6 +23,7 @@ public partial class ConnectionTabControl : UserControl
     private readonly QueryHistoryService _queryHistoryService;
     private readonly ExportService _exportService;
     private readonly PreferencesService _preferencesService;
+    private readonly SqlSafetyValidatorService _safetyValidator;
     
     // Pagination state
     private string _lastExecutedSql = string.Empty;
@@ -37,6 +38,11 @@ public partial class ConnectionTabControl : UserControl
     /// Public property to access the connection manager for monitoring and management
     /// </summary>
     public DB2ConnectionManager ConnectionManager => _connectionManager;
+    
+    /// <summary>
+    /// Public property to access the connection information
+    /// </summary>
+    public DB2Connection Connection => _connection;
 
     public ConnectionTabControl(DB2Connection connection)
     {
@@ -49,6 +55,7 @@ public partial class ConnectionTabControl : UserControl
         _queryHistoryService = new QueryHistoryService();
         _exportService = new ExportService();
         _preferencesService = new PreferencesService();
+        _safetyValidator = new SqlSafetyValidatorService();
 
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
@@ -717,6 +724,14 @@ public partial class ConnectionTabControl : UserControl
         {
             Logger.Debug("Empty SQL query");
             StatusText.Text = "No SQL to execute";
+            return;
+        }
+
+        // Validate SQL for dangerous operations (only on new queries, not pagination)
+        if (resetPagination && !_safetyValidator.ValidateAndWarn(sql))
+        {
+            Logger.Info("SQL execution cancelled by user after safety warning");
+            StatusText.Text = "Query cancelled - safety check failed";
             return;
         }
 

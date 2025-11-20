@@ -41,7 +41,7 @@
             </Grid.ColumnDefinitions>
             <TextBox Grid.Column="0" x:Name="ServerTextBox" Margin="0,0,10,0"/>
             <TextBlock Grid.Column="1" Text="Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox Grid.Column="2" x:Name="PortTextBox" Text="50000"/>
+            <TextBox Grid.Column="2" x:Name="PortTextBox" Text="50000" MaxLength="5" PreviewTextInput="NumericOnly_PreviewTextInput"/>
         </Grid>
 
         <!-- Database -->

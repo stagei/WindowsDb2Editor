@@ -720,12 +720,67 @@ glob_file_search "*Lock*.cs" Models/
 list_dir Controls/
 ```
 
+## Logical User Scenario Walkthrough (MANDATORY for ALL UIs)
+
+**BEFORE completing ANY user interface (dialog, panel, window):**
+
+**MUST perform comprehensive user scenario walkthrough:**
+
+1. **Think through ALL possible user actions:**
+   - What happens when user clicks each button?
+   - What happens when user enters invalid data?
+   - What happens when database operation fails?
+   - What happens when user cancels midway?
+   - What happens on connection loss during operation?
+
+2. **Identify missing elements:**
+   - Are all error cases handled?
+   - Are all edge cases covered?
+   - Is there a "Cancel" option for long operations?
+   - Can user recover from errors?
+   - Are success/failure states clear?
+
+3. **Check for missing features:**
+   - Should there be a "Help" button?
+   - Should there be a "Refresh" button?
+   - Should there be an "Export" option?
+   - Should there be keyboard shortcuts?
+   - Should there be tooltips explaining complex options?
+
+4. **Verify user flow completeness:**
+   - Can user accomplish their goal?
+   - Are there dead ends (no way back)?
+   - Is feedback provided for all actions?
+   - Are dangerous operations confirmed?
+   - Can user undo mistakes?
+
+5. **Document missing elements:**
+   - Add to TASKLIST.md or create new feature spec
+   - Mark as enhancement or bug
+   - Prioritize based on user impact
+
+**Example Walkthrough Questions:**
+- Connection Dialog: What if server is unreachable? → Show timeout error, allow retry
+- Export Dialog: What if file already exists? → Confirm overwrite
+- Query Execution: What if takes 5 minutes? → Show progress, allow cancel
+- Panel with filters: What if no data matches filter? → Show "No results" message
+- DDL Generator: What if table has no columns? → Show error, prevent generation
+
+**This walkthrough MUST be done for:**
+- Every new dialog created
+- Every new panel created  
+- Every new feature implemented
+- Any modified user interface
+
+**Purpose:** Ensure robust, professional user experience with no overlooked edge cases.
+
 ## Questions to Ask Before Implementing
 
 1. **CRITICAL: Have I verified this functionality doesn't already exist?** (See Pre-Implementation Verification Process above)
-2. **What access level does this feature require?** (DBA, Middle, or Low level)
-3. **Have I tagged the menu item with the correct access level?**
-4. Does this work offline (no internet)?
+2. **CRITICAL: Have I performed logical user scenario walkthrough?** (See above - MANDATORY for UIs)
+3. **What access level does this feature require?** (DBA, Middle, or Low level)
+4. **Have I tagged the menu item with the correct access level?**
+5. Does this work offline (no internet)?
 5. Is this logged with NLog at appropriate levels (Info, Debug, Error)?
 6. Have I added DEBUG-level logging for troubleshooting?
 7. Does this support dark mode?

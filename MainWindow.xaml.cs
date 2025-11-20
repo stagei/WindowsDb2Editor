@@ -411,6 +411,24 @@ public partial class MainWindow : Window
         OpenMonitorPanel<MigrationAssistantPanel>("Migration Assistant", 1200, 700);
     }
     
+    private void MermaidDesigner_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Mermaid Visual Designer");
+        
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        {
+            MessageBox.Show("Please connect to a database first.", "No Active Connection", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        
+        var connectionManager = activeTab.ConnectionManager;
+        var schema = activeTab.Connection.Database ?? "FK";
+        
+        var designerWindow = new MermaidDesignerWindow(connectionManager, schema);
+        designerWindow.Owner = this;
+        designerWindow.ShowDialog();
+    }
+    
     private void OpenMonitorPanel<T>(string title, int width, int height) where T : UserControl, new()
     {
         Logger.Info("Opening {Panel}", title);

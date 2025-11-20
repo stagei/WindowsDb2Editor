@@ -114,6 +114,11 @@
                         <TextBlock Text="🔄" FontSize="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Header="_Mermaid Visual Designer..." Click="MermaidDesigner_Click" Tag="AccessLevel:Middle">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🎨" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <Separator/>
                 <MenuItem Header="_Settings..." Click="Settings_Click">
                     <MenuItem.Icon>
