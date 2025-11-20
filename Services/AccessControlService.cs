@@ -14,6 +14,13 @@ namespace WindowsDb2Editor.Services;
 public class AccessControlService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    public AccessControlService(MetadataHandler? metadataHandler = null)
+    {
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+        Logger.Debug("AccessControlService initialized with MetadataHandler: {HasHandler}", _metadataHandler != null);
+    }
     
     /// <summary>
     /// Determine user's access level by querying SYSCAT.DBAUTH
@@ -30,11 +37,26 @@ public class AccessControlService
             var username = ParseUsernameWithoutDomain(fullUsername);
             Logger.Debug("Username without domain: {Username}", username);
             
-            // Query SYSCAT.DBAUTH
-            var sql = $@"
-                SELECT * FROM SYSCAT.DBAUTH 
-                WHERE GRANTEE = '{username}'
-            ";
+            // Get SQL from MetadataHandler
+            string sql;
+            if (_metadataHandler != null)
+            {
+                try
+                {
+                    sql = _metadataHandler.GetQuery("DB2", "12.1", "GetUserAccessLevel");
+                    Logger.Debug("Using SQL from MetadataHandler: GetUserAccessLevel");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to get SQL from MetadataHandler, using fallback");
+                    sql = $"SELECT TRIM(GRANTEE) AS USERNAME, DBADMAUTH, SECURITYADMAUTH AS SECADMAUTH FROM SYSCAT.DBAUTH WHERE TRIM(GRANTEE) = '{username}'";
+                }
+            }
+            else
+            {
+                Logger.Warn("MetadataHandler not available, using fallback SQL");
+                sql = $"SELECT TRIM(GRANTEE) AS USERNAME, DBADMAUTH, SECURITYADMAUTH AS SECADMAUTH FROM SYSCAT.DBAUTH WHERE TRIM(GRANTEE) = '{username}'";
+            }
             
             Logger.Debug("Querying DBAUTH for user: {Username}", username);
             var result = await connectionManager.ExecuteQueryAsync(sql);

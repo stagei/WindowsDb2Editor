@@ -17,6 +17,44 @@ public partial class ConnectionDialog : Window
         InitializeComponent();
         _storageService = new ConnectionStorageService();
         Logger.Debug("ConnectionDialog opened");
+        
+        // Load providers from MetadataHandler
+        LoadProviders();
+    }
+    
+    private void LoadProviders()
+    {
+        if (App.MetadataHandler != null)
+        {
+            var providers = App.MetadataHandler.GetSupportedProviders();
+            ProviderComboBox.ItemsSource = providers;
+            ProviderComboBox.DisplayMemberPath = "ProviderName";
+            ProviderComboBox.SelectedValuePath = "ProviderCode";
+            
+            if (providers.Count > 0)
+            {
+                ProviderComboBox.SelectedIndex = 0; // Select DB2 by default
+            }
+        }
+    }
+    
+    private void ProviderComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ProviderComboBox.SelectedItem is Models.Provider provider)
+        {
+            // Update version dropdown
+            VersionComboBox.ItemsSource = provider.SupportedVersions;
+            VersionComboBox.DisplayMemberPath = "VersionName";
+            VersionComboBox.SelectedValuePath = "VersionCode";
+            
+            if (provider.SupportedVersions.Count > 0)
+            {
+                VersionComboBox.SelectedIndex = 0; // Select first version by default
+            }
+            
+            // Update default port
+            PortTextBox.Text = provider.DefaultPort.ToString();
+        }
     }
     
     /// <summary>

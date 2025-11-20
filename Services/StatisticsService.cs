@@ -16,6 +16,13 @@ namespace WindowsDb2Editor.Services;
 public class StatisticsService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    public StatisticsService(MetadataHandler? metadataHandler = null)
+    {
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+        Logger.Debug("StatisticsService initialized with MetadataHandler: {HasHandler}", _metadataHandler != null);
+    }
     
     /// <summary>
     /// Get table statistics information

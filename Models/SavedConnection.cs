@@ -10,6 +10,12 @@ namespace WindowsDb2Editor.Models
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
+        [JsonPropertyName("provider")]
+        public string Provider { get; set; } = "DB2";
+
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = "12.1";
+
         [JsonPropertyName("server")]
         public string Server { get; set; } = string.Empty;
 
@@ -21,6 +27,9 @@ namespace WindowsDb2Editor.Models
 
         [JsonPropertyName("username")]
         public string Username { get; set; } = string.Empty;
+
+        [JsonPropertyName("password")]
+        public string Password { get; set; } = string.Empty;
 
         /// <summary>
         /// Encrypted password stored as Base64 string

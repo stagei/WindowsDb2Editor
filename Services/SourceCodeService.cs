@@ -33,6 +33,12 @@ public class SourceCodeObject
 public class SourceCodeService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    public SourceCodeService(MetadataHandler? metadataHandler = null)
+    {
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+    }
     
     /// <summary>
     /// Get all procedures in a schema

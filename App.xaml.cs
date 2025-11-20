@@ -11,6 +11,7 @@ namespace WindowsDb2Editor;
 public partial class App : Application
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    public static MetadataHandler? MetadataHandler { get; private set; }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -24,6 +25,18 @@ public partial class App : Application
             Logger.Info($"Framework: .NET 10");
             Logger.Info($"Version: 1.0.0");
             Logger.Debug($"Startup arguments: {string.Join(" ", e.Args)}");
+
+            // Initialize MetadataHandler (loads ConfigFiles)
+            Logger.Debug("Initializing MetadataHandler");
+            MetadataHandler = new MetadataHandler();
+            Logger.Info("MetadataHandler initialized successfully");
+            
+            // Initialize theme before GUI mode
+            Logger.Debug("Initializing application theme");
+            var configService = new ConfigurationService();
+            var themeService = new ThemeService(configService);
+            themeService.InitializeTheme();
+            Logger.Info("Theme initialized: {Theme}", themeService.GetThemeName());
 
             // Feature #4: Check if CLI mode (has command-line arguments)
             if (e.Args.Length > 0)

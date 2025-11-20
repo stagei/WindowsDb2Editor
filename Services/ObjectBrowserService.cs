@@ -16,12 +16,14 @@ namespace WindowsDb2Editor.Services;
 public class ObjectBrowserService
 {
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly MetadataHandler? _metadataHandler;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    public ObjectBrowserService(DB2ConnectionManager connectionManager)
+    public ObjectBrowserService(DB2ConnectionManager connectionManager, MetadataHandler? metadataHandler = null)
     {
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-        Logger.Debug("ObjectBrowserService initialized");
+        _metadataHandler = metadataHandler ?? App.MetadataHandler; // Fallback to global instance
+        Logger.Debug("ObjectBrowserService initialized with MetadataHandler: {HasMetadata}", _metadataHandler != null);
     }
     
     #region Access Level Management
@@ -338,10 +340,18 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT TRIM(SCHEMANAME), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS)
-                FROM SYSCAT.SCHEMATA
-                ORDER BY SCHEMANAME";
+            // Get SQL from MetadataHandler
+            string sql;
+            if (_metadataHandler != null)
+            {
+                sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
+                Logger.Debug("Using SQL from MetadataHandler: GetSchemasStatement");
+            }
+            else
+            {
+                sql = GetFallbackSchemasSql();
+                Logger.Warn("MetadataHandler not available, using fallback SQL");
+            }
             
             var schemas = new List<SchemaNode>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -368,6 +378,15 @@ public class ObjectBrowserService
             Logger.Error(ex, "Failed to load schemas");
             return new List<SchemaNode>();
         }
+    }
+    
+    private string GetFallbackSchemasSql()
+    {
+        // Fallback SQL if MetadataHandler is not available
+        return @"
+            SELECT TRIM(SCHEMANAME) AS SCHEMANAME, TRIM(OWNER) AS OWNER, CREATE_TIME, TRIM(REMARKS) AS REMARKS
+            FROM SYSCAT.SCHEMATA
+            ORDER BY SCHEMANAME";
     }
     
     private bool IsSystemSchema(string schemaName)

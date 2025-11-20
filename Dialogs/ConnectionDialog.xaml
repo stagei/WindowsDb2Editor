@@ -23,6 +23,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -31,9 +33,21 @@
         <TextBlock Grid.Row="0" Text="Connection Name:" Margin="0,0,0,5"/>
         <TextBox Grid.Row="1" x:Name="NameTextBox" Margin="0,0,0,15"/>
 
-        <!-- Server -->
-        <TextBlock Grid.Row="2" Text="Server:" Margin="0,0,0,5"/>
+        <!-- Provider Selection -->
+        <TextBlock Grid.Row="2" Text="Database Provider:" Margin="0,0,0,5"/>
         <Grid Grid.Row="3" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox Grid.Column="0" x:Name="ProviderComboBox" SelectionChanged="ProviderComboBox_SelectionChanged"/>
+            <ComboBox Grid.Column="2" x:Name="VersionComboBox"/>
+        </Grid>
+
+        <!-- Server -->
+        <TextBlock Grid.Row="4" Text="Server:" Margin="0,0,0,5"/>
+        <Grid Grid.Row="5" Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -45,19 +59,19 @@
         </Grid>
 
         <!-- Database -->
-        <TextBlock Grid.Row="4" Text="Database:" Margin="0,0,0,5"/>
-        <TextBox Grid.Row="5" x:Name="DatabaseTextBox" Margin="0,0,0,15"/>
+        <TextBlock Grid.Row="6" Text="Database:" Margin="0,0,0,5"/>
+        <TextBox Grid.Row="7" x:Name="DatabaseTextBox" Margin="0,0,0,15"/>
 
         <!-- Username -->
-        <TextBlock Grid.Row="6" Text="Username:" Margin="0,0,0,5"/>
-        <TextBox Grid.Row="7" x:Name="UsernameTextBox" Margin="0,0,0,15"/>
+        <TextBlock Grid.Row="8" Text="Username:" Margin="0,0,0,5"/>
+        <TextBox Grid.Row="9" x:Name="UsernameTextBox" Margin="0,0,0,15"/>
 
         <!-- Password -->
-        <TextBlock Grid.Row="8" Text="Password:" Margin="0,0,0,5"/>
-        <PasswordBox Grid.Row="9" x:Name="PasswordBox" Margin="0,0,0,15"/>
+        <TextBlock Grid.Row="10" Text="Password:" Margin="0,0,0,5"/>
+        <PasswordBox Grid.Row="11" x:Name="PasswordBox" Margin="0,0,0,15"/>
 
         <!-- Connection Options (Feature #2) -->
-        <StackPanel Grid.Row="10" Margin="0,0,0,15">
+        <StackPanel Grid.Row="12" Margin="0,0,0,15">
             <CheckBox x:Name="ReadOnlyCheckBox"
                       Content="Read-Only Mode (prevents data modifications)"
                       Margin="0,5"
@@ -71,7 +85,7 @@
         </StackPanel>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="13" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="Test Connection" Width="120" Margin="0,0,10,0" Click="TestConnection_Click"/>
             <Button Content="Connect" Width="100" Margin="0,0,10,0" IsDefault="True" Click="Connect_Click"/>
             <Button Content="Cancel" Width="100" IsCancel="True" Click="Cancel_Click"/>

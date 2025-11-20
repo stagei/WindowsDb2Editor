@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using ICSharpCode.AvalonEdit.CodeCompletion;
 using Microsoft.Extensions.Configuration;
 using NLog;
 using WindowsDb2Editor.Data;
@@ -28,6 +29,8 @@ public partial class ConnectionTabControl : UserControl
     private readonly SqlSafetyValidatorService _safetyValidator;
     private ObjectBrowserService? _objectBrowserService;
     private UserAccessLevel _userAccessLevel = UserAccessLevel.Standard;
+    private readonly IntellisenseService _intellisenseService;
+    private CompletionWindow? _completionWindow;
     
     // Pagination state
     private string _lastExecutedSql = string.Empty;
@@ -60,6 +63,7 @@ public partial class ConnectionTabControl : UserControl
         _exportService = new ExportService();
         _preferencesService = new PreferencesService();
         _safetyValidator = new SqlSafetyValidatorService();
+        _intellisenseService = new IntellisenseService("DB2", "12.1");
 
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
@@ -515,12 +519,131 @@ public partial class ConnectionTabControl : UserControl
             // Set initial SQL
             SqlEditor.Text = "-- Enter your SQL query here\nSELECT * FROM YOUR_TABLE;";
 
+            // Register intellisense events
+            SqlEditor.TextArea.TextEntering += TextEditor_TextEntering;
+            SqlEditor.TextArea.TextEntered += TextEditor_TextEntered;
+            SqlEditor.TextArea.KeyDown += TextEditor_KeyDown;
+
             Logger.Info("SQL Editor initialized successfully");
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to initialize SQL Editor");
         }
+    }
+    
+    /// <summary>
+    /// Handle text entering (before character is inserted)
+    /// </summary>
+    private void TextEditor_TextEntering(object? sender, TextCompositionEventArgs e)
+    {
+        if (e.Text.Length > 0 && _completionWindow != null)
+        {
+            // Insert the completion if Enter/Tab is pressed
+            if (!char.IsLetterOrDigit(e.Text[0]) && e.Text[0] != '_')
+            {
+                _completionWindow.CompletionList.RequestInsertion(e);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handle text entered (after character is inserted)
+    /// </summary>
+    private void TextEditor_TextEntered(object? sender, TextCompositionEventArgs e)
+    {
+        // Show completion after space (for keywords) or dot (for schema.table)
+        if (e.Text == " " || e.Text == ".")
+        {
+            ShowCompletionWindow();
+        }
+        // Also show after typing 2+ characters
+        else if (char.IsLetter(e.Text[0]))
+        {
+            var currentWord = GetCurrentWord();
+            if (currentWord.Length >= 2)
+            {
+                ShowCompletionWindow();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handle Ctrl+Space to manually trigger intellisense
+    /// </summary>
+    private void TextEditor_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Space && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            ShowCompletionWindow();
+            e.Handled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Show intellisense completion window
+    /// </summary>
+    private void ShowCompletionWindow()
+    {
+        try
+        {
+            var currentWord = GetCurrentWord();
+            if (string.IsNullOrWhiteSpace(currentWord))
+                return;
+            
+            Logger.Debug("Showing completion window for: '{Word}'", currentWord);
+            
+            var suggestions = _intellisenseService.GetSuggestions(currentWord);
+            if (suggestions.Count == 0)
+            {
+                Logger.Debug("No suggestions found for: '{Word}'", currentWord);
+                return;
+            }
+            
+            _completionWindow = new CompletionWindow(SqlEditor.TextArea);
+            var data = _completionWindow.CompletionList.CompletionData;
+            
+            foreach (var suggestion in suggestions)
+            {
+                data.Add(new SqlCompletionData(suggestion));
+            }
+            
+            _completionWindow.Closed += (s, args) => _completionWindow = null;
+            _completionWindow.Show();
+            
+            Logger.Debug("Completion window shown with {Count} suggestions", suggestions.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show completion window");
+        }
+    }
+    
+    /// <summary>
+    /// Get the current word being typed at cursor position
+    /// </summary>
+    private string GetCurrentWord()
+    {
+        var offset = SqlEditor.CaretOffset;
+        var text = SqlEditor.Text;
+        
+        if (offset == 0 || offset > text.Length)
+            return string.Empty;
+        
+        // Find start of current word
+        var start = offset - 1;
+        while (start > 0 && (char.IsLetterOrDigit(text[start]) || text[start] == '_' || text[start] == '.'))
+        {
+            start--;
+        }
+        start++;
+        
+        // Extract word
+        var length = offset - start;
+        if (length <= 0)
+            return string.Empty;
+        
+        return text.Substring(start, length);
     }
 
     private async Task ConnectToDatabase()

@@ -16,10 +16,12 @@ public class DdlGeneratorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly MetadataHandler? _metadataHandler;
 
-    public DdlGeneratorService(DB2ConnectionManager connectionManager)
+    public DdlGeneratorService(DB2ConnectionManager connectionManager, MetadataHandler? metadataHandler = null)
     {
         _connectionManager = connectionManager;
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
     }
 
     /// <summary>

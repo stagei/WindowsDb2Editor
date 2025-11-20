@@ -78,6 +78,8 @@ public class ThemeService
     /// </summary>
     private void ApplyTheme(AppTheme theme)
     {
+        Logger.Debug("ApplyTheme called with: {Theme}", theme);
+        
         ApplicationTheme? actualTheme = theme switch
         {
             AppTheme.Dark => ApplicationTheme.Dark,
@@ -86,17 +88,23 @@ public class ThemeService
             _ => null
         };
 
+        Logger.Debug("Resolved to ApplicationTheme: {ActualTheme}", actualTheme);
+        
         if (actualTheme.HasValue)
         {
             ThemeManager.Current.ApplicationTheme = actualTheme.Value;
-            Logger.Debug($"Applied theme: {actualTheme.Value} (Requested: {theme})");
+            Logger.Info("✓ Theme applied successfully: {Theme} → {Actual}", theme, actualTheme.Value);
         }
         else
         {
-            // Fallback to system default
+            // Fallback to system default (null means use system)
             ThemeManager.Current.ApplicationTheme = null;
-            Logger.Debug("Applied system default theme");
+            Logger.Info("✓ Applied system default theme (null)");
         }
+        
+        // Verify what theme was actually applied
+        var currentTheme = ThemeManager.Current.ActualApplicationTheme;
+        Logger.Debug("ThemeManager.ActualApplicationTheme: {CurrentTheme}", currentTheme);
     }
 
     /// <summary>

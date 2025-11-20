@@ -6,7 +6,7 @@
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="600">
             <!-- Welcome Header -->
-            <TextBlock Text="WindowsDb2Editor" 
+            <TextBlock Text="DbExplorer" 
                        FontSize="32" 
                        FontWeight="Bold" 
                        HorizontalAlignment="Center" 
