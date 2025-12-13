@@ -1379,21 +1379,15 @@ public class CliCommandHandlerService
         Logger.Debug("Getting referencing packages: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Finding packages that reference: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT DISTINCT
-                TRIM(PKGSCHEMA) AS PackageSchema,
-                TRIM(PKGNAME) AS PackageName
-            FROM SYSCAT.PACKAGEDEP
-            WHERE BSCHEMA = '{schema}' AND BNAME = '{tableName}'
-            ORDER BY PackageSchema, PackageName
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingPackages"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var packages = data.AsEnumerable().Select(row => new
         {
-            packageSchema = row["PackageSchema"]?.ToString()?.Trim(),
-            packageName = row["PackageName"]?.ToString()?.Trim()
+            packageSchema = row["SCHEMA"]?.ToString()?.Trim(),
+            packageName = row["NAME"]?.ToString()?.Trim(),
+            lastUsed = row["LASTUSED"]
         }).ToList();
         
         Logger.Info("Found {Count} referencing packages", packages.Count);
@@ -1426,22 +1420,14 @@ public class CliCommandHandlerService
         Logger.Debug("Getting referencing views: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Finding views that reference: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT DISTINCT
-                TRIM(TABSCHEMA) AS ViewSchema,
-                TRIM(TABNAME) AS ViewName
-            FROM SYSCAT.TABDEP
-            WHERE BSCHEMA = '{schema}' AND BNAME = '{tableName}' 
-                AND BTYPE = 'T' AND DTYPE = 'V'
-            ORDER BY ViewSchema, ViewName
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingViews"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var views = data.AsEnumerable().Select(row => new
         {
-            viewSchema = row["ViewSchema"]?.ToString()?.Trim(),
-            viewName = row["ViewName"]?.ToString()?.Trim()
+            viewSchema = row["SCHEMA"]?.ToString()?.Trim(),
+            viewName = row["NAME"]?.ToString()?.Trim()
         }).ToList();
         
         Logger.Info("Found {Count} referencing views", views.Count);
@@ -1474,23 +1460,15 @@ public class CliCommandHandlerService
         Logger.Debug("Getting referencing routines: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Finding routines that reference: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT DISTINCT
-                TRIM(ROUTINESCHEMA) AS RoutineSchema,
-                TRIM(ROUTINENAME) AS RoutineName,
-                TRIM(BTYPE) AS RoutineType
-            FROM SYSCAT.ROUTINEDEP
-            WHERE BSCHEMA = '{schema}' AND BNAME = '{tableName}' AND BTYPE = 'T'
-            ORDER BY RoutineSchema, RoutineName
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingRoutines"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var routines = data.AsEnumerable().Select(row => new
         {
-            routineSchema = row["RoutineSchema"]?.ToString()?.Trim(),
-            routineName = row["RoutineName"]?.ToString()?.Trim(),
-            routineType = row["RoutineType"]?.ToString()?.Trim()
+            routineSchema = row["SCHEMA"]?.ToString()?.Trim(),
+            routineName = row["NAME"]?.ToString()?.Trim(),
+            routineType = row["OBJECT_TYPE"]?.ToString()?.Trim()
         }).ToList();
         
         Logger.Info("Found {Count} referencing routines", routines.Count);
@@ -3058,27 +3036,32 @@ public class CliCommandHandlerService
         Logger.Debug("Getting full active sessions information");
         Console.WriteLine("Retrieving complete active session information...");
         
-        // Get current session info
-        var sql = @"
-            SELECT 
-                CURRENT USER AS CurrentUser,
-                CURRENT TIMESTAMP AS CurrentTime,
-                CURRENT SERVER AS DatabaseName
-            FROM SYSIBM.SYSDUMMY1
-        ";
-        
+        // Use MetadataHandler
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetActiveSessionsFull");
         var data = await connectionManager.ExecuteQueryAsync(sql);
-        var row = data.Rows.Count > 0 ? data.Rows[0] : null;
         
-        Logger.Info("Active sessions info retrieved (current session only)");
+        var sessions = data.AsEnumerable().Select(row => new
+        {
+            agentId = row["AGENT_ID"],
+            applicationName = row["APPL_NAME"]?.ToString()?.Trim(),
+            authId = row["AUTHID"]?.ToString()?.Trim(),
+            clientName = row["CLIENT_NNAME"]?.ToString()?.Trim(),
+            lastUpdate = row["AGENT_STATE_LAST_UPDATE_TIME"],
+            numAgents = row["NUM_ASSOC_AGENTS"],
+            processId = row["COORD_AGENT_PID"]
+        }).ToList();
+        
+        Logger.Info("Active sessions info retrieved - {Count} sessions", sessions.Count);
         
         return new
         {
+            sessionCount = sessions.Count,
+            sessions,
             currentSession = new
             {
-                user = row?["CurrentUser"]?.ToString()?.Trim(),
-                database = row?["DatabaseName"]?.ToString()?.Trim(),
-                connectionTime = row?["CurrentTime"]
+                user = sessions.FirstOrDefault()?.authId,
+                database = "Connected",
+                connectionTime = DateTime.Now
             },
             totalSessionsDetected = 1,
             fullSessionMonitoringAvailable = false,
