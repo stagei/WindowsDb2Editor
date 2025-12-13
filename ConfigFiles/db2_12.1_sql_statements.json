@@ -961,6 +961,41 @@
       "parameters": ["TABSCHEMA_PATTERN"],
       "returns": "List of potentially unused tables with metadata",
       "source": "CliCommandHandlerService:FindUnusedTablesAsync"
+    },
+    "SearchSourceCode": {
+      "sql": "SELECT 'PROCEDURE' AS ObjectType, TRIM(ROUTINESCHEMA) AS Schema, TRIM(ROUTINENAME) AS Name, TEXT AS SourceCode FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'P' AND UPPER(TEXT) LIKE UPPER(?) UNION ALL SELECT 'FUNCTION' AS ObjectType, TRIM(ROUTINESCHEMA) AS Schema, TRIM(ROUTINENAME) AS Name, TEXT AS SourceCode FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' AND UPPER(TEXT) LIKE UPPER(?) UNION ALL SELECT 'VIEW' AS ObjectType, TRIM(VIEWSCHEMA) AS Schema, TRIM(VIEWNAME) AS Name, TEXT AS SourceCode FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? AND UPPER(TEXT) LIKE UPPER(?) UNION ALL SELECT 'TRIGGER' AS ObjectType, TRIM(TRIGSCHEMA) AS Schema, TRIM(TRIGNAME) AS Name, TEXT AS SourceCode FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA = ? AND UPPER(TEXT) LIKE UPPER(?) ORDER BY ObjectType, Schema, Name",
+      "description": "Search source code across procedures, functions, views, and triggers for a text pattern. Uses UPPER and LIKE for case-insensitive search. Returns object type, schema, name, and source code. Used by CLI command 'source-search'.",
+      "parameters": ["SCHEMA", "SEARCH_PATTERN", "SCHEMA", "SEARCH_PATTERN", "SCHEMA", "SEARCH_PATTERN", "SCHEMA", "SEARCH_PATTERN"],
+      "returns": "List of objects containing search text with source code",
+      "source": "CliCommandHandlerService:SearchSourceCodeAsync"
+    },
+    "GetIndexStatistics": {
+      "sql": "SELECT TRIM(INDNAME) AS IndexName, TRIM(INDEXTYPE) AS IndexType, TRIM(UNIQUERULE) AS UniqueRule, COLCOUNT AS ColumnCount, FIRSTKEYCARD AS FirstKeyCard, FULLKEYCARD AS FullKeyCard, CLUSTERRATIO AS ClusterRatio, NLEAF AS LeafPages, NLEVELS AS TreeLevels FROM SYSCAT.INDEXES WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY INDNAME",
+      "description": "Get detailed index statistics for a table including cardinality metrics, cluster ratio, and tree structure. Used by CLI command 'index-statistics'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of indexes with detailed statistics",
+      "source": "CliCommandHandlerService:GetIndexStatisticsAsync"
+    },
+    "FindUnusedIndexes": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS TableName, TRIM(INDNAME) AS IndexName, TRIM(UNIQUERULE) AS UniqueRule, COLNAMES FROM SYSCAT.INDEXES WHERE TABSCHEMA LIKE ? AND UNIQUERULE NOT IN ('P') ORDER BY TABSCHEMA, TABNAME, INDNAME",
+      "description": "Find potentially unused indexes (excludes primary key indexes). Returns non-PK indexes that may not be used. Schema filter supports wildcards. Used by CLI command 'find-unused-indexes'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "List of potentially unused indexes",
+      "source": "CliCommandHandlerService:FindUnusedIndexesAsync"
+    },
+    "FindUnusedViews": {
+      "sql": "SELECT TRIM(V.VIEWSCHEMA) AS Schema, TRIM(V.VIEWNAME) AS ViewName, TRIM(V.VALID) AS Valid, CASE WHEN NOT EXISTS (SELECT 1 FROM SYSCAT.TABDEP D WHERE D.BSCHEMA = V.VIEWSCHEMA AND D.BNAME = V.VIEWNAME) THEN 1 ELSE 0 END AS NoDependencies FROM SYSCAT.VIEWS V WHERE V.VIEWSCHEMA LIKE ? ORDER BY V.VIEWSCHEMA, V.VIEWNAME",
+      "description": "Find potentially unused views (views with no dependencies). Returns views that no other objects depend on. Schema filter supports wildcards. Used by CLI command 'find-unused-views'.",
+      "parameters": ["VIEWSCHEMA_PATTERN"],
+      "returns": "List of potentially unused views",
+      "source": "CliCommandHandlerService:FindUnusedViewsAsync"
+    },
+    "FindUnusedRoutines": {
+      "sql": "SELECT TRIM(R.ROUTINESCHEMA) AS Schema, TRIM(R.ROUTINENAME) AS RoutineName, TRIM(R.ROUTINETYPE) AS RoutineType, TRIM(R.LANGUAGE) AS Language, R.CREATE_TIME AS CreateTime, CASE WHEN NOT EXISTS (SELECT 1 FROM SYSCAT.ROUTINEDEP D WHERE D.BSCHEMA = R.ROUTINESCHEMA AND D.BNAME = R.ROUTINENAME) THEN 1 ELSE 0 END AS NoDependencies FROM SYSCAT.ROUTINES R WHERE R.ROUTINESCHEMA LIKE ? ORDER BY R.ROUTINESCHEMA, R.ROUTINENAME",
+      "description": "Find potentially unused routines (procedures/functions with no dependencies). Returns routines that no other objects depend on. Schema filter supports wildcards. Used by CLI command 'find-unused-routines'.",
+      "parameters": ["ROUTINESCHEMA_PATTERN"],
+      "returns": "List of potentially unused routines",
+      "source": "CliCommandHandlerService:FindUnusedRoutinesAsync"
     }
   }
 }
