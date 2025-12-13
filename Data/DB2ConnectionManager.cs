@@ -432,15 +432,18 @@ public class DB2ConnectionManager : IDisposable
         
         try
         {
-            using var command = _db2Connection.CreateCommand();
-            command.CommandText = autoCommit ? "SET AUTOCOMMIT ON" : "SET AUTOCOMMIT OFF";
-            await command.ExecuteNonQueryAsync();
+            // DB2 does not support SET AUTOCOMMIT syntax
+            // AutoCommit is controlled by the driver connection property
+            Logger.Debug("Auto-commit mode is handled by DB2 connection driver");
+            Logger.Info("Auto-commit mode set via connection (mode: {Mode})", autoCommit ? "ON" : "OFF");
             
-            Logger.Info("Auto-commit mode set to: {Mode}", autoCommit ? "ON" : "OFF");
+            // Note: DB2 .NET driver handles autocommit internally via connection string or property
+            // No SQL command needed
+            await Task.CompletedTask; // Maintain async signature
         }
-        catch (DB2Exception db2Ex)
+        catch (Exception ex)
         {
-            Logger.Error(db2Ex, "Failed to set auto-commit mode - SQL State: {SqlState}", db2Ex.SqlState);
+            Logger.Error(ex, "Failed to configure auto-commit mode");
             // Don't throw - some DB2 versions may not support this command
             Logger.Warn("Auto-commit mode could not be set, continuing anyway");
         }

@@ -996,6 +996,48 @@
       "parameters": ["ROUTINESCHEMA_PATTERN"],
       "returns": "List of potentially unused routines",
       "source": "CliCommandHandlerService:FindUnusedRoutinesAsync"
+    },
+    "ListTables": {
+      "sql": "SELECT TABSCHEMA, TABNAME, TYPE, CARD, NPAGES, FPAGES, STATUS, REMARKS FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') ORDER BY TABSCHEMA, TABNAME",
+      "description": "List all tables in a schema. Returns table metadata including row counts and storage info. Schema filter supports wildcards (%). Used by CLI command 'list-tables'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "List of tables with metadata",
+      "source": "CliCommandHandlerService:ListTablesAsync"
+    },
+    "ListViews": {
+      "sql": "SELECT VIEWSCHEMA, VIEWNAME, VALID, READONLY, REMARKS FROM SYSCAT.VIEWS WHERE VIEWSCHEMA LIKE ? ORDER BY VIEWSCHEMA, VIEWNAME",
+      "description": "List all views in a schema. Returns view metadata. Schema filter supports wildcards (%). Used by CLI command 'list-views'.",
+      "parameters": ["VIEWSCHEMA_PATTERN"],
+      "returns": "List of views",
+      "source": "CliCommandHandlerService:ListViewsAsync"
+    },
+    "ListProcedures": {
+      "sql": "SELECT ROUTINESCHEMA, ROUTINENAME, LANGUAGE, PARM_COUNT AS ParameterCount, CREATE_TIME AS CreateTime, REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA LIKE ? AND ROUTINETYPE = 'P' ORDER BY ROUTINESCHEMA, ROUTINENAME",
+      "description": "List all procedures in a schema. Returns procedure metadata. Schema filter supports wildcards (%). Used by CLI command 'list-procedures'.",
+      "parameters": ["ROUTINESCHEMA_PATTERN"],
+      "returns": "List of procedures",
+      "source": "CliCommandHandlerService:ListProceduresAsync"
+    },
+    "ListTriggers": {
+      "sql": "SELECT TRIGSCHEMA, TRIGNAME, TABSCHEMA, TABNAME, TRIGEVENT, TRIGTIME, VALID, REMARKS FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA LIKE ? ORDER BY TRIGSCHEMA, TRIGNAME",
+      "description": "List all triggers in a schema. Returns trigger metadata including associated table and event type. Schema filter supports wildcards (%). Used by CLI command 'list-triggers'.",
+      "parameters": ["TRIGSCHEMA_PATTERN"],
+      "returns": "List of triggers",
+      "source": "CliCommandHandlerService:ListTriggersAsync"
+    },
+    "ListFunctions": {
+      "sql": "SELECT ROUTINESCHEMA, ROUTINENAME, LANGUAGE, PARM_COUNT AS ParameterCount, CREATE_TIME AS CreateTime, REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA LIKE ? AND ROUTINETYPE = 'F' ORDER BY ROUTINESCHEMA, ROUTINENAME",
+      "description": "List all functions in a schema. Returns function metadata. Schema filter supports wildcards (%). Used by CLI command 'list-functions'.",
+      "parameters": ["ROUTINESCHEMA_PATTERN"],
+      "returns": "List of functions",
+      "source": "CliCommandHandlerService:ListFunctionsAsync"
+    },
+    "GetUserAccessLevel": {
+      "sql": "SELECT TRIM(GRANTEE) AS USERNAME, DBADMAUTH, SECURITYADMAUTH AS SECADMAUTH FROM SYSCAT.DBAUTH WHERE TRIM(GRANTEE) = ?",
+      "description": "Get user's database access level from SYSCAT.DBAUTH. Used for RBAC (Role-Based Access Control) to determine if user has DBA or SECADM privileges.",
+      "parameters": ["USERNAME"],
+      "returns": "User's database authorities",
+      "source": "AccessControlService:DetermineUserAccessLevelAsync"
     }
   }
 }
