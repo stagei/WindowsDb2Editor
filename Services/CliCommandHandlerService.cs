@@ -853,13 +853,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing views in schema: {Schema}", schema);
         Console.WriteLine($"Listing views in schema: {schema}");
         
-        var sql = $@"
-            SELECT VIEWSCHEMA, VIEWNAME, VALID, READONLY
-            FROM SYSCAT.VIEWS
-            WHERE VIEWSCHEMA LIKE '{schema}'
-            ORDER BY VIEWSCHEMA, VIEWNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListViews"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -892,13 +886,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing procedures in schema: {Schema}", schema);
         Console.WriteLine($"Listing procedures in schema: {schema}");
         
-        var sql = $@"
-            SELECT PROCSCHEMA, PROCNAME, LANGUAGE, DETERMINISTIC
-            FROM SYSCAT.PROCEDURES
-            WHERE PROCSCHEMA LIKE '{schema}'
-            ORDER BY PROCSCHEMA, PROCNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListProcedures"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -931,13 +919,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing triggers in schema: {Schema}", schema);
         Console.WriteLine($"Listing triggers in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIGSCHEMA, TRIGNAME, TABSCHEMA, TABNAME, TRIGTIME, TRIGEVENT, ENABLED
-            FROM SYSCAT.TRIGGERS
-            WHERE TRIGSCHEMA LIKE '{schema}'
-            ORDER BY TRIGSCHEMA, TRIGNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListTriggers"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -973,13 +955,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing functions in schema: {Schema}", schema);
         Console.WriteLine($"Listing functions in schema: {schema}");
         
-        var sql = $@"
-            SELECT FUNCSCHEMA, FUNCNAME, LANGUAGE
-            FROM SYSCAT.FUNCTIONS
-            WHERE FUNCSCHEMA LIKE '{schema}'
-            ORDER BY FUNCSCHEMA, FUNCNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListFunctions"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         

@@ -905,6 +905,34 @@
       "parameters": ["TABSCHEMA_PATTERN"],
       "returns": "List of CDC-enabled tables with properties",
       "source": "CliCommandHandlerService:GetCdcInfoAsync"
+    },
+    "ListViews": {
+      "sql": "SELECT VIEWSCHEMA, VIEWNAME, VALID, READONLY FROM SYSCAT.VIEWS WHERE VIEWSCHEMA LIKE ? ORDER BY VIEWSCHEMA, VIEWNAME",
+      "description": "List all views in schema(s). Returns view schema, name, valid flag, and read-only flag. Schema filter supports wildcards. Used by CLI command 'list-views'.",
+      "parameters": ["VIEWSCHEMA_PATTERN"],
+      "returns": "List of views with metadata",
+      "source": "CliCommandHandlerService:ListViewsAsync"
+    },
+    "ListProcedures": {
+      "sql": "SELECT PROCSCHEMA, PROCNAME, LANGUAGE, DETERMINISTIC FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA LIKE ? ORDER BY PROCSCHEMA, PROCNAME",
+      "description": "List all stored procedures in schema(s). Returns procedure schema, name, language, and deterministic flag. Schema filter supports wildcards. Used by CLI command 'list-procedures'.",
+      "parameters": ["PROCSCHEMA_PATTERN"],
+      "returns": "List of procedures with metadata",
+      "source": "CliCommandHandlerService:ListProceduresAsync"
+    },
+    "ListTriggers": {
+      "sql": "SELECT TRIGSCHEMA, TRIGNAME, TABSCHEMA, TABNAME, TRIGTIME, TRIGEVENT, ENABLED FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA LIKE ? ORDER BY TRIGSCHEMA, TRIGNAME",
+      "description": "List all triggers in schema(s). Returns trigger schema, name, target table, timing (BEFORE/AFTER), event (INSERT/UPDATE/DELETE), and enabled flag. Schema filter supports wildcards. Used by CLI command 'list-triggers'.",
+      "parameters": ["TRIGSCHEMA_PATTERN"],
+      "returns": "List of triggers with metadata",
+      "source": "CliCommandHandlerService:ListTriggersAsync"
+    },
+    "ListFunctions": {
+      "sql": "SELECT FUNCSCHEMA, FUNCNAME, LANGUAGE FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA LIKE ? ORDER BY FUNCSCHEMA, FUNCNAME",
+      "description": "List all user-defined functions in schema(s). Returns function schema, name, and implementation language. Schema filter supports wildcards. Used by CLI command 'list-functions'.",
+      "parameters": ["FUNCSCHEMA_PATTERN"],
+      "returns": "List of functions with metadata",
+      "source": "CliCommandHandlerService:ListFunctionsAsync"
     }
   }
 }
