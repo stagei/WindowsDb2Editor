@@ -225,13 +225,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing tables in schema: {Schema}", schema);
         Console.WriteLine($"Listing tables in schema: {schema}");
         
-        var sql = $@"
-            SELECT TABSCHEMA, TABNAME, TYPE, CARD, NPAGES, FPAGES, STATUS, REMARKS
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA LIKE '{schema}' AND TYPE IN ('T', 'U')
-            ORDER BY TABSCHEMA, TABNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListTables"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -452,13 +446,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting trigger usage for schema: {Schema}", schema);
         Console.WriteLine($"Finding trigger usage in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIGSCHEMA, TRIGNAME, TABSCHEMA, TABNAME, TRIGTIME, TRIGEVENT, ENABLED, VALID
-            FROM SYSCAT.TRIGGERS
-            WHERE TRIGSCHEMA LIKE '{schema}'
-            ORDER BY TRIGSCHEMA, TABSCHEMA, TABNAME, TRIGNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTriggerUsage"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var triggers = data.AsEnumerable().Select(row => new
@@ -3826,13 +3814,7 @@ public class CliCommandHandlerService
         var schema = parts[0];
         var tableName = parts[1];
         
-        var sql = $@"
-            SELECT CARD AS RowCount, NPAGES AS DataPages, 
-                   NPAGES * 4 / 1024.0 AS SizeMB
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableSize"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var row = data.Rows[0];
         
@@ -3851,13 +3833,7 @@ public class CliCommandHandlerService
     {
         var schema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
-        var sql = $@"
-            SELECT SUM(CARD) AS TotalRows, SUM(NPAGES) AS TotalPages,
-                   SUM(NPAGES) * 4 / 1024.0 AS TotalSizeMB
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = '{schema}' AND TYPE IN ('T', 'U')
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetSchemaSize"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var row = data.Rows[0];
         
