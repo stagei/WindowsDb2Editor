@@ -90,7 +90,7 @@ public class PackageAnalyzerService
         try
         {
             var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetPackageStatements");
-            var sql = sqlTemplate.Replace("?", $"'{schema}'", 1).Replace("?", $"'{packageName}'", 1);
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{packageName}'");
             
             Logger.Debug("Using query: SERVICE_GetPackageStatements");
             var result = await connectionManager.ExecuteQueryAsync(sql);
@@ -116,4 +116,5 @@ public class PackageAnalyzerService
         }
     }
 }
+
 

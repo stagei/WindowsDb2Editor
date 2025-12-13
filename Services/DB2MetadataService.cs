@@ -227,14 +227,14 @@ public class DB2MetadataService
         {
             // Get column information
             var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTableColumnsAll");
-            var columnsSql = columnsSqlTemplate.Replace("?", $"'{tableName}'", 1).Replace("?", $"'{schemaName}'", 1);
+            var columnsSql = columnsSqlTemplate.Replace("?", $"'{tableName}'").Replace("?", $"'{schemaName}'");
             
             Logger.Debug("Using query: SERVICE_GetTableColumnsAll");
             var columns = await connectionManager.ExecuteQueryAsync(columnsSql);
             
             // Get index information
             var indexesSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTableIndexesAll");
-            var indexesSql = indexesSqlTemplate.Replace("?", $"'{tableName}'", 1).Replace("?", $"'{schemaName}'", 1);
+            var indexesSql = indexesSqlTemplate.Replace("?", $"'{tableName}'").Replace("?", $"'{schemaName}'");
             
             Logger.Debug("Using query: SERVICE_GetTableIndexesAll");
             var indexes = await connectionManager.ExecuteQueryAsync(indexesSql);
@@ -829,3 +829,4 @@ ORDER BY Y.DATACAPTURE",
         Logger.Info("Metadata saved with relationships: {File} ({Size} bytes)", fileName, json.Length);
     }
 }
+

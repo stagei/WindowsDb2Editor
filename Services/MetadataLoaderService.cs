@@ -160,7 +160,7 @@ public class MetadataLoaderService
             
             // Get columns
             var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetColumnMetadataForTable");
-            var columnsSql = columnsSqlTemplate.Replace("?", $"'{schema}'", 1).Replace("?", $"'{tableName}'", 1);
+            var columnsSql = columnsSqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetColumnMetadataForTable");
             var columns = await connectionManager.ExecuteQueryAsync(columnsSql);
@@ -189,4 +189,5 @@ public class MetadataLoaderService
         }
     }
 }
+
 

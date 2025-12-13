@@ -710,19 +710,19 @@
       "returns": "Statement texts",
       "source": "PackageAnalyzerService:GetPackageStatementsAsync"
     },
-    "SERVICE_GetRoutineSourceCode": {
-      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? ORDER BY ROUTINENAME",
-      "description": "Get source code for all routines (procedures, functions) in a schema. Returns type, schema, name, source code, timestamps, and language.",
+    "SERVICE_GetProceduresSourceCode": {
+      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'P' ORDER BY ROUTINENAME",
+      "description": "Get source code for all procedures in a schema. Filters ROUTINETYPE='P'. Returns type, schema, name, source code, timestamps, and language.",
       "parameters": ["SCHEMA"],
-      "returns": "Routine source code with metadata",
-      "source": "SourceCodeService:GetAllSourceCodeAsync"
+      "returns": "Procedure source code with metadata",
+      "source": "SourceCodeService:GetProceduresAsync"
     },
-    "SERVICE_GetRoutineSourceByName": {
-      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? ORDER BY ROUTINENAME",
-      "description": "Get source code for a specific routine by name. Returns type, schema, name, source code, timestamps, and language.",
-      "parameters": ["SCHEMA", "NAME"],
-      "returns": "Routine source code with metadata",
-      "source": "SourceCodeService:GetSourceCodeByNameAsync"
+    "SERVICE_GetFunctionsSourceCode": {
+      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' ORDER BY ROUTINENAME",
+      "description": "Get source code for all functions in a schema. Filters ROUTINETYPE='F'. Returns type, schema, name, source code, timestamps, and language.",
+      "parameters": ["SCHEMA"],
+      "returns": "Function source code with metadata",
+      "source": "SourceCodeService:GetFunctionsAsync"
     },
     "SERVICE_GetViewSourceCode": {
       "sql": "SELECT 'VIEW' AS OBJECT_TYPE, VIEWSCHEMA AS SCHEMA, VIEWNAME AS NAME, TEXT AS SOURCE_CODE, CAST(NULL AS TIMESTAMP) AS CREATE_TIME, CAST(NULL AS TIMESTAMP) AS LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? ORDER BY VIEWNAME",
@@ -732,37 +732,37 @@
       "source": "SourceCodeService:GetAllSourceCodeAsync"
     },
     "SERVICE_GetTriggerSourceCode": {
-      "sql": "SELECT 'TRIGGER' AS OBJECT_TYPE, TRIGSCHEMA AS SCHEMA, TRIGNAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.TRIGGERS WHERE TABSCHEMA = ? ORDER BY TRIGNAME",
-      "description": "Get source code for all triggers in a schema. Returns object type (TRIGGER), schema, name, source code, timestamps, and NULL language.",
-      "parameters": ["SCHEMA"],
+      "sql": "SELECT 'TRIGGER' AS OBJECT_TYPE, TRIGSCHEMA AS SCHEMA, TRIGNAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.TRIGGERS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY TRIGNAME",
+      "description": "Get source code for all triggers on a specific table. Returns object type (TRIGGER), schema, name, source code, timestamps, and NULL language.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Trigger source code with metadata",
-      "source": "SourceCodeService:GetAllSourceCodeAsync"
+      "source": "SourceCodeService:GetTriggersAsync"
     },
     "SERVICE_GetIncomingForeignKeys": {
-      "sql": "SELECT TABSCHEMA AS REFERENCING_SCHEMA, TABNAME AS REFERENCING_TABLE, CONSTNAME AS FK_NAME, REFTABSCHEMA AS REFERENCED_SCHEMA, REFTABNAME AS REFERENCED_TABLE FROM SYSCAT.REFERENCES WHERE REFTABSCHEMA = ? AND REFTABNAME = ? ORDER BY TABSCHEMA, TABNAME",
-      "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema, table, FK name, and referenced schema/table.",
-      "parameters": ["SCHEMA", "TABNAME"],
-      "returns": "Incoming foreign keys",
+      "sql": "SELECT TABSCHEMA AS REFERENCING_SCHEMA, TABNAME AS REFERENCING_TABLE, CONSTNAME, FK_COLNAMES, PK_COLNAMES, DELETERULE, UPDATERULE FROM SYSCAT.REFERENCES WHERE REFTABSCHEMA = ? AND REFTABNAME = ? ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema/table, constraint name, column names, and rules.",
+      "parameters": ["REFTABSCHEMA", "REFTABNAME"],
+      "returns": "Incoming foreign keys with full details",
       "source": "TableRelationshipService:GetIncomingForeignKeysAsync"
     },
     "SERVICE_GetReferencingPackages": {
-      "sql": "SELECT DISTINCT 'PACKAGE' AS OBJECT_TYPE, PKGSCHEMA AS SCHEMA, PKGNAME AS NAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY PKGNAME",
-      "description": "Get all packages that reference a specific table. Returns object type (PACKAGE), schema, and package name.",
-      "parameters": ["SCHEMA", "TABNAME"],
-      "returns": "Referencing packages",
+      "sql": "SELECT DISTINCT 'PACKAGE' AS OBJECT_TYPE, d.TABSCHEMA AS SCHEMA, d.TABNAME AS NAME, p.LASTUSED FROM SYSCAT.TABDEP d JOIN SYSCAT.PACKAGES p ON d.TABSCHEMA = p.PKGSCHEMA AND d.TABNAME = p.PKGNAME WHERE d.BSCHEMA = ? AND d.BNAME = ? AND d.DTYPE = 'O' ORDER BY d.TABSCHEMA, d.TABNAME",
+      "description": "Get all packages that reference a specific table via TABDEP join. Returns object type (PACKAGE), schema, name, and last used timestamp.",
+      "parameters": ["BSCHEMA", "BNAME"],
+      "returns": "Referencing packages with timestamps",
       "source": "TableRelationshipService:GetReferencingPackagesAsync"
     },
     "SERVICE_GetReferencingViews": {
-      "sql": "SELECT DISTINCT 'VIEW' AS OBJECT_TYPE, VIEWSCHEMA AS SCHEMA, VIEWNAME AS NAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY VIEWNAME",
-      "description": "Get all views that reference a specific table. Returns object type (VIEW), schema, and view name.",
-      "parameters": ["SCHEMA", "TABNAME"],
+      "sql": "SELECT DISTINCT 'VIEW' AS OBJECT_TYPE, TABSCHEMA AS SCHEMA, TABNAME AS NAME, CAST(NULL AS TIMESTAMP) AS LASTUSED FROM SYSCAT.TABDEP WHERE BSCHEMA = ? AND BNAME = ? AND DTYPE = 'V' ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all views that reference a specific table via TABDEP. Returns object type (VIEW), schema, name, and NULL timestamp.",
+      "parameters": ["BSCHEMA", "BNAME"],
       "returns": "Referencing views",
       "source": "TableRelationshipService:GetReferencingViewsAsync"
     },
     "SERVICE_GetReferencingRoutines": {
-      "sql": "SELECT DISTINCT CASE WHEN DTYPE = 'F' THEN 'FUNCTION' WHEN DTYPE = 'P' THEN 'PROCEDURE' ELSE DTYPE END AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME FROM SYSCAT.ROUTINEDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY ROUTINENAME",
-      "description": "Get all routines (functions, procedures) that reference a specific table. Returns object type (FUNCTION/PROCEDURE), schema, and routine name.",
-      "parameters": ["SCHEMA", "TABNAME"],
+      "sql": "SELECT DISTINCT CASE WHEN DTYPE = 'P' THEN 'PROCEDURE' WHEN DTYPE = 'F' THEN 'FUNCTION' ELSE DTYPE END AS OBJECT_TYPE, TABSCHEMA AS SCHEMA, TABNAME AS NAME, CAST(NULL AS TIMESTAMP) AS LASTUSED FROM SYSCAT.TABDEP WHERE BSCHEMA = ? AND BNAME = ? AND DTYPE IN ('P', 'F') ORDER BY OBJECT_TYPE, SCHEMA, NAME",
+      "description": "Get all routines (functions, procedures) that reference a specific table via TABDEP. Returns object type (FUNCTION/PROCEDURE), schema, name, and NULL timestamp.",
+      "parameters": ["BSCHEMA", "BNAME"],
       "returns": "Referencing routines",
       "source": "TableRelationshipService:GetReferencingRoutinesAsync"
     }

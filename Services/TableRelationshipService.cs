@@ -39,6 +39,12 @@ public class ReferencingObject
 public class TableRelationshipService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler _metadataHandler;
+    
+    public TableRelationshipService()
+    {
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+    }
     
     /// <summary>
     /// Get tables that have foreign keys pointing to this table
@@ -52,22 +58,10 @@ public class TableRelationshipService
         
         try
         {
-            var sql = $@"
-                SELECT 
-                    TABSCHEMA AS REFERENCING_SCHEMA,
-                    TABNAME AS REFERENCING_TABLE,
-                    CONSTNAME,
-                    FK_COLNAMES,
-                    PK_COLNAMES,
-                    DELETERULE,
-                    UPDATERULE
-                FROM SYSCAT.REFERENCES
-                WHERE REFTABSCHEMA = '{schema}' 
-                  AND REFTABNAME = '{tableName}'
-                ORDER BY TABSCHEMA, TABNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetIncomingForeignKeys");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
-            Logger.Debug("Querying incoming foreign keys");
+            Logger.Debug("Using query: SERVICE_GetIncomingForeignKeys");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             
             var foreignKeys = new List<IncomingForeignKey>();
@@ -110,23 +104,10 @@ public class TableRelationshipService
         
         try
         {
-            var sql = $@"
-                SELECT DISTINCT 
-                    'PACKAGE' AS OBJECT_TYPE,
-                    d.TABSCHEMA AS SCHEMA,
-                    d.TABNAME AS NAME,
-                    p.LASTUSED
-                FROM SYSCAT.TABDEP d
-                JOIN SYSCAT.PACKAGES p 
-                  ON d.TABSCHEMA = p.PKGSCHEMA 
-                  AND d.TABNAME = p.PKGNAME
-                WHERE d.BSCHEMA = '{schema}' 
-                  AND d.BNAME = '{tableName}'
-                  AND d.DTYPE = 'O'
-                ORDER BY d.TABSCHEMA, d.TABNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingPackages");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
-            Logger.Debug("Querying referencing packages");
+            Logger.Debug("Using query: SERVICE_GetReferencingPackages");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             
             var packages = ConvertToReferencingObjects(result);
@@ -155,20 +136,10 @@ public class TableRelationshipService
         
         try
         {
-            var sql = $@"
-                SELECT DISTINCT 
-                    'VIEW' AS OBJECT_TYPE,
-                    TABSCHEMA AS SCHEMA,
-                    TABNAME AS NAME,
-                    CAST(NULL AS TIMESTAMP) AS LASTUSED
-                FROM SYSCAT.TABDEP
-                WHERE BSCHEMA = '{schema}' 
-                  AND BNAME = '{tableName}'
-                  AND DTYPE = 'V'
-                ORDER BY TABSCHEMA, TABNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingViews");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
-            Logger.Debug("Querying referencing views");
+            Logger.Debug("Using query: SERVICE_GetReferencingViews");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             
             var views = ConvertToReferencingObjects(result);
@@ -197,24 +168,10 @@ public class TableRelationshipService
         
         try
         {
-            var sql = $@"
-                SELECT DISTINCT 
-                    CASE 
-                        WHEN DTYPE = 'P' THEN 'PROCEDURE'
-                        WHEN DTYPE = 'F' THEN 'FUNCTION'
-                        ELSE DTYPE
-                    END AS OBJECT_TYPE,
-                    TABSCHEMA AS SCHEMA,
-                    TABNAME AS NAME,
-                    CAST(NULL AS TIMESTAMP) AS LASTUSED
-                FROM SYSCAT.TABDEP
-                WHERE BSCHEMA = '{schema}' 
-                  AND BNAME = '{tableName}'
-                  AND DTYPE IN ('P', 'F')
-                ORDER BY OBJECT_TYPE, SCHEMA, NAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingRoutines");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
-            Logger.Debug("Querying referencing routines");
+            Logger.Debug("Using query: SERVICE_GetReferencingRoutines");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             
             var routines = ConvertToReferencingObjects(result);
@@ -259,4 +216,5 @@ public class TableRelationshipService
         return objects;
     }
 }
+
 

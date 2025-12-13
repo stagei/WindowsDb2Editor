@@ -51,21 +51,10 @@ public class SourceCodeService
         
         try
         {
-            var sql = $@"
-                SELECT
-                    ROUTINETYPE AS OBJECT_TYPE,
-                    ROUTINESCHEMA AS SCHEMA,
-                    ROUTINENAME AS NAME,
-                    TEXT AS SOURCE_CODE,
-                    CREATE_TIME,
-                    LAST_REGEN_TIME,
-                    LANGUAGE
-                FROM SYSCAT.ROUTINES
-                WHERE ROUTINESCHEMA = '{schema}'
-                  AND ROUTINETYPE = 'P'
-                ORDER BY ROUTINENAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetProceduresSourceCode");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
+            Logger.Debug("Using query: SERVICE_GetProceduresSourceCode");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} procedures in schema {Schema}", result.Rows.Count, schema);
             
@@ -89,21 +78,10 @@ public class SourceCodeService
         
         try
         {
-            var sql = $@"
-                SELECT
-                    ROUTINETYPE AS OBJECT_TYPE,
-                    ROUTINESCHEMA AS SCHEMA,
-                    ROUTINENAME AS NAME,
-                    TEXT AS SOURCE_CODE,
-                    CREATE_TIME,
-                    LAST_REGEN_TIME,
-                    LANGUAGE
-                FROM SYSCAT.ROUTINES
-                WHERE ROUTINESCHEMA = '{schema}'
-                  AND ROUTINETYPE = 'F'
-                ORDER BY ROUTINENAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetFunctionsSourceCode");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
+            Logger.Debug("Using query: SERVICE_GetFunctionsSourceCode");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} functions in schema {Schema}", result.Rows.Count, schema);
             
@@ -127,20 +105,10 @@ public class SourceCodeService
         
         try
         {
-            var sql = $@"
-                SELECT
-                    'VIEW' AS OBJECT_TYPE,
-                    VIEWSCHEMA AS SCHEMA,
-                    VIEWNAME AS NAME,
-                    TEXT AS SOURCE_CODE,
-                    CAST(NULL AS TIMESTAMP) AS CREATE_TIME,
-                    CAST(NULL AS TIMESTAMP) AS LAST_REGEN_TIME,
-                    CAST(NULL AS VARCHAR(1)) AS LANGUAGE
-                FROM SYSCAT.VIEWS
-                WHERE VIEWSCHEMA = '{schema}'
-                ORDER BY VIEWNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetViewSourceCode");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
+            Logger.Debug("Using query: SERVICE_GetViewSourceCode");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} views in schema {Schema}", result.Rows.Count, schema);
             
@@ -165,21 +133,10 @@ public class SourceCodeService
         
         try
         {
-            var sql = $@"
-                SELECT
-                    'TRIGGER' AS OBJECT_TYPE,
-                    TRIGSCHEMA AS SCHEMA,
-                    TRIGNAME AS NAME,
-                    TEXT AS SOURCE_CODE,
-                    CREATE_TIME,
-                    LAST_REGEN_TIME,
-                    CAST(NULL AS VARCHAR(1)) AS LANGUAGE
-                FROM SYSCAT.TRIGGERS
-                WHERE TABSCHEMA = '{schema}'
-                  AND TABNAME = '{tableName}'
-                ORDER BY TRIGNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTriggerSourceCode");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
+            Logger.Debug("Using query: SERVICE_GetTriggerSourceCode");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} triggers for {Schema}.{Table}", result.Rows.Count, schema, tableName);
             
@@ -259,4 +216,5 @@ public class SourceCodeService
         Logger.Info("Source code export completed");
     }
 }
+
 
