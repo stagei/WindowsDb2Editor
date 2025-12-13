@@ -1,0 +1,10 @@
+{
+  "schema": "ASK",
+  "tableCount": 1,
+  "tables": [
+    "VASK_KUNDER"
+  ],
+  "note": "Complete DDL export requires calling table-ddl for each table individually",
+  "recommendation": "Use db2look utility or GUI Migration Assistant for full schema DDL export",
+  "retrievedAt": "2025-12-13T11:29:40.0303265+01:00"
+}

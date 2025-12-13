@@ -1,0 +1,9 @@
+{
+  "schema": "ASK",
+  "topN": 5,
+  "actualCount": 0,
+  "sortedBy": "DataPages DESC, RowCount DESC",
+  "topTables": [],
+  "note": "Activity ranked by data pages (size) - not real-time access patterns",
+  "retrievedAt": "2025-12-13T11:26:50.4673133+01:00"
+}

@@ -1,0 +1,49 @@
+{
+  "rowCount": 5,
+  "columns": [
+    "KUNDEKONTO",
+    "KUNDENAVN",
+    "KUNDEADR",
+    "KUNDEADR2",
+    "KUNDEPOSTNR"
+  ],
+  "data": [
+    {
+      "KUNDEKONTO": 28,
+      "KUNDENAVN": "FL\u00C6GSTAD \u00C5GE                    ",
+      "KUNDEADR": "HERMANRUDSVINGEN 21             ",
+      "KUNDEADR2": "                                ",
+      "KUNDEPOSTNR": 2849
+    },
+    {
+      "KUNDEKONTO": 59,
+      "KUNDENAVN": "MOEN PER H\u00C5VARD                 ",
+      "KUNDEADR": "MOEN VESTRE                     ",
+      "KUNDEADR2": "                                ",
+      "KUNDEPOSTNR": 7584
+    },
+    {
+      "KUNDEKONTO": 61,
+      "KUNDENAVN": "BERG EIVIND                     ",
+      "KUNDEADR": "JAMTVEIEN 74                    ",
+      "KUNDEADR2": "                                ",
+      "KUNDEPOSTNR": 7605
+    },
+    {
+      "KUNDEKONTO": 65,
+      "KUNDENAVN": "BAKKEN JOHN                     ",
+      "KUNDEADR": "MARIENBORG NESSET               ",
+      "KUNDEADR2": "                                ",
+      "KUNDEPOSTNR": 7608
+    },
+    {
+      "KUNDEKONTO": 86,
+      "KUNDENAVN": "VORUM MARIE                     ",
+      "KUNDEADR": "BJ\u00D8RKA                          ",
+      "KUNDEADR2": "                                ",
+      "KUNDEPOSTNR": 7711
+    }
+  ],
+  "format": "JSON",
+  "retrievedAt": "2025-12-13T11:29:38.5062517+01:00"
+}

@@ -1,0 +1,8 @@
+{
+  "source": "ASK.TABLE1",
+  "target": "ASK.TABLE2",
+  "chainFound": false,
+  "note": "Dependency chain detection requires recursive CTE query - complex implementation",
+  "recommendation": "Use GUI Dependency Graph Panel for visual dependency chain analysis",
+  "retrievedAt": "2025-12-13T11:30:55.2678133+01:00"
+}

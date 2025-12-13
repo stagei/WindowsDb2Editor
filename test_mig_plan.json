@@ -1,0 +1,26 @@
+{
+  "sourceSchema": "ASK",
+  "targetSchema": "ASK_NEW",
+  "objectCounts": {
+    "TABLES": 1,
+    "VIEWS": 0,
+    "PROCEDURES": 0,
+    "FUNCTIONS": 0,
+    "TRIGGERS": 0
+  },
+  "totalObjects": 1,
+  "migrationSteps": [
+    "1. Create target schema if not exists",
+    "2. Migrate tables (CREATE TABLE statements)",
+    "3. Migrate data (INSERT statements or EXPORT/IMPORT)",
+    "4. Create indexes and constraints",
+    "5. Migrate views",
+    "6. Migrate stored procedures and functions",
+    "7. Migrate triggers",
+    "8. Grant appropriate privileges",
+    "9. Update statistics (RUNSTATS)",
+    "10. Validate migrated objects"
+  ],
+  "estimatedComplexity": "LOW",
+  "retrievedAt": "2025-12-13T11:29:32.7428053+01:00"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "ASK",
+  "objectName": "VASK_KUNDER",
+  "dependencyCount": 0,
+  "recursiveAnalysis": false,
+  "dependencies": [],
+  "note": "Direct dependencies only",
+  "retrievedAt": "2025-12-13T11:30:53.4177747+01:00"
+}
