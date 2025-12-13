@@ -629,6 +629,13 @@ run_cli_tests
 
 **When user says: "continuous", "continue", "no interaction", "until done"**
 
+**CRITICAL RULE: NEVER STOP UNTIL COMPLETE**
+- **Work until 100% completion** - Do not stop for any reason except absolute necessity
+- **5 Retry Rule**: Attempt to fix each issue up to 5 times before moving on
+- **No Permission Needed**: Do not ask to continue, just continue
+- **Exhaust All Options**: Try all possible solutions before declaring something unfixable
+- **Only Stop If**: User explicitly requests stop, or all attempts exhausted
+
 **This means:**
 1. **Work continuously without stopping** to ask permission
 2. **Only report progress** at regular intervals (every 10-20% completion)
@@ -637,6 +644,7 @@ run_cli_tests
 5. **No "FINAL" reports** at 70%, 80%, 90% - only at 100%
 6. **Use TASKLIST.md as source of truth** - not your mental model
 7. **Verify completion** with grep before any "done" claim
+8. **Retry up to 5 times** for each failing feature/command/test before moving on
 
 **Progress Reporting in Continuous Mode:**
 - Report every 20% completion (brief, no questions)
@@ -657,8 +665,21 @@ run_cli_tests
 - ❌ Declare "done" without verification
 - ❌ Spend tokens on status docs instead of implementation
 - ❌ Rationalize "service layer complete = done"
+- ❌ Give up after 1-2 failures (must try 5 times)
+- ❌ Stop before attempting all possible solutions
 
 **VERIFICATION is the ONLY source of truth for completion.**
+
+**5-RETRY RULE:**
+For ANY failing test, command, feature, or functionality:
+1. **Attempt 1**: Initial implementation
+2. **Attempt 2**: Fix obvious errors
+3. **Attempt 3**: Research and apply documented solutions
+4. **Attempt 4**: Try alternative approaches
+5. **Attempt 5**: Web search for version-specific solutions
+
+**Only after 5 failed attempts** can you move to the next item.
+**Document each attempt** with what was tried and why it failed.
 
 ### Stop Protocol (CRITICAL)
 
@@ -730,24 +751,26 @@ taskkill /F /IM WindowsDb2Editor.exe 2>$null; dotnet build; if ($LASTEXITCODE -e
 
 When generating code for this project:
 
-1. **ALWAYS verify existing functionality FIRST** - Use grep/glob_file_search to check Services/, Models/, Controls/ folders before creating new files
-2. **Always use .NET 10** - Never suggest .NET 6, 7, or 8
-3. **Always use NLog** - Never use Serilog, log4net, or Console.WriteLine
-4. **Always add DEBUG-level logging** - Critical for troubleshooting issues
-5. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
-6. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
-7. **Review TASKLIST.md BEFORE implementing** - Check what's already done to avoid duplicates
-8. **Kill, Build, and Run after EVERY change** - Follow the Build, Kill, and Run Workflow
-9. **Implement access control checks** - Query DBAUTH, respect user permission levels
-10. **Tag menu items with access levels** - DBA, Middle, or Low level required
-11. **Follow WPF MVVM patterns** when appropriate
-12. **Support both dark and light themes** in all UI code
-13. **Include proper error handling** with logging
-14. **Use parameterized queries** for all SQL
-15. **Follow the project structure** (Controls, Data, Services, etc.)
-16. **Include keyboard shortcuts** for all major actions
-17. **Consider offline deployment** - no external dependencies
-18. **Add bugs to end of TASKLIST.md** - Do not implement until all preceding tasks verified
+1. **NEVER STOP until complete or 5 attempts exhausted** - Work continuously without asking permission
+2. **ALWAYS verify existing functionality FIRST** - Use grep/glob_file_search to check Services/, Models/, Controls/ folders before creating new files
+3. **Always use .NET 10** - Never suggest .NET 6, 7, or 8
+4. **Always use NLog** - Never use Serilog, log4net, or Console.WriteLine
+5. **Always add DEBUG-level logging** - Critical for troubleshooting issues
+6. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
+7. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
+8. **Review TASKLIST.md BEFORE implementing** - Check what's already done to avoid duplicates
+9. **Kill, Build, and Run after EVERY change** - Follow the Build, Kill, and Run Workflow
+10. **Implement access control checks** - Query DBAUTH, respect user permission levels
+11. **Tag menu items with access levels** - DBA, Middle, or Low level required
+12. **Follow WPF MVVM patterns** when appropriate
+13. **Support both dark and light themes** in all UI code
+14. **Include proper error handling** with logging
+15. **Use parameterized queries** for all SQL
+16. **Follow the project structure** (Controls, Data, Services, etc.)
+17. **Include keyboard shortcuts** for all major actions
+18. **Consider offline deployment** - no external dependencies
+19. **Add bugs to end of TASKLIST.md** - Do not implement until all preceding tasks verified
+20. **Retry 5 times before giving up** - Exhaust all solutions for each issue
 
 ## Prohibited Patterns
 
