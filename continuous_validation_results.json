@@ -1,0 +1,148 @@
+{
+  "Passed": [
+    {
+      "Category": "Table Properties",
+      "Match": true,
+      "Name": "GetTableColumns",
+      "FormCount": 5,
+      "Status": "PASS",
+      "CliCount": 5,
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListTables",
+      "FormCount": 0,
+      "Status": "PASS",
+      "CliCount": 271,
+      "CliSuccess": true,
+      "FormSuccess": false
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListPackages",
+      "FormCount": 0,
+      "Status": "PASS",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": false
+    }
+  ],
+  "Blockers": [],
+  "Fixed": [],
+  "Failed": [
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableForeignKeys",
+      "FormCount": 0,
+      "Status": "MISMATCH",
+      "CliCount": 5,
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableIndexes",
+      "FormCount": 1,
+      "Status": "MISMATCH",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableDdlColumns",
+      "FormCount": "Text(314 chars)",
+      "Status": "MISMATCH",
+      "CliCount": 5,
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetIncomingForeignKeys",
+      "FormCount": 0,
+      "Status": "MISMATCH",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableUsedByPackages",
+      "FormCount": 0,
+      "Status": "MISMATCH",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableUsedByViews",
+      "FormCount": 0,
+      "Status": "MISMATCH",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "Table Properties",
+      "Match": false,
+      "Name": "GetTableUsedByRoutines",
+      "FormCount": 0,
+      "Status": "MISMATCH",
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "FormSuccess": true
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListViews",
+      "FormCount": 0,
+      "Status": "FAIL",
+      "CliCount": 0,
+      "CliSuccess": false,
+      "FormSuccess": false
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListProcedures",
+      "FormCount": 0,
+      "Status": "FAIL",
+      "CliCount": 0,
+      "CliSuccess": false,
+      "FormSuccess": false
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListFunctions",
+      "FormCount": 0,
+      "Status": "FAIL",
+      "CliCount": 0,
+      "CliSuccess": false,
+      "FormSuccess": false
+    },
+    {
+      "Category": "List Queries",
+      "Match": false,
+      "Name": "ListTriggers",
+      "FormCount": 0,
+      "Status": "FAIL",
+      "CliCount": 0,
+      "CliSuccess": false,
+      "FormSuccess": false
+    }
+  ]
+}
