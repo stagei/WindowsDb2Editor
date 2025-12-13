@@ -294,7 +294,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving table properties for: {schema}.{tableName}");
         
         // Get columns using MetadataHandler
-        var columnsSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableColumns"), schema, tableName);
+        var columnsSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableColumns_Display"), schema, tableName);
         var columnsData = await connectionManager.ExecuteQueryAsync(columnsSql);
         
         // Get primary keys using MetadataHandler
@@ -320,7 +320,7 @@ public class CliCommandHandlerService
         var primaryKeys = pkColumns.ToList();
         
         // Get foreign keys using MetadataHandler
-        var fkSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableForeignKeys"), schema, tableName);
+        var fkSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableForeignKeys_Detailed"), schema, tableName);
         var fkData = await connectionManager.ExecuteQueryAsync(fkSql);
         
         var foreignKeys = fkData.AsEnumerable().Select(row => new
@@ -335,7 +335,7 @@ public class CliCommandHandlerService
         }).ToList();
         
         // Get indexes using MetadataHandler
-        var indexSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableIndexes"), schema, tableName);
+        var indexSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableIndexes_Aggregated"), schema, tableName);
         var indexData = await connectionManager.ExecuteQueryAsync(indexSql);
         
         var indexes = indexData.AsEnumerable().Select(row => new
@@ -414,7 +414,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving trigger information for: {schema}.{triggerName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTriggerInfo"), schema, triggerName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTriggerInfo"), schema, triggerName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -503,7 +503,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving view information for: {schema}.{viewName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetViewInfo"), schema, viewName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo"), schema, viewName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -568,7 +568,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving procedure information for: {schema}.{procedureName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetProcedureInfo"), schema, procedureName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetProcedureInfo"), schema, procedureName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -1063,7 +1063,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving columns for: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableColumns"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableColumns"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var columns = data.AsEnumerable().Select(row => new
@@ -1110,7 +1110,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving foreign keys for: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableForeignKeys"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableForeignKeys"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var foreignKeys = data.AsEnumerable().Select(row => new
@@ -1155,7 +1155,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving indexes for: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableIndexes"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableIndexes"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var indexes = data.AsEnumerable().Select(row => new
@@ -1201,7 +1201,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving statistics for: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableStatisticsFull"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableStatistics_Full"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -1337,7 +1337,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Retrieving incoming foreign keys for: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableIncomingFKs"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableIncomingForeignKeys"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var incomingFKs = data.AsEnumerable().Select(row => new
@@ -1380,7 +1380,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Finding packages that reference: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingPackages"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetReferencingPackages"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var packages = data.AsEnumerable().Select(row => new
@@ -1421,7 +1421,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Finding views that reference: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingViews"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetReferencingViews"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var views = data.AsEnumerable().Select(row => new
@@ -1461,7 +1461,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Finding routines that reference: {schema}.{tableName}");
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingRoutines"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetReferencingRoutines"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var routines = data.AsEnumerable().Select(row => new
@@ -3003,7 +3003,7 @@ public class CliCommandHandlerService
         Console.WriteLine("Analyzing lock wait chains...");
         
         // Use MetadataHandler
-        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetLockChains");
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetLockChains");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var lockChains = data.AsEnumerable().Select(row => new
@@ -3037,7 +3037,7 @@ public class CliCommandHandlerService
         Console.WriteLine("Retrieving complete active session information...");
         
         // Use MetadataHandler
-        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetActiveSessionsFull");
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetActiveSessions_Full");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var sessions = data.AsEnumerable().Select(row => new
@@ -3974,7 +3974,7 @@ public class CliCommandHandlerService
     private async Task<object> GetDatabaseSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         // Use MetadataHandler
-        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetDatabaseSize");
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetDatabaseSize");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var row = data.Rows[0];
         
@@ -3998,7 +3998,7 @@ public class CliCommandHandlerService
         var tableName = parts[1];
         
         // Use MetadataHandler
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableGrants"), schema, tableName);
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableGrants"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var grants = data.AsEnumerable().Select(r => new
         {
@@ -4190,3 +4190,4 @@ public class CliCommandHandlerService
         });
     }
 }
+

@@ -104,7 +104,7 @@ public class TableRelationshipService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingPackages");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetReferencingPackages");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetReferencingPackages");
@@ -136,7 +136,7 @@ public class TableRelationshipService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingViews");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetReferencingViews");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetReferencingViews");
@@ -168,7 +168,7 @@ public class TableRelationshipService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetReferencingRoutines");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetReferencingRoutines");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetReferencingRoutines");
@@ -216,5 +216,6 @@ public class TableRelationshipService
         return objects;
     }
 }
+
 
 

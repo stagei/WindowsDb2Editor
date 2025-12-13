@@ -85,7 +85,7 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableColumns");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableColumns_Display");
             var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
             Logger.Debug("Using query: GUI_GetTableColumns");
@@ -112,7 +112,7 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableForeignKeys");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableForeignKeys_Detailed");
             var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
             Logger.Debug("Using query: GUI_GetTableForeignKeys");
@@ -139,7 +139,7 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableIndexes");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableIndexes_Aggregated");
             var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
             Logger.Debug("Using query: GUI_GetTableIndexes");
@@ -171,7 +171,7 @@ public partial class TableDetailsDialog : Window
             var rowCount = await _connectionManager.ExecuteScalarAsync(countSql);
             
             // Get table info
-            var infoSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableBasicInfo");
+            var infoSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableBasicInfo");
             var infoSql = ReplacePlaceholders(infoSqlTemplate, _schema, _tableName);
             
             Logger.Debug("Using query: GUI_GetTableBasicInfo");
@@ -403,4 +403,5 @@ public partial class TableDetailsDialog : Window
         return result;
     }
 }
+
 

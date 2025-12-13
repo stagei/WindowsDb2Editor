@@ -612,28 +612,28 @@
       "returns": "List of wrappers",
       "source": "ObjectBrowserService"
     },
-    "GetTableColumns_Display": {
+    "GUI_GetTableColumns": {
       "sql": "SELECT TRIM(COLNAME) AS ColumnName, TRIM(TYPENAME) AS DataType, LENGTH, CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable, COALESCE(TRIM(DEFAULT), '-') AS DefaultValue, COALESCE(TRIM(REMARKS), '') AS Remarks FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
       "description": "Get all columns for a table with full metadata. Returns column name, data type, length, nullable status (Yes/No), default value, and remarks. Used by TableDetailsDialog Tab 1 (Columns).",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of columns with display-friendly metadata",
       "source": "TableDetailsDialog:LoadColumnsAsync"
     },
-    "GetTableForeignKeys_Detailed": {
+    "GUI_GetTableForeignKeys": {
       "sql": "SELECT TRIM(FK.CONSTNAME) AS FKName, TRIM(FK.COLNAME) AS FKColumn, TRIM(PK.TABSCHEMA) || '.' || TRIM(PK.TABNAME) AS PKTable, TRIM(PK.COLNAME) AS PKColumn, TRIM(R.DELETERULE) AS DeleteRule, TRIM(R.UPDATERULE) AS UpdateRule FROM SYSCAT.REFERENCES R JOIN SYSCAT.KEYCOLUSE FK ON R.CONSTNAME = FK.CONSTNAME AND R.TABSCHEMA = FK.TABSCHEMA AND R.TABNAME = FK.TABNAME JOIN SYSCAT.KEYCOLUSE PK ON R.REFKEYNAME = PK.CONSTNAME AND R.REFTABSCHEMA = PK.TABSCHEMA AND R.REFTABNAME = PK.TABNAME AND FK.COLSEQ = PK.COLSEQ WHERE TRIM(R.TABSCHEMA) = ? AND TRIM(R.TABNAME) = ? ORDER BY FK.CONSTNAME, FK.COLSEQ",
       "description": "Get all outgoing foreign keys for a table. Joins REFERENCES with KEYCOLUSE to get FK constraint names, source columns, referenced tables/columns, and rules. Used by TableDetailsDialog Tab 2 (Foreign Keys).",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of foreign keys with full constraint details",
       "source": "TableDetailsDialog:LoadForeignKeysAsync"
     },
-    "GetTableIndexes_Aggregated": {
+    "GUI_GetTableIndexes": {
       "sql": "SELECT TRIM(I.INDNAME) AS IndexName, CASE WHEN I.INDEXTYPE = 'CLUS' THEN 'Clustered' WHEN I.INDEXTYPE = 'REG' THEN 'Regular' WHEN I.INDEXTYPE = 'DIM' THEN 'Dimension' ELSE I.INDEXTYPE END AS IndexType, CASE WHEN I.UNIQUERULE = 'U' THEN 'Yes' WHEN I.UNIQUERULE = 'P' THEN 'Primary Key' ELSE 'No' END AS IsUnique, LISTAGG(TRIM(IC.COLNAME), ', ') WITHIN GROUP (ORDER BY IC.COLSEQ) AS Columns FROM SYSCAT.INDEXES I LEFT JOIN SYSCAT.INDEXCOLUSE IC ON I.INDSCHEMA = IC.INDSCHEMA AND I.INDNAME = IC.INDNAME WHERE TRIM(I.TABSCHEMA) = ? AND TRIM(I.TABNAME) = ? GROUP BY I.INDNAME, I.INDEXTYPE, I.UNIQUERULE ORDER BY I.INDNAME",
       "description": "Get all indexes for a table with aggregated column lists. Uses LISTAGG to concatenate column names. Returns index name, type (user-friendly labels), uniqueness status, and comma-separated columns. Used by TableDetailsDialog Tab 3 (Indexes).",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of indexes with column lists",
       "source": "TableDetailsDialog:LoadIndexesAsync"
     },
-    "GetTableBasicInfo": {
+    "GUI_GetTableBasicInfo": {
       "sql": "SELECT TRIM(TYPE), TRIM(TBSPACE) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
       "description": "Get basic table information - table type and tablespace. Used by TableDetailsDialog Tab 4 (Statistics) to display table type and tablespace name.",
       "parameters": ["TABSCHEMA", "TABNAME"],
@@ -654,21 +654,21 @@
       "returns": "List of schemas and tables for selection",
       "source": "SchemaTableSelectionDialog:LoadSchemasAndTablesAsync"
     },
-    "GetTableColumns_Basic": {
+    "SERVICE_GetTableColumnsBasic": {
       "sql": "SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT), TRIM(REMARKS) FROM SYSCAT.COLUMNS WHERE TRIM(TABNAME) = ? ORDER BY COLNO",
       "description": "Get basic column information for a table. Returns column name, type, length, scale, nullable flag, default value, and remarks. Used by DB2ConnectionManager for internal operations.",
       "parameters": ["TABNAME"],
       "returns": "Column metadata",
       "source": "DB2ConnectionManager:GetTableColumnsAsync"
     },
-    "GetTableColumns_All": {
+    "SERVICE_GetTableColumnsAll": {
       "sql": "SELECT * FROM SYSCAT.COLUMNS WHERE TABNAME = ? AND TABSCHEMA = ? ORDER BY COLNO",
       "description": "Get all column metadata for a specific schema.table. Used by DB2MetadataService for structure analysis.",
       "parameters": ["TABNAME", "TABSCHEMA"],
       "returns": "All column metadata",
       "source": "DB2MetadataService:AnalyzeTableStructure"
     },
-    "GetTableIndexes_All": {
+    "SERVICE_GetTableIndexesAll": {
       "sql": "SELECT * FROM SYSCAT.INDEXES WHERE TABNAME = ? AND TABSCHEMA = ?",
       "description": "Get all index metadata for a specific schema.table. Used by DB2MetadataService for structure analysis.",
       "parameters": ["TABNAME", "TABSCHEMA"],
@@ -745,126 +745,126 @@
       "returns": "Incoming foreign keys with full details",
       "source": "TableRelationshipService:GetIncomingForeignKeysAsync"
     },
-    "GetReferencingPackages": {
+    "SERVICE_GetReferencingPackages": {
       "sql": "SELECT DISTINCT 'PACKAGE' AS OBJECT_TYPE, d.TABSCHEMA AS SCHEMA, d.TABNAME AS NAME, p.LASTUSED FROM SYSCAT.TABDEP d JOIN SYSCAT.PACKAGES p ON d.TABSCHEMA = p.PKGSCHEMA AND d.TABNAME = p.PKGNAME WHERE d.BSCHEMA = ? AND d.BNAME = ? AND d.DTYPE = 'O' ORDER BY d.TABSCHEMA, d.TABNAME",
       "description": "Get all packages that reference a specific table via TABDEP join. Returns object type (PACKAGE), schema, name, and last used timestamp.",
       "parameters": ["BSCHEMA", "BNAME"],
       "returns": "Referencing packages with timestamps",
       "source": "TableRelationshipService:GetReferencingPackagesAsync"
     },
-    "GetReferencingViews": {
+    "SERVICE_GetReferencingViews": {
       "sql": "SELECT DISTINCT 'VIEW' AS OBJECT_TYPE, TABSCHEMA AS SCHEMA, TABNAME AS NAME, CAST(NULL AS TIMESTAMP) AS LASTUSED FROM SYSCAT.TABDEP WHERE BSCHEMA = ? AND BNAME = ? AND DTYPE = 'V' ORDER BY TABSCHEMA, TABNAME",
       "description": "Get all views that reference a specific table via TABDEP. Returns object type (VIEW), schema, name, and NULL timestamp.",
       "parameters": ["BSCHEMA", "BNAME"],
       "returns": "Referencing views",
       "source": "TableRelationshipService:GetReferencingViewsAsync"
     },
-    "GetReferencingRoutines": {
+    "SERVICE_GetReferencingRoutines": {
       "sql": "SELECT DISTINCT CASE WHEN DTYPE = 'P' THEN 'PROCEDURE' WHEN DTYPE = 'F' THEN 'FUNCTION' ELSE DTYPE END AS OBJECT_TYPE, TABSCHEMA AS SCHEMA, TABNAME AS NAME, CAST(NULL AS TIMESTAMP) AS LASTUSED FROM SYSCAT.TABDEP WHERE BSCHEMA = ? AND BNAME = ? AND DTYPE IN ('P', 'F') ORDER BY OBJECT_TYPE, SCHEMA, NAME",
       "description": "Get all routines (functions, procedures) that reference a specific table via TABDEP. Returns object type (FUNCTION/PROCEDURE), schema, name, and NULL timestamp.",
       "parameters": ["BSCHEMA", "BNAME"],
       "returns": "Referencing routines",
       "source": "TableRelationshipService:GetReferencingRoutinesAsync"
     },
-    "GetTriggerInfo": {
+    "CLI_GetTriggerInfo": {
       "sql": "SELECT TRIGNAME, TRIGSCHEMA, TABSCHEMA, TABNAME, TRIGTIME, TRIGEVENT, GRANULARITY, ENABLED, VALID, REMARKS, TEXT, CREATE_TIME FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA = ? AND TRIGNAME = ?",
       "description": "Get detailed information about a specific trigger. Returns trigger metadata, target table, timing, event, body text, and creation time. Used by CLI command 'trigger-info'.",
       "parameters": ["TRIGSCHEMA", "TRIGNAME"],
       "returns": "Trigger details",
       "source": "CliCommandHandlerService:GetTriggerInfoAsync"
     },
-    "GetViewInfo": {
+    "CLI_GetViewInfo": {
       "sql": "SELECT V.VIEWNAME, V.VIEWSCHEMA, V.DEFINER, V.VALID, V.READONLY, T.REMARKS, V.TEXT, T.CREATE_TIME FROM SYSCAT.VIEWS V JOIN SYSCAT.TABLES T ON V.VIEWSCHEMA = T.TABSCHEMA AND V.VIEWNAME = T.TABNAME WHERE V.VIEWSCHEMA = ? AND V.VIEWNAME = ?",
       "description": "Get detailed information about a specific view. Returns view metadata, SQL definition text, definer, validity, and remarks. Used by CLI command 'view-info'.",
       "parameters": ["VIEWSCHEMA", "VIEWNAME"],
       "returns": "View details",
       "source": "CliCommandHandlerService:GetViewInfoAsync"
     },
-    "GetProcedureInfo": {
+    "CLI_GetProcedureInfo": {
       "sql": "SELECT ROUTINENAME, ROUTINESCHEMA, DEFINER, LANGUAGE, DETERMINISTIC, EXTERNAL_ACTION, NULL_CALL, ORIGIN, REMARKS, TEXT, CREATE_TIME FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'P'",
       "description": "Get detailed information about a specific stored procedure. Returns procedure metadata, language, characteristics, SQL body, and creation time. ROUTINETYPE='P' for procedures. Used by CLI command 'procedure-info'.",
       "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
       "returns": "Procedure details",
       "source": "CliCommandHandlerService:GetProcedureInfoAsync"
     },
-    "GetFunctionInfo": {
+    "CLI_GetFunctionInfo": {
       "sql": "SELECT ROUTINENAME, ROUTINESCHEMA, DEFINER, LANGUAGE, DETERMINISTIC, EXTERNAL_ACTION, NULL_CALL, ORIGIN, TYPESCHEMA, TYPENAME, REMARKS, TEXT, CREATE_TIME FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'F'",
       "description": "Get detailed information about a specific function. Returns function metadata, return type, language, characteristics, SQL body, and creation time. ROUTINETYPE='F' for functions. Used by CLI command 'function-info'.",
       "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
       "returns": "Function details",
       "source": "CliCommandHandlerService:GetFunctionInfoAsync"
     },
-    "GetDatabaseSize": {
+    "CLI_GetDatabaseSize": {
       "sql": "SELECT SUM(CARD) AS TotalRows, SUM(NPAGES) AS TotalPages, SUM(NPAGES) * 4 / 1024.0 AS TotalSizeMB FROM SYSCAT.TABLES WHERE TYPE IN ('T', 'U') AND TABSCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN')",
       "description": "Calculate approximate database size by summing table pages. Excludes system schemas. Returns total rows, pages, and size in MB. 4KB page size assumed. Used by CLI command 'database-size'.",
       "parameters": [],
       "returns": "Database size metrics",
       "source": "CliCommandHandlerService:GetDatabaseSizeAsync"
     },
-    "GetTableColumns": {
+    "CLI_GetTableColumns": {
       "sql": "SELECT TRIM(COLNAME) AS ColumnName, COLNO AS OrdinalPosition, TRIM(TYPENAME) AS DataType, LENGTH, SCALE, CASE WHEN NULLS = 'Y' THEN 1 ELSE 0 END AS IsNullable, COALESCE(TRIM(DEFAULT), '') AS DefaultValue, COALESCE(TRIM(REMARKS), '') AS Comment, CASE WHEN IDENTITY = 'Y' THEN 1 ELSE 0 END AS IsIdentity FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
       "description": "Get all columns for a table with CLI-specific column names and boolean flags as 0/1. Used by CLI command 'table-columns'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of columns with metadata",
       "source": "CliCommandHandlerService:GetTableColumnsAsync"
     },
-    "GetTableForeignKeys": {
+    "CLI_GetTableForeignKeys": {
       "sql": "SELECT TRIM(CONSTNAME) AS FKName, FK_COLNAMES AS FKColumns, TRIM(REFTABSCHEMA) AS RefSchema, TRIM(REFTABNAME) AS RefTable, PK_COLNAMES AS RefColumns, TRIM(DELETERULE) AS DeleteRule, TRIM(UPDATERULE) AS UpdateRule FROM SYSCAT.REFERENCES WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY CONSTNAME",
       "description": "Get all outgoing foreign keys for a table with CLI-specific column structure (separate schema/table, column lists as strings). Used by CLI command 'table-foreign-keys'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of foreign keys",
       "source": "CliCommandHandlerService:GetTableForeignKeysAsync"
     },
-    "GetTableIndexes": {
+    "CLI_GetTableIndexes": {
       "sql": "SELECT TRIM(INDNAME) AS IndexName, TRIM(INDEXTYPE) AS IndexType, TRIM(UNIQUERULE) AS UniqueRule, COLNAMES, COLCOUNT, TRIM(REVERSE_SCANS) AS ReverseScans, FIRSTKEYCARD, FULLKEYCARD, TRIM(REMARKS) AS IndexComment FROM SYSCAT.INDEXES WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY INDNAME",
       "description": "Get all indexes for a table with detailed CLI-specific metadata including cardinality and scan direction. Used by CLI command 'table-indexes'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of indexes with full metadata",
       "source": "CliCommandHandlerService:GetTableIndexesAsync"
     },
-    "GetTableStatistics_Full": {
+    "CLI_GetTableStatisticsFull": {
       "sql": "SELECT CARD AS RowCount, NPAGES AS DataPages, FPAGES AS IndexPages, OVERFLOW AS OverflowPages, AVGROWSIZE AS AvgRowSize, STATS_TIME AS LastStatsTime, TRIM(COMPRESSION) AS Compression, TRIM(TABLEORG) AS TableOrganization, PCTFREE AS PercentFree FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?",
       "description": "Get comprehensive table statistics including compression and organization. Extended version for CLI command 'table-statistics-full'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Full table statistics",
       "source": "CliCommandHandlerService:GetTableStatisticsFullAsync"
     },
-    "GetTableIncomingForeignKeys": {
+    "CLI_GetTableIncomingFKs": {
       "sql": "SELECT TRIM(R.TABSCHEMA) AS RefBySchema, TRIM(R.TABNAME) AS RefByTable, TRIM(R.CONSTNAME) AS FKName, R.FK_COLNAMES AS FKColumns, R.PK_COLNAMES AS PKColumns, TRIM(R.DELETERULE) AS DeleteRule FROM SYSCAT.REFERENCES R WHERE R.REFTABSCHEMA = ? AND R.REFTABNAME = ? ORDER BY R.TABSCHEMA, R.TABNAME",
       "description": "Get all incoming foreign keys (tables that reference this table). Used by CLI command 'table-incoming-fks'.",
       "parameters": ["REFTABSCHEMA", "REFTABNAME"],
       "returns": "List of tables referencing this table",
       "source": "CliCommandHandlerService:GetTableIncomingFKsAsync"
     },
-    "GetActiveSessions_Full": {
+    "CLI_GetActiveSessionsFull": {
       "sql": "SELECT AGENT_ID, APPL_NAME, AUTHID, CLIENT_NNAME, AGENT_STATE_LAST_UPDATE_TIME, NUM_ASSOC_AGENTS, COORD_AGENT_PID FROM SYSIBMADM.SNAPAPPL_INFO ORDER BY AGENT_STATE_LAST_UPDATE_TIME DESC",
       "description": "Get all active sessions with full details from DB2 monitoring views. Used by CLI command 'active-sessions-full'.",
       "parameters": [],
       "returns": "List of active sessions with detailed metrics",
       "source": "CliCommandHandlerService:GetActiveSessionsFullAsync"
     },
-    "GetLockChains": {
+    "CLI_GetLockChains": {
       "sql": "SELECT L.AGENT_ID, L.TABSCHEMA, L.TABNAME, L.LOCK_MODE, L.LOCK_STATUS, A.APPL_NAME, A.AUTHID FROM SYSIBMADM.SNAPLOCK L JOIN SYSIBMADM.SNAPAPPL_INFO A ON L.AGENT_ID = A.AGENT_ID WHERE L.LOCK_STATUS = 'W' ORDER BY L.AGENT_ID",
       "description": "Get lock chains showing waiting locks and their associated applications. Useful for deadlock analysis. Used by CLI command 'lock-chains'.",
       "parameters": [],
       "returns": "List of waiting locks with application context",
       "source": "CliCommandHandlerService:GetLockChainsAsync"
     },
-    "GetTableActivity": {
+    "CLI_GetTableActivityMonitor": {
       "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, ROWS_READ, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED, TABLE_SCANS, OBJECT_DATA_L_READS, OBJECT_DATA_P_READS FROM TABLE(MON_GET_TABLE('', '', -2)) AS T WHERE TABLE_SCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN') ORDER BY (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) DESC FETCH FIRST 100 ROWS ONLY",
       "description": "Get table activity metrics using MON_GET_TABLE function. Shows read/write activity for top 100 active tables. Excludes system schemas. Used by CLI command 'table-activity'.",
       "parameters": [],
       "returns": "Top 100 active tables with metrics",
       "source": "CliCommandHandlerService:GetTableActivityAsync"
     },
-    "GetTopActiveTables": {
+    "CLI_GetTopActiveTables": {
       "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, ROWS_READ, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED, (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) AS TOTAL_OPERATIONS FROM TABLE(MON_GET_TABLE('', '', -2)) AS T WHERE TABLE_SCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN') ORDER BY TOTAL_OPERATIONS DESC FETCH FIRST 50 ROWS ONLY",
       "description": "Get top 50 most active tables by total operations (reads + writes). Uses MON_GET_TABLE monitoring function. Used by CLI command 'top-active-tables'.",
       "parameters": [],
       "returns": "Top 50 active tables ranked by activity",
       "source": "CliCommandHandlerService:GetTopActiveTablesAsync"
     },
-    "GetTableGrants": {
+    "CLI_GetTableGrants": {
       "sql": "SELECT TRIM(GRANTOR) AS Grantor, TRIM(GRANTEE) AS Grantee, TRIM(GRANTEETYPE) AS GranteeType, CONTROLAUTH, ALTERAUTH, DELETEAUTH, INDEXAUTH, INSERTAUTH, REFAUTH, SELECTAUTH, UPDATEAUTH FROM SYSCAT.TABAUTH WHERE TABSCHEMA = ? AND TABNAME = ?",
       "description": "Get all grants/privileges for a specific table. Returns grantor, grantee, and specific privilege flags. Used by CLI command 'table-grants'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
@@ -873,5 +873,4 @@
     }
   }
 }
-
 
