@@ -678,13 +678,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting active sessions");
         Console.WriteLine("Retrieving active database sessions...");
         
-        var sql = @"
-            SELECT 
-                CURRENT USER AS AUTHID,
-                CURRENT TIMESTAMP AS CONNECT_TIME
-            FROM SYSIBM.SYSDUMMY1
-        ";
-        
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetActiveSessions");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -715,19 +709,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting database load for schema: {Schema}", schema);
         Console.WriteLine($"Retrieving database load metrics for schema: {schema}");
         
-        var sql = $@"
-            SELECT 
-                TABSCHEMA,
-                TABNAME,
-                ROWS_READ,
-                ROWS_INSERTED,
-                ROWS_UPDATED,
-                ROWS_DELETED
-            FROM TABLE(MON_GET_TABLE('', '', -2)) AS T
-            WHERE TABSCHEMA LIKE '{schema}'
-            ORDER BY (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) DESC
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetDatabaseLoad"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -762,13 +744,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting table statistics for schema: {Schema}", schema);
         Console.WriteLine($"Retrieving table statistics for schema: {schema}");
         
-        var sql = $@"
-            SELECT TABSCHEMA, TABNAME, CARD, NPAGES, FPAGES, STATS_TIME
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA LIKE '{schema}' AND TYPE IN ('T', 'U')
-            ORDER BY TABSCHEMA, TABNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableStatistics"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -814,13 +790,7 @@ public class CliCommandHandlerService
         Console.WriteLine($"Analyzing dependencies for: {schema}.{objectName} ({objectType})");
         
         // Get dependencies (objects this object depends on)
-        var sql = $@"
-            SELECT BSCHEMA, BNAME, BTYPE, DTYPE
-            FROM SYSCAT.TABDEP
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'
-            ORDER BY BSCHEMA, BNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableDependencies"), schema, objectName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var dependencies = data.AsEnumerable().Select(row => new
@@ -853,15 +823,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting CDC info for schema: {Schema}", schema);
         Console.WriteLine($"Retrieving CDC information for schema: {schema}");
         
-        var sql = $@"
-            SELECT TABSCHEMA, TABNAME, PROPERTY
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA LIKE '{schema}' 
-              AND TYPE IN ('T', 'U')
-              AND PROPERTY IS NOT NULL
-            ORDER BY TABSCHEMA, TABNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetCdcInfo"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var tables = data.AsEnumerable().Select(row => new

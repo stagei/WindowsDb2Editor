@@ -870,6 +870,41 @@
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of grants with privilege details",
       "source": "CliCommandHandlerService:GetTableGrantsAsync"
+    },
+    "GetActiveSessions": {
+      "sql": "SELECT CURRENT USER AS AUTHID, CURRENT TIMESTAMP AS CONNECT_TIME FROM SYSIBM.SYSDUMMY1",
+      "description": "Get active database sessions. Returns current user and connect time. Note: Full session monitoring requires admin views. Used by CLI command 'active-sessions'.",
+      "parameters": [],
+      "returns": "List of active sessions (limited info without admin privileges)",
+      "source": "CliCommandHandlerService:GetActiveSessionsAsync"
+    },
+    "GetDatabaseLoad": {
+      "sql": "SELECT TABSCHEMA, TABNAME, ROWS_READ, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED FROM TABLE(MON_GET_TABLE('', '', -2)) AS T WHERE TABSCHEMA LIKE ? ORDER BY (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) DESC",
+      "description": "Get database load metrics by table. Uses MON_GET_TABLE monitoring function to retrieve read/write statistics. Schema filter supports wildcards. Used by CLI command 'database-load'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "Table load metrics with row operation counts",
+      "source": "CliCommandHandlerService:GetDatabaseLoadAsync"
+    },
+    "GetTableStatistics": {
+      "sql": "SELECT TABSCHEMA, TABNAME, CARD, NPAGES, FPAGES, STATS_TIME FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get table statistics including row count (CARD), data pages, free pages, and last stats update time. Schema filter supports wildcards. Used by CLI command 'table-stats'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "Table statistics with cardinality and page info",
+      "source": "CliCommandHandlerService:GetTableStatsAsync"
+    },
+    "GetTableDependencies": {
+      "sql": "SELECT BSCHEMA, BNAME, BTYPE, DTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY BSCHEMA, BNAME",
+      "description": "Get object dependencies (objects that this table/view depends on). Returns target schema, object name, type, and dependency type from SYSCAT.TABDEP. Used by CLI command 'dependencies'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of dependencies with target objects",
+      "source": "CliCommandHandlerService:GetDependenciesAsync"
+    },
+    "GetCdcInfo": {
+      "sql": "SELECT TABSCHEMA, TABNAME, PROPERTY FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') AND PROPERTY IS NOT NULL ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get Change Data Capture (CDC) information for tables. Returns tables with PROPERTY column populated (CDC-enabled tables). Schema filter supports wildcards. Used by CLI command 'cdc-info'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "List of CDC-enabled tables with properties",
+      "source": "CliCommandHandlerService:GetCdcInfoAsync"
     }
   }
 }
