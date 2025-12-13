@@ -774,22 +774,22 @@
       "source": "CliCommandHandlerService:GetTriggerInfoAsync"
     },
     "GetViewInfo": {
-      "sql": "SELECT V.VIEWNAME, V.VIEWSCHEMA, V.DEFINER, V.VALID, V.READONLY, T.REMARKS, V.TEXT, T.CREATE_TIME FROM SYSCAT.VIEWS V JOIN SYSCAT.TABLES T ON V.VIEWSCHEMA = T.TABSCHEMA AND V.VIEWNAME = T.TABNAME WHERE V.VIEWSCHEMA = ? AND V.VIEWNAME = ?",
-      "description": "Get detailed information about a specific view. Returns view metadata, SQL definition text, definer, validity, and remarks. Used by CLI command 'view-info'.",
+      "sql": "SELECT TRIM(V.VIEWNAME) AS VIEWNAME, TRIM(V.VIEWSCHEMA) AS VIEWSCHEMA, TRIM(V.DEFINER) AS DEFINER, TRIM(V.VALID) AS VALID, TRIM(V.READONLY) AS READONLY, TRIM(T.REMARKS) AS REMARKS, T.CREATE_TIME FROM SYSCAT.VIEWS V JOIN SYSCAT.TABLES T ON V.VIEWSCHEMA = T.TABSCHEMA AND V.VIEWNAME = T.TABNAME WHERE TRIM(V.VIEWSCHEMA) = ? AND TRIM(V.VIEWNAME) = ?",
+      "description": "Get detailed information about a specific view. SYSCAT.VIEWS does NOT have TEXT or VIEWCHECK columns. Returns view metadata, definer, validity, and remarks from joined SYSCAT.TABLES. Used by CLI command 'view-info'.",
       "parameters": ["VIEWSCHEMA", "VIEWNAME"],
       "returns": "View details",
       "source": "CliCommandHandlerService:GetViewInfoAsync"
     },
     "GetProcedureInfo": {
-      "sql": "SELECT ROUTINENAME, ROUTINESCHEMA, DEFINER, LANGUAGE, DETERMINISTIC, EXTERNAL_ACTION, NULL_CALL, ORIGIN, REMARKS, TEXT, CREATE_TIME FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'P'",
-      "description": "Get detailed information about a specific stored procedure. Returns procedure metadata, language, characteristics, SQL body, and creation time. ROUTINETYPE='P' for procedures. Used by CLI command 'procedure-info'.",
+      "sql": "SELECT TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(ROUTINESCHEMA) AS ROUTINESCHEMA, TRIM(DEFINER) AS DEFINER, TRIM(LANGUAGE) AS LANGUAGE, TRIM(DETERMINISTIC) AS DETERMINISTIC, TRIM(ORIGIN) AS ORIGIN, CREATE_TIME FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = 'P'",
+      "description": "Get detailed information about a specific stored procedure. SYSCAT.ROUTINES does NOT have EXTERNAL_ACTION, NULL_CALL, REMARKS, or TEXT columns in DB2 12.1. Returns procedure metadata, language, deterministic flag, origin, and creation time. ROUTINETYPE='P' for procedures. Used by CLI command 'procedure-info'.",
       "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
       "returns": "Procedure details",
       "source": "CliCommandHandlerService:GetProcedureInfoAsync"
     },
     "GetFunctionInfo": {
-      "sql": "SELECT ROUTINENAME, ROUTINESCHEMA, DEFINER, LANGUAGE, DETERMINISTIC, EXTERNAL_ACTION, NULL_CALL, ORIGIN, TYPESCHEMA, TYPENAME, REMARKS, TEXT, CREATE_TIME FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'F'",
-      "description": "Get detailed information about a specific function. Returns function metadata, return type, language, characteristics, SQL body, and creation time. ROUTINETYPE='F' for functions. Used by CLI command 'function-info'.",
+      "sql": "SELECT TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(ROUTINESCHEMA) AS ROUTINESCHEMA, TRIM(DEFINER) AS DEFINER, TRIM(LANGUAGE) AS LANGUAGE, TRIM(DETERMINISTIC) AS DETERMINISTIC, TRIM(ORIGIN) AS ORIGIN, CREATE_TIME FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = 'F'",
+      "description": "Get detailed information about a specific function. SYSCAT.ROUTINES does NOT have EXTERNAL_ACTION, NULL_CALL, REMARKS, TEXT, TYPESCHEMA, or TYPENAME columns in DB2 12.1. Returns function metadata, language, deterministic flag, origin, and creation time. ROUTINETYPE='F' for functions. Used by CLI command 'function-info'.",
       "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
       "returns": "Function details",
       "source": "CliCommandHandlerService:GetFunctionInfoAsync"
@@ -940,6 +940,13 @@
       "parameters": ["PKGSCHEMA_PATTERN"],
       "returns": "List of packages with metadata",
       "source": "CliCommandHandlerService:ListPackagesAsync"
+    },
+    "ListTablespaces": {
+      "sql": "SELECT TRIM(TBSPACE) AS TablespaceName, TRIM(OWNER) AS Owner, TRIM(TBSPACETYPE) AS Type, TRIM(DATATYPE) AS DataType, PAGESIZE FROM SYSCAT.TABLESPACES ORDER BY TablespaceName",
+      "description": "List all tablespaces. Returns tablespace name, owner, type (SMS/DMS), data type, and page size. Used by CLI command 'list-tablespaces'.",
+      "parameters": [],
+      "returns": "List of tablespaces with metadata",
+      "source": "CliCommandHandlerService:ListTablespacesAsync"
     },
     "GetObjectComment": {
       "sql": "SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS Name, COALESCE(TRIM(REMARKS), '') AS Comment FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?",

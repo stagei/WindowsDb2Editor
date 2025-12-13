@@ -1,0 +1,188 @@
+{
+  "schema": "ALL",
+  "totalTriggers": 20,
+  "limitApplied": 20,
+  "triggers": [
+    {
+      "triggerSchema": "INL",
+      "triggerName": "KONTO_D",
+      "targetSchema": "INL",
+      "targetTable": "TRANSREG",
+      "triggerTime": "A",
+      "triggerEvent": "D",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "INL",
+      "triggerName": "KONTO_F1",
+      "targetSchema": "INL",
+      "targetTable": "TRANSREG",
+      "triggerTime": "A",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "INL",
+      "triggerName": "KONTO_F2",
+      "targetSchema": "INL",
+      "targetTable": "KONTO",
+      "triggerTime": "A",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "INL",
+      "triggerName": "KONTO_I",
+      "targetSchema": "INL",
+      "targetTable": "TRANSREG",
+      "triggerTime": "A",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "INL",
+      "triggerName": "KONTO_U",
+      "targetSchema": "INL",
+      "targetTable": "TRANSREG",
+      "triggerTime": "A",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "LOG",
+      "triggerName": "KUNDEKONTO_D",
+      "targetSchema": "INL",
+      "targetTable": "KUNDEKONTO",
+      "triggerTime": "A",
+      "triggerEvent": "D",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "LOG",
+      "triggerName": "KUNDEKONTO_I",
+      "targetSchema": "INL",
+      "targetTable": "KUNDEKONTO",
+      "triggerTime": "A",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "LOG",
+      "triggerName": "KUNDEKONTO_U2",
+      "targetSchema": "INL",
+      "targetTable": "KUNDEKONTO",
+      "triggerTime": "A",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_D",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASKS",
+      "triggerTime": "B",
+      "triggerEvent": "D",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_I",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASKS",
+      "triggerTime": "B",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_NAME_I",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASKS",
+      "triggerTime": "B",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_NAME_U",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASKS",
+      "triggerTime": "B",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_RPT_D",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASK_RPTS",
+      "triggerTime": "B",
+      "triggerEvent": "D",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_RPT_I",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASK_RPTS",
+      "triggerTime": "B",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_RPT_U",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASK_RPTS",
+      "triggerTime": "B",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "AM_TASK_U",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "AM_BASE_TASKS",
+      "triggerTime": "B",
+      "triggerEvent": "U",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "POLICY_DR",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "POLICY",
+      "triggerTime": "B",
+      "triggerEvent": "D",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "POLICY_IR",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "POLICY",
+      "triggerTime": "B",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "POLICY_IV",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "POLICY",
+      "triggerTime": "B",
+      "triggerEvent": "I",
+      "isEnabled": true
+    },
+    {
+      "triggerSchema": "SYSTOOLS",
+      "triggerName": "POLICY_UV",
+      "targetSchema": "SYSTOOLS",
+      "targetTable": "POLICY",
+      "triggerTime": "B",
+      "triggerEvent": "U",
+      "isEnabled": true
+    }
+  ],
+  "retrievedAt": "2025-12-13T21:17:15.1424442+01:00"
+}

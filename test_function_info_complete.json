@@ -1,0 +1,10 @@
+{
+  "schema": "FK",
+  "functionName": "D10AMD",
+  "definer": "TRU",
+  "language": "SQL",
+  "isDeterministic": true,
+  "origin": "Q",
+  "createTime": "2001-11-15T12:43:01.515009",
+  "retrievedAt": "2025-12-13T21:24:06.6306739+01:00"
+}

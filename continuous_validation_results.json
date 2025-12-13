@@ -1,148 +1,148 @@
 {
-  "Passed": [
-    {
-      "Category": "Table Properties",
-      "Match": true,
-      "Name": "GetTableColumns",
-      "FormCount": 5,
-      "Status": "PASS",
-      "CliCount": 5,
-      "CliSuccess": true,
-      "FormSuccess": true
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListTables",
-      "FormCount": 0,
-      "Status": "PASS",
-      "CliCount": 271,
-      "CliSuccess": true,
-      "FormSuccess": false
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListPackages",
-      "FormCount": 0,
-      "Status": "PASS",
-      "CliCount": "Data",
-      "CliSuccess": true,
-      "FormSuccess": false
-    }
-  ],
-  "Blockers": [],
-  "Fixed": [],
   "Failed": [
     {
+      "Status": "MISMATCH",
+      "FormCount": 0,
       "Category": "Table Properties",
-      "Match": false,
+      "FormSuccess": true,
+      "CliCount": 5,
+      "CliSuccess": true,
       "Name": "GetTableForeignKeys",
-      "FormCount": 0,
-      "Status": "MISMATCH",
-      "CliCount": 5,
-      "CliSuccess": true,
-      "FormSuccess": true
+      "Match": false
     },
     {
-      "Category": "Table Properties",
-      "Match": false,
-      "Name": "GetTableIndexes",
+      "Status": "MISMATCH",
       "FormCount": 1,
-      "Status": "MISMATCH",
+      "Category": "Table Properties",
+      "FormSuccess": true,
       "CliCount": "Data",
       "CliSuccess": true,
-      "FormSuccess": true
+      "Name": "GetTableIndexes",
+      "Match": false
     },
     {
-      "Category": "Table Properties",
-      "Match": false,
-      "Name": "GetTableDdlColumns",
-      "FormCount": "Text(314 chars)",
       "Status": "MISMATCH",
+      "FormCount": "Text(314 chars)",
+      "Category": "Table Properties",
+      "FormSuccess": true,
       "CliCount": 5,
       "CliSuccess": true,
-      "FormSuccess": true
+      "Name": "GetTableDdlColumns",
+      "Match": false
     },
     {
+      "Status": "MISMATCH",
+      "FormCount": 0,
       "Category": "Table Properties",
-      "Match": false,
+      "FormSuccess": true,
+      "CliCount": "Data",
+      "CliSuccess": true,
       "Name": "GetIncomingForeignKeys",
-      "FormCount": 0,
-      "Status": "MISMATCH",
-      "CliCount": "Data",
-      "CliSuccess": true,
-      "FormSuccess": true
+      "Match": false
     },
     {
+      "Status": "MISMATCH",
+      "FormCount": 0,
       "Category": "Table Properties",
-      "Match": false,
+      "FormSuccess": true,
+      "CliCount": "Data",
+      "CliSuccess": true,
       "Name": "GetTableUsedByPackages",
-      "FormCount": 0,
-      "Status": "MISMATCH",
-      "CliCount": "Data",
-      "CliSuccess": true,
-      "FormSuccess": true
+      "Match": false
     },
     {
+      "Status": "MISMATCH",
+      "FormCount": 0,
       "Category": "Table Properties",
-      "Match": false,
+      "FormSuccess": true,
+      "CliCount": "Data",
+      "CliSuccess": true,
       "Name": "GetTableUsedByViews",
-      "FormCount": 0,
-      "Status": "MISMATCH",
-      "CliCount": "Data",
-      "CliSuccess": true,
-      "FormSuccess": true
+      "Match": false
     },
     {
+      "Status": "MISMATCH",
+      "FormCount": 0,
       "Category": "Table Properties",
-      "Match": false,
-      "Name": "GetTableUsedByRoutines",
-      "FormCount": 0,
-      "Status": "MISMATCH",
+      "FormSuccess": true,
       "CliCount": "Data",
       "CliSuccess": true,
-      "FormSuccess": true
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListViews",
-      "FormCount": 0,
-      "Status": "FAIL",
-      "CliCount": 0,
-      "CliSuccess": false,
-      "FormSuccess": false
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListProcedures",
-      "FormCount": 0,
-      "Status": "FAIL",
-      "CliCount": 0,
-      "CliSuccess": false,
-      "FormSuccess": false
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListFunctions",
-      "FormCount": 0,
-      "Status": "FAIL",
-      "CliCount": 0,
-      "CliSuccess": false,
-      "FormSuccess": false
-    },
-    {
-      "Category": "List Queries",
-      "Match": false,
-      "Name": "ListTriggers",
-      "FormCount": 0,
-      "Status": "FAIL",
-      "CliCount": 0,
-      "CliSuccess": false,
-      "FormSuccess": false
+      "Name": "GetTableUsedByRoutines",
+      "Match": false
     }
-  ]
+  ],
+  "Fixed": [],
+  "Passed": [
+    {
+      "Status": "PASS",
+      "FormCount": 5,
+      "Category": "Table Properties",
+      "FormSuccess": true,
+      "CliCount": 5,
+      "CliSuccess": true,
+      "Name": "GetTableColumns",
+      "Match": true
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": 271,
+      "CliSuccess": true,
+      "Name": "ListTables",
+      "Match": false
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "Name": "ListViews",
+      "Match": false
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "Name": "ListProcedures",
+      "Match": false
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "Name": "ListFunctions",
+      "Match": false
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "Name": "ListTriggers",
+      "Match": false
+    },
+    {
+      "Status": "PASS",
+      "FormCount": 0,
+      "Category": "List Queries",
+      "FormSuccess": false,
+      "CliCount": "Data",
+      "CliSuccess": true,
+      "Name": "ListPackages",
+      "Match": false
+    }
+  ],
+  "Blockers": []
 }

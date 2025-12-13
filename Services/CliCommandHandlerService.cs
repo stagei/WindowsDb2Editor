@@ -525,10 +525,11 @@ public class CliCommandHandlerService
         {
             schema,
             viewName,
-            viewCheck = row["VIEWCHECK"]?.ToString()?.Trim(),
+            definer = row["DEFINER"]?.ToString()?.Trim(),
             isReadOnly = row["READONLY"]?.ToString() == "Y",
             isValid = row["VALID"]?.ToString() == "Y",
-            sourceCode = args.IncludeSourceCode ? row["TEXT"]?.ToString()?.Trim() : null,
+            remarks = row["REMARKS"]?.ToString()?.Trim(),
+            createTime = row["CREATE_TIME"],
             dependsOn,
             retrievedAt = DateTime.Now
         };
@@ -596,12 +597,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting function info: {Schema}.{Function}", schema, functionName);
         Console.WriteLine($"Retrieving function information for: {schema}.{functionName}");
         
-        var sql = $@"
-            SELECT FUNCSCHEMA, FUNCNAME, LANGUAGE, TEXT
-            FROM SYSCAT.FUNCTIONS
-            WHERE FUNCSCHEMA = '{schema}' AND FUNCNAME = '{functionName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetFunctionInfo"), schema, functionName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -611,10 +608,13 @@ public class CliCommandHandlerService
         
         var result = new
         {
-            schema,
-            functionName,
+            schema = row["ROUTINESCHEMA"]?.ToString()?.Trim(),
+            functionName = row["ROUTINENAME"]?.ToString()?.Trim(),
+            definer = row["DEFINER"]?.ToString()?.Trim(),
             language = row["LANGUAGE"]?.ToString()?.Trim(),
-            sourceCode = args.IncludeSourceCode ? row["TEXT"]?.ToString()?.Trim() : null,
+            isDeterministic = row["DETERMINISTIC"]?.ToString() == "Y",
+            origin = row["ORIGIN"]?.ToString()?.Trim(),
+            createTime = row["CREATE_TIME"],
             retrievedAt = DateTime.Now
         };
         
