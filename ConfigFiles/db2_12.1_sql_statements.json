@@ -907,16 +907,16 @@
       "source": "CliCommandHandlerService:GetCdcInfoAsync"
     },
     "ListViews": {
-      "sql": "SELECT VIEWSCHEMA, VIEWNAME, VALID, READONLY FROM SYSCAT.VIEWS WHERE VIEWSCHEMA LIKE ? ORDER BY VIEWSCHEMA, VIEWNAME",
-      "description": "List all views in schema(s). Returns view schema, name, valid flag, and read-only flag. Schema filter supports wildcards. Used by CLI command 'list-views'.",
+      "sql": "SELECT TRIM(VIEWSCHEMA) AS VIEWSCHEMA, TRIM(VIEWNAME) AS VIEWNAME, TRIM(VALID) AS VALID, TRIM(READONLY) AS READONLY FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) LIKE ? ORDER BY VIEWSCHEMA, VIEWNAME",
+      "description": "List all views in schema(s). SYSCAT.VIEWS does NOT have REMARKS column. Returns view schema, name, valid flag, and read-only flag. Schema filter supports wildcards. Used by CLI command 'list-views'.",
       "parameters": ["VIEWSCHEMA_PATTERN"],
       "returns": "List of views with metadata",
       "source": "CliCommandHandlerService:ListViewsAsync"
     },
     "ListProcedures": {
-      "sql": "SELECT PROCSCHEMA, PROCNAME, LANGUAGE, DETERMINISTIC FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA LIKE ? ORDER BY PROCSCHEMA, PROCNAME",
-      "description": "List all stored procedures in schema(s). Returns procedure schema, name, language, and deterministic flag. Schema filter supports wildcards. Used by CLI command 'list-procedures'.",
-      "parameters": ["PROCSCHEMA_PATTERN"],
+      "sql": "SELECT TRIM(ROUTINESCHEMA) AS ROUTINESCHEMA, TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT AS ParameterCount FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) LIKE ? AND ROUTINETYPE = 'P' ORDER BY ROUTINESCHEMA, ROUTINENAME",
+      "description": "List all stored procedures in schema(s). Uses SYSCAT.ROUTINES (not SYSCAT.PROCEDURES which doesn't exist). Returns procedure schema, name, language, and parameter count. Schema filter supports wildcards. Used by CLI command 'list-procedures'.",
+      "parameters": ["ROUTINESCHEMA_PATTERN"],
       "returns": "List of procedures with metadata",
       "source": "CliCommandHandlerService:ListProceduresAsync"
     },
@@ -928,9 +928,9 @@
       "source": "CliCommandHandlerService:ListTriggersAsync"
     },
     "ListFunctions": {
-      "sql": "SELECT FUNCSCHEMA, FUNCNAME, LANGUAGE FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA LIKE ? ORDER BY FUNCSCHEMA, FUNCNAME",
-      "description": "List all user-defined functions in schema(s). Returns function schema, name, and implementation language. Schema filter supports wildcards. Used by CLI command 'list-functions'.",
-      "parameters": ["FUNCSCHEMA_PATTERN"],
+      "sql": "SELECT TRIM(ROUTINESCHEMA) AS ROUTINESCHEMA, TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT AS ParameterCount FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) LIKE ? AND ROUTINETYPE = 'F' ORDER BY ROUTINESCHEMA, ROUTINENAME",
+      "description": "List all user-defined functions in schema(s). Uses SYSCAT.ROUTINES (not SYSCAT.FUNCTIONS which doesn't exist). Returns function schema, name, language, and parameter count. Schema filter supports wildcards. Used by CLI command 'list-functions'.",
+      "parameters": ["ROUTINESCHEMA_PATTERN"],
       "returns": "List of functions with metadata",
       "source": "CliCommandHandlerService:ListFunctionsAsync"
     },
@@ -1003,34 +1003,6 @@
       "parameters": ["TABSCHEMA_PATTERN"],
       "returns": "List of tables with metadata",
       "source": "CliCommandHandlerService:ListTablesAsync"
-    },
-    "ListViews": {
-      "sql": "SELECT VIEWSCHEMA, VIEWNAME, VALID, READONLY, REMARKS FROM SYSCAT.VIEWS WHERE VIEWSCHEMA LIKE ? ORDER BY VIEWSCHEMA, VIEWNAME",
-      "description": "List all views in a schema. Returns view metadata. Schema filter supports wildcards (%). Used by CLI command 'list-views'.",
-      "parameters": ["VIEWSCHEMA_PATTERN"],
-      "returns": "List of views",
-      "source": "CliCommandHandlerService:ListViewsAsync"
-    },
-    "ListProcedures": {
-      "sql": "SELECT ROUTINESCHEMA, ROUTINENAME, LANGUAGE, PARM_COUNT AS ParameterCount, CREATE_TIME AS CreateTime, REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA LIKE ? AND ROUTINETYPE = 'P' ORDER BY ROUTINESCHEMA, ROUTINENAME",
-      "description": "List all procedures in a schema. Returns procedure metadata. Schema filter supports wildcards (%). Used by CLI command 'list-procedures'.",
-      "parameters": ["ROUTINESCHEMA_PATTERN"],
-      "returns": "List of procedures",
-      "source": "CliCommandHandlerService:ListProceduresAsync"
-    },
-    "ListTriggers": {
-      "sql": "SELECT TRIGSCHEMA, TRIGNAME, TABSCHEMA, TABNAME, TRIGEVENT, TRIGTIME, VALID, REMARKS FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA LIKE ? ORDER BY TRIGSCHEMA, TRIGNAME",
-      "description": "List all triggers in a schema. Returns trigger metadata including associated table and event type. Schema filter supports wildcards (%). Used by CLI command 'list-triggers'.",
-      "parameters": ["TRIGSCHEMA_PATTERN"],
-      "returns": "List of triggers",
-      "source": "CliCommandHandlerService:ListTriggersAsync"
-    },
-    "ListFunctions": {
-      "sql": "SELECT ROUTINESCHEMA, ROUTINENAME, LANGUAGE, PARM_COUNT AS ParameterCount, CREATE_TIME AS CreateTime, REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA LIKE ? AND ROUTINETYPE = 'F' ORDER BY ROUTINESCHEMA, ROUTINENAME",
-      "description": "List all functions in a schema. Returns function metadata. Schema filter supports wildcards (%). Used by CLI command 'list-functions'.",
-      "parameters": ["ROUTINESCHEMA_PATTERN"],
-      "returns": "List of functions",
-      "source": "CliCommandHandlerService:ListFunctionsAsync"
     },
     "GetUserAccessLevel": {
       "sql": "SELECT TRIM(GRANTEE) AS USERNAME, DBADMAUTH, SECURITYADMAUTH AS SECADMAUTH FROM SYSCAT.DBAUTH WHERE TRIM(GRANTEE) = ?",

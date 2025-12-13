@@ -880,10 +880,10 @@ public class CliCommandHandlerService
         
         var procedures = data.AsEnumerable().Take(limit).Select(row => new
         {
-            schema = row["PROCSCHEMA"]?.ToString()?.Trim(),
-            procedureName = row["PROCNAME"]?.ToString()?.Trim(),
+            schema = row["ROUTINESCHEMA"]?.ToString()?.Trim(),
+            procedureName = row["ROUTINENAME"]?.ToString()?.Trim(),
             language = row["LANGUAGE"]?.ToString()?.Trim(),
-            isDeterministic = row["DETERMINISTIC"]?.ToString() == "Y"
+            parameterCount = Convert.ToInt32(row["ParameterCount"])
         }).ToList();
         
         Logger.Info("Listed {Count} procedures (limit: {Limit})", procedures.Count, limit);
@@ -949,9 +949,10 @@ public class CliCommandHandlerService
         
         var functions = data.AsEnumerable().Take(limit).Select(row => new
         {
-            schema = row["FUNCSCHEMA"]?.ToString()?.Trim(),
-            functionName = row["FUNCNAME"]?.ToString()?.Trim(),
-            language = row["LANGUAGE"]?.ToString()?.Trim()
+            schema = row["ROUTINESCHEMA"]?.ToString()?.Trim(),
+            functionName = row["ROUTINENAME"]?.ToString()?.Trim(),
+            language = row["LANGUAGE"]?.ToString()?.Trim(),
+            parameterCount = Convert.ToInt32(row["ParameterCount"])
         }).ToList();
         
         Logger.Info("Listed {Count} functions (limit: {Limit})", functions.Count, limit);

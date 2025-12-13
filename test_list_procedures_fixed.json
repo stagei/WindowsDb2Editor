@@ -1,0 +1,3512 @@
+{
+  "schema": "ALL",
+  "totalProcedures": 584,
+  "limitApplied": 584,
+  "procedures": [
+    {
+      "schema": "SQLJ",
+      "procedureName": "DB2_INSTALL_JAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "DB2_INSTALL_JAR",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "DB2_REPLACE_JAR",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "DB2_UPDATEJARINFO",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "RECOVERJAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "REFRESH_CLASSES",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "REMOVE_JAR",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SQLJ",
+      "procedureName": "REMOVE_JAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "procedureName": "GET_ROUTINE_SAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "procedureName": "GET_ROUTINE_SAR",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "procedureName": "PUT_ROUTINE_SAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "procedureName": "PUT_ROUTINE_SAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLATTRIBUTES",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLCAMESSAGE",
+      "language": "C",
+      "parameterCount": 16
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLCAMESSAGECCSID",
+      "language": "C",
+      "parameterCount": 17
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLCOLPRIVILEGES",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLCOLUMNS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLFOREIGNKEYS",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLFUNCTIONCOLS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLFUNCTIONS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLGETTYPEINFO",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLPRIMARYKEYS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLPROCEDURECOLS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLPROCEDURES",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLPSEUDOCOLUMNS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLSPECIALCOLUMNS",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLSTATISTICS",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLSUPERTABLES",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLSUPERTYPES",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLTABLEPRIVILEGES",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLTABLES",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBM",
+      "procedureName": "SQLUDTS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ALLOCATE_UNIQUE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ANALYZE_DATABASE",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ANALYZE_PART_OBJECT",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ANALYZE_SCHEMA",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "APPEND_BLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "APPEND_CLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "APPENDTOSTRING",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BASE64_ENCODE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_BLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_CHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_CHAR",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_CLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_DATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_DOUBLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_INT",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_NUMBER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_RAW",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_RAW",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_TIMESTAMP",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_VARCHAR",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BIND_VARIABLE_VARCHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "BROKEN",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CANONICALIZE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CATALOG",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CATALOG",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CHANGE",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CHECK_ALERT_NAME",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CHECK_DB_CSID",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CHECK_DEADLOCK",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CHECK_LOCK",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLEANUP",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_BLOB",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_CLOB",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_CONNECTION",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_CURSOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_DATA",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CLOSE_DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_BLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_CHAR",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_CHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_CLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_DATE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_DATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_DOUBLE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_DOUBLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_INT",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_INT",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_LONG",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_NUMBER",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_NUMBER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_RAW",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_RAW",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_TIMESTAMP",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_TIMESTAMP",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_VARCHAR",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COLUMN_VALUE_VARCHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMA_TO_TABLE_LNAME",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMA_TO_TABLE_UNCL",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMAND",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMAND",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMAND_REPLIES",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMAND_REPLIES",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMMONREQMETRICS",
+      "language": "SQL",
+      "parameterCount": 124
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COMPILE_SCHEMA",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CONNDELTAS",
+      "language": "SQL",
+      "parameterCount": 130
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CONNECTION",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CONVERT",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CONVERTTOBLOB",
+      "language": "SQL",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CONVERTTOCLOB",
+      "language": "SQL",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COPY_BLOB",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "COPY_CLOB",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_DIRECTORY",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_DIRECTORY_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_OR_REPLACE_DIRECTORY",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_OR_REPLACE_DIRECTORY_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_STAT_TABLE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CREATE_WRAPPED",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CURRENTAPPS",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "CURRENTSQL",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DATA",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DB_VERSION",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DBSUMMARY",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_BLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_CHAR",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_CLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_DATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_DOUBLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_INT",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_LONG",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_NUMBER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_RAW",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_TIMESTAMP",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DEFINE_COLUMN_VARCHAR",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DELETE_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DELETE_DEADLOCK",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DELETE_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DELETE_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DESCRIBE_COLUMNS",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DESCRIBE_COLUMNS2",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DISABLE",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DROP_DIRECTORY",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "DROP_DIRECTORY_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EHLO",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EHLO",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ENABLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ENABLE",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ERASE_BLOB",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "ERASE_CLOB",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXEC_DDL_STATEMENT",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXECUTE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXECUTE_AND_FETCH",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXECUTE_AND_FETCH",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXECUTE_TASK",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXPORT_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXPORT_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "EXPORT_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FCLOSE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FCLOSE_ALL",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FCOPY",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FCOPY",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FCOPY",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FETCH_ROWS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FFLUSH",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FREMOVE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FRENAME",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "FRENAME",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GATHER_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GATHER_SCHEMA_STATS",
+      "language": "SQL",
+      "parameterCount": 17
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GATHER_SCHEMA_STATS",
+      "language": "SQL",
+      "parameterCount": 16
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GATHER_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 15
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_DEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_DIRECTORY_PATH",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_DIRECTORY_PATH_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 16
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 14
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_LINE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_LINE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_LINES",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_NEXTRUN_TIME",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_SCHEMA_QUALIFIED",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_TASK_INFO",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GET_TASK_NAME",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETANALYZEOPTIONS",
+      "language": "SQL",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETCONTROLDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETFUNCTIONDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETINDEXDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETPACKAGEDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETROUTINEDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETSAMPLECLAUSE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETTABLEDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETTOKEN",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETTRIGGERDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETUSAGELISTDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETVARIABLEDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "GETVIEWDEPENDENCY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HANDLE_TASK_NEXT_RUN",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HANDLEOPTION",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HELO",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HELO",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HELP",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "HELP",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_ALL_RECIPIENTS",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_BOUNDARY_TEXT",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_BOUNDARY_TEXT_AT_END",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_CONTENT_DISPOSITION",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_CONTENT_TRANSFER_ENCODING",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_CONTENT_TYPE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_MIME",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_PRIORITY",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_RECIPIENTS",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_ADD_SUBJECT",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_BASE64_ENCODE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CHANGE",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CLOSE_CONNECTION",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_COMMAND",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_COMMAND2",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CONVERTREPLYTOSTRUCT",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CONVERTSMTPTOTCPSTRUCT",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CONVERTTOBLOB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_CONVERTTOCLOB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_DESCRIBE_COLUMNS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_DISCONNECT",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_FCOPY",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_FOLD_AND_WRITE_DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_FREMOVE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_FRENAME",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_GENERATE_BOUNDARY_TEXT",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_GET_LINE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_IS_OPEN",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_NEW_LINE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PERFORM_ATTACHMENT_TASKS",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PERFORM_FINAL_TASKS",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PERFORM_INITIAL_TASKS",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PERFORM_PRE_ATTACHMENT_TASKS",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PREPARE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PUT",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PUT_LINE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_PUTF",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_READ_LINE",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_SEPARATE_ADDRESS",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IMP_SUBMIT",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT_ATS",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT_DBMS_LOCK_ALLOCATED",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INIT_DBMS_LOCK_DET",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INITIALIZE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INITMSGCACHE",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "INTERVAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IS_OPEN",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "IS_VALID",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "LAST_ROW_COUNT",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "LOCKS_CLEANUP",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "LOCKWAIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MAIL",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MAIL",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MY_SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MY_SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MY_SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MY_SYS_INIT",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "MY_SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NAME_RESOLVE",
+      "language": "SQL",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NAME_TOKENIZE",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NAMERESOLVEFP",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NAMERESOLVET",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NAMERESOLVETVSS",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NEW_LINE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NEW_LINE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NEW_LINE",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NEXT_DATE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NOOP",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "NOOP",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_BLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_CLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_CONNECTION",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_CONNECTION",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_CURSOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_DATA",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "OPEN_DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PACK_MESSAGE_RAW",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PARSE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PARSE_VALUES",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PKGCACHE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PREPARE_TASK_INFO",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PURGE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUT",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUT",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUT_LINE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUT_LINE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "PUTF",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "QUIT",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "QUIT",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RAISE_APPLICATION_ERROR",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RAISE_APPLICATION_ERROR",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RAISE_APPLICATION_ERROR",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RCPT",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RCPT",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "READ_BLOB",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "READ_CLIENT_INFO",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "READ_CLOB",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "READ_LINE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "READ_MODULE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REGISTER",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REGISTER_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RELEASE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REMOVE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REMOVE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REMOVE_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REMOVEALL",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REMOVEALL_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REQUEST",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "REQUEST_ALLOCATE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RESET_BUFFER",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RSET",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RSET",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "RUN",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SAVE_EXEC_INFO",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SEED",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SEED_STRING",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SEND",
+      "language": "SQL",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SEND_ATTACH_RAW",
+      "language": "SQL",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SEND_ATTACH_VARCHAR2",
+      "language": "SQL",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_ACTION",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_CLIENT_INFO",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 15
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_COLUMN_STATS",
+      "language": "SQL",
+      "parameterCount": 14
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_DEFAULTS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_INDEX_STATS",
+      "language": "SQL",
+      "parameterCount": 19
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_MODULE",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_SESSION_LONGOPS",
+      "language": "SQL",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SET_TABLE_STATS",
+      "language": "SQL",
+      "parameterCount": 14
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SIGNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SIGNAL_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SLEEP",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SLEEP",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SLEEP2",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SPLIT",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SUBMIT",
+      "language": "SQL",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "SYS_INIT",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "TABLE_TO_COMMA_LNAME",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "TABLE_TO_COMMA_UNCL",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "TERMINATE",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "TRIM_BLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "TRIM_CLOB",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNCATALOG",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE_CHAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE_DATE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE_INT",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE_NUMBER",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UNPACK_MESSAGE_RAW",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "UPDATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VALIDATE",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VALIDATE_LENGTH",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_BLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_CHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_CLOB",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_DATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_DOUBLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_INT",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_NUMBER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_RAW",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_TIMESTAMP",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VARIABLE_VALUE_VARCHAR",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "VRFY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITANY",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITANY",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITANY_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITONE",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITONE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WAITONE_INTERNAL",
+      "language": "SQL",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WHAT",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_BLOB",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_CLOB",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_LINE",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_RAW",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_RAW_DATA",
+      "language": "SQL",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITE_TEXT",
+      "language": "SQL",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITEAPPEND_BLOB",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSIBMADM",
+      "procedureName": "WRITEAPPEND_CLOB",
+      "language": "SQL",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_CMD",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_COPY_SCHEMA",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_DROP_SCHEMA",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_FMP_TERM",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_GET_DEPTREE",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_MOVE_TABLE",
+      "language": "C",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_MOVE_TABLE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_MOVE_TABLE_UTIL",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_REFRESH_CONFIG",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_REMOVE_MSGS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_REVALIDATE_DB_OBJECTS",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_REVALIDATE_DB_OBJECTS",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_ROTATE_ENC_KEY",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_ROTATE_MASTER_KEY",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_SET_INTRA_PARALLEL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_SET_MAINT_MODE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_SP_C",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_SP_C2",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_TASK_ADD",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_TASK_REMOVE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_TASK_UPDATE",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ADMIN_UPDATE_DB_LEVEL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ALTER_ROUTINE_PACKAGE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ALTOBJ",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_DROP_TASK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_GET_LOCK_CHN_TB",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_GET_LOCK_CHNS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_GET_LOCK_RPT",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_GET_RPT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AM_SAVE_TASK",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ASN_ADMIN_UTIL",
+      "language": "C",
+      "parameterCount": 16
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUDIT_ARCHIVE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUDIT_DELIM_EXTRACT",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUTOMAINT_GET_POLICY",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUTOMAINT_GET_POLICYFILE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUTOMAINT_SET_POLICY",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "AUTOMAINT_SET_POLICYFILE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "BIG_SQL_GET_OPERATION_AUTH",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "BIG_SQL_SERVICE_MODE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CANCEL_WORK",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CAPTURE_STORAGEMGMT_INFO",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CREATE_SQL_SAMPLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CREATE_STORAGEMGMT_TABLES",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CREATE_V8_SAMPLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "CREATE_XML_SAMPLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DB2LK_CLEAN_TABLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DB2LK_GENERATE_DDL",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DB2LK_TBLNDEP",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DB2LOAD",
+      "language": "C",
+      "parameterCount": 15
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_ENDSESSIONMANAGER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_INITIALIZECLIENT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_LOOKUPSESSIONMANAGER",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_PINGSESSIONMANAGER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_RECVCLIENTREPORTS",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_RUNSESSIONMANAGER",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_SENDCLIENTCOMMANDS",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_SENDCLIENTREQUESTS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DBG_TERMINATECLIENT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DESIGN_ADVISOR",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DNET_INSTALLASSEMBLY",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "DROP_STORAGEMGMT_TABLES",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EVMON_FORMAT_UE_TO_TABLES",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EVMON_UPGRADE_TABLES",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXDYN_DYNAMIC",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXDYN_INCBIND",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXDYN_SQLCACHE",
+      "language": "C",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_FORMAT",
+      "language": "C",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_FROM_ACTIVITY",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_FROM_CATALOG",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_FROM_DATA",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_FROM_SECTION",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_SQL",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "EXPLAIN_SQL_HANDLE",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_CONFIG",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_DB_CONFIG",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_DB2_SQLROUTINE_PREOPTS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_DBSIZE_INFO",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_MESSAGE",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_PLAN_HINT",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_ROUTINE_NAME",
+      "language": "SQL",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_SYSTEM_INFO",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_WRAP_CFG_C",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "GET_WRAP_CFG_C2",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "HASNICKNAMECHANGED",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "HEALTH_HI_REC",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ITMAGENT_SET_CONFIG",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_SRVR_NODES",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_SRVR_OPTIONS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_SRVR_OPTVALS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_SRVR_TYPES",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_SRVR_VERSIONS",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_WRAP_OPTIONS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LIST_WRAPPERS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LOGICAL_BACKUP",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LOGICAL_BACKUP_DETAILS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "LOGICAL_RESTORE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "MON_CAPTURE_ACTIVITY_IN_PROGRESS",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "MON_COLLECT_STATS",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "MON_COLLECT_STATS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "MON_INCREMENT_INTERVAL_ID",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "MONITOR_UTIL",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "NICKNAMEINFO",
+      "language": "C",
+      "parameterCount": 13
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "NICKNAMEINFO",
+      "language": "C",
+      "parameterCount": 15
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "NNSTAT",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "NNSTAT",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ODBC_DISCOVERY",
+      "language": "C",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ODBC_DISCOVERY_32",
+      "language": "C",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ODBC_DISCOVERY2",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ODBC_DISCOVERY2_32",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "POLICY_INSTALL",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "POLICY_INSTALLOC",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "POLICY_RETRIEVE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_CLEAR_SESSION",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_GET_LEVEL",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_GET_REPORT",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_INIT_SESSION",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_PUT_COMMAND",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_SET_COMPILEMODE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_SET_DEBUGINFO",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_SET_SESSION",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "PSMD_TERM_SESSION",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REBIND_ROUTINE_PACKAGE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REBIND_ROUTINE_PACKAGE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REMOTE_QUERY",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REMOTE_QUERY2",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REORGCHK_IX_STATS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "REORGCHK_TB_STATS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SET_CONFIG",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SET_DB2_SQLROUTINE_PREOPTS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SET_MAINT_MODE_RECORD_NO_TEMPORALHISTORY",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SET_PLAN_HINT",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SET_ROUTINE_OPTS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SNAP_WRITE_FILE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_ALTER_SRS",
+      "language": "C",
+      "parameterCount": 9
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_ALTER_SRS",
+      "language": "C",
+      "parameterCount": 13
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_ALTER_SRS",
+      "language": "C",
+      "parameterCount": 10
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_ALTER_SRS",
+      "language": "C",
+      "parameterCount": 14
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_CREATE_SRS",
+      "language": "C",
+      "parameterCount": 11
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_CREATE_SRS",
+      "language": "C",
+      "parameterCount": 14
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_CREATE_SRS",
+      "language": "C",
+      "parameterCount": 15
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_CREATE_SRS",
+      "language": "C",
+      "parameterCount": 18
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_DROP_SRS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_DROP_SRS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_EXPORT_SHAPE",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_IMPORT_SHAPE",
+      "language": "C",
+      "parameterCount": 20
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_REGISTER_SPATIAL_COLUMN",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_REGISTER_SPATIAL_COLUMN",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_SHAPEFILE_INFO",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "ST_UNREGISTER_SPATIAL_COLUMN",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSINSTALLOBJECTS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSINSTALLROUTINES",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_ADMIN_CMD",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_ALTER",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_BACKUP",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_CLEANUP",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_CLEAR_COMMANDLOCKS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_CLEAR_EVENTS",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_CONFIGURE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_CREATE",
+      "language": "C",
+      "parameterCount": 6
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_DISABLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_DROP",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_DROP",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_ENABLE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_ENABLE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_RESTORE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_UPDATE",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_UPGRADE_CATALOG",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "SYSTS_UPGRADE_INDEX",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_ALTER_MEMBER_SUBSET",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_CANCEL_ACTIVITY",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_CAPTURE_ACTIVITY_IN_PROGRESS",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_COLLECT_STATS",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_COLLECT_STATS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_CREATE_MEMBER_SUBSET",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_DROP_MEMBER_SUBSET",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_ENABLE_ADMISSION_CTRL",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_SET_CLIENT_INFO",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_SET_CONN_ENV",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "WLM_SET_SESSION_PRIORITY",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDB_DECOMP_XML_FROM_QUERY",
+      "language": "C",
+      "parameterCount": 12
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML1_5GB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML100MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML10MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML1GB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML25MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML2GB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML500MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML50MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXML75MB",
+      "language": "C",
+      "parameterCount": 8
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XDBDECOMPXMLFROMFILELIST",
+      "language": "C",
+      "parameterCount": 13
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_ADDSCHEMADOC",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_COMPLETE",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_DTD",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_EXTENTITY",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_GET_PARSING_DIAGNOSTICS",
+      "language": "C",
+      "parameterCount": 7
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_REGISTER",
+      "language": "C",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_REMOVE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSPROC",
+      "procedureName": "XSR_UPDATE",
+      "language": "C",
+      "parameterCount": 5
+    }
+  ],
+  "retrievedAt": "2025-12-13T21:13:24.2902703+01:00"
+}
