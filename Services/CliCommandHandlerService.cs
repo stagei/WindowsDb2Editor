@@ -1656,14 +1656,7 @@ public class CliCommandHandlerService
         Logger.Debug("Listing packages in schema: {Schema}", schema);
         Console.WriteLine($"Listing packages in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIM(PKGSCHEMA) AS PackageSchema, TRIM(PKGNAME) AS PackageName, 
-                   CREATE_TIME, LAST_BIND_TIME
-            FROM SYSCAT.PACKAGES
-            WHERE PKGSCHEMA LIKE '{schema}'
-            ORDER BY PackageSchema, PackageName
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListPackages"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -1886,12 +1879,7 @@ public class CliCommandHandlerService
         Logger.Debug("Getting comment: {Schema}.{Object} ({Type})", schema, objectName, objectType);
         Console.WriteLine($"Retrieving comment for: {schema}.{objectName}");
         
-        var sql = $@"
-            SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS Name, COALESCE(TRIM(REMARKS), '') AS Comment
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetObjectComment"), schema, objectName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -1926,15 +1914,7 @@ public class CliCommandHandlerService
         Logger.Debug("Finding objects without comments - Schema: {Schema}, Type: {Type}", schema, objectType);
         Console.WriteLine($"Finding uncommented objects in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS Name, TRIM(TYPE) AS TableType
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA LIKE '{schema}' 
-              AND TYPE IN ('T', 'U')
-              AND (REMARKS IS NULL OR TRIM(REMARKS) = '')
-            ORDER BY Schema, Name
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "FindMissingComments"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         
@@ -2162,25 +2142,7 @@ public class CliCommandHandlerService
         Logger.Debug("Finding unused tables in schema: {Schema}", schema);
         Console.WriteLine($"Finding unused tables in schema: {schema}");
         
-        var sql = $@"
-            SELECT 
-                TRIM(T.TABSCHEMA) AS Schema,
-                TRIM(T.TABNAME) AS TableName,
-                T.CARD AS RowCount,
-                T.CREATE_TIME AS CreateTime,
-                CASE 
-                    WHEN NOT EXISTS (
-                        SELECT 1 FROM SYSCAT.TABDEP D 
-                        WHERE D.BSCHEMA = T.TABSCHEMA AND D.BNAME = T.TABNAME
-                    ) THEN 1
-                    ELSE 0
-                END AS NoDependencies
-            FROM SYSCAT.TABLES T
-            WHERE T.TABSCHEMA LIKE '{schema}' 
-              AND T.TYPE IN ('T', 'U')
-            ORDER BY T.TABSCHEMA, T.TABNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "FindUnusedTables"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         

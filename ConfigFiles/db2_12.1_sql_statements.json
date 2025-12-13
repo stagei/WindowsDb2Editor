@@ -933,6 +933,34 @@
       "parameters": ["FUNCSCHEMA_PATTERN"],
       "returns": "List of functions with metadata",
       "source": "CliCommandHandlerService:ListFunctionsAsync"
+    },
+    "ListPackages": {
+      "sql": "SELECT TRIM(PKGSCHEMA) AS PackageSchema, TRIM(PKGNAME) AS PackageName, CREATE_TIME, LAST_BIND_TIME FROM SYSCAT.PACKAGES WHERE PKGSCHEMA LIKE ? ORDER BY PackageSchema, PackageName",
+      "description": "List all packages in schema(s). Returns package schema, name, create time, and last bind time. Schema filter supports wildcards. Used by CLI command 'list-packages'.",
+      "parameters": ["PKGSCHEMA_PATTERN"],
+      "returns": "List of packages with metadata",
+      "source": "CliCommandHandlerService:ListPackagesAsync"
+    },
+    "GetObjectComment": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS Name, COALESCE(TRIM(REMARKS), '') AS Comment FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?",
+      "description": "Get comment/remarks for a specific table. Returns schema, name, and comment text. Used by CLI command 'object-comment'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Object comment details",
+      "source": "CliCommandHandlerService:GetObjectCommentAsync"
+    },
+    "FindMissingComments": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS Name, TRIM(TYPE) AS TableType FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') AND (REMARKS IS NULL OR TRIM(REMARKS) = '') ORDER BY Schema, Name",
+      "description": "Find tables without comments. Returns tables where REMARKS column is null or empty. Schema filter supports wildcards. Used by CLI command 'missing-comments'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "List of uncommented tables",
+      "source": "CliCommandHandlerService:FindMissingCommentsAsync"
+    },
+    "FindUnusedTables": {
+      "sql": "SELECT TRIM(T.TABSCHEMA) AS Schema, TRIM(T.TABNAME) AS TableName, T.CARD AS RowCount, T.CREATE_TIME AS CreateTime, CASE WHEN NOT EXISTS (SELECT 1 FROM SYSCAT.TABDEP D WHERE D.BSCHEMA = T.TABSCHEMA AND D.BNAME = T.TABNAME) THEN 1 ELSE 0 END AS NoDependencies FROM SYSCAT.TABLES T WHERE T.TABSCHEMA LIKE ? AND T.TYPE IN ('T', 'U') ORDER BY T.TABSCHEMA, T.TABNAME",
+      "description": "Find potentially unused tables (tables with no dependencies in SYSCAT.TABDEP). Returns tables that no other objects depend on. Schema filter supports wildcards. Used by CLI command 'find-unused-tables'.",
+      "parameters": ["TABSCHEMA_PATTERN"],
+      "returns": "List of potentially unused tables with metadata",
+      "source": "CliCommandHandlerService:FindUnusedTablesAsync"
     }
   }
 }
