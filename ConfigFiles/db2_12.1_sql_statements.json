@@ -863,6 +863,13 @@
       "parameters": [],
       "returns": "Top 50 active tables ranked by activity",
       "source": "CliCommandHandlerService:GetTopActiveTablesAsync"
+    },
+    "CLI_GetTableGrants": {
+      "sql": "SELECT TRIM(GRANTOR) AS Grantor, TRIM(GRANTEE) AS Grantee, TRIM(GRANTEETYPE) AS GranteeType, CONTROLAUTH, ALTERAUTH, DELETEAUTH, INDEXAUTH, INSERTAUTH, REFAUTH, SELECTAUTH, UPDATEAUTH FROM SYSCAT.TABAUTH WHERE TABSCHEMA = ? AND TABNAME = ?",
+      "description": "Get all grants/privileges for a specific table. Returns grantor, grantee, and specific privilege flags. Used by CLI command 'table-grants'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of grants with privilege details",
+      "source": "CliCommandHandlerService:GetTableGrantsAsync"
     }
   }
 }

@@ -3997,19 +3997,22 @@ public class CliCommandHandlerService
         var schema = parts[0];
         var tableName = parts[1];
         
-        var sql = $@"
-            SELECT TRIM(GRANTOR) AS Grantor, TRIM(GRANTEE) AS Grantee,
-                   TRIM(GRANTEETYPE) AS GranteeType
-            FROM SYSCAT.TABAUTH
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableGrants"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var grants = data.AsEnumerable().Select(r => new
         {
             grantor = r["Grantor"]?.ToString()?.Trim(),
             grantee = r["Grantee"]?.ToString()?.Trim(),
-            granteeType = r["GranteeType"]?.ToString()?.Trim()
+            granteeType = r["GranteeType"]?.ToString()?.Trim(),
+            controlAuth = r["CONTROLAUTH"]?.ToString() == "Y",
+            alterAuth = r["ALTERAUTH"]?.ToString() == "Y",
+            deleteAuth = r["DELETEAUTH"]?.ToString() == "Y",
+            indexAuth = r["INDEXAUTH"]?.ToString() == "Y",
+            insertAuth = r["INSERTAUTH"]?.ToString() == "Y",
+            refAuth = r["REFAUTH"]?.ToString() == "Y",
+            selectAuth = r["SELECTAUTH"]?.ToString() == "Y",
+            updateAuth = r["UPDATEAUTH"]?.ToString() == "Y"
         }).ToList();
         
         return new
