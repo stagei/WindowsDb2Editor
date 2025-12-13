@@ -413,13 +413,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting trigger info: {Schema}.{Trigger}", schema, triggerName);
         Console.WriteLine($"Retrieving trigger information for: {schema}.{triggerName}");
         
-        var sql = $@"
-            SELECT TRIGNAME, TRIGSCHEMA, TABSCHEMA, TABNAME, TRIGTIME, TRIGEVENT, GRANULARITY, 
-                   ENABLED, VALID, REMARKS, TEXT, CREATE_TIME
-            FROM SYSCAT.TRIGGERS
-            WHERE TRIGSCHEMA = '{schema}' AND TRIGNAME = '{triggerName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTriggerInfo"), schema, triggerName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -4060,14 +4055,8 @@ public class CliCommandHandlerService
     
     private async Task<object> GetDatabaseSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var sql = @"
-            SELECT SUM(CARD) AS TotalRows, SUM(NPAGES) AS TotalPages,
-                   SUM(NPAGES) * 4 / 1024.0 AS TotalSizeMB
-            FROM SYSCAT.TABLES
-            WHERE TYPE IN ('T', 'U')
-              AND TABSCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN')
-        ";
-        
+        // Use MetadataHandler
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetDatabaseSize");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var row = data.Rows[0];
         
