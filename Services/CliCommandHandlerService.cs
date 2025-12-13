@@ -502,12 +502,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting view info: {Schema}.{View}", schema, viewName);
         Console.WriteLine($"Retrieving view information for: {schema}.{viewName}");
         
-        var sql = $@"
-            SELECT VIEWSCHEMA, VIEWNAME, VIEWCHECK, READONLY, VALID, TEXT
-            FROM SYSCAT.VIEWS
-            WHERE VIEWSCHEMA = '{schema}' AND VIEWNAME = '{viewName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetViewInfo"), schema, viewName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -571,12 +567,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting procedure info: {Schema}.{Procedure}", schema, procedureName);
         Console.WriteLine($"Retrieving procedure information for: {schema}.{procedureName}");
         
-        var sql = $@"
-            SELECT PROCSCHEMA, PROCNAME, LANGUAGE, DETERMINISTIC, TEXT
-            FROM SYSCAT.PROCEDURES
-            WHERE PROCSCHEMA = '{schema}' AND PROCNAME = '{procedureName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetProcedureInfo"), schema, procedureName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
