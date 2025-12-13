@@ -1062,22 +1062,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting complete column metadata: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving columns for: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT 
-                TRIM(COLNAME) AS ColumnName,
-                COLNO AS OrdinalPosition,
-                TRIM(TYPENAME) AS DataType,
-                LENGTH,
-                SCALE,
-                CASE WHEN NULLS = 'Y' THEN 1 ELSE 0 END AS IsNullable,
-                COALESCE(TRIM(DEFAULT), '') AS DefaultValue,
-                COALESCE(TRIM(REMARKS), '') AS Comment,
-                CASE WHEN IDENTITY = 'Y' THEN 1 ELSE 0 END AS IsIdentity
-            FROM SYSCAT.COLUMNS 
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-            ORDER BY COLNO
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableColumns"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var columns = data.AsEnumerable().Select(row => new
@@ -1123,20 +1109,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting foreign keys: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving foreign keys for: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT 
-                TRIM(CONSTNAME) AS FKName,
-                FK_COLNAMES AS FKColumns,
-                TRIM(REFTABSCHEMA) AS RefSchema,
-                TRIM(REFTABNAME) AS RefTable,
-                PK_COLNAMES AS RefColumns,
-                TRIM(DELETERULE) AS DeleteRule,
-                TRIM(UPDATERULE) AS UpdateRule
-            FROM SYSCAT.REFERENCES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-            ORDER BY CONSTNAME
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableForeignKeys"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var foreignKeys = data.AsEnumerable().Select(row => new
@@ -1180,20 +1154,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting indexes: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving indexes for: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT 
-                TRIM(INDNAME) AS IndexName,
-                TRIM(INDEXTYPE) AS IndexType,
-                TRIM(UNIQUERULE) AS UniqueRule,
-                COLNAMES,
-                COLCOUNT,
-                FIRSTKEYCARD,
-                FULLKEYCARD
-            FROM SYSCAT.INDEXES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-            ORDER BY INDNAME
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableIndexes"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var indexes = data.AsEnumerable().Select(row => new

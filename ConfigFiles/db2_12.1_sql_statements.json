@@ -800,6 +800,69 @@
       "parameters": [],
       "returns": "Database size metrics",
       "source": "CliCommandHandlerService:GetDatabaseSizeAsync"
+    },
+    "CLI_GetTableColumns": {
+      "sql": "SELECT TRIM(COLNAME) AS ColumnName, COLNO AS OrdinalPosition, TRIM(TYPENAME) AS DataType, LENGTH, SCALE, CASE WHEN NULLS = 'Y' THEN 1 ELSE 0 END AS IsNullable, COALESCE(TRIM(DEFAULT), '') AS DefaultValue, COALESCE(TRIM(REMARKS), '') AS Comment, CASE WHEN IDENTITY = 'Y' THEN 1 ELSE 0 END AS IsIdentity FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
+      "description": "Get all columns for a table with CLI-specific column names and boolean flags as 0/1. Used by CLI command 'table-columns'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of columns with metadata",
+      "source": "CliCommandHandlerService:GetTableColumnsAsync"
+    },
+    "CLI_GetTableForeignKeys": {
+      "sql": "SELECT TRIM(CONSTNAME) AS FKName, FK_COLNAMES AS FKColumns, TRIM(REFTABSCHEMA) AS RefSchema, TRIM(REFTABNAME) AS RefTable, PK_COLNAMES AS RefColumns, TRIM(DELETERULE) AS DeleteRule, TRIM(UPDATERULE) AS UpdateRule FROM SYSCAT.REFERENCES WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY CONSTNAME",
+      "description": "Get all outgoing foreign keys for a table with CLI-specific column structure (separate schema/table, column lists as strings). Used by CLI command 'table-foreign-keys'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of foreign keys",
+      "source": "CliCommandHandlerService:GetTableForeignKeysAsync"
+    },
+    "CLI_GetTableIndexes": {
+      "sql": "SELECT TRIM(INDNAME) AS IndexName, TRIM(INDEXTYPE) AS IndexType, TRIM(UNIQUERULE) AS UniqueRule, COLNAMES, COLCOUNT, TRIM(REVERSE_SCANS) AS ReverseScans, FIRSTKEYCARD, FULLKEYCARD, TRIM(REMARKS) AS IndexComment FROM SYSCAT.INDEXES WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY INDNAME",
+      "description": "Get all indexes for a table with detailed CLI-specific metadata including cardinality and scan direction. Used by CLI command 'table-indexes'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of indexes with full metadata",
+      "source": "CliCommandHandlerService:GetTableIndexesAsync"
+    },
+    "CLI_GetTableStatisticsFull": {
+      "sql": "SELECT CARD AS RowCount, NPAGES AS DataPages, FPAGES AS IndexPages, OVERFLOW AS OverflowPages, AVGROWSIZE AS AvgRowSize, STATS_TIME AS LastStatsTime, TRIM(COMPRESSION) AS Compression, TRIM(TABLEORG) AS TableOrganization, PCTFREE AS PercentFree FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?",
+      "description": "Get comprehensive table statistics including compression and organization. Extended version for CLI command 'table-statistics-full'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Full table statistics",
+      "source": "CliCommandHandlerService:GetTableStatisticsFullAsync"
+    },
+    "CLI_GetTableIncomingFKs": {
+      "sql": "SELECT TRIM(R.TABSCHEMA) AS RefBySchema, TRIM(R.TABNAME) AS RefByTable, TRIM(R.CONSTNAME) AS FKName, R.FK_COLNAMES AS FKColumns, R.PK_COLNAMES AS PKColumns, TRIM(R.DELETERULE) AS DeleteRule FROM SYSCAT.REFERENCES R WHERE R.REFTABSCHEMA = ? AND R.REFTABNAME = ? ORDER BY R.TABSCHEMA, R.TABNAME",
+      "description": "Get all incoming foreign keys (tables that reference this table). Used by CLI command 'table-incoming-fks'.",
+      "parameters": ["REFTABSCHEMA", "REFTABNAME"],
+      "returns": "List of tables referencing this table",
+      "source": "CliCommandHandlerService:GetTableIncomingFKsAsync"
+    },
+    "CLI_GetActiveSessionsFull": {
+      "sql": "SELECT AGENT_ID, APPL_NAME, AUTHID, CLIENT_NNAME, AGENT_STATE_LAST_UPDATE_TIME, NUM_ASSOC_AGENTS, COORD_AGENT_PID FROM SYSIBMADM.SNAPAPPL_INFO ORDER BY AGENT_STATE_LAST_UPDATE_TIME DESC",
+      "description": "Get all active sessions with full details from DB2 monitoring views. Used by CLI command 'active-sessions-full'.",
+      "parameters": [],
+      "returns": "List of active sessions with detailed metrics",
+      "source": "CliCommandHandlerService:GetActiveSessionsFullAsync"
+    },
+    "CLI_GetLockChains": {
+      "sql": "SELECT L.AGENT_ID, L.TABSCHEMA, L.TABNAME, L.LOCK_MODE, L.LOCK_STATUS, A.APPL_NAME, A.AUTHID FROM SYSIBMADM.SNAPLOCK L JOIN SYSIBMADM.SNAPAPPL_INFO A ON L.AGENT_ID = A.AGENT_ID WHERE L.LOCK_STATUS = 'W' ORDER BY L.AGENT_ID",
+      "description": "Get lock chains showing waiting locks and their associated applications. Useful for deadlock analysis. Used by CLI command 'lock-chains'.",
+      "parameters": [],
+      "returns": "List of waiting locks with application context",
+      "source": "CliCommandHandlerService:GetLockChainsAsync"
+    },
+    "CLI_GetTableActivityMonitor": {
+      "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, ROWS_READ, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED, TABLE_SCANS, OBJECT_DATA_L_READS, OBJECT_DATA_P_READS FROM TABLE(MON_GET_TABLE('', '', -2)) AS T WHERE TABLE_SCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN') ORDER BY (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) DESC FETCH FIRST 100 ROWS ONLY",
+      "description": "Get table activity metrics using MON_GET_TABLE function. Shows read/write activity for top 100 active tables. Excludes system schemas. Used by CLI command 'table-activity'.",
+      "parameters": [],
+      "returns": "Top 100 active tables with metrics",
+      "source": "CliCommandHandlerService:GetTableActivityAsync"
+    },
+    "CLI_GetTopActiveTables": {
+      "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, ROWS_READ, ROWS_INSERTED, ROWS_UPDATED, ROWS_DELETED, (ROWS_READ + ROWS_INSERTED + ROWS_UPDATED + ROWS_DELETED) AS TOTAL_OPERATIONS FROM TABLE(MON_GET_TABLE('', '', -2)) AS T WHERE TABLE_SCHEMA NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN') ORDER BY TOTAL_OPERATIONS DESC FETCH FIRST 50 ROWS ONLY",
+      "description": "Get top 50 most active tables by total operations (reads + writes). Uses MON_GET_TABLE monitoring function. Used by CLI command 'top-active-tables'.",
+      "parameters": [],
+      "returns": "Top 50 active tables ranked by activity",
+      "source": "CliCommandHandlerService:GetTopActiveTablesAsync"
     }
   }
 }
