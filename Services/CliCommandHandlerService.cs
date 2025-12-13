@@ -655,19 +655,22 @@ public class CliCommandHandlerService
         Logger.Debug("Getting lock monitor data");
         Console.WriteLine("Retrieving current database locks...");
         
-        var sql = @"
-            SELECT COUNT(*) AS LOCK_COUNT
-            FROM SYSCAT.TABLES
-            WHERE TYPE = 'T'
-            FETCH FIRST 1 ROWS ONLY
-        ";
-        
+        // Use MetadataHandler for lock monitoring query
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetLockMonitorInfo");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var locks = data.AsEnumerable().Select(row => new
         {
-            message = "Lock monitoring requires DB2 admin views",
-            lockCount = row["LOCK_COUNT"]
+            database = row["DB_NAME"]?.ToString()?.Trim(),
+            objectType = row["OBJECT_TYPE"]?.ToString()?.Trim(),
+            objectSchema = row["OBJECT_SCHEMA_NAME"]?.ToString()?.Trim(),
+            objectName = row["OBJECT_NAME"]?.ToString()?.Trim(),
+            userId = row["USER_ID"]?.ToString()?.Trim(),
+            clientName = row["CLIENT_NNAME"]?.ToString()?.Trim(),
+            applicationName = row["APPL_NAME"]?.ToString()?.Trim(),
+            lockStatus = row["LOCK_STATUS"]?.ToString()?.Trim(),
+            lockMode = row["LOCK_MODE"]?.ToString()?.Trim(),
+            agentId = row["AGENT_ID"]
         }).ToList();
         
         Logger.Info("Retrieved {Count} locks", locks.Count);
@@ -3883,20 +3886,20 @@ public class CliCommandHandlerService
     {
         Console.WriteLine("Listing all schemas...");
         
-        var sql = @"
-            SELECT TRIM(SCHEMANAME) AS SchemaName, TRIM(OWNER) AS Owner, CREATE_TIME
-            FROM SYSCAT.SCHEMATA
-            WHERE SCHEMANAME NOT IN ('SYSIBM', 'SYSCAT', 'SYSPROC', 'SYSFUN')
-            ORDER BY SCHEMANAME
-        ";
-        
+        // Use MetadataHandler
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
         var data = await connectionManager.ExecuteQueryAsync(sql);
-        var schemas = data.AsEnumerable().Select(r => new
-        {
-            schemaName = r["SchemaName"]?.ToString()?.Trim(),
-            owner = r["Owner"]?.ToString()?.Trim(),
-            createTime = r["CREATE_TIME"]
-        }).ToList();
+        
+        // Filter out system schemas
+        var schemas = data.AsEnumerable()
+            .Where(r => !new[] { "SYSIBM", "SYSCAT", "SYSPROC", "SYSFUN" }.Contains(r["SCHEMANAME"]?.ToString()?.Trim()))
+            .Select(r => new
+            {
+                schemaName = r["SCHEMANAME"]?.ToString()?.Trim(),
+                owner = r["OWNER"]?.ToString()?.Trim(),
+                createTime = r["CREATE_TIME"],
+                remarks = r["REMARKS"]?.ToString()?.Trim()
+            }).ToList();
         
         return new { schemaCount = schemas.Count, schemas, retrievedAt = DateTime.Now };
     }
