@@ -1200,21 +1200,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting full statistics: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving statistics for: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT 
-                CARD AS RowCount,
-                NPAGES AS DataPages,
-                FPAGES AS FreePages,
-                OVERFLOW AS OverflowPages,
-                AVGROWSIZE AS AvgRowSize,
-                STATS_TIME AS LastStatsTime,
-                LAST_REGEN_TIME AS LastReorgTime,
-                TRIM(TYPE) AS TableType,
-                TRIM(STATUS) AS Status
-            FROM SYSCAT.TABLES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableStatisticsFull"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         if (data.Rows.Count == 0)
@@ -1349,18 +1336,8 @@ public class CliCommandHandlerService
         Logger.Debug("Getting incoming FKs: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving incoming foreign keys for: {schema}.{tableName}");
         
-        var sql = $@"
-            SELECT 
-                TRIM(TABSCHEMA) AS RefSchema,
-                TRIM(TABNAME) AS RefTable,
-                TRIM(CONSTNAME) AS FKName,
-                FK_COLNAMES AS FKColumns,
-                PK_COLNAMES AS RefColumns
-            FROM SYSCAT.REFERENCES
-            WHERE REFTABSCHEMA = '{schema}' AND REFTABNAME = '{tableName}'
-            ORDER BY TABSCHEMA, TABNAME, CONSTNAME
-        ";
-        
+        // Use MetadataHandler
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "CLI_GetTableIncomingFKs"), schema, tableName);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
         var incomingFKs = data.AsEnumerable().Select(row => new
@@ -3047,24 +3024,28 @@ public class CliCommandHandlerService
         Logger.Debug("Checking for lock wait chains");
         Console.WriteLine("Analyzing lock wait chains...");
         
-        // Simplified check
-        var sql = @"
-            SELECT 
-                'NO_LOCK_CHAINS_DETECTED' AS Status,
-                CURRENT TIMESTAMP AS CheckTime
-            FROM SYSIBM.SYSDUMMY1
-        ";
-        
+        // Use MetadataHandler
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "CLI_GetLockChains");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         
-        Logger.Info("Lock chain analysis complete (simplified)");
+        var lockChains = data.AsEnumerable().Select(row => new
+        {
+            agentId = row["AGENT_ID"],
+            schema = row["TABSCHEMA"]?.ToString()?.Trim(),
+            tableName = row["TABNAME"]?.ToString()?.Trim(),
+            lockMode = row["LOCK_MODE"]?.ToString()?.Trim(),
+            lockStatus = row["LOCK_STATUS"]?.ToString()?.Trim(),
+            applicationName = row["APPL_NAME"]?.ToString()?.Trim(),
+            authId = row["AUTHID"]?.ToString()?.Trim()
+        }).ToList();
+        
+        Logger.Info("Lock chain analysis complete - Found {Count} waiting locks", lockChains.Count);
         
         return new
         {
-            lockChainsDetected = false,
-            status = "Feature requires advanced monitoring tables",
-            note = "Lock chain detection requires SYSIBMADM.MON_LOCKWAITS view (needs DBA privileges in DB2 12.1)",
-            recommendation = "Use db2pd command or GUI Lock Monitor for real-time lock analysis",
+            lockChainsDetected = lockChains.Count > 0,
+            waitingLockCount = lockChains.Count,
+            lockChains,
             retrievedAt = DateTime.Now
         };
     }
