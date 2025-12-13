@@ -22,11 +22,14 @@ public class CliCommandHandlerService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly SqlMermaidIntegrationService? _mermaidService;
+    private readonly MetadataHandler _metadataHandler;
     
-    public CliCommandHandlerService(SqlMermaidIntegrationService? mermaidService = null)
+    public CliCommandHandlerService(MetadataHandler? metadataHandler = null, SqlMermaidIntegrationService? mermaidService = null)
     {
+        _metadataHandler = metadataHandler ?? new MetadataHandler();
         _mermaidService = mermaidService ?? new SqlMermaidIntegrationService();
-        Logger.Debug("CliCommandHandlerService initialized (direct SQL mode, Mermaid: {HasMermaid})", _mermaidService != null);
+        Logger.Debug("CliCommandHandlerService initialized (MetadataHandler: {HasMetadata}, Mermaid: {HasMermaid})", 
+            _metadataHandler != null, _mermaidService != null);
     }
     
     /// <summary>
@@ -259,6 +262,22 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get comprehensive table properties (READ-ONLY)
     /// </summary>
+    /// <summary>
+    /// Helper method to replace ? placeholders with values in order
+    /// </summary>
+    private string ReplaceParameters(string sql, params string[] values)
+    {
+        foreach (var value in values)
+        {
+            var index = sql.IndexOf('?');
+            if (index >= 0)
+            {
+                sql = sql.Remove(index, 1).Insert(index, $"'{value}'");
+            }
+        }
+        return sql;
+    }
+    
     private async Task<object> GetTablePropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
@@ -274,99 +293,70 @@ public class CliCommandHandlerService
         Logger.Debug("Getting table properties: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving table properties for: {schema}.{tableName}");
         
-        // Get columns
-        var columnsSql = $@"
-            SELECT c.COLNAME, c.COLNO, c.TYPENAME, c.LENGTH, c.SCALE, c.NULLS, c.DEFAULT, c.REMARKS, c.IDENTITY,
-                   CASE WHEN k.COLNAME IS NOT NULL THEN 1 ELSE 0 END AS IS_PK
-            FROM SYSCAT.COLUMNS c
-            LEFT JOIN SYSCAT.KEYCOLUSE k 
-                ON c.TABSCHEMA = k.TABSCHEMA 
-                AND c.TABNAME = k.TABNAME 
-                AND c.COLNAME = k.COLNAME
-            WHERE c.TABSCHEMA = '{schema}' AND c.TABNAME = '{tableName}'
-            ORDER BY c.COLNO
-        ";
-        
+        // Get columns using MetadataHandler
+        var columnsSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableColumns"), schema, tableName);
         var columnsData = await connectionManager.ExecuteQueryAsync(columnsSql);
         
+        // Get primary keys using MetadataHandler
+        var pkSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetPrimaryKeyColumns"), schema, tableName);
+        var pkData = await connectionManager.ExecuteQueryAsync(pkSql);
+        var pkColumns = new HashSet<string>(pkData.AsEnumerable().Select(row => row["COLNAME"]?.ToString()?.Trim() ?? ""));
+        
+        // Map columns with PK info
         var columns = columnsData.AsEnumerable().Select(row => new
         {
-            columnName = row["COLNAME"]?.ToString()?.Trim(),
-            ordinalPosition = row["COLNO"],
-            dataType = row["TYPENAME"]?.ToString()?.Trim(),
-            length = row["LENGTH"],
-            scale = row["SCALE"],
-            isNullable = row["NULLS"]?.ToString() == "Y",
-            defaultValue = row["DEFAULT"]?.ToString()?.Trim(),
-            comment = row["REMARKS"]?.ToString()?.Trim(),
-            isIdentity = row["IDENTITY"]?.ToString() == "Y",
-            isPrimaryKey = Convert.ToInt32(row["IS_PK"]) == 1
+            columnName = row["ColumnName"]?.ToString()?.Trim(),
+            ordinalPosition = row.Table.Columns.Contains("COLNO") ? row["COLNO"] : null,
+            dataType = row["DataType"]?.ToString()?.Trim(),
+            length = row.Table.Columns.Contains("LENGTH") ? row["LENGTH"] : null,
+            scale = row.Table.Columns.Contains("SCALE") ? row["SCALE"] : null,
+            isNullable = row["Nullable"]?.ToString() == "Yes",
+            defaultValue = row["DefaultValue"]?.ToString()?.Trim(),
+            comment = row["Remarks"]?.ToString()?.Trim(),
+            isIdentity = row.Table.Columns.Contains("IDENTITY") && row["IDENTITY"]?.ToString() == "Y",
+            isPrimaryKey = pkColumns.Contains(row["ColumnName"]?.ToString()?.Trim() ?? "")
         }).ToList();
         
-        // Get primary keys
-        var pkSql = $@"
-            SELECT CONSTNAME, COLNAME, COLSEQ
-            FROM SYSCAT.KEYCOLUSE
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-            ORDER BY COLSEQ
-        ";
+        var primaryKeys = pkColumns.ToList();
         
-        var pkData = await connectionManager.ExecuteQueryAsync(pkSql);
-        var primaryKeys = pkData.AsEnumerable().Select(row => row["COLNAME"]?.ToString()?.Trim()).ToList();
-        
-        // Get foreign keys
-        var fkSql = $@"
-            SELECT CONSTNAME, FK_COLNAMES, REFTABSCHEMA, REFTABNAME, PK_COLNAMES, DELETERULE, UPDATERULE
-            FROM SYSCAT.REFERENCES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-        ";
-        
+        // Get foreign keys using MetadataHandler
+        var fkSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableForeignKeys"), schema, tableName);
         var fkData = await connectionManager.ExecuteQueryAsync(fkSql);
         
         var foreignKeys = fkData.AsEnumerable().Select(row => new
         {
-            constraintName = row["CONSTNAME"]?.ToString()?.Trim(),
-            columns = row["FK_COLNAMES"]?.ToString()?.Trim(),
-            referencedSchema = row["REFTABSCHEMA"]?.ToString()?.Trim(),
-            referencedTable = row["REFTABNAME"]?.ToString()?.Trim(),
-            referencedColumns = row["PK_COLNAMES"]?.ToString()?.Trim(),
-            deleteRule = row["DELETERULE"]?.ToString()?.Trim(),
-            updateRule = row["UPDATERULE"]?.ToString()?.Trim()
+            constraintName = row["FKName"]?.ToString()?.Trim(),
+            columns = row["FKColumn"]?.ToString()?.Trim(),
+            referencedSchema = row["PKTable"]?.ToString()?.Trim()?.Split('.').FirstOrDefault(),
+            referencedTable = row["PKTable"]?.ToString()?.Trim()?.Split('.').LastOrDefault(),
+            referencedColumns = row["PKColumn"]?.ToString()?.Trim(),
+            deleteRule = row["DeleteRule"]?.ToString()?.Trim(),
+            updateRule = row["UpdateRule"]?.ToString()?.Trim()
         }).ToList();
         
-        // Get indexes
-        var indexSql = $@"
-            SELECT INDNAME, UNIQUERULE, COLNAMES, INDEXTYPE, COLCOUNT, FIRSTKEYCARD, FULLKEYCARD, REMARKS
-            FROM SYSCAT.INDEXES
-            WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-        ";
-        
+        // Get indexes using MetadataHandler
+        var indexSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableIndexes"), schema, tableName);
         var indexData = await connectionManager.ExecuteQueryAsync(indexSql);
         
         var indexes = indexData.AsEnumerable().Select(row => new
         {
-            indexName = row["INDNAME"]?.ToString()?.Trim(),
-            uniqueRule = row["UNIQUERULE"]?.ToString()?.Trim(),
-            isUnique = row["UNIQUERULE"]?.ToString()?.Trim() == "U",
-            isPrimaryKey = row["UNIQUERULE"]?.ToString()?.Trim() == "P",
-            columns = row["COLNAMES"]?.ToString()?.Trim(),
-            indexType = row["INDEXTYPE"]?.ToString()?.Trim(),
-            columnCount = row["COLCOUNT"],
-            firstKeyCard = row["FIRSTKEYCARD"],
-            fullKeyCard = row["FULLKEYCARD"],
-            comment = row["REMARKS"]?.ToString()?.Trim()
+            indexName = row["IndexName"]?.ToString()?.Trim(),
+            uniqueRule = row["IsUnique"]?.ToString()?.Trim(),
+            isUnique = row["IsUnique"]?.ToString() == "Yes",
+            isPrimaryKey = row["IsUnique"]?.ToString() == "Primary Key",
+            columns = row["Columns"]?.ToString()?.Trim(),
+            indexType = row["IndexType"]?.ToString()?.Trim(),
+            columnCount = row.Table.Columns.Contains("COLCOUNT") ? row["COLCOUNT"] : null,
+            firstKeyCard = row.Table.Columns.Contains("FIRSTKEYCARD") ? row["FIRSTKEYCARD"] : null,
+            fullKeyCard = row.Table.Columns.Contains("FULLKEYCARD") ? row["FULLKEYCARD"] : null,
+            comment = row.Table.Columns.Contains("REMARKS") ? row["REMARKS"]?.ToString()?.Trim() : null
         }).ToList();
         
         // Get table statistics if requested
         object? statistics = null;
         if (args.IncludeDependencies)
         {
-            var statsSql = $@"
-                SELECT CARD, NPAGES, FPAGES, OVERFLOW, AVGROWSIZE, STATS_TIME, LAST_REGEN_TIME
-                FROM SYSCAT.TABLES
-                WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-            ";
-            
+            var statsSql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "GetTableStatistics"), schema, tableName);
             var statsData = await connectionManager.ExecuteQueryAsync(statsSql);
             
             if (statsData.Rows.Count > 0)
@@ -374,13 +364,13 @@ public class CliCommandHandlerService
                 var row = statsData.Rows[0];
                 statistics = new
                 {
-                    rowCount = row["CARD"],
-                    dataPages = row["NPAGES"],
-                    freePages = row["FPAGES"],
-                    overflowPages = row["OVERFLOW"],
-                    avgRowSize = row["AVGROWSIZE"],
-                    lastStatsTime = row["STATS_TIME"],
-                    lastReorgTime = row["LAST_REGEN_TIME"]
+                    rowCount = row["RowCount"],
+                    dataPages = row["NumberOfPages"],
+                    freePages = row["FormattedPages"],
+                    overflowPages = row["OverflowPages"],
+                    avgRowSize = row["AvgRowSize"],
+                    lastStatsTime = row["LastStatsTime"],
+                    lastReorgTime = row.Table.Columns.Contains("LAST_REGEN_TIME") ? row["LAST_REGEN_TIME"] : null
                 };
             }
         }
