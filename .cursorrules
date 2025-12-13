@@ -683,21 +683,36 @@ For ANY failing test, command, feature, or functionality:
 
 ### Stop Protocol (CRITICAL)
 
-**If continuous implementation must be interrupted/stopped:**
+**Battery Monitoring (Required)**:
+- Monitor battery state regularly (every 15-20 minutes)
+- Check using: `Get-WmiObject Win32_Battery | Select-Object EstimatedChargeRemaining`
+
+**If battery < 10% OR continuous implementation must be interrupted/stopped:**
 
 1. **Commit all changes**: Ensure all code is committed to git
 2. **Sync with remote**: Push changes to remote repository
 3. **Send SMS notification**: Execute the following PowerShell command:
    ```powershell
-   Send-Sms "+4797188358" "WindowsDb2Editor Implementation stopped, but is committed"
+   Send-Sms "+4797188358" "WindowsDb2Editor: Implementation stopped at [X]% - Battery [Y]% - All changes committed & pushed"
+   ```
+4. **Shutdown PC (if battery < 10%)**: Execute after SMS:
+   ```powershell
+   shutdown /s /t 30 /c "Battery critical - WindowsDb2Editor implementation auto-shutdown"
    ```
 
 **NEVER stop without:**
 - ✅ Committing changes
 - ✅ Syncing to remote
 - ✅ Sending SMS notification
+- ✅ Shutting down PC if battery < 10%
 
-This ensures the user is immediately aware of implementation status.
+**Battery Thresholds**:
+- **< 10%**: CRITICAL - Stop immediately, commit, push, SMS, shutdown
+- **10-20%**: WARNING - Complete current task quickly, prepare to stop
+- **20-50%**: CAUTION - Continue but monitor closely
+- **> 50%**: SAFE - Continue normal operations
+
+This ensures the user is immediately aware of implementation status and protects the PC from unexpected shutdown.
 
 ### Development Workflow
 1. Review `TASKLIST.md` to identify next task
