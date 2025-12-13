@@ -21,6 +21,12 @@ public partial class PackageDetailsDialog : Window
 
     // Event to communicate with parent window
     public event EventHandler<string>? SqlTextRequested;
+    
+    // Public accessors for GUI testing - allows GuiTestingService to extract form data
+    public System.Windows.Controls.DataGrid StatementsGridPublic => StatementsGrid;
+    public System.Windows.Controls.TextBlock PackageNameTextPublic => PackageNameText;
+    public System.Windows.Controls.TextBlock PackageInfoTextPublic => PackageInfoText;
+    public System.Windows.Controls.TextBlock StatementCountTextPublic => StatementCountText;
 
     public PackageDetailsDialog(DB2ConnectionManager connectionManager, PackageInfo package)
     {

@@ -13,6 +13,13 @@ public partial class UserDetailsDialog : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
     private readonly SecurityPrincipal _principal;
+    
+    // Public accessors for GUI testing - allows GuiTestingService to extract form data
+    public System.Windows.Controls.DataGrid TablePrivilegesGridPublic => TablePrivilegesGrid;
+    public System.Windows.Controls.DataGrid SchemaPrivilegesGridPublic => SchemaPrivilegesGrid;
+    public System.Windows.Controls.DataGrid RoutinePrivilegesGridPublic => RoutinePrivilegesGrid;
+    public System.Windows.Controls.TextBlock PrincipalNameTextPublic => PrincipalNameText;
+    public System.Windows.Controls.TextBlock PrincipalTypeTextPublic => PrincipalTypeText;
 
     public UserDetailsDialog(DB2ConnectionManager connectionManager, SecurityPrincipal principal)
     {

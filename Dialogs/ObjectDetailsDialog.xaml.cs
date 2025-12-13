@@ -14,6 +14,14 @@ public partial class ObjectDetailsDialog : Window
     private readonly DB2ConnectionManager _connectionManager;
     private readonly Models.DB2Connection _connection;
     private readonly DatabaseObject _object;
+    
+    // Public accessors for GUI testing - allows GuiTestingService to extract form data
+    public System.Windows.Controls.TextBox SourceCodeTextBoxPublic => SourceCodeTextBox;
+    public System.Windows.Controls.TextBox CreateDdlTextBoxPublic => CreateDdlTextBox;
+    public System.Windows.Controls.TextBox DropDdlTextBoxPublic => DropDdlTextBox;
+    public System.Windows.Controls.DataGrid DependenciesGridPublic => DependenciesGrid;
+    public System.Windows.Controls.TextBlock ObjectNameTextPublic => ObjectNameText;
+    public System.Windows.Controls.TextBlock ObjectTypeTextPublic => ObjectTypeText;
 
     public ObjectDetailsDialog(DB2ConnectionManager connectionManager, DatabaseObject databaseObject, Models.DB2Connection connection)
     {
