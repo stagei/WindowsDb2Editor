@@ -3709,12 +3709,7 @@ public class CliCommandHandlerService
     {
         Console.WriteLine("Listing tablespaces...");
         
-        var sql = @"
-            SELECT TRIM(TBSPACE) AS TablespaceName, TRIM(DATATYPE) AS DataType, PAGESIZE
-            FROM SYSCAT.TABLESPACES
-            ORDER BY TBSPACE
-        ";
-        
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "ListTablespaces");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var tablespaces = data.AsEnumerable().Select(r => new
         {
@@ -3731,14 +3726,7 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing all indexes in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIM(INDSCHEMA) AS Schema, TRIM(INDNAME) AS IndexName, 
-                   TRIM(TABNAME) AS TableName, TRIM(UNIQUERULE) AS UniqueRule
-            FROM SYSCAT.INDEXES
-            WHERE INDSCHEMA LIKE '{schema}'
-            ORDER BY INDSCHEMA, TABNAME, INDNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListAllIndexes"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         var indexes = data.AsEnumerable().Take(limit).Select(r => new
@@ -3757,14 +3745,7 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing constraints in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIM(TABSCHEMA) AS Schema, TRIM(TABNAME) AS TableName,
-                   TRIM(CONSTNAME) AS ConstraintName, TRIM(TYPE) AS Type
-            FROM SYSCAT.TABCONST
-            WHERE TABSCHEMA LIKE '{schema}'
-            ORDER BY TABSCHEMA, TABNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListConstraints"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         var constraints = data.AsEnumerable().Take(limit).Select(r => new
@@ -3783,14 +3764,7 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing sequences in schema: {schema}");
         
-        var sql = $@"
-            SELECT TRIM(SEQSCHEMA) AS Schema, TRIM(SEQNAME) AS SequenceName,
-                   START, INCREMENT, MINVALUE, MAXVALUE
-            FROM SYSCAT.SEQUENCES
-            WHERE SEQSCHEMA LIKE '{schema}'
-            ORDER BY SEQSCHEMA, SEQNAME
-        ";
-        
+        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListSequences"), schema);
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var sequences = data.AsEnumerable().Select(r => new
         {
@@ -3903,13 +3877,7 @@ public class CliCommandHandlerService
     
     private async Task<object> GetDbConfigAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var sql = @"
-            SELECT CURRENT SERVER AS DatabaseName,
-                   CURRENT TIMESTAMP AS CurrentTime,
-                   CURRENT USER AS CurrentUser
-            FROM SYSIBM.SYSDUMMY1
-        ";
-        
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetDbConfig");
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var row = data.Rows[0];
         
