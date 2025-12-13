@@ -215,7 +215,7 @@ public partial class TableDetailsDialog : Window
         try
         {
             // Get columns for DDL
-            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableDdlColumns");
+            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableDdlColumns");
             var columnsSql = ReplacePlaceholders(columnsSqlTemplate, _schema, _tableName);
             
             Logger.Debug("Using query: GUI_GetTableDdlColumns");

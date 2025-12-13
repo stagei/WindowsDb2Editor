@@ -640,14 +640,14 @@
       "returns": "Table type and tablespace",
       "source": "TableDetailsDialog:LoadStatisticsAsync"
     },
-    "GUI_GetTableDdlColumns": {
+    "GetTableDdlColumns": {
       "sql": "SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT) FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
       "description": "Get column information for DDL generation. Returns column name, type, length, scale, nullable flag (Y/N), and default value. Used by TableDetailsDialog Tab 5 (DDL) to generate CREATE TABLE statements.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Column metadata for DDL generation",
       "source": "TableDetailsDialog:GenerateDDLAsync"
     },
-    "GUI_GetAllSelectableTables": {
+    "GetAllSelectableTables": {
       "sql": "SELECT DISTINCT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' AND (TABSCHEMA = ? OR TABSCHEMA NOT LIKE 'SYS%') ORDER BY TABSCHEMA, TABNAME",
       "description": "Get all user tables for schema/table selection dialog. Filters to TYPE='T' (tables only) and excludes system schemas (SYS%). Used by SchemaTableSelectionDialog to build tree view of selectable tables.",
       "parameters": ["DEFAULT_SCHEMA"],
@@ -675,70 +675,70 @@
       "returns": "All index metadata",
       "source": "DB2MetadataService:AnalyzeTableStructure"
     },
-    "SERVICE_GetAllTablesAndViews": {
+    "GetAllTablesAndViews": {
       "sql": "SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TYPE IN ('T', 'V')",
       "description": "Get all user tables and views for metadata loading. Returns schema, table name, and type (T=table, V=view).",
       "parameters": [],
       "returns": "List of tables and views",
       "source": "MetadataLoaderService:LoadAsync"
     },
-    "SERVICE_GetTablesForSchema": {
+    "GetTablesForSchema": {
       "sql": "SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TYPE = 'T' ORDER BY TABNAME",
       "description": "Get all tables in a specific schema for metadata loading. Returns schema, table name, and type (T=table).",
       "parameters": ["TABSCHEMA"],
       "returns": "List of tables in schema",
       "source": "MetadataLoaderService:LoadSchemaMetadata"
     },
-    "SERVICE_GetColumnMetadataForTable": {
+    "GetColumnMetadataForTable": {
       "sql": "SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, REMARKS FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
       "description": "Get column metadata for a specific table used in metadata loading. Similar to SERVICE_GetTableColumnsAll but with specific columns.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Column metadata",
       "source": "MetadataLoaderService:LoadAsync"
     },
-    "SERVICE_GetPackageList": {
+    "GetPackageList": {
       "sql": "SELECT PKGSCHEMA, PKGNAME, LASTUSED, DEFINER FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = ? ORDER BY PKGNAME",
       "description": "Get all packages in a schema. Returns package schema, name, last used timestamp, and definer.",
       "parameters": ["PKGSCHEMA"],
       "returns": "List of packages",
       "source": "PackageAnalyzerService:GetPackagesAsync"
     },
-    "SERVICE_GetPackageStatements": {
+    "GetPackageStatements": {
       "sql": "SELECT TEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = ? AND PKGNAME = ? ORDER BY STMTNO",
       "description": "Get all SQL statement texts from a package. Returns statement text for all statements in package, ordered by statement number.",
       "parameters": ["PKGSCHEMA", "PKGNAME"],
       "returns": "Statement texts",
       "source": "PackageAnalyzerService:GetPackageStatementsAsync"
     },
-    "SERVICE_GetProceduresSourceCode": {
+    "GetProceduresSourceCode": {
       "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'P' ORDER BY ROUTINENAME",
       "description": "Get source code for all procedures in a schema. Filters ROUTINETYPE='P'. Returns type, schema, name, source code, timestamps, and language.",
       "parameters": ["SCHEMA"],
       "returns": "Procedure source code with metadata",
       "source": "SourceCodeService:GetProceduresAsync"
     },
-    "SERVICE_GetFunctionsSourceCode": {
+    "GetFunctionsSourceCode": {
       "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' ORDER BY ROUTINENAME",
       "description": "Get source code for all functions in a schema. Filters ROUTINETYPE='F'. Returns type, schema, name, source code, timestamps, and language.",
       "parameters": ["SCHEMA"],
       "returns": "Function source code with metadata",
       "source": "SourceCodeService:GetFunctionsAsync"
     },
-    "SERVICE_GetViewSourceCode": {
+    "GetViewSourceCode": {
       "sql": "SELECT 'VIEW' AS OBJECT_TYPE, VIEWSCHEMA AS SCHEMA, VIEWNAME AS NAME, TEXT AS SOURCE_CODE, CAST(NULL AS TIMESTAMP) AS CREATE_TIME, CAST(NULL AS TIMESTAMP) AS LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? ORDER BY VIEWNAME",
       "description": "Get source code for all views in a schema. Returns object type (VIEW), schema, name, SQL definition, and NULL timestamps/language for consistency.",
       "parameters": ["SCHEMA"],
       "returns": "View source code with metadata",
       "source": "SourceCodeService:GetAllSourceCodeAsync"
     },
-    "SERVICE_GetTriggerSourceCode": {
+    "GetTriggerSourceCode": {
       "sql": "SELECT 'TRIGGER' AS OBJECT_TYPE, TRIGSCHEMA AS SCHEMA, TRIGNAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.TRIGGERS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY TRIGNAME",
       "description": "Get source code for all triggers on a specific table. Returns object type (TRIGGER), schema, name, source code, timestamps, and NULL language.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Trigger source code with metadata",
       "source": "SourceCodeService:GetTriggersAsync"
     },
-    "SERVICE_GetIncomingForeignKeys": {
+    "GetIncomingForeignKeys": {
       "sql": "SELECT TABSCHEMA AS REFERENCING_SCHEMA, TABNAME AS REFERENCING_TABLE, CONSTNAME, FK_COLNAMES, PK_COLNAMES, DELETERULE, UPDATERULE FROM SYSCAT.REFERENCES WHERE REFTABSCHEMA = ? AND REFTABNAME = ? ORDER BY TABSCHEMA, TABNAME",
       "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema/table, constraint name, column names, and rules.",
       "parameters": ["REFTABSCHEMA", "REFTABNAME"],
@@ -873,5 +873,6 @@
     }
   }
 }
+
 
 

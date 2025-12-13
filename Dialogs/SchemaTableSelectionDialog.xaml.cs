@@ -59,7 +59,7 @@ public partial class SchemaTableSelectionDialog : Window
     
     private async Task LoadSchemasAndTablesAsync()
     {
-        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetAllSelectableTables");
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetAllSelectableTables");
         var sql = sqlTemplate.Replace("?", $"'{_defaultSchema}'");
         
         Logger.Debug("Using query: GUI_GetAllSelectableTables for schema: {Schema}", _defaultSchema);

@@ -112,7 +112,7 @@ public class MetadataLoaderService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTablesForSchema");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
             Logger.Debug("Using query: SERVICE_GetTablesForSchema");
@@ -159,7 +159,7 @@ public class MetadataLoaderService
             };
             
             // Get columns
-            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetColumnMetadataForTable");
+            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetColumnMetadataForTable");
             var columnsSql = columnsSqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetColumnMetadataForTable");

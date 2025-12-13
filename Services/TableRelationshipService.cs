@@ -58,7 +58,7 @@ public class TableRelationshipService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetIncomingForeignKeys");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetIncomingForeignKeys");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetIncomingForeignKeys");

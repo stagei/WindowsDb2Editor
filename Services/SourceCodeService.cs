@@ -51,7 +51,7 @@ public class SourceCodeService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetProceduresSourceCode");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetProceduresSourceCode");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
             Logger.Debug("Using query: SERVICE_GetProceduresSourceCode");
@@ -78,7 +78,7 @@ public class SourceCodeService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetFunctionsSourceCode");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetFunctionsSourceCode");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
             Logger.Debug("Using query: SERVICE_GetFunctionsSourceCode");
@@ -105,7 +105,7 @@ public class SourceCodeService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetViewSourceCode");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetViewSourceCode");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
             Logger.Debug("Using query: SERVICE_GetViewSourceCode");
@@ -133,7 +133,7 @@ public class SourceCodeService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTriggerSourceCode");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTriggerSourceCode");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetTriggerSourceCode");

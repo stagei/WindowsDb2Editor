@@ -48,7 +48,7 @@ public class PackageAnalyzerService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetPackageList");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetPackageList");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
             Logger.Debug("Using query: SERVICE_GetPackageList");
@@ -89,7 +89,7 @@ public class PackageAnalyzerService
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetPackageStatements");
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetPackageStatements");
             var sql = sqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{packageName}'");
             
             Logger.Debug("Using query: SERVICE_GetPackageStatements");
