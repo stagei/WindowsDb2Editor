@@ -641,8 +641,8 @@
       "source": "TableDetailsDialog:LoadStatisticsAsync"
     },
     "GetTableDdlColumns": {
-      "sql": "SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT) FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
-      "description": "Get column information for DDL generation. Returns column name, type, length, scale, nullable flag (Y/N), and default value. Used by TableDetailsDialog Tab 5 (DDL) to generate CREATE TABLE statements.",
+      "sql": "SELECT TRIM(COLNAME) AS COLNAME, TRIM(TYPENAME) AS TYPENAME, LENGTH, SCALE, TRIM(NULLS) AS NULLS, TRIM(DEFAULT) AS DEFAULT FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get column information for DDL generation. Returns column name, type, length, scale, nullable flag (Y/N), and default value. Used by TableDetailsDialog Tab 5 (DDL) to generate CREATE TABLE statements. CRITICAL: Must alias all TRIM() columns to preserve original column names.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Column metadata for DDL generation",
       "source": "TableDetailsDialog:GenerateDDLAsync"
