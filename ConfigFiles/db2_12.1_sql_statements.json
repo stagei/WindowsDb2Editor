@@ -611,6 +611,160 @@
       "parameters": [],
       "returns": "List of wrappers",
       "source": "ObjectBrowserService"
+    },
+    "GUI_GetTableColumns": {
+      "sql": "SELECT TRIM(COLNAME) AS ColumnName, TRIM(TYPENAME) AS DataType, LENGTH, CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable, COALESCE(TRIM(DEFAULT), '-') AS DefaultValue, COALESCE(TRIM(REMARKS), '') AS Remarks FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get all columns for a table with full metadata. Returns column name, data type, length, nullable status (Yes/No), default value, and remarks. Used by TableDetailsDialog Tab 1 (Columns).",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of columns with display-friendly metadata",
+      "source": "TableDetailsDialog:LoadColumnsAsync"
+    },
+    "GUI_GetTableForeignKeys": {
+      "sql": "SELECT TRIM(FK.CONSTNAME) AS FKName, TRIM(FK.COLNAME) AS FKColumn, TRIM(PK.TABSCHEMA) || '.' || TRIM(PK.TABNAME) AS PKTable, TRIM(PK.COLNAME) AS PKColumn, TRIM(R.DELETERULE) AS DeleteRule, TRIM(R.UPDATERULE) AS UpdateRule FROM SYSCAT.REFERENCES R JOIN SYSCAT.KEYCOLUSE FK ON R.CONSTNAME = FK.CONSTNAME AND R.TABSCHEMA = FK.TABSCHEMA AND R.TABNAME = FK.TABNAME JOIN SYSCAT.KEYCOLUSE PK ON R.REFKEYNAME = PK.CONSTNAME AND R.REFTABSCHEMA = PK.TABSCHEMA AND R.REFTABNAME = PK.TABNAME AND FK.COLSEQ = PK.COLSEQ WHERE TRIM(R.TABSCHEMA) = ? AND TRIM(R.TABNAME) = ? ORDER BY FK.CONSTNAME, FK.COLSEQ",
+      "description": "Get all outgoing foreign keys for a table. Joins REFERENCES with KEYCOLUSE to get FK constraint names, source columns, referenced tables/columns, and rules. Used by TableDetailsDialog Tab 2 (Foreign Keys).",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of foreign keys with full constraint details",
+      "source": "TableDetailsDialog:LoadForeignKeysAsync"
+    },
+    "GUI_GetTableIndexes": {
+      "sql": "SELECT TRIM(I.INDNAME) AS IndexName, CASE WHEN I.INDEXTYPE = 'CLUS' THEN 'Clustered' WHEN I.INDEXTYPE = 'REG' THEN 'Regular' WHEN I.INDEXTYPE = 'DIM' THEN 'Dimension' ELSE I.INDEXTYPE END AS IndexType, CASE WHEN I.UNIQUERULE = 'U' THEN 'Yes' WHEN I.UNIQUERULE = 'P' THEN 'Primary Key' ELSE 'No' END AS IsUnique, LISTAGG(TRIM(IC.COLNAME), ', ') WITHIN GROUP (ORDER BY IC.COLSEQ) AS Columns FROM SYSCAT.INDEXES I LEFT JOIN SYSCAT.INDEXCOLUSE IC ON I.INDSCHEMA = IC.INDSCHEMA AND I.INDNAME = IC.INDNAME WHERE TRIM(I.TABSCHEMA) = ? AND TRIM(I.TABNAME) = ? GROUP BY I.INDNAME, I.INDEXTYPE, I.UNIQUERULE ORDER BY I.INDNAME",
+      "description": "Get all indexes for a table with aggregated column lists. Uses LISTAGG to concatenate column names. Returns index name, type (user-friendly labels), uniqueness status, and comma-separated columns. Used by TableDetailsDialog Tab 3 (Indexes).",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "List of indexes with column lists",
+      "source": "TableDetailsDialog:LoadIndexesAsync"
+    },
+    "GUI_GetTableBasicInfo": {
+      "sql": "SELECT TRIM(TYPE), TRIM(TBSPACE) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
+      "description": "Get basic table information - table type and tablespace. Used by TableDetailsDialog Tab 4 (Statistics) to display table type and tablespace name.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Table type and tablespace",
+      "source": "TableDetailsDialog:LoadStatisticsAsync"
+    },
+    "GUI_GetTableDdlColumns": {
+      "sql": "SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT) FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get column information for DDL generation. Returns column name, type, length, scale, nullable flag (Y/N), and default value. Used by TableDetailsDialog Tab 5 (DDL) to generate CREATE TABLE statements.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Column metadata for DDL generation",
+      "source": "TableDetailsDialog:GenerateDDLAsync"
+    },
+    "GUI_GetAllSelectableTables": {
+      "sql": "SELECT DISTINCT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' AND (TABSCHEMA = ? OR TABSCHEMA NOT LIKE 'SYS%') ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all user tables for schema/table selection dialog. Filters to TYPE='T' (tables only) and excludes system schemas (SYS%). Used by SchemaTableSelectionDialog to build tree view of selectable tables.",
+      "parameters": ["DEFAULT_SCHEMA"],
+      "returns": "List of schemas and tables for selection",
+      "source": "SchemaTableSelectionDialog:LoadSchemasAndTablesAsync"
+    },
+    "SERVICE_GetTableColumnsBasic": {
+      "sql": "SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT), TRIM(REMARKS) FROM SYSCAT.COLUMNS WHERE TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get basic column information for a table. Returns column name, type, length, scale, nullable flag, default value, and remarks. Used by DB2ConnectionManager for internal operations.",
+      "parameters": ["TABNAME"],
+      "returns": "Column metadata",
+      "source": "DB2ConnectionManager:GetTableColumnsAsync"
+    },
+    "SERVICE_GetTableColumnsAll": {
+      "sql": "SELECT * FROM SYSCAT.COLUMNS WHERE TABNAME = ? AND TABSCHEMA = ? ORDER BY COLNO",
+      "description": "Get all column metadata for a specific schema.table. Used by DB2MetadataService for structure analysis.",
+      "parameters": ["TABNAME", "TABSCHEMA"],
+      "returns": "All column metadata",
+      "source": "DB2MetadataService:AnalyzeTableStructure"
+    },
+    "SERVICE_GetTableIndexesAll": {
+      "sql": "SELECT * FROM SYSCAT.INDEXES WHERE TABNAME = ? AND TABSCHEMA = ?",
+      "description": "Get all index metadata for a specific schema.table. Used by DB2MetadataService for structure analysis.",
+      "parameters": ["TABNAME", "TABSCHEMA"],
+      "returns": "All index metadata",
+      "source": "DB2MetadataService:AnalyzeTableStructure"
+    },
+    "SERVICE_GetAllTablesAndViews": {
+      "sql": "SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TYPE IN ('T', 'V')",
+      "description": "Get all user tables and views for metadata loading. Returns schema, table name, and type (T=table, V=view).",
+      "parameters": [],
+      "returns": "List of tables and views",
+      "source": "MetadataLoaderService:LoadAsync"
+    },
+    "SERVICE_GetTablesForSchema": {
+      "sql": "SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TYPE = 'T' ORDER BY TABNAME",
+      "description": "Get all tables in a specific schema for metadata loading. Returns schema, table name, and type (T=table).",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of tables in schema",
+      "source": "MetadataLoaderService:LoadSchemaMetadata"
+    },
+    "SERVICE_GetColumnMetadataForTable": {
+      "sql": "SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, REMARKS FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
+      "description": "Get column metadata for a specific table used in metadata loading. Similar to SERVICE_GetTableColumnsAll but with specific columns.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Column metadata",
+      "source": "MetadataLoaderService:LoadAsync"
+    },
+    "SERVICE_GetPackageList": {
+      "sql": "SELECT PKGSCHEMA, PKGNAME, LASTUSED, DEFINER FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = ? ORDER BY PKGNAME",
+      "description": "Get all packages in a schema. Returns package schema, name, last used timestamp, and definer.",
+      "parameters": ["PKGSCHEMA"],
+      "returns": "List of packages",
+      "source": "PackageAnalyzerService:GetPackagesAsync"
+    },
+    "SERVICE_GetPackageStatements": {
+      "sql": "SELECT TEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = ? AND PKGNAME = ? ORDER BY STMTNO",
+      "description": "Get all SQL statement texts from a package. Returns statement text for all statements in package, ordered by statement number.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Statement texts",
+      "source": "PackageAnalyzerService:GetPackageStatementsAsync"
+    },
+    "SERVICE_GetRoutineSourceCode": {
+      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? ORDER BY ROUTINENAME",
+      "description": "Get source code for all routines (procedures, functions) in a schema. Returns type, schema, name, source code, timestamps, and language.",
+      "parameters": ["SCHEMA"],
+      "returns": "Routine source code with metadata",
+      "source": "SourceCodeService:GetAllSourceCodeAsync"
+    },
+    "SERVICE_GetRoutineSourceByName": {
+      "sql": "SELECT ROUTINETYPE AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, LANGUAGE FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? ORDER BY ROUTINENAME",
+      "description": "Get source code for a specific routine by name. Returns type, schema, name, source code, timestamps, and language.",
+      "parameters": ["SCHEMA", "NAME"],
+      "returns": "Routine source code with metadata",
+      "source": "SourceCodeService:GetSourceCodeByNameAsync"
+    },
+    "SERVICE_GetViewSourceCode": {
+      "sql": "SELECT 'VIEW' AS OBJECT_TYPE, VIEWSCHEMA AS SCHEMA, VIEWNAME AS NAME, TEXT AS SOURCE_CODE, CAST(NULL AS TIMESTAMP) AS CREATE_TIME, CAST(NULL AS TIMESTAMP) AS LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? ORDER BY VIEWNAME",
+      "description": "Get source code for all views in a schema. Returns object type (VIEW), schema, name, SQL definition, and NULL timestamps/language for consistency.",
+      "parameters": ["SCHEMA"],
+      "returns": "View source code with metadata",
+      "source": "SourceCodeService:GetAllSourceCodeAsync"
+    },
+    "SERVICE_GetTriggerSourceCode": {
+      "sql": "SELECT 'TRIGGER' AS OBJECT_TYPE, TRIGSCHEMA AS SCHEMA, TRIGNAME AS NAME, TEXT AS SOURCE_CODE, CREATE_TIME, LAST_REGEN_TIME, CAST(NULL AS VARCHAR(1)) AS LANGUAGE FROM SYSCAT.TRIGGERS WHERE TABSCHEMA = ? ORDER BY TRIGNAME",
+      "description": "Get source code for all triggers in a schema. Returns object type (TRIGGER), schema, name, source code, timestamps, and NULL language.",
+      "parameters": ["SCHEMA"],
+      "returns": "Trigger source code with metadata",
+      "source": "SourceCodeService:GetAllSourceCodeAsync"
+    },
+    "SERVICE_GetIncomingForeignKeys": {
+      "sql": "SELECT TABSCHEMA AS REFERENCING_SCHEMA, TABNAME AS REFERENCING_TABLE, CONSTNAME AS FK_NAME, REFTABSCHEMA AS REFERENCED_SCHEMA, REFTABNAME AS REFERENCED_TABLE FROM SYSCAT.REFERENCES WHERE REFTABSCHEMA = ? AND REFTABNAME = ? ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema, table, FK name, and referenced schema/table.",
+      "parameters": ["SCHEMA", "TABNAME"],
+      "returns": "Incoming foreign keys",
+      "source": "TableRelationshipService:GetIncomingForeignKeysAsync"
+    },
+    "SERVICE_GetReferencingPackages": {
+      "sql": "SELECT DISTINCT 'PACKAGE' AS OBJECT_TYPE, PKGSCHEMA AS SCHEMA, PKGNAME AS NAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY PKGNAME",
+      "description": "Get all packages that reference a specific table. Returns object type (PACKAGE), schema, and package name.",
+      "parameters": ["SCHEMA", "TABNAME"],
+      "returns": "Referencing packages",
+      "source": "TableRelationshipService:GetReferencingPackagesAsync"
+    },
+    "SERVICE_GetReferencingViews": {
+      "sql": "SELECT DISTINCT 'VIEW' AS OBJECT_TYPE, VIEWSCHEMA AS SCHEMA, VIEWNAME AS NAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY VIEWNAME",
+      "description": "Get all views that reference a specific table. Returns object type (VIEW), schema, and view name.",
+      "parameters": ["SCHEMA", "TABNAME"],
+      "returns": "Referencing views",
+      "source": "TableRelationshipService:GetReferencingViewsAsync"
+    },
+    "SERVICE_GetReferencingRoutines": {
+      "sql": "SELECT DISTINCT CASE WHEN DTYPE = 'F' THEN 'FUNCTION' WHEN DTYPE = 'P' THEN 'PROCEDURE' ELSE DTYPE END AS OBJECT_TYPE, ROUTINESCHEMA AS SCHEMA, ROUTINENAME AS NAME FROM SYSCAT.ROUTINEDEP WHERE BSCHEMA = ? AND BNAME = ? AND BTYPE = 'T' ORDER BY ROUTINENAME",
+      "description": "Get all routines (functions, procedures) that reference a specific table. Returns object type (FUNCTION/PROCEDURE), schema, and routine name.",
+      "parameters": ["SCHEMA", "TABNAME"],
+      "returns": "Referencing routines",
+      "source": "TableRelationshipService:GetReferencingRoutinesAsync"
     }
   }
 }

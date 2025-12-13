@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -15,6 +16,7 @@ public partial class SchemaTableSelectionDialog : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly MetadataHandler _metadataHandler;
     private readonly string _defaultSchema;
     private readonly Dictionary<string, List<string>> _schemaTableDict = new();
     
@@ -25,6 +27,7 @@ public partial class SchemaTableSelectionDialog : Window
         InitializeComponent();
         
         _connectionManager = connectionManager;
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         _defaultSchema = defaultSchema;
         
         Loaded += SchemaTableSelectionDialog_Loaded;
@@ -56,14 +59,10 @@ public partial class SchemaTableSelectionDialog : Window
     
     private async Task LoadSchemasAndTablesAsync()
     {
-        var sql = $@"
-            SELECT DISTINCT TABSCHEMA, TABNAME 
-            FROM SYSCAT.TABLES 
-            WHERE TYPE = 'T'
-              AND (TABSCHEMA = '{_defaultSchema}' OR TABSCHEMA NOT LIKE 'SYS%')
-            ORDER BY TABSCHEMA, TABNAME
-        ";
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetAllSelectableTables");
+        var sql = sqlTemplate.Replace("?", $"'{_defaultSchema}'");
         
+        Logger.Debug("Using query: GUI_GetAllSelectableTables for schema: {Schema}", _defaultSchema);
         var result = await _connectionManager.ExecuteQueryAsync(sql);
         
         foreach (DataRow row in result.Rows)

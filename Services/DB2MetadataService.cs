@@ -16,10 +16,13 @@ namespace WindowsDb2Editor.Services;
 public class DB2MetadataService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler _metadataHandler;
     private readonly string _metadataFolder;
     
     public DB2MetadataService()
     {
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+        
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         _metadataFolder = Path.Combine(appData, "WindowsDb2Editor", "metadata");
         
@@ -223,24 +226,17 @@ public class DB2MetadataService
         try
         {
             // Get column information
-            var columnsSql = $@"
-                SELECT * 
-                FROM SYSCAT.COLUMNS 
-                WHERE TABNAME = '{tableName}' 
-                  AND TABSCHEMA = '{schemaName}'
-                ORDER BY COLNO
-            ";
+            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTableColumnsAll");
+            var columnsSql = columnsSqlTemplate.Replace("?", $"'{tableName}'", 1).Replace("?", $"'{schemaName}'", 1);
             
+            Logger.Debug("Using query: SERVICE_GetTableColumnsAll");
             var columns = await connectionManager.ExecuteQueryAsync(columnsSql);
             
             // Get index information
-            var indexesSql = $@"
-                SELECT * 
-                FROM SYSCAT.INDEXES 
-                WHERE TABNAME = '{tableName}' 
-                  AND TABSCHEMA = '{schemaName}'
-            ";
+            var indexesSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTableIndexesAll");
+            var indexesSql = indexesSqlTemplate.Replace("?", $"'{tableName}'", 1).Replace("?", $"'{schemaName}'", 1);
             
+            Logger.Debug("Using query: SERVICE_GetTableIndexesAll");
             var indexes = await connectionManager.ExecuteQueryAsync(indexesSql);
             
             // Save combined metadata

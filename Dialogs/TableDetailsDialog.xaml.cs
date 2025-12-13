@@ -12,6 +12,7 @@ public partial class TableDetailsDialog : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
     private readonly TableRelationshipService _relationshipService;
+    private readonly MetadataHandler _metadataHandler;
     private readonly string _fullTableName;
     private readonly string _schema;
     private readonly string _tableName;
@@ -24,6 +25,7 @@ public partial class TableDetailsDialog : Window
         InitializeComponent();
         _connectionManager = connectionManager;
         _relationshipService = new TableRelationshipService();
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         _fullTableName = fullTableName;
         
         // Parse schema and table name
@@ -83,18 +85,10 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sql = $@"
-                SELECT 
-                    TRIM(COLNAME) AS ColumnName,
-                    TRIM(TYPENAME) AS DataType,
-                    LENGTH,
-                    CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable,
-                    COALESCE(TRIM(DEFAULT), '-') AS DefaultValue,
-                    COALESCE(TRIM(REMARKS), '') AS Remarks
-                FROM SYSCAT.COLUMNS 
-                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'
-                ORDER BY COLNO";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableColumns");
+            var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
+            Logger.Debug("Using query: GUI_GetTableColumns");
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
             
             Dispatcher.Invoke(() =>
@@ -118,21 +112,10 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sql = $@"
-                SELECT 
-                    TRIM(FK.CONSTNAME) AS FKName,
-                    TRIM(FK.COLNAME) AS FKColumn,
-                    TRIM(PK.TABSCHEMA) || '.' || TRIM(PK.TABNAME) AS PKTable,
-                    TRIM(PK.COLNAME) AS PKColumn,
-                    TRIM(R.DELETERULE) AS DeleteRule,
-                    TRIM(R.UPDATERULE) AS UpdateRule
-                FROM SYSCAT.REFERENCES R
-                JOIN SYSCAT.KEYCOLUSE FK ON R.CONSTNAME = FK.CONSTNAME AND R.TABSCHEMA = FK.TABSCHEMA AND R.TABNAME = FK.TABNAME
-                JOIN SYSCAT.KEYCOLUSE PK ON R.REFKEYNAME = PK.CONSTNAME AND R.REFTABSCHEMA = PK.TABSCHEMA AND R.REFTABNAME = PK.TABNAME
-                    AND FK.COLSEQ = PK.COLSEQ
-                WHERE TRIM(R.TABSCHEMA) = '{_schema}' AND TRIM(R.TABNAME) = '{_tableName}'
-                ORDER BY FK.CONSTNAME, FK.COLSEQ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableForeignKeys");
+            var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
+            Logger.Debug("Using query: GUI_GetTableForeignKeys");
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
             
             Dispatcher.Invoke(() =>
@@ -156,23 +139,10 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            var sql = $@"
-                SELECT 
-                    TRIM(I.INDNAME) AS IndexName,
-                    CASE WHEN I.INDEXTYPE = 'CLUS' THEN 'Clustered'
-                         WHEN I.INDEXTYPE = 'REG' THEN 'Regular'
-                         WHEN I.INDEXTYPE = 'DIM' THEN 'Dimension'
-                         ELSE I.INDEXTYPE END AS IndexType,
-                    CASE WHEN I.UNIQUERULE = 'U' THEN 'Yes' 
-                         WHEN I.UNIQUERULE = 'P' THEN 'Primary Key'
-                         ELSE 'No' END AS IsUnique,
-                    LISTAGG(TRIM(IC.COLNAME), ', ') WITHIN GROUP (ORDER BY IC.COLSEQ) AS Columns
-                FROM SYSCAT.INDEXES I
-                LEFT JOIN SYSCAT.INDEXCOLUSE IC ON I.INDSCHEMA = IC.INDSCHEMA AND I.INDNAME = IC.INDNAME
-                WHERE TRIM(I.TABSCHEMA) = '{_schema}' AND TRIM(I.TABNAME) = '{_tableName}'
-                GROUP BY I.INDNAME, I.INDEXTYPE, I.UNIQUERULE
-                ORDER BY I.INDNAME";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableIndexes");
+            var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
+            Logger.Debug("Using query: GUI_GetTableIndexes");
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
             
             Dispatcher.Invoke(() =>
@@ -201,11 +171,10 @@ public partial class TableDetailsDialog : Window
             var rowCount = await _connectionManager.ExecuteScalarAsync(countSql);
             
             // Get table info
-            var infoSql = $@"
-                SELECT TRIM(TYPE), TRIM(TBSPACE)
-                FROM SYSCAT.TABLES
-                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'";
+            var infoSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableBasicInfo");
+            var infoSql = ReplacePlaceholders(infoSqlTemplate, _schema, _tableName);
             
+            Logger.Debug("Using query: GUI_GetTableBasicInfo");
             var infoTable = await _connectionManager.ExecuteQueryAsync(infoSql);
             
             Dispatcher.Invoke(() =>
@@ -245,13 +214,11 @@ public partial class TableDetailsDialog : Window
         
         try
         {
-            // Get columns
-            var columnsSql = $@"
-                SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT)
-                FROM SYSCAT.COLUMNS 
-                WHERE TRIM(TABSCHEMA) = '{_schema}' AND TRIM(TABNAME) = '{_tableName}'
-                ORDER BY COLNO";
+            // Get columns for DDL
+            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GUI_GetTableDdlColumns");
+            var columnsSql = ReplacePlaceholders(columnsSqlTemplate, _schema, _tableName);
             
+            Logger.Debug("Using query: GUI_GetTableDdlColumns");
             var columnsTable = await _connectionManager.ExecuteQueryAsync(columnsSql);
             
             // Build DDL
@@ -417,6 +384,23 @@ public partial class TableDetailsDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+    
+    /// <summary>
+    /// Helper method to replace ? placeholders in SQL templates with actual values
+    /// </summary>
+    private string ReplacePlaceholders(string sqlTemplate, params string[] values)
+    {
+        var result = sqlTemplate;
+        foreach (var value in values)
+        {
+            var index = result.IndexOf('?');
+            if (index >= 0)
+            {
+                result = result.Remove(index, 1).Insert(index, $"'{value}'");
+            }
+        }
+        return result;
     }
 }
 

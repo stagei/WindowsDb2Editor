@@ -30,6 +30,12 @@ public class PackageAnalysisInfo
 public class PackageAnalyzerService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler _metadataHandler;
+    
+    public PackageAnalyzerService()
+    {
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+    }
     
     /// <summary>
     /// Get all packages in a schema
@@ -42,17 +48,10 @@ public class PackageAnalyzerService
         
         try
         {
-            var sql = $@"
-                SELECT
-                    PKGSCHEMA,
-                    PKGNAME,
-                    LASTUSED,
-                    DEFINER
-                FROM SYSCAT.PACKAGES
-                WHERE PKGSCHEMA = '{schema}'
-                ORDER BY PKGNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetPackageList");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
+            Logger.Debug("Using query: SERVICE_GetPackageList");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} packages in schema {Schema}", result.Rows.Count, schema);
             
@@ -90,14 +89,10 @@ public class PackageAnalyzerService
         
         try
         {
-            var sql = $@"
-                SELECT TEXT
-                FROM SYSCAT.STATEMENTS
-                WHERE PKGSCHEMA = '{schema}'
-                  AND PKGNAME = '{packageName}'
-                ORDER BY STMTNO
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetPackageStatements");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'", 1).Replace("?", $"'{packageName}'", 1);
             
+            Logger.Debug("Using query: SERVICE_GetPackageStatements");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             Logger.Info("Found {Count} statements in package {Schema}.{Package}", 
                 result.Rows.Count, schema, packageName);

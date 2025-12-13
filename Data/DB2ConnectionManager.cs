@@ -2,6 +2,7 @@ using System.Data;
 using IBM.Data.Db2;
 using NLog;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
 using DB2Conn = IBM.Data.Db2.DB2Connection;
 
 namespace WindowsDb2Editor.Data;
@@ -674,11 +675,11 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = $@"SELECT TRIM(COLNAME), TRIM(TYPENAME), LENGTH, SCALE, TRIM(NULLS), TRIM(DEFAULT), TRIM(REMARKS)
-                        FROM SYSCAT.COLUMNS 
-                        WHERE TRIM(TABNAME) = '{tableName}' 
-                        ORDER BY COLNO";
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            var sqlTemplate = metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTableColumnsBasic");
+            var sql = sqlTemplate.Replace("?", $"'{tableName}'");
 
+            Logger.Debug("Using query: SERVICE_GetTableColumnsBasic");
             var dataTable = await ExecuteQueryAsync(sql);
             Logger.Info($"Retrieved {dataTable.Rows.Count} columns for {tableName}");
             return dataTable;

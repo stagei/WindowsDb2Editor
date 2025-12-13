@@ -53,11 +53,14 @@ public class IndexMetadata
 public class MetadataLoaderService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler _metadataHandler;
     private readonly string _metadataFolder;
     private readonly Dictionary<string, TableMetadata> _cache = new();
     
     public MetadataLoaderService()
     {
+        _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+        
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         _metadataFolder = Path.Combine(appData, "WindowsDb2Editor", "metadata");
         
@@ -109,14 +112,10 @@ public class MetadataLoaderService
         
         try
         {
-            var sql = $@"
-                SELECT TABSCHEMA, TABNAME, TYPE
-                FROM SYSCAT.TABLES
-                WHERE TABSCHEMA = '{schema}'
-                  AND TYPE = 'T'
-                ORDER BY TABNAME
-            ";
+            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetTablesForSchema");
+            var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
+            Logger.Debug("Using query: SERVICE_GetTablesForSchema");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             var tables = new List<TableMetadata>();
             
@@ -160,14 +159,10 @@ public class MetadataLoaderService
             };
             
             // Get columns
-            var columnsSql = $@"
-                SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, REMARKS
-                FROM SYSCAT.COLUMNS
-                WHERE TABSCHEMA = '{schema}'
-                  AND TABNAME = '{tableName}'
-                ORDER BY COLNO
-            ";
+            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "SERVICE_GetColumnMetadataForTable");
+            var columnsSql = columnsSqlTemplate.Replace("?", $"'{schema}'", 1).Replace("?", $"'{tableName}'", 1);
             
+            Logger.Debug("Using query: SERVICE_GetColumnMetadataForTable");
             var columns = await connectionManager.ExecuteQueryAsync(columnsSql);
             
             foreach (DataRow row in columns.Rows)
