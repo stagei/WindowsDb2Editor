@@ -3,16 +3,26 @@ using NLog;
 namespace WindowsDb2Editor.Utils;
 
 /// <summary>
-/// Parsed CLI arguments
+/// Parsed CLI arguments - EXTENDED for automated testing
 /// </summary>
 public class CliArguments
 {
+    // Existing parameters
     public string? ProfileName { get; set; }
     public string? Sql { get; set; }
     public string? OutFile { get; set; }
     public string? Format { get; set; } = "json"; // json, csv, tsv, xml
     public bool Help { get; set; }
     public bool CollectMetadata { get; set; }
+    
+    // NEW: Command-based execution for automated testing
+    public string? Command { get; set; } // table-props, trigger-info, view-info, etc.
+    public string? Object { get; set; } // SCHEMA.TABLE, SCHEMA.VIEW, etc.
+    public string? Schema { get; set; } // Schema filter
+    public string? ObjectType { get; set; } // TABLE, VIEW, PROCEDURE, FUNCTION, TRIGGER
+    public int? Limit { get; set; } // Result limit (default: no limit)
+    public bool IncludeDependencies { get; set; } // Include dependency analysis
+    public bool IncludeSourceCode { get; set; } // Include source code
 }
 
 /// <summary>
@@ -84,11 +94,74 @@ public class CliArgumentParser
                     cliArgs.Help = true;
                     Logger.Debug("Help requested");
                     break;
+                    
+                // NEW: Command-based parameters for automated testing
+                case "-command":
+                case "--command":
+                case "-cmd":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Command = args[++i].ToLowerInvariant();
+                        Logger.Debug("Command: {Command}", cliArgs.Command);
+                    }
+                    break;
+                    
+                case "-object":
+                case "--object":
+                case "-obj":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Object = args[++i];
+                        Logger.Debug("Object: {Object}", cliArgs.Object);
+                    }
+                    break;
+                    
+                case "-schema":
+                case "--schema":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Schema = args[++i];
+                        Logger.Debug("Schema: {Schema}", cliArgs.Schema);
+                    }
+                    break;
+                    
+                case "-objecttype":
+                case "--objecttype":
+                case "-type":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.ObjectType = args[++i].ToUpperInvariant();
+                        Logger.Debug("ObjectType: {ObjectType}", cliArgs.ObjectType);
+                    }
+                    break;
+                    
+                case "-limit":
+                case "--limit":
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int limit))
+                    {
+                        cliArgs.Limit = limit;
+                        Logger.Debug("Limit: {Limit}", cliArgs.Limit);
+                    }
+                    break;
+                    
+                case "-includedependencies":
+                case "--includedependencies":
+                case "-deps":
+                    cliArgs.IncludeDependencies = true;
+                    Logger.Debug("IncludeDependencies: true");
+                    break;
+                    
+                case "-includesourcecode":
+                case "--includesourcecode":
+                case "-source":
+                    cliArgs.IncludeSourceCode = true;
+                    Logger.Debug("IncludeSourceCode: true");
+                    break;
             }
         }
         
-        Logger.Info("CLI arguments parsed - Profile: {Profile}, HasSQL: {HasSQL}, HasOutFile: {HasOutFile}", 
-            cliArgs.ProfileName, !string.IsNullOrEmpty(cliArgs.Sql), !string.IsNullOrEmpty(cliArgs.OutFile));
+        Logger.Info("CLI arguments parsed - Profile: {Profile}, Command: {Command}, Object: {Object}, HasSQL: {HasSQL}", 
+            cliArgs.ProfileName, cliArgs.Command, cliArgs.Object, !string.IsNullOrEmpty(cliArgs.Sql));
         
         return cliArgs;
     }

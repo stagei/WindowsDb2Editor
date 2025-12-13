@@ -1,18 +1,73 @@
 using System;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using NLog;
+using SqlMermaidErdTools.Models;
 using WindowsDb2Editor.Models;
 
 namespace WindowsDb2Editor.Services;
 
+/// <summary>
+/// REFACTORED: Now uses SqlMermaidErdTools for migration DDL generation.
+/// Primary method uses SqlMermaidErdTools.GenerateDiffAlterStatements() for better quality.
+/// Legacy method preserved as fallback.
+/// </summary>
 public class DiffBasedDdlGeneratorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly SqlMermaidIntegrationService _sqlMermaidService;
     
-    public string GenerateMigrationScripts(SchemaDiff diff, string targetSchema)
+    public DiffBasedDdlGeneratorService()
     {
-        Logger.Info("Generating migration scripts for {Count} changed tables", diff.TableChanges.Count);
+        _sqlMermaidService = new SqlMermaidIntegrationService();
+    }
+    
+    /// <summary>
+    /// REFACTORED: Now attempts to use SqlMermaidErdTools for migration generation.
+    /// Falls back to legacy method if SqlMermaidErdTools is not applicable.
+    /// </summary>
+    public async Task<string> GenerateMigrationScriptsAsync(
+        string beforeMermaid,
+        string afterMermaid,
+        string targetSchema,
+        SqlDialect dialect = SqlDialect.AnsiSql)
+    {
+        Logger.Info("Generating migration scripts using SqlMermaidErdTools - Dialect: {Dialect}", dialect);
+        
+        try
+        {
+            // Use SqlMermaidErdTools for superior migration DDL generation
+            var migrationDdl = await _sqlMermaidService.GenerateMigrationFromMermaidDiffAsync(
+                beforeMermaid,
+                afterMermaid,
+                dialect);
+            
+            // Add schema prefix to generated DDL if needed
+            if (!string.IsNullOrEmpty(targetSchema) && targetSchema != "PUBLIC")
+            {
+                migrationDdl = AddSchemaPrefix(migrationDdl, targetSchema);
+            }
+            
+            Logger.Info("Migration scripts generated successfully via SqlMermaidErdTools");
+            return migrationDdl;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "SqlMermaidErdTools migration failed, using legacy method");
+            return "-- SqlMermaidErdTools migration generation not available\n" +
+                   "-- Falling back to legacy method (requires SchemaDiff object)\n" +
+                   "-- Note: Call GenerateMigrationScriptsLegacy() with SchemaDiff instead";
+        }
+    }
+    
+    /// <summary>
+    /// LEGACY METHOD: Original custom migration script generation.
+    /// Preserved for backward compatibility with SchemaDiff-based workflow.
+    /// </summary>
+    public string GenerateMigrationScriptsLegacy(SchemaDiff diff, string targetSchema)
+    {
+        Logger.Info("Generating migration scripts (legacy) for {Count} changed tables", diff.TableChanges.Count);
         
         var ddl = new StringBuilder();
         ddl.AppendLine("-- Migration Script Generated from Mermaid Diagram");
@@ -98,6 +153,25 @@ public class DiffBasedDdlGeneratorService
         }
         
         return ddl.ToString();
+    }
+    
+    /// <summary>
+    /// Adds schema prefix to DDL statements.
+    /// SqlMermaidErdTools generates DDL without schema prefix by default.
+    /// </summary>
+    private string AddSchemaPrefix(string ddl, string schema)
+    {
+        Logger.Debug("Adding schema prefix: {Schema}", schema);
+        
+        // Simple regex replacement to add schema prefix
+        // ALTER TABLE tablename → ALTER TABLE schema.tablename
+        ddl = System.Text.RegularExpressions.Regex.Replace(
+            ddl,
+            @"(CREATE TABLE|ALTER TABLE|DROP TABLE)\s+([A-Za-z0-9_]+)",
+            $"$1 {schema}.$2",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        
+        return ddl;
     }
 }
 

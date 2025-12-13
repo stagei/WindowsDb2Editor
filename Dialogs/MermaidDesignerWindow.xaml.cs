@@ -19,6 +19,7 @@ public partial class MermaidDesignerWindow : Window
     private readonly MermaidDiagramGeneratorService _generatorService;
     private readonly SchemaDiffAnalyzerService _diffAnalyzer;
     private readonly DiffBasedDdlGeneratorService _ddlGenerator;
+    private readonly SqlMermaidIntegrationService _sqlMermaidService;
     private string _targetSchema;
     
     public MermaidDesignerWindow(DB2ConnectionManager connectionManager, string targetSchema)
@@ -30,6 +31,7 @@ public partial class MermaidDesignerWindow : Window
         _generatorService = new MermaidDiagramGeneratorService();
         _diffAnalyzer = new SchemaDiffAnalyzerService();
         _ddlGenerator = new DiffBasedDdlGeneratorService();
+        _sqlMermaidService = new SqlMermaidIntegrationService();
         
         Loaded += MermaidDesignerWindow_Loaded;
     }
@@ -106,6 +108,18 @@ public partial class MermaidDesignerWindow : Window
                 case "openTableProperties":
                     HandleOpenTableProperties(message.TableName);
                     break;
+                    
+                case "generateSqlFromMermaid":
+                    await HandleGenerateSqlFromMermaid(message.Diagram, message.Dialect);
+                    break;
+                    
+                case "translateSqlDialect":
+                    await HandleTranslateSqlDialect(message.SourceSql, message.SourceDialect, message.TargetDialect);
+                    break;
+                    
+                case "generateMigrationAdvanced":
+                    await HandleGenerateMigrationAdvanced(message.Original, message.Edited, message.Dialect);
+                    break;
             }
         }
         catch (Exception ex)
@@ -177,6 +191,10 @@ public partial class MermaidDesignerWindow : Window
         }
     }
     
+    /// <summary>
+    /// REFACTORED: Now uses SqlMermaidErdTools for migration DDL generation.
+    /// Generates migration scripts directly from Mermaid diagrams.
+    /// </summary>
     private async Task HandleGenerateDDL(string? original, string? edited)
     {
         try
@@ -188,24 +206,28 @@ public partial class MermaidDesignerWindow : Window
                 return;
             }
             
-            Logger.Info("Generating DDL from diff");
+            Logger.Info("Generating DDL from diff using SqlMermaidErdTools");
             
-            var diff = _diffAnalyzer.AnalyzeDifferences(original, edited);
+            // Use SqlMermaidErdTools for migration generation (ANSI SQL by default)
+            var ddl = await _ddlGenerator.GenerateMigrationScriptsAsync(
+                original,
+                edited,
+                _targetSchema,
+                SqlMermaidErdTools.Models.SqlDialect.AnsiSql);
             
-            if (!diff.HasChanges)
+            // Check if migration has content
+            if (string.IsNullOrWhiteSpace(ddl) || ddl.Contains("-- No changes detected"))
             {
                 MessageBox.Show("No changes detected. DDL not generated.", 
                     "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             
-            var ddl = _ddlGenerator.GenerateMigrationScripts(diff, _targetSchema);
-            
             var tempFile = Path.Combine(Path.GetTempPath(), $"migration_{DateTime.Now:yyyyMMddHHmmss}.sql");
             await File.WriteAllTextAsync(tempFile, ddl);
             
             var result = MessageBox.Show(
-                $"Migration script generated with {diff.TotalChanges} changes.\n\n" +
+                $"Migration script generated using SqlMermaidErdTools.\n\n" +
                 $"Open in SQL editor for review?\n\n" +
                 "WARNING: Review carefully before executing!",
                 "DDL Generated",
@@ -217,11 +239,11 @@ public partial class MermaidDesignerWindow : Window
                 System.Diagnostics.Process.Start("notepad.exe", tempFile);
             }
             
-            Logger.Info("DDL generation complete: {File}", tempFile);
+            Logger.Info("DDL generation complete via SqlMermaidErdTools: {File}", tempFile);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to generate DDL");
+            Logger.Error(ex, "Failed to generate DDL via SqlMermaidErdTools");
             MessageBox.Show(
                 $"Failed to generate DDL: {ex.Message}",
                 "Error",
@@ -308,6 +330,162 @@ public partial class MermaidDesignerWindow : Window
             .Replace("\n", "\\n");
     }
     
+    /// <summary>
+    /// NEW: Generates SQL DDL from Mermaid ERD using SqlMermaidErdTools.
+    /// Supports multiple SQL dialects (ANSI, SQL Server, PostgreSQL, MySQL).
+    /// </summary>
+    private async Task HandleGenerateSqlFromMermaid(string? mermaidDiagram, string? dialectName)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(mermaidDiagram))
+            {
+                MessageBox.Show("Mermaid diagram is empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            Logger.Info("Generating SQL DDL from Mermaid - Dialect: {Dialect}", dialectName ?? "AnsiSql");
+            
+            // Parse dialect (default to ANSI SQL)
+            var dialect = ParseSqlDialect(dialectName);
+            
+            // Convert Mermaid to SQL
+            var sql = await _sqlMermaidService.ConvertMermaidToSqlAsync(mermaidDiagram, dialect);
+            
+            // Send result back to JavaScript
+            await MermaidWebView.ExecuteScriptAsync($"showGeneratedSql(`{EscapeForJavaScript(sql)}`, '{dialect}');");
+            
+            Logger.Info("SQL DDL generated successfully - {Length} characters", sql.Length);
+            MessageBox.Show(
+                $"SQL DDL generated successfully!\n\nDialect: {dialect}\nLength: {sql.Length} characters",
+                "Success",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate SQL from Mermaid");
+            MessageBox.Show(
+                $"Failed to generate SQL DDL:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// NEW: Translates SQL from one dialect to another using SqlMermaidErdTools.
+    /// Example: DB2 SQL → PostgreSQL, SQL Server → MySQL, etc.
+    /// </summary>
+    private async Task HandleTranslateSqlDialect(string? sourceSql, string? sourceDialectName, string? targetDialectName)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(sourceSql))
+            {
+                MessageBox.Show("Source SQL is empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            var sourceDialect = ParseSqlDialect(sourceDialectName);
+            var targetDialect = ParseSqlDialect(targetDialectName);
+            
+            Logger.Info("Translating SQL: {Source} → {Target}", sourceDialect, targetDialect);
+            
+            // Translate SQL
+            var translatedSql = await _sqlMermaidService.TranslateSqlDialectAsync(sourceSql, sourceDialect, targetDialect);
+            
+            // Send result back to JavaScript
+            await MermaidWebView.ExecuteScriptAsync($"showTranslatedSql(`{EscapeForJavaScript(translatedSql)}`, '{sourceDialect}', '{targetDialect}');");
+            
+            Logger.Info("SQL translation complete - {Length} characters", translatedSql.Length);
+            MessageBox.Show(
+                $"SQL translation successful!\n\nFrom: {sourceDialect}\nTo: {targetDialect}\nLength: {translatedSql.Length} characters",
+                "Success",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to translate SQL");
+            MessageBox.Show(
+                $"Failed to translate SQL:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// NEW: Generates migration DDL using advanced SqlMermaidErdTools diff algorithm.
+    /// Produces ALTER statements for schema changes.
+    /// </summary>
+    private async Task HandleGenerateMigrationAdvanced(string? beforeMermaid, string? afterMermaid, string? dialectName)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(beforeMermaid) || string.IsNullOrEmpty(afterMermaid))
+            {
+                MessageBox.Show("Both before and after Mermaid diagrams are required.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            var dialect = ParseSqlDialect(dialectName);
+            Logger.Info("Generating advanced migration DDL - Dialect: {Dialect}", dialect);
+            
+            // Generate migration scripts using SqlMermaidErdTools
+            var migrationDdl = await _sqlMermaidService.GenerateMigrationFromMermaidDiffAsync(
+                beforeMermaid,
+                afterMermaid,
+                dialect);
+            
+            // Send result back to JavaScript
+            await MermaidWebView.ExecuteScriptAsync($"showMigrationDdl(`{EscapeForJavaScript(migrationDdl)}`, '{dialect}');");
+            
+            Logger.Info("Migration DDL generated - {Length} characters", migrationDdl.Length);
+            MessageBox.Show(
+                $"Migration DDL generated successfully!\n\nDialect: {dialect}\nStatements: {CountSqlStatements(migrationDdl)}",
+                "Success",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate migration DDL");
+            MessageBox.Show(
+                $"Failed to generate migration DDL:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Parses SQL dialect name to SqlDialect enum.
+    /// </summary>
+    private SqlMermaidErdTools.Models.SqlDialect ParseSqlDialect(string? dialectName)
+    {
+        if (string.IsNullOrEmpty(dialectName))
+            return SqlMermaidErdTools.Models.SqlDialect.AnsiSql;
+        
+        return dialectName.ToUpperInvariant() switch
+        {
+            "ANSI" or "ANSISQL" or "SQL" => SqlMermaidErdTools.Models.SqlDialect.AnsiSql,
+            "SQLSERVER" or "TSQL" or "MSSQL" => SqlMermaidErdTools.Models.SqlDialect.SqlServer,
+            "POSTGRESQL" or "POSTGRES" or "PG" => SqlMermaidErdTools.Models.SqlDialect.PostgreSql,
+            "MYSQL" or "MARIADB" => SqlMermaidErdTools.Models.SqlDialect.MySql,
+            _ => SqlMermaidErdTools.Models.SqlDialect.AnsiSql
+        };
+    }
+    
+    /// <summary>
+    /// Counts SQL statements (semicolon-separated).
+    /// </summary>
+    private int CountSqlStatements(string sql)
+    {
+        return sql.Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+    
     private class WebMessage
     {
         public string Action { get; set; } = string.Empty;
@@ -315,6 +493,12 @@ public partial class MermaidDesignerWindow : Window
         public string? Edited { get; set; }
         public string? Diagram { get; set; }
         public string? TableName { get; set; }
+        
+        // NEW: Properties for SqlMermaidErdTools features
+        public string? Dialect { get; set; }
+        public string? SourceSql { get; set; }
+        public string? SourceDialect { get; set; }
+        public string? TargetDialect { get; set; }
     }
 }
 

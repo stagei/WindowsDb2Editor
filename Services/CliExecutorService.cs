@@ -17,12 +17,14 @@ public class CliExecutorService
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly ConnectionStorageService _connectionStorage;
     private readonly ExportService _exportService;
+    private readonly CliCommandHandlerService _commandHandler;
     
     public CliExecutorService()
     {
         _connectionStorage = new ConnectionStorageService();
         _exportService = new ExportService();
-        Logger.Debug("CliExecutorService initialized");
+        _commandHandler = new CliCommandHandlerService();
+        Logger.Debug("CliExecutorService initialized with command handler");
     }
     
     /// <summary>
@@ -67,11 +69,27 @@ public class CliExecutorService
                 return await CollectMetadataAsync(profile);
             }
             
-            // Validate SQL and output file for query execution
+            // NEW: Handle command-based execution (for automated testing)
+            if (!string.IsNullOrEmpty(args.Command))
+            {
+                Logger.Info("Executing command-based CLI: {Command}", args.Command);
+                
+                // Create connection manager for command execution
+                Console.WriteLine($"Connecting to {profile.Name} @ {profile.Server}:{profile.Port}");
+                using var connectionManager = new DB2ConnectionManager(profile);
+                
+                // Open connection
+                await connectionManager.OpenAsync();
+                Logger.Debug("Connection opened for command execution");
+                
+                return await _commandHandler.ExecuteCommandAsync(connectionManager, args);
+            }
+            
+            // Validate SQL and output file for query execution (legacy query mode)
             if (string.IsNullOrEmpty(args.Sql))
             {
-                Console.Error.WriteLine("ERROR: -Sql parameter is required");
-                Logger.Error("CLI execution failed: No SQL specified");
+                Console.Error.WriteLine("ERROR: -Sql parameter is required (or use -Command for command-based execution)");
+                Logger.Error("CLI execution failed: No SQL or Command specified");
                 return 1;
             }
             
@@ -82,7 +100,7 @@ public class CliExecutorService
                 return 1;
             }
             
-            // Execute query and export
+            // Execute query and export (legacy mode)
             return await ExecuteQueryAndExportAsync(profile, args.Sql, args.OutFile, args.Format ?? "json");
         }
         catch (Exception ex)
@@ -194,45 +212,161 @@ public class CliExecutorService
     }
     
     /// <summary>
-    /// Print CLI help message
+    /// Print CLI help message - EXTENDED with command-based execution
     /// </summary>
     public static void PrintHelp()
     {
         Console.WriteLine(@"
-WindowsDb2Editor - Command Line Interface
-==========================================
+DbExplorer - Command Line Interface (EXTENDED for Automated Testing)
+======================================================================
 
-USAGE:
-    WindowsDb2Editor.exe -Profile <name> -Sql <query> -Outfile <path> [-Format <format>]
-    WindowsDb2Editor.exe -Profile <name> -CollectMetadata
-    WindowsDb2Editor.exe -Help
+USAGE MODES:
+  1. LEGACY QUERY MODE:
+     DbExplorer.exe -Profile <name> -Sql <query> -Outfile <path> [-Format <format>]
+  
+  2. COMMAND MODE (NEW - For Automated Testing):
+     DbExplorer.exe -Profile <name> -Command <cmd> [-Object <obj>] [-Schema <schema>] -Outfile <path>
+  
+  3. METADATA MODE:
+     DbExplorer.exe -Profile <name> -CollectMetadata
 
-PARAMETERS:
-    -Profile <name>     Connection profile name (required)
-    -Sql <query>        SQL query to execute (required for query mode)
-    -Outfile <path>     Output file path (required for query mode)
-    -Format <format>    Output format: json, csv, tsv, xml (default: json)
-    -CollectMetadata    Collect database metadata (Feature #5)
-    -Help               Show this help message
+COMMON PARAMETERS:
+    -Profile <name>         Connection profile name (required)
+    -Outfile <path>         Output file path (required - JSON format)
+    -Help                   Show this help message
+
+LEGACY QUERY MODE PARAMETERS:
+    -Sql <query>            SQL query to execute
+    -Format <format>        Output format: json, csv, tsv, xml (default: json)
+    -CollectMetadata        Collect database metadata (Feature #5)
+
+COMMAND MODE PARAMETERS (NEW):
+    -Command <cmd>          Command to execute (see commands below)
+    -Object <obj>           Object identifier (format: SCHEMA.OBJECT)
+    -Schema <schema>        Schema filter (default: % = all schemas)
+    -ObjectType <type>      Object type: TABLE, VIEW, PROCEDURE, FUNCTION, TRIGGER
+    -Limit <n>              Limit results to N rows
+    -IncludeDependencies    Include dependency analysis
+    -IncludeSourceCode      Include source code in output
+
+AVAILABLE COMMANDS (For Automated Testing):
+  
+  OBJECT INFORMATION:
+    table-props             Get table properties (columns, PKs, FKs, indexes, stats)
+                            Requires: -Object SCHEMA.TABLE
+    
+    trigger-info            Get trigger details and source code
+                            Requires: -Object SCHEMA.TRIGGER
+    
+    trigger-usage           Find all triggers in schema and their usage
+                            Optional: -Schema MYSCHEMA
+    
+    view-info               Get view definition and dependencies
+                            Requires: -Object SCHEMA.VIEW
+    
+    procedure-info          Get stored procedure metadata and source code
+                            Requires: -Object SCHEMA.PROCEDURE
+    
+    function-info           Get function metadata and source code
+                            Requires: -Object SCHEMA.FUNCTION
+    
+    dependencies            Analyze object dependencies
+                            Requires: -Object SCHEMA.OBJECT -ObjectType TYPE
+  
+  LISTING COMMANDS:
+    list-tables             List all tables in schema
+                            Optional: -Schema MYSCHEMA -Limit 100
+    
+    list-views              List all views in schema
+                            Optional: -Schema MYSCHEMA
+    
+    list-procedures         List all stored procedures
+                            Optional: -Schema MYSCHEMA
+    
+    list-triggers           List all triggers
+                            Optional: -Schema MYSCHEMA
+    
+    list-functions          List all functions
+                            Optional: -Schema MYSCHEMA
+  
+  MONITORING COMMANDS:
+    lock-monitor            Get current database locks (JSON)
+                            No parameters required
+    
+    active-sessions         Get active database sessions (JSON)
+                            Optional: -Limit 50
+    
+    database-load           Get database load metrics by schema
+                            Optional: -Schema MYSCHEMA -Limit 20
+    
+    table-stats             Get table statistics
+                            Optional: -Schema MYSCHEMA -Limit 50
+    
+    cdc-info                Get CDC (Change Data Capture) status
+                            Optional: -Schema MYSCHEMA
 
 EXAMPLES:
-    # Export query results to JSON
-    WindowsDb2Editor.exe -Profile ""ILOGTST"" -Sql ""SELECT * FROM SYSCAT.TABLES FETCH FIRST 10 ROWS ONLY"" -Outfile ""output.json""
-    
-    # Export to CSV
-    WindowsDb2Editor.exe -Profile ""PRODDB"" -Sql ""SELECT * FROM SYSCAT.COLUMNS WHERE TABNAME = 'CUSTOMERS'"" -Outfile ""columns.csv"" -Format csv
-    
-    # Collect metadata
-    WindowsDb2Editor.exe -Profile ""ILOGTST"" -CollectMetadata
 
+  # Legacy query mode (original)
+  DbExplorer.exe -Profile ""ILOGTST"" -Sql ""SELECT * FROM SYSCAT.TABLES FETCH FIRST 5 ROWS ONLY"" -Outfile ""output.json""
+  
+  # Get comprehensive table properties (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command table-props -Object ""MYSCHEMA.CUSTOMERS"" -Outfile ""table_props.json""
+  
+  # Get trigger information with source code (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command trigger-info -Object ""MYSCHEMA.TRG_AUDIT"" -IncludeSourceCode -Outfile ""trigger.json""
+  
+  # Find all triggers in a schema (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command trigger-usage -Schema ""MYSCHEMA"" -Outfile ""triggers.json""
+  
+  # Get view definition with dependencies (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command view-info -Object ""MYSCHEMA.V_CUSTOMERS"" -IncludeDependencies -IncludeSourceCode -Outfile ""view.json""
+  
+  # Get current locks (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command lock-monitor -Outfile ""locks.json""
+  
+  # Get active sessions (limit 20) (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command active-sessions -Limit 20 -Outfile ""sessions.json""
+  
+  # Get database load metrics (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command database-load -Schema ""MYSCHEMA"" -Limit 10 -Outfile ""load.json""
+  
+  # List all tables in schema (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command list-tables -Schema ""MYSCHEMA"" -Limit 100 -Outfile ""tables.json""
+  
+  # Analyze object dependencies (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command dependencies -Object ""MYSCHEMA.ORDERS"" -ObjectType TABLE -Outfile ""deps.json""
+  
+  # Get CDC status for schema (NEW)
+  DbExplorer.exe -Profile ""PRODDB"" -Command cdc-info -Schema ""MYSCHEMA"" -Outfile ""cdc.json""
+
+OUTPUT FORMAT:
+    All commands output structured JSON with:
+    - Object metadata (properties, columns, types, etc.)
+    - Relationships (PKs, FKs, dependencies)
+    - Source code (if -IncludeSourceCode is specified)
+    - Timestamps (retrievedAt field)
+    
 EXIT CODES:
     0   Success
     1   Error occurred
 
+AUTOMATED TESTING WORKFLOW:
+    1. Create connection profiles in GUI
+    2. Run CLI commands with -Command parameter
+    3. Verify JSON output structure
+    4. Build test assertions from JSON results
+    5. Run regression tests using CLI commands
+    6. Compare results across database versions
+
 NOTES:
-    - Connection profiles are stored in: %LOCALAPPDATA%\WindowsDb2Editor\connection_profiles.json
-    - Create profiles in the GUI first, then reference them by name in CLI
+    - Connection profiles: %LOCALAPPDATA%\WindowsDb2Editor\connection_profiles.json
+    - Create profiles in GUI first, then reference by name
     - Passwords are encrypted in saved profiles
+    - All command outputs are in JSON format for easy parsing
+    - Use -Limit to prevent overwhelming output for large schemas
+    - Use -IncludeSourceCode for code review and analysis
+    - Use -IncludeDependencies for impact analysis
 ");
     }
 }

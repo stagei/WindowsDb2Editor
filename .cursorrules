@@ -150,6 +150,40 @@ WindowsDb2Editor/
 - Handle `DB2Exception` specifically with SqlState and ErrorCode
 - Implement timeout handling (default 30 seconds)
 
+### DB2 Syntax Verification Protocol
+
+**When encountering DB2 SQL errors after 2 failed attempts:**
+
+1. **Search IBM DB2 Documentation**:
+   - Use web search: "IBM DB2 12.1 [specific feature/table/column] syntax"
+   - Official IBM Knowledge Center is authoritative
+   - Check version-specific differences (10.5, 11.1, 11.5, 12.1)
+
+2. **Common Issue Sources**:
+   - Column names may differ between DB2 versions
+   - System catalog views (SYSCAT.*) have version-specific schemas
+   - Monitor table functions (MON_GET_*) may require admin privileges
+   - Admin views (SYSIBMADM.*) availability varies
+
+3. **Alternative Solutions**:
+   - Use simpler SYSCAT queries instead of monitoring functions
+   - Query SYSIBM.SYSDUMMY1 for basic validation
+   - Check SYSCAT.TABLES for available system catalog metadata
+   - Consult Stack Overflow for version-specific workarounds
+
+4. **Documentation Preservation**:
+   - Document discovered column name differences
+   - Note version-specific quirks in code comments
+   - Create reference docs for future database providers
+   - This aids multi-provider support (PostgreSQL, Oracle, SQL Server)
+
+**Search Pattern Example**:
+```
+"IBM DB2 12.1 SYSCAT.INDEXES columns"
+"DB2 MON_GET_LOCKS alternative"
+"DB2 version differences FIRSTKEYCARD vs FIRST_KEYCARD"
+```
+
 ### Example Pattern
 ```csharp
 using NLog;
@@ -625,6 +659,24 @@ run_cli_tests
 - ❌ Rationalize "service layer complete = done"
 
 **VERIFICATION is the ONLY source of truth for completion.**
+
+### Stop Protocol (CRITICAL)
+
+**If continuous implementation must be interrupted/stopped:**
+
+1. **Commit all changes**: Ensure all code is committed to git
+2. **Sync with remote**: Push changes to remote repository
+3. **Send SMS notification**: Execute the following PowerShell command:
+   ```powershell
+   Send-Sms "+4797188358" "WindowsDb2Editor Implementation stopped, but is committed"
+   ```
+
+**NEVER stop without:**
+- ✅ Committing changes
+- ✅ Syncing to remote
+- ✅ Sending SMS notification
+
+This ensures the user is immediately aware of implementation status.
 
 ### Development Workflow
 1. Review `TASKLIST.md` to identify next task

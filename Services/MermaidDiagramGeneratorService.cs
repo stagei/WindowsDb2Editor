@@ -11,15 +11,58 @@ using WindowsDb2Editor.Models;
 
 namespace WindowsDb2Editor.Services;
 
+/// <summary>
+/// REFACTORED: Now uses SqlMermaidErdTools for Mermaid generation instead of custom implementation.
+/// DB2 metadata extraction is preserved, but Mermaid generation uses SqlMermaidErdTools.ToMermaid().
+/// </summary>
 public class MermaidDiagramGeneratorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly SqlMermaidIntegrationService _sqlMermaidService;
     
+    public MermaidDiagramGeneratorService()
+    {
+        _sqlMermaidService = new SqlMermaidIntegrationService();
+    }
+    
+    /// <summary>
+    /// REFACTORED: Now uses SqlMermaidErdTools for superior Mermaid generation.
+    /// Process: DB2 metadata → SQL DDL → SqlMermaidErdTools.ToMermaid() → Mermaid ERD
+    /// </summary>
     public async Task<string> GenerateMermaidDiagramAsync(
         DB2ConnectionManager connectionManager,
         List<string> selectedTables)
     {
-        Logger.Info("Generating Mermaid diagram for {Count} tables", selectedTables.Count);
+        Logger.Info("Generating Mermaid diagram for {Count} tables using SqlMermaidErdTools", selectedTables.Count);
+        
+        try
+        {
+            // Use SqlMermaidIntegrationService which uses SqlMermaidErdTools
+            var mermaid = await _sqlMermaidService.GenerateMermaidFromDb2TablesAsync(
+                connectionManager,
+                selectedTables);
+            
+            Logger.Info("Mermaid diagram generated successfully via SqlMermaidErdTools");
+            return mermaid;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate Mermaid via SqlMermaidErdTools, falling back to legacy method");
+            
+            // Fallback to legacy method if SqlMermaidErdTools fails
+            return await GenerateMermaidDiagramLegacyAsync(connectionManager, selectedTables);
+        }
+    }
+    
+    /// <summary>
+    /// LEGACY METHOD: Preserved as fallback in case SqlMermaidErdTools fails.
+    /// Uses old custom Mermaid generation logic.
+    /// </summary>
+    private async Task<string> GenerateMermaidDiagramLegacyAsync(
+        DB2ConnectionManager connectionManager,
+        List<string> selectedTables)
+    {
+        Logger.Warn("Using legacy Mermaid generation method (fallback)");
         
         var tables = new List<MermaidTable>();
         
@@ -38,7 +81,7 @@ public class MermaidDiagramGeneratorService
         
         var relationships = await GetRelationshipsAsync(connectionManager, tables);
         
-        return BuildMermaidERDiagram(tables, relationships);
+        return BuildMermaidERDiagramLegacy(tables, relationships);
     }
     
     private async Task<MermaidTable?> GetTableStructureAsync(
@@ -146,8 +189,14 @@ public class MermaidDiagramGeneratorService
         return relationships;
     }
     
-    private string BuildMermaidERDiagram(List<MermaidTable> tables, List<MermaidRelationship> relationships)
+    /// <summary>
+    /// LEGACY: Old custom Mermaid generation logic. Kept as fallback only.
+    /// Primary method now uses SqlMermaidErdTools for better quality and compatibility.
+    /// </summary>
+    private string BuildMermaidERDiagramLegacy(List<MermaidTable> tables, List<MermaidRelationship> relationships)
     {
+        Logger.Debug("Using legacy Mermaid ERD builder");
+        
         var mermaid = new StringBuilder();
         mermaid.AppendLine("erDiagram");
         mermaid.AppendLine();

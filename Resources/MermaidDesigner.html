@@ -198,8 +198,12 @@
         <button onclick="showDiff()">📊 Show Diff</button>
         <button onclick="generateDDL()">📝 Generate DDL</button>
         <button onclick="exportDiagram()">💾 Export</button>
+        <!-- NEW SqlMermaidErdTools Features -->
+        <button onclick="generateSqlFromMermaid()">🔧 Mermaid → SQL</button>
+        <button onclick="translateSqlDialog()">🌐 Translate SQL</button>
+        <button onclick="generateMigrationAdvanced()">⚙️ Advanced Migration</button>
         <button onclick="toggleHelp()">❓ Help</button>
-        <span style="margin-left: auto; color: #d4d4d4;">Mermaid ER Diagram Designer</span>
+        <span style="margin-left: auto; color: #d4d4d4;">Mermaid ER Diagram Designer (SqlMermaidErdTools)</span>
     </div>
 
     <div id="container">
@@ -455,6 +459,203 @@
             }
         }
 
+        // NEW: SqlMermaidErdTools Features
+        
+        function generateSqlFromMermaid() {
+            const diagram = editor.value;
+            if (!diagram || diagram.trim().length === 0) {
+                alert('Please enter a Mermaid diagram first');
+                return;
+            }
+            
+            const dialect = prompt(
+                'Select SQL Dialect:\n\n' +
+                '1. ANSI SQL (Standard)\n' +
+                '2. SQL Server (T-SQL)\n' +
+                '3. PostgreSQL\n' +
+                '4. MySQL\n\n' +
+                'Enter number (1-4):', '1'
+            );
+            
+            if (!dialect) return;
+            
+            const dialectMap = {
+                '1': 'AnsiSql',
+                '2': 'SqlServer',
+                '3': 'PostgreSql',
+                '4': 'MySql'
+            };
+            
+            const selectedDialect = dialectMap[dialect] || 'AnsiSql';
+            
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    action: 'generateSqlFromMermaid',
+                    diagram: diagram,
+                    dialect: selectedDialect
+                });
+            }
+            
+            statusText.textContent = `Generating ${selectedDialect} SQL...`;
+        }
+        
+        function showGeneratedSql(sql, dialect) {
+            const newWindow = window.open('', '_blank', 'width=800,height=600');
+            if (newWindow) {
+                newWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Generated SQL DDL - ${dialect}</title>
+                        <style>
+                            body { font-family: 'Consolas', monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+                            pre { background: #252526; padding: 15px; border-radius: 4px; overflow-x: auto; }
+                            h2 { color: #4ec9b0; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Generated SQL DDL - ${dialect}</h2>
+                        <pre>${sql}</pre>
+                    </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            }
+            statusText.textContent = `SQL generated for ${dialect}`;
+        }
+        
+        function translateSqlDialog() {
+            const sourceSql = prompt('Enter source SQL to translate:');
+            if (!sourceSql) return;
+            
+            const sourceDialect = prompt(
+                'Source Dialect:\n\n' +
+                '1. ANSI SQL\n' +
+                '2. SQL Server\n' +
+                '3. PostgreSQL\n' +
+                '4. MySQL\n\n' +
+                'Enter number:', '1'
+            );
+            
+            const targetDialect = prompt(
+                'Target Dialect:\n\n' +
+                '1. ANSI SQL\n' +
+                '2. SQL Server\n' +
+                '3. PostgreSQL\n' +
+                '4. MySQL\n\n' +
+                'Enter number:', '3'
+            );
+            
+            if (!sourceDialect || !targetDialect) return;
+            
+            const dialectMap = {
+                '1': 'AnsiSql',
+                '2': 'SqlServer',
+                '3': 'PostgreSql',
+                '4': 'MySql'
+            };
+            
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    action: 'translateSqlDialect',
+                    sourceSql: sourceSql,
+                    sourceDialect: dialectMap[sourceDialect] || 'AnsiSql',
+                    targetDialect: dialectMap[targetDialect] || 'PostgreSql'
+                });
+            }
+            
+            statusText.textContent = 'Translating SQL...';
+        }
+        
+        function showTranslatedSql(sql, sourceDialect, targetDialect) {
+            const newWindow = window.open('', '_blank', 'width=800,height=600');
+            if (newWindow) {
+                newWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>SQL Translation: ${sourceDialect} → ${targetDialect}</title>
+                        <style>
+                            body { font-family: 'Consolas', monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+                            pre { background: #252526; padding: 15px; border-radius: 4px; overflow-x: auto; }
+                            h2 { color: #4ec9b0; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>SQL Translation: ${sourceDialect} → ${targetDialect}</h2>
+                        <pre>${sql}</pre>
+                    </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            }
+            statusText.textContent = `SQL translated: ${sourceDialect} → ${targetDialect}`;
+        }
+        
+        function generateMigrationAdvanced() {
+            if (!originalDiagram) {
+                alert('Please capture original version first using "Show Diff" button');
+                return;
+            }
+            
+            const currentDiagram = editor.value;
+            
+            const dialect = prompt(
+                'Select Target SQL Dialect:\n\n' +
+                '1. ANSI SQL\n' +
+                '2. SQL Server\n' +
+                '3. PostgreSQL\n' +
+                '4. MySQL\n\n' +
+                'Enter number:', '1'
+            );
+            
+            if (!dialect) return;
+            
+            const dialectMap = {
+                '1': 'AnsiSql',
+                '2': 'SqlServer',
+                '3': 'PostgreSql',
+                '4': 'MySql'
+            };
+            
+            const selectedDialect = dialectMap[dialect] || 'AnsiSql';
+            
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    action: 'generateMigrationAdvanced',
+                    original: originalDiagram,
+                    edited: currentDiagram,
+                    dialect: selectedDialect
+                });
+            }
+            
+            statusText.textContent = `Generating migration DDL (${selectedDialect})...`;
+        }
+        
+        function showMigrationDdl(ddl, dialect) {
+            const newWindow = window.open('', '_blank', 'width=800,height=600');
+            if (newWindow) {
+                newWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Migration DDL - ${dialect}</title>
+                        <style>
+                            body { font-family: 'Consolas', monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+                            pre { background: #252526; padding: 15px; border-radius: 4px; overflow-x: auto; }
+                            h2 { color: #4ec9b0; }
+                            .warning { color: #f48771; background: #3d1a1a; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Migration DDL - ${dialect}</h2>
+                        <div class="warning">⚠️ WARNING: Review carefully before executing! Some operations may be destructive.</div>
+                        <pre>${ddl}</pre>
+                    </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            }
+            statusText.textContent = `Migration DDL generated (${dialect})`;
+        }
+        
         function toggleHelp() {
             const helpPanel = document.getElementById('help-panel');
             helpPanel.classList.toggle('visible');
