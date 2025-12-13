@@ -1,0 +1,13 @@
+{
+  "schema": "ASK",
+  "tableName": "VASK_KUNDER",
+  "grantCount": 1,
+  "grants": [
+    {
+      "grantor": "SYSIBM",
+      "grantee": "ASK",
+      "granteeType": "U"
+    }
+  ],
+  "retrievedAt": "2025-12-13T11:34:02.3574691+01:00"
+}
