@@ -801,6 +801,20 @@
       "returns": "Database size metrics",
       "source": "CliCommandHandlerService:GetDatabaseSizeAsync"
     },
+    "GetTableSize": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, CARD AS RowCount, NPAGES AS DataPages, FPAGES AS IndexPages, OVERFLOW AS OverflowPages, (NPAGES + FPAGES + OVERFLOW) * 4 / 1024.0 AS TotalSizeMB FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
+      "description": "Get size information for a specific table. Returns row count, data pages, index pages, overflow pages, and total size in MB. Used by CLI command 'table-size'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Table size metrics",
+      "source": "CliCommandHandlerService:GetTableSizeAsync"
+    },
+    "GetSchemaSize": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, COUNT(*) AS TableCount, SUM(CARD) AS TotalRows, SUM(NPAGES) AS TotalDataPages, SUM(FPAGES) AS TotalIndexPages, SUM(NPAGES + FPAGES) * 4 / 1024.0 AS TotalSizeMB FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'U') GROUP BY TABSCHEMA",
+      "description": "Get size information for all tables in a schema. Returns table count, total rows, total data pages, total index pages, and total size in MB. Only includes user tables (T, U). Used by CLI command 'schema-size'.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "Schema size metrics",
+      "source": "CliCommandHandlerService:GetSchemaSizeAsync"
+    },
     "GetTableColumns": {
       "sql": "SELECT TRIM(COLNAME) AS ColumnName, COLNO AS OrdinalPosition, TRIM(TYPENAME) AS DataType, LENGTH, SCALE, CASE WHEN NULLS = 'Y' THEN 1 ELSE 0 END AS IsNullable, COALESCE(TRIM(DEFAULT), '') AS DefaultValue, COALESCE(TRIM(REMARKS), '') AS Comment, CASE WHEN IDENTITY = 'Y' THEN 1 ELSE 0 END AS IsIdentity FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
       "description": "Get all columns for a table with CLI-specific column names and boolean flags as 0/1. Used by CLI command 'table-columns'.",

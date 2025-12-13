@@ -3795,11 +3795,13 @@ public class CliCommandHandlerService
         
         return new
         {
-            schema,
-            tableName,
+            schema = row["TABSCHEMA"]?.ToString()?.Trim(),
+            tableName = row["TABNAME"]?.ToString()?.Trim(),
             rowCount = row["RowCount"],
             dataPages = row["DataPages"],
-            sizeMB = row["SizeMB"],
+            indexPages = row["IndexPages"],
+            overflowPages = row["OverflowPages"],
+            totalSizeMB = row["TotalSizeMB"],
             retrievedAt = DateTime.Now
         };
     }
@@ -3814,9 +3816,11 @@ public class CliCommandHandlerService
         
         return new
         {
-            schema,
+            schema = row["TABSCHEMA"]?.ToString()?.Trim(),
+            tableCount = row["TableCount"],
             totalRows = row["TotalRows"],
-            totalPages = row["TotalPages"],
+            totalDataPages = row["TotalDataPages"],
+            totalIndexPages = row["TotalIndexPages"],
             totalSizeMB = row["TotalSizeMB"],
             retrievedAt = DateTime.Now
         };
