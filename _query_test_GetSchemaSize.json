@@ -1,0 +1,9 @@
+{
+  "schema": "ASK",
+  "tableCount": 1,
+  "totalRows": 3205,
+  "totalDataPages": 92,
+  "totalIndexPages": 92,
+  "totalSizeMB": 0.71875000000,
+  "retrievedAt": "2025-12-13T21:30:36.2001441+01:00"
+}

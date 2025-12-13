@@ -1,0 +1,7 @@
+{
+  "schema": "ASK",
+  "tableName": "VASK_KUNDER",
+  "incomingFKCount": 0,
+  "incomingFKs": [],
+  "retrievedAt": "2025-12-13T21:30:19.4451667+01:00"
+}

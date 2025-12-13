@@ -1,0 +1,10 @@
+{
+  "schema": "DBE",
+  "viewName": "JOBJECT_VIEW",
+  "definer": "TRU",
+  "isReadOnly": false,
+  "isValid": true,
+  "remarks": "",
+  "createTime": "2010-04-11T14:54:56.127002",
+  "retrievedAt": "2025-12-13T21:30:23.6608238+01:00"
+}
