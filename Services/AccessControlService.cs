@@ -43,8 +43,9 @@ public class AccessControlService
             {
                 try
                 {
-                    sql = _metadataHandler.GetQuery("DB2", "12.1", "GetUserAccessLevel");
-                    Logger.Debug("Using SQL from MetadataHandler: GetUserAccessLevel");
+                    var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetUserAccessLevel");
+                    sql = sqlTemplate.Replace("?", $"'{username}'"); // Replace parameter placeholder
+                    Logger.Debug("Using SQL from MetadataHandler: GetUserAccessLevel (parameter replaced)");
                 }
                 catch (Exception ex)
                 {

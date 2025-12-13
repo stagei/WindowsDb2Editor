@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using NLog;
+using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 using WindowsDb2Editor.Utils;
 
@@ -52,7 +54,20 @@ public partial class App : Application
                     return;
                 }
                 
-                // Execute CLI command
+                // Check if this is GUI form testing mode
+                if (!string.IsNullOrEmpty(cliArgs.TestForm))
+                {
+                    Logger.Info("GUI form testing mode detected - TestForm: {TestForm}, Object: {Object}, Tab: {Tab}", 
+                        cliArgs.TestForm, cliArgs.Object, cliArgs.Tab);
+                    
+                    var guiTestExitCode = await ExecuteGuiTestingAsync(cliArgs);
+                    
+                    Logger.Info("GUI testing completed with exit code: {ExitCode}", guiTestExitCode);
+                    Shutdown(guiTestExitCode);
+                    return;
+                }
+                
+                // Execute CLI command (regular mode)
                 var executor = new CliExecutorService();
                 var exitCode = await executor.ExecuteAsync(cliArgs);
                 
@@ -117,6 +132,88 @@ public partial class App : Application
 
         // Mark as handled to prevent application crash
         e.Handled = true;
+    }
+    
+    private async Task<int> ExecuteGuiTestingAsync(CliArguments cliArgs)
+    {
+        try
+        {
+            Logger.Info("Starting GUI testing - Form: {Form}, Object: {Object}", cliArgs.TestForm, cliArgs.Object);
+            
+            // Validate required parameters
+            if (string.IsNullOrEmpty(cliArgs.ProfileName))
+            {
+                Logger.Error("Profile name is required for GUI testing");
+                Console.WriteLine("Error: --profile parameter is required");
+                return 1;
+            }
+            
+            if (string.IsNullOrEmpty(cliArgs.Object))
+            {
+                Logger.Error("Object name is required for GUI testing");
+                Console.WriteLine("Error: --object parameter is required");
+                return 1;
+            }
+            
+            // Load connection profile
+            Logger.Debug("Loading connection profile: {Profile}", cliArgs.ProfileName);
+            var connectionStorage = new ConnectionStorageService();
+            var connection = connectionStorage.GetConnection(cliArgs.ProfileName);
+            
+            if (connection == null)
+            {
+                Logger.Error("Connection profile not found: {Profile}", cliArgs.ProfileName);
+                Console.WriteLine($"Error: Connection profile '{cliArgs.ProfileName}' not found");
+                return 1;
+            }
+            
+            // Create connection manager
+            Logger.Debug("Creating connection manager");
+            var connectionManager = new DB2ConnectionManager(connection);
+            await connectionManager.OpenAsync();
+            
+            Logger.Info("Connection opened successfully");
+            
+            // Create GUI testing service
+            var guiTestingService = new GuiTestingService(MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized"));
+            
+            // Execute form testing
+            var result = await guiTestingService.TestFormAsync(
+                connectionManager,
+                cliArgs.TestForm,
+                cliArgs.Object,
+                cliArgs.Tab);
+            
+            // Serialize result to JSON
+            var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            
+            // Write to output file or console
+            if (!string.IsNullOrEmpty(cliArgs.OutFile))
+            {
+                System.IO.File.WriteAllText(cliArgs.OutFile, json);
+                Logger.Info("GUI testing results written to: {OutFile}", cliArgs.OutFile);
+                Console.WriteLine($"Results written to: {cliArgs.OutFile}");
+            }
+            else
+            {
+                Console.WriteLine(json);
+            }
+            
+            // Close connection
+            connectionManager.Close();
+            
+            Logger.Info("GUI testing completed successfully");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GUI testing failed");
+            Console.WriteLine($"Error: {ex.Message}");
+            return 1;
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

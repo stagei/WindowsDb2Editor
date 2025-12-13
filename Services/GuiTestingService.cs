@@ -76,37 +76,66 @@ public class GuiTestingService
         var schema = parts[0];
         var tableName = parts[1];
         
-        // Create dialog on UI thread
+        // Create dialog on UI thread and extract data
         Dictionary<string, object>? result = null;
+        Exception? exception = null;
         
-        await Application.Current.Dispatcher.InvokeAsync(async () =>
+        var tcs = new TaskCompletionSource<bool>();
+        
+        Application.Current.Dispatcher.Invoke(async () =>
         {
-            var dialog = new TableDetailsDialog(connectionManager, _metadataHandler, schema, tableName);
-            
-            // Wait for dialog to load data (async operations)
-            await Task.Delay(1000); // Give time for async loading
-            
-            // Extract data from dialog
-            result = ExtractTableDetailsData(dialog, tabName);
-            
-            // Close dialog
-            dialog.Close();
-            
-        }, DispatcherPriority.Normal);
+            try
+            {
+                Logger.Debug("Creating TableDetailsDialog on UI thread");
+                var dialog = new TableDetailsDialog(connectionManager, objectName);
+                
+                Logger.Debug("Dialog created, waiting for async data loading...");
+                await Task.Delay(3000); // Give time for async loading
+                
+                Logger.Debug("Extracting data from dialog");
+                result = ExtractTableDetailsData(dialog, tabName);
+                
+                Logger.Debug("Data extracted, result is null: {IsNull}", result == null);
+                
+                dialog.Close();
+                Logger.Debug("Dialog closed");
+                
+                tcs.SetResult(true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Exception during dialog extraction");
+                exception = ex;
+                tcs.SetResult(false);
+            }
+        });
         
+        await tcs.Task;
+        
+        if (exception != null)
+        {
+            return new Dictionary<string, object> { {"error", exception.Message}, {"stackTrace", exception.StackTrace ?? ""} };
+        }
+        
+        Logger.Debug("Returning extracted result");
         return result ?? new Dictionary<string, object> { {"error", "Failed to extract data"} };
     }
     
     private Dictionary<string, object> ExtractTableDetailsData(TableDetailsDialog dialog, string? tabName)
     {
-        Logger.Debug("Extracting data from TableDetailsDialog, Tab: {Tab}", tabName ?? "all");
-        
-        var data = new Dictionary<string, object>
+        try
         {
-            {"formName", "TableDetailsDialog"},
-            {"fullTableName", dialog.Title}, // Dialog title shows table name
-            {"extractedAt", DateTime.Now}
-        };
+            Logger.Debug("ExtractTableDetailsData called, Tab: {Tab}", tabName ?? "all");
+            
+            var data = new Dictionary<string, object>
+            {
+                {"formName", "TableDetailsDialog"},
+                {"fullTableName", dialog.Title}, // Dialog title shows table name
+                {"extractedAt", DateTime.Now}
+            };
+            
+            Logger.Debug("Base data created, extracting tabs...");
+        
         
         // If specific tab requested, extract only that tab
         // Otherwise extract all tabs
@@ -114,15 +143,15 @@ public class GuiTestingService
         {
             data["tabs"] = new Dictionary<string, object>
             {
-                {"columns", ExtractDataGridData(dialog.ColumnsGrid)},
-                {"foreignKeys", ExtractDataGridData(dialog.ForeignKeysGrid)},
-                {"indexes", ExtractDataGridData(dialog.IndexesGrid)},
-                {"ddlScript", ExtractTextBoxData(dialog.DDLTextBox)},
+                {"columns", ExtractDataGridData(dialog.ColumnsGridPublic)},
+                {"foreignKeys", ExtractDataGridData(dialog.ForeignKeysGridPublic)},
+                {"indexes", ExtractDataGridData(dialog.IndexesGridPublic)},
+                {"ddlScript", ExtractTextBoxData(dialog.DDLTextBoxPublic)},
                 {"statistics", ExtractStatisticsData(dialog)},
-                {"incomingFK", ExtractDataGridData(dialog.IncomingFKGrid)},
-                {"usedByPackages", ExtractDataGridData(dialog.UsedByPackagesGrid)},
-                {"usedByViews", ExtractDataGridData(dialog.UsedByViewsGrid)},
-                {"usedByRoutines", ExtractDataGridData(dialog.UsedByRoutinesGrid)}
+                {"incomingFK", ExtractDataGridData(dialog.IncomingFKGridPublic)},
+                {"usedByPackages", ExtractDataGridData(dialog.PackagesGridPublic)},
+                {"usedByViews", ExtractDataGridData(dialog.ViewsGridPublic)},
+                {"usedByRoutines", ExtractDataGridData(dialog.RoutinesGridPublic)}
             };
         }
         else
@@ -131,20 +160,31 @@ public class GuiTestingService
             data["tab"] = tabName;
             data["data"] = tabName switch
             {
-                "columns" => ExtractDataGridData(dialog.ColumnsGrid),
-                "foreign-keys" => ExtractDataGridData(dialog.ForeignKeysGrid),
-                "indexes" => ExtractDataGridData(dialog.IndexesGrid),
-                "ddl-script" => ExtractTextBoxData(dialog.DDLTextBox),
+                "columns" => ExtractDataGridData(dialog.ColumnsGridPublic),
+                "foreign-keys" => ExtractDataGridData(dialog.ForeignKeysGridPublic),
+                "indexes" => ExtractDataGridData(dialog.IndexesGridPublic),
+                "ddl-script" => ExtractTextBoxData(dialog.DDLTextBoxPublic),
                 "statistics" => ExtractStatisticsData(dialog),
-                "incoming-fk" => ExtractDataGridData(dialog.IncomingFKGrid),
-                "used-by-packages" => ExtractDataGridData(dialog.UsedByPackagesGrid),
-                "used-by-views" => ExtractDataGridData(dialog.UsedByViewsGrid),
-                "used-by-routines" => ExtractDataGridData(dialog.UsedByRoutinesGrid),
+                "incoming-fk" => ExtractDataGridData(dialog.IncomingFKGridPublic),
+                "used-by-packages" => ExtractDataGridData(dialog.PackagesGridPublic),
+                "used-by-views" => ExtractDataGridData(dialog.ViewsGridPublic),
+                "used-by-routines" => ExtractDataGridData(dialog.RoutinesGridPublic),
                 _ => new { error = $"Unknown tab: {tabName}" }
             };
         }
-        
+            
+        Logger.Debug("Extraction complete, returning data");
         return data;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to extract TableDetailsDialog data");
+            return new Dictionary<string, object>
+            {
+                {"error", ex.Message},
+                {"stackTrace", ex.StackTrace ?? ""}
+            };
+        }
     }
     
     private object ExtractDataGridData(System.Windows.Controls.DataGrid grid)
@@ -205,11 +245,12 @@ public class GuiTestingService
         {
             return new
             {
-                rowCount = dialog.RowCountText.Text,
-                dataPages = dialog.DataPagesText.Text,
-                indexPages = dialog.IndexPagesText.Text,
-                overflowPages = dialog.OverflowPagesText.Text,
-                statsTime = dialog.StatsTimeText.Text
+                rowCount = dialog.RowCountTextPublic.Text,
+                columnCount = dialog.ColumnCountTextPublic.Text,
+                fkCount = dialog.FKCountTextPublic.Text,
+                indexCount = dialog.IndexCountTextPublic.Text,
+                tableType = dialog.TableTypeTextPublic.Text,
+                tablespace = dialog.TablespaceTextPublic.Text
             };
         }
         catch (Exception ex)

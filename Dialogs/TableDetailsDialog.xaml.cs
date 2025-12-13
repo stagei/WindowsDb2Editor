@@ -19,6 +19,22 @@ public partial class TableDetailsDialog : Window
 
     public string? SelectedRelatedTable { get; private set; }
     public bool ShouldQueryTable { get; private set; }
+    
+    // Public accessors for GUI testing - allows GuiTestingService to extract form data
+    public System.Windows.Controls.DataGrid ColumnsGridPublic => ColumnsGrid;
+    public System.Windows.Controls.DataGrid ForeignKeysGridPublic => ForeignKeysGrid;
+    public System.Windows.Controls.DataGrid IndexesGridPublic => IndexesGrid;
+    public System.Windows.Controls.TextBox DDLTextBoxPublic => DDLTextBox;
+    public System.Windows.Controls.DataGrid IncomingFKGridPublic => IncomingFKGrid;
+    public System.Windows.Controls.DataGrid PackagesGridPublic => PackagesGrid;
+    public System.Windows.Controls.DataGrid ViewsGridPublic => ViewsGrid;
+    public System.Windows.Controls.DataGrid RoutinesGridPublic => RoutinesGrid;
+    public System.Windows.Controls.TextBlock RowCountTextPublic => RowCountText;
+    public System.Windows.Controls.TextBlock ColumnCountTextPublic => ColumnCountText;
+    public System.Windows.Controls.TextBlock FKCountTextPublic => FKCountText;
+    public System.Windows.Controls.TextBlock IndexCountTextPublic => IndexCountText;
+    public System.Windows.Controls.TextBlock TableTypeTextPublic => TableTypeText;
+    public System.Windows.Controls.TextBlock TablespaceTextPublic => TablespaceText;
 
     public TableDetailsDialog(DB2ConnectionManager connectionManager, string fullTableName)
     {
