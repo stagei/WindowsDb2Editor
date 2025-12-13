@@ -23,6 +23,10 @@ public class CliArguments
     public int? Limit { get; set; } // Result limit (default: no limit)
     public bool IncludeDependencies { get; set; } // Include dependency analysis
     public bool IncludeSourceCode { get; set; } // Include source code
+    
+    // NEW: GUI Form Testing for automated validation
+    public string? TestForm { get; set; } // table-details, object-details, package-details, etc.
+    public string? Tab { get; set; } // Specific tab to test (columns, foreign-keys, indexes, ddl-script, etc.)
 }
 
 /// <summary>
@@ -125,6 +129,26 @@ public class CliArgumentParser
                     }
                     break;
                     
+                // NEW: GUI Form Testing parameters
+                case "-test-form":
+                case "--test-form":
+                case "-testform":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.TestForm = args[++i].ToLowerInvariant();
+                        Logger.Debug("TestForm: {TestForm}", cliArgs.TestForm);
+                    }
+                    break;
+                    
+                case "-tab":
+                case "--tab":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Tab = args[++i].ToLowerInvariant();
+                        Logger.Debug("Tab: {Tab}", cliArgs.Tab);
+                    }
+                    break;
+                    
                 case "-objecttype":
                 case "--objecttype":
                 case "-type":
@@ -160,8 +184,8 @@ public class CliArgumentParser
             }
         }
         
-        Logger.Info("CLI arguments parsed - Profile: {Profile}, Command: {Command}, Object: {Object}, HasSQL: {HasSQL}", 
-            cliArgs.ProfileName, cliArgs.Command, cliArgs.Object, !string.IsNullOrEmpty(cliArgs.Sql));
+        Logger.Info("CLI arguments parsed - Profile: {Profile}, Command: {Command}, Object: {Object}, HasSQL: {HasSQL}, TestForm: {TestForm}, Tab: {Tab}", 
+            cliArgs.ProfileName, cliArgs.Command, cliArgs.Object, !string.IsNullOrEmpty(cliArgs.Sql), cliArgs.TestForm, cliArgs.Tab);
         
         return cliArgs;
     }
