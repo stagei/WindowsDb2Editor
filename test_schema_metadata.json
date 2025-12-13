@@ -1,0 +1,16 @@
+{
+  "schema": "ASK",
+  "objectCounts": {
+    "TABLES": 1,
+    "VIEWS": 0,
+    "PROCEDURES": 0,
+    "FUNCTIONS": 0,
+    "TRIGGERS": 0,
+    "INDEXES": 0
+  },
+  "approximateSize": {
+    "totalPages": 92,
+    "totalRows": 3205
+  },
+  "retrievedAt": "2025-12-13T11:21:13.8643696+01:00"
+}

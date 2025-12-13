@@ -1,0 +1,7 @@
+{
+  "schema": "ASK",
+  "tableName": "VASK_KUNDER",
+  "foreignKeyCount": 0,
+  "foreignKeys": [],
+  "retrievedAt": "2025-12-13T10:56:55.4770484+01:00"
+}

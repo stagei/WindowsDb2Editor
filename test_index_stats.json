@@ -1,0 +1,19 @@
+{
+  "schema": "ASK",
+  "tableName": "VASK_KUNDER",
+  "indexCount": 1,
+  "indexes": [
+    {
+      "indexName": "SQL140108091444450",
+      "indexType": "REG",
+      "uniqueRule": "P",
+      "columnCount": 1,
+      "firstKeyCard": 3205,
+      "fullKeyCard": 3205,
+      "clusterRatio": -1,
+      "leafPages": 12,
+      "treeLevels": 2
+    }
+  ],
+  "retrievedAt": "2025-12-13T11:09:33.1701823+01:00"
+}

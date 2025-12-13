@@ -1,0 +1,22 @@
+{
+  "profileCount": 2,
+  "profiles": [
+    {
+      "profileName": "ILOGTST",
+      "server": "t-no1fkxtst-db",
+      "port": 3700,
+      "database": "LOGTST",
+      "username": "db2nt",
+      "connectionTimeout": 30
+    },
+    {
+      "profileName": "BASISTST",
+      "server": "t-no1fkmtst-db",
+      "port": 3701,
+      "database": "FKMTST",
+      "username": "db2nt",
+      "connectionTimeout": 30
+    }
+  ],
+  "retrievedAt": "2025-12-13T11:21:17.0352761+01:00"
+}

@@ -1,0 +1,9 @@
+{
+  "packageSchema": "NULLID",
+  "packageName": "SYSSH200",
+  "createTime": "2003-12-14T18:59:14.328",
+  "lastBindTime": "2025-06-20T14:41:08.316001",
+  "isolationLevel": "CS",
+  "blockingType": "B",
+  "retrievedAt": "2025-12-13T11:05:41.0143956+01:00"
+}
