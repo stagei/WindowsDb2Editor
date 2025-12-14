@@ -838,9 +838,9 @@ public partial class ConnectionTabControl : UserControl
                     var metadataService = new DB2MetadataService();
                     await metadataService.CollectMetadataAsync(_connectionManager, _connection.Name ?? _connection.GetDisplayName());
                     Logger.Info("Background metadata collection completed");
-                }
-                catch (Exception ex)
-                {
+        }
+        catch (Exception ex)
+        {
                     Logger.Error(ex, "Background metadata collection failed");
                     // Don't show error to user - non-critical background task
                 }
@@ -2833,14 +2833,14 @@ public partial class ConnectionTabControl : UserControl
                 Logger.Warn("No cell clicked - attempting fallback to SelectedCells");
                 
                 // Fallback to selected cells if no cached cell
-                var selectedCells = ResultsGrid.SelectedCells;
-                if (selectedCells.Count == 0)
-                {
-                    MessageBox.Show("No cell selected.", "Copy Cell",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                
+            var selectedCells = ResultsGrid.SelectedCells;
+            if (selectedCells.Count == 0)
+            {
+                MessageBox.Show("No cell selected.", "Copy Cell",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
                 _lastClickedCell = selectedCells[0];
             }
 

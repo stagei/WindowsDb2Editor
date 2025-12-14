@@ -125,11 +125,47 @@ public class CliCommandHandlerService
                 // Connection commands (1 command)
                 "connection-profiles" => await ListConnectionProfilesAsync(args),
                 
-                // AI Assistant commands (4 commands)
+                // AI Assistant commands (10 commands)
                 "ai-query" => await GenerateAiQueryAsync(connectionManager, args),
                 "ai-explain-table" => await ExplainTableWithAiAsync(connectionManager, args),
+                "ai-explain-view" => await ExplainViewWithAiAsync(connectionManager, args),
+                "ai-analyze-procedure" => await AnalyzeProcedureWithAiAsync(connectionManager, args),
+                "ai-analyze-function" => await AnalyzeFunctionWithAiAsync(connectionManager, args),
+                "ai-analyze-package" => await AnalyzePackageWithAiAsync(connectionManager, args),
                 "ai-deep-analysis" => await PerformDeepAnalysisAsync(connectionManager, args),
                 "db-compare" => await CompareDatabasesAsync(connectionManager, args),
+                "db-compare-source-only" => await CompareSourceOnlyAsync(connectionManager, args),
+                "db-compare-target-only" => await CompareTargetOnlyAsync(connectionManager, args),
+                "db-compare-different" => await CompareDifferentAsync(connectionManager, args),
+                "db-compare-ddl" => await CompareDdlAsync(connectionManager, args),
+                
+                // View Detail commands (3 commands)
+                "view-definition" => await GetViewDefinitionAsync(connectionManager, args),
+                "view-columns" => await GetViewColumnsAsync(connectionManager, args),
+                "view-dependencies" => await GetViewDependenciesAsync(connectionManager, args),
+                
+                // Procedure Detail commands (2 commands)
+                "procedure-source" => await GetProcedureSourceAsync(connectionManager, args),
+                "procedure-parameters" => await GetProcedureParametersAsync(connectionManager, args),
+                
+                // Function Detail commands (2 commands)
+                "function-source" => await GetFunctionSourceAsync(connectionManager, args),
+                "function-parameters" => await GetFunctionParametersAsync(connectionManager, args),
+                
+                // Package Detail commands (2 commands)
+                "package-properties" => await GetPackagePropertiesAsync(connectionManager, args),
+                "package-statements" => await GetPackageStatementsAsync(connectionManager, args),
+                
+                // Table Analysis commands (2 commands)
+                "table-relationships" => await GetTableRelationshipsAsync(connectionManager, args),
+                "table-sample-data" => await GetTableSampleDataAsync(connectionManager, args),
+                
+                // User Management commands (2 commands)
+                "user-properties" => await GetUserPropertiesAsync(connectionManager, args),
+                "user-privileges" => await GetUserPrivilegesAsync(connectionManager, args),
+                
+                // Generic Object commands (1 command)
+                "object-metadata" => await GetObjectMetadataAsync(connectionManager, args),
                 
                 // Advanced Monitoring commands (8 commands)
                 "database-load-full" => await GetDatabaseLoadFullAsync(connectionManager, args),
