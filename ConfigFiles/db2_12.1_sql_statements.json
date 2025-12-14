@@ -1031,6 +1031,118 @@
       "parameters": ["USERNAME"],
       "returns": "User's database authorities",
       "source": "AccessControlService:DetermineUserAccessLevelAsync"
+    },
+    "GetTableComment": {
+      "sql": "SELECT REMARKS FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TABNAME = ?",
+      "description": "Get table comment/description from SYSCAT.TABLES.REMARKS for AI deep analysis.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Table comment",
+      "source": "DeepAnalysisService:GetTableCommentAsync"
+    },
+    "GetColumnComments": {
+      "sql": "SELECT COLNAME, REMARKS FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? AND REMARKS IS NOT NULL AND REMARKS <> '' ORDER BY COLNO",
+      "description": "Get all column comments from SYSCAT.COLUMNS for AI context building.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Column names and their comments",
+      "source": "DeepAnalysisService:GetColumnCommentsAsync"
+    },
+    "GetColumnMetadata": {
+      "sql": "SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, IDENTITY, DEFAULT FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
+      "description": "Get complete column metadata including data types, nullable, identity, and defaults for AI analysis.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Column metadata",
+      "source": "DeepAnalysisService:GetColumnMetadataAsync"
+    },
+    "GetTableRelationships": {
+      "sql": "SELECT R.CONSTNAME, R.TABSCHEMA, R.TABNAME, R.REFTABSCHEMA, R.REFTABNAME, K.COLNAME, K.COLSEQ FROM SYSCAT.REFERENCES R JOIN SYSCAT.KEYCOLUSE K ON R.CONSTNAME = K.CONSTNAME AND R.TABSCHEMA = K.TABSCHEMA AND R.TABNAME = K.TABNAME WHERE (R.TABSCHEMA = ? AND R.TABNAME = ?) OR (R.REFTABSCHEMA = ? AND R.REFTABNAME = ?) ORDER BY R.CONSTNAME, K.COLSEQ",
+      "description": "Get foreign key relationships for a table (both incoming and outgoing) for AI context and ERD generation.",
+      "parameters": ["TABSCHEMA", "TABNAME", "REFTABSCHEMA", "REFTABNAME"],
+      "returns": "Foreign key relationships",
+      "source": "DeepAnalysisService:GetRelationshipsAsync"
+    },
+    "GetViewDefinition": {
+      "sql": "SELECT TEXT FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? AND VIEWNAME = ?",
+      "description": "Get view SQL definition for AI context building.",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "View SQL text",
+      "source": "ViewContextBuilder:GetViewDefinitionAsync"
+    },
+    "GetViewColumns": {
+      "sql": "SELECT COLNAME, TYPENAME, LENGTH, NULLS FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
+      "description": "Get columns for a view (views are also in SYSCAT.COLUMNS).",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "View columns",
+      "source": "ViewContextBuilder:GetViewColumnsAsync"
+    },
+    "GetViewDependencies": {
+      "sql": "SELECT DISTINCT BSCHEMA || '.' || BNAME as DEPENDENCY FROM SYSCAT.VIEWDEP WHERE VIEWSCHEMA = ? AND VIEWNAME = ? AND BTYPE = 'T' ORDER BY DEPENDENCY",
+      "description": "Get tables used by a view for dependency analysis.",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "Table dependencies",
+      "source": "ViewContextBuilder:GetViewDependenciesAsync"
+    },
+    "GetProcedureMetadata": {
+      "sql": "SELECT LANGUAGE, DETERMINISTIC, SQL_DATA_ACCESS, REMARKS FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = ? AND PROCNAME = ? FETCH FIRST 1 ROW ONLY",
+      "description": "Get procedure metadata for AI context.",
+      "parameters": ["PROCSCHEMA", "PROCNAME"],
+      "returns": "Procedure metadata",
+      "source": "ProcedureContextBuilder:GetProcedureMetadataAsync"
+    },
+    "GetProcedureParameters": {
+      "sql": "SELECT PARMNAME, TYPENAME, PARM_MODE, REMARKS, ORDINAL FROM SYSCAT.PROCPARMS WHERE PROCSCHEMA = ? AND PROCNAME = ? ORDER BY ORDINAL",
+      "description": "Get procedure parameters (IN, OUT, INOUT) for AI context.",
+      "parameters": ["PROCSCHEMA", "PROCNAME"],
+      "returns": "Procedure parameters",
+      "source": "ProcedureContextBuilder:GetProcedureParametersAsync"
+    },
+    "GetProcedureSource": {
+      "sql": "SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = ? AND PROCNAME = ?",
+      "description": "Get procedure source code for AI analysis.",
+      "parameters": ["PROCSCHEMA", "PROCNAME"],
+      "returns": "Procedure source",
+      "source": "ProcedureContextBuilder:GetProcedureSourceAsync"
+    },
+    "GetProcedureDependencies": {
+      "sql": "SELECT DISTINCT BSCHEMA || '.' || BNAME || ' (' || BTYPE || ')' as DEPENDENCY FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? ORDER BY DEPENDENCY",
+      "description": "Get objects used by a procedure.",
+      "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
+      "returns": "Procedure dependencies",
+      "source": "ProcedureContextBuilder:GetProcedureDependenciesAsync"
+    },
+    "GetFunctionMetadata": {
+      "sql": "SELECT RETURN_TYPE, LANGUAGE, DETERMINISTIC, SQL_DATA_ACCESS, REMARKS FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = ? AND FUNCNAME = ? FETCH FIRST 1 ROW ONLY",
+      "description": "Get function metadata for AI context.",
+      "parameters": ["FUNCSCHEMA", "FUNCNAME"],
+      "returns": "Function metadata",
+      "source": "FunctionContextBuilder:GetFunctionMetadataAsync"
+    },
+    "GetFunctionParameters": {
+      "sql": "SELECT PARMNAME, TYPENAME, PARM_MODE, ORDINAL FROM SYSCAT.FUNCPARMS WHERE FUNCSCHEMA = ? AND FUNCNAME = ? ORDER BY ORDINAL",
+      "description": "Get function parameters for AI context.",
+      "parameters": ["FUNCSCHEMA", "FUNCNAME"],
+      "returns": "Function parameters",
+      "source": "FunctionContextBuilder:GetFunctionParametersAsync"
+    },
+    "GetFunctionSource": {
+      "sql": "SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = ? AND FUNCNAME = ?",
+      "description": "Get function source code for AI analysis.",
+      "parameters": ["FUNCSCHEMA", "FUNCNAME"],
+      "returns": "Function source",
+      "source": "FunctionContextBuilder:GetFunctionSourceAsync"
+    },
+    "GetPackageMetadata": {
+      "sql": "SELECT PKGTYPE, ISOLATION, CREATE_TIME, LAST_BIND_TIME FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = ? AND PKGNAME = ? FETCH FIRST 1 ROW ONLY",
+      "description": "Get package metadata for AI context.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package metadata",
+      "source": "PackageContextBuilder:GetPackageMetadataAsync"
+    },
+    "GetPackageStatements": {
+      "sql": "SELECT STMTTEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = ? AND PKGNAME = ? ORDER BY STMTNO",
+      "description": "Get all SQL statements in a package for AI analysis.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package SQL statements",
+      "source": "PackageContextBuilder:GetPackageStatementsAsync"
     }
   }
 }

@@ -396,7 +396,12 @@ public class MetadataHandler : IMetadataProvider
         
         foreach (var param in parameters)
         {
-            sql = sql.Replace("?", $"'{param.Value}'", 1);
+            // Replace first occurrence of ? with parameter value
+            var index = sql.IndexOf('?');
+            if (index >= 0)
+            {
+                sql = sql.Substring(0, index) + $"'{param.Value}'" + sql.Substring(index + 1);
+            }
         }
         
         return await _connectionManager.ExecuteQueryAsync(sql);
@@ -413,7 +418,12 @@ public class MetadataHandler : IMetadataProvider
         
         foreach (var param in parameters)
         {
-            sql = sql.Replace("?", $"'{param.Value}'", 1);
+            // Replace first occurrence of ? with parameter value
+            var index = sql.IndexOf('?');
+            if (index >= 0)
+            {
+                sql = sql.Substring(0, index) + $"'{param.Value}'" + sql.Substring(index + 1);
+            }
         }
         
         using var command = _connectionManager.CreateCommand(sql);
