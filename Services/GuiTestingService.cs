@@ -43,6 +43,7 @@ public class GuiTestingService
                 "object-details" => await TestObjectDetailsAsync(connectionManager, objectName, tabName),
                 "package-details" => await TestPackageDetailsAsync(connectionManager, objectName, tabName),
                 "user-details" => await TestUserDetailsAsync(connectionManager, objectName, tabName),
+                "mermaid-designer" => await TestMermaidDesignerAsync(connectionManager, objectName, tabName),
                 _ => throw new ArgumentException($"Unknown form name: {formName}")
             };
         }
@@ -296,6 +297,175 @@ public class GuiTestingService
             {"formName", "UserDetailsDialog"},
             {"objectName", objectName}
         };
+    }
+    
+    /// <summary>
+    /// Test Mermaid Designer form
+    /// ObjectName is interpreted as schema or "auto" for current connection schema
+    /// TabName can be: "generate-from-db", "show-diff", "generate-alter", "export-sql"
+    /// </summary>
+    private async Task<Dictionary<string, object>> TestMermaidDesignerAsync(
+        DB2ConnectionManager connectionManager,
+        string objectName,
+        string? tabName)
+    {
+        Logger.Debug("Testing MermaidDesignerWindow for schema: {Schema}, Action: {Action}", objectName, tabName);
+        
+        // objectName is the target schema (e.g., "INL", "SYSCAT", etc.)
+        var targetSchema = objectName;
+        
+        Dictionary<string, object>? result = null;
+        Exception? exception = null;
+        
+        // Use a TaskCompletionSource to properly await the UI thread operation
+        var tcs = new TaskCompletionSource<bool>();
+        
+        Application.Current.Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                Logger.Debug("Creating MermaidDesignerWindow on UI thread");
+                var dialog = new MermaidDesignerWindow(connectionManager, targetSchema);
+                
+                Logger.Debug("Showing dialog (non-modal for extraction)");
+                dialog.Show();
+                
+                Logger.Debug("Waiting for WebView2 initialization...");
+                await Task.Delay(5000); // Give time for WebView2 to load
+                
+                Logger.Debug("Extracting data from Mermaid Designer");
+                result = ExtractMermaidDesignerData(dialog, tabName);
+                Logger.Debug("Extraction returned result: {IsNull}", result == null);
+                
+                // If specific action requested, perform it
+                if (!string.IsNullOrEmpty(tabName))
+                {
+                    await PerformMermaidAction(dialog, tabName, result);
+                }
+                
+                Logger.Debug("Data extracted from Mermaid Designer");
+                
+                dialog.Close();
+                Logger.Debug("MermaidDesignerWindow closed");
+                
+                tcs.SetResult(true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Exception during Mermaid Designer extraction");
+                exception = ex;
+                tcs.SetException(ex);
+            }
+        });
+        
+        // Wait for the UI operation to complete
+        await tcs.Task;
+        
+        if (exception != null)
+        {
+            return new Dictionary<string, object> 
+            { 
+                {"error", exception.Message}, 
+                {"stackTrace", exception.StackTrace ?? ""},
+                {"formName", "MermaidDesignerWindow"}
+            };
+        }
+        
+        return result ?? new Dictionary<string, object> { {"error", "Failed to extract data"} };
+    }
+    
+    private Dictionary<string, object> ExtractMermaidDesignerData(MermaidDesignerWindow dialog, string? action)
+    {
+        try
+        {
+            Logger.Debug("ExtractMermaidDesignerData called, Action: {Action}", action ?? "none");
+            
+            var data = new Dictionary<string, object>
+            {
+                {"formName", "MermaidDesignerWindow"},
+                {"targetSchema", dialog.TargetSchema},
+                {"isDesignerLoaded", dialog.IsDesignerLoaded},
+                {"extractedAt", DateTime.Now}
+            };
+            
+            // Extract diagram data if available
+            if (dialog.LastGeneratedMermaid != null)
+            {
+                data["lastGeneratedMermaid"] = new
+                {
+                    length = dialog.LastGeneratedMermaid.Length,
+                    preview = dialog.LastGeneratedMermaid.Substring(0, Math.Min(200, dialog.LastGeneratedMermaid.Length)),
+                    lineCount = dialog.LastGeneratedMermaid.Split('\n').Length
+                };
+            }
+            
+            // Extract selected tables if available
+            if (dialog.LastSelectedTables != null && dialog.LastSelectedTables.Count > 0)
+            {
+                data["selectedTables"] = new
+                {
+                    count = dialog.LastSelectedTables.Count,
+                    tables = dialog.LastSelectedTables
+                };
+            }
+            
+            Logger.Debug("Mermaid Designer data extraction complete");
+            return data;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to extract Mermaid Designer data");
+            return new Dictionary<string, object>
+            {
+                {"error", ex.Message},
+                {"stackTrace", ex.StackTrace ?? ""}
+            };
+        }
+    }
+    
+    /// <summary>
+    /// Perform automated action on Mermaid Designer for testing
+    /// </summary>
+    private async Task PerformMermaidAction(MermaidDesignerWindow dialog, string action, Dictionary<string, object> result)
+    {
+        try
+        {
+            Logger.Debug("Performing Mermaid action: {Action}", action);
+            
+            switch (action.ToLowerInvariant())
+            {
+                case "generate-from-db":
+                    // Test loading tables from DB
+                    Logger.Debug("Testing generate from DB with sample tables");
+                    var testTables = new List<string> { "INL.KUNDEKONTO_TEST", "INL.TRANSREG_TEST" };
+                    var mermaid = await dialog.GenerateDiagramAutomatedAsync(testTables);
+                    result["generatedMermaid"] = new
+                    {
+                        length = mermaid.Length,
+                        tablesCount = testTables.Count,
+                        success = !string.IsNullOrEmpty(mermaid)
+                    };
+                    Logger.Info("Generated Mermaid diagram via automation: {Length} chars", mermaid.Length);
+                    break;
+                    
+                case "extract-data":
+                    // Extract current state
+                    var extractedData = dialog.ExtractDataForTesting();
+                    result["extracted"] = extractedData;
+                    Logger.Info("Extracted Mermaid Designer data for testing");
+                    break;
+                    
+                default:
+                    result["actionError"] = $"Unknown action: {action}";
+                    Logger.Warn("Unknown Mermaid action requested: {Action}", action);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to perform Mermaid action: {Action}", action);
+            result["actionError"] = ex.Message;
+        }
     }
 }
 

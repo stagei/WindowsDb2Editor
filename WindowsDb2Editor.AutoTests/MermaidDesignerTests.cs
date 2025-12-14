@@ -26,57 +26,74 @@ public class MermaidDesignerTests
     }
     
     /// <summary>
-    /// Test 1: Open Mermaid Designer from Tools menu
+    /// Test 1: Open Mermaid Designer from View menu
     /// </summary>
     public void Test_OpenMermaidDesigner_FromMenu()
     {
-        Console.WriteLine("🧪 Mermaid Test 1: Opening Mermaid Designer from Tools menu...");
-        Logger.Info("Test: Opening Mermaid Designer from Tools menu");
+        Console.WriteLine("🧪 Mermaid Test 1: Opening Mermaid Designer from View menu...");
+        Logger.Info("Test: Opening Mermaid Designer from View menu");
         
         try
         {
-            // Find and click Tools menu
+            // Find and click View menu
             _mainWindow.Focus();
             Thread.Sleep(300);
             
-            Console.WriteLine("   🖱️  Opening Tools menu...");
-            Keyboard.Type(VirtualKeyShort.ALT);
-            Thread.Sleep(200);
-            Keyboard.Type(VirtualKeyShort.KEY_T); // Alt+T for Tools
-            Thread.Sleep(500);
+            Console.WriteLine("   🖱️  Opening View menu with Alt+V...");
+            Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.KEY_V);
+            Thread.Sleep(800);
             
-            // Look for Mermaid Designer menu item
-            var toolsMenu = _mainWindow.FindFirstDescendant(cf =>
-                cf.ByText("Tools").And(cf.ByControlType(ControlType.MenuItem)));
+            // Look for View menu
+            var viewMenu = _mainWindow.FindFirstDescendant(cf =>
+                cf.ByText("View").And(cf.ByControlType(ControlType.MenuItem)));
             
-            if (toolsMenu != null)
+            if (viewMenu != null)
             {
-                Console.WriteLine("   ✅ Tools menu found");
+                Console.WriteLine("   ✅ View menu found");
                 
-                // Find Mermaid Designer menu item
-                var mermaidMenuItem = _mainWindow.FindFirstDescendant(cf =>
-                    cf.ByText("Mermaid Visual Designer"));
+                // Find Mermaid Designer menu item by searching for partial text
+                Console.WriteLine("   🔍 Looking for Mermaid menu item...");
+                
+                var allMenuItems = _mainWindow.FindAllDescendants(cf =>
+                    cf.ByControlType(ControlType.MenuItem));
+                
+                AutomationElement? mermaidMenuItem = null;
+                foreach (var item in allMenuItems)
+                {
+                    var itemText = item.Name ?? "";
+                    Console.WriteLine($"      Checking menu item: {itemText}");
+                    if (itemText.Contains("Mermaid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        mermaidMenuItem = item;
+                        Console.WriteLine($"   ✅ Found Mermaid menu item: {itemText}");
+                        break;
+                    }
+                }
                 
                 if (mermaidMenuItem != null)
                 {
-                    Console.WriteLine("   ✅ Mermaid Designer menu item found");
+                    Console.WriteLine("   🖱️  Clicking Mermaid Designer...");
                     mermaidMenuItem.Click();
                     Console.WriteLine("   ✅ Mermaid Designer clicked");
                     
-                    Thread.Sleep(2000); // Wait for window to open
+                    Thread.Sleep(3000); // Wait longer for window to open
                 }
                 else
                 {
-                    Console.WriteLine("   ⚠️  Mermaid Designer menu item not found");
+                    Console.WriteLine("   ⚠️  Mermaid Designer menu item not found in View menu");
                 }
             }
             else
             {
-                Console.WriteLine("   ⚠️  Tools menu not found, trying keyboard shortcut...");
+                Console.WriteLine("   ⚠️  View menu not found, trying direct navigation...");
                 
-                // Try direct keyboard shortcut (if exists)
-                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_M);
-                Thread.Sleep(2000);
+                // Try typing 'M' to navigate to Mermaid item
+                Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.KEY_V);
+                Thread.Sleep(500);
+                Keyboard.Type(VirtualKeyShort.KEY_M);
+                Thread.Sleep(500);
+                Keyboard.Type(VirtualKeyShort.RETURN);
+                Thread.Sleep(3000);
             }
             
             // Verify Mermaid Designer window opened
@@ -594,29 +611,68 @@ public class MermaidDesignerTests
     /// </summary>
     private Window? FindMermaidDesignerWindow()
     {
-        // Try by exact title
+        // First try: Direct child of main window (most common for WPF child windows)
+        var childWindow = _mainWindow.FindFirstDescendant(cf =>
+            cf.ByControlType(ControlType.Window));
+        
+        if (childWindow != null)
+        {
+            var name = childWindow.Name ?? "";
+            if (name.Contains("Mermaid", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"   📍 Found Mermaid window as child: {name}");
+                return childWindow.AsWindow();
+            }
+        }
+        
+        // Second try: Desktop-level window by exact title
         var window = _automation.GetDesktop().FindFirstChild(cf =>
             cf.ByName("Mermaid Visual Designer").And(cf.ByControlType(ControlType.Window)));
         
         if (window != null)
         {
+            Console.WriteLine($"   📍 Found Mermaid window on desktop: {window.Name}");
             return window.AsWindow();
         }
         
-        // Try by partial name
+        // Third try: Search all desktop windows
         var allWindows = _automation.GetDesktop().FindAllChildren(cf =>
             cf.ByControlType(ControlType.Window));
         
+        Console.WriteLine($"   🔍 Searching through {allWindows.Length} desktop windows...");
         foreach (var win in allWindows)
         {
             var name = win.Name ?? "";
+            Console.WriteLine($"      Window: {name}");
             if (name.Contains("Mermaid", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("Designer", StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine($"   📍 Found matching window: {name}");
                 return win.AsWindow();
             }
         }
         
+        // Fourth try: Look for any WebView2 control (Mermaid Designer contains one)
+        var webView = _automation.GetDesktop().FindFirstDescendant(cf =>
+            cf.ByClassName("Chrome_WidgetWin_1"));
+        
+        if (webView != null)
+        {
+            // Get the parent window of the WebView
+            var parent = webView.Parent;
+            while (parent != null && parent.ControlType != ControlType.Window)
+            {
+                parent = parent.Parent;
+            }
+            
+            if (parent != null)
+            {
+                Console.WriteLine($"   📍 Found window containing WebView2: {parent.Name}");
+                return parent.AsWindow();
+            }
+        }
+        
+        Console.WriteLine("   ❌ Mermaid Designer window not found in any location");
         return null;
     }
     

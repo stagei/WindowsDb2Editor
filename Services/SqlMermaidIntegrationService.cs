@@ -128,6 +128,14 @@ public class SqlMermaidIntegrationService
                 ddl.Append(fkDdl);
             }
             
+            // Get indexes
+            var indexDdl = await GenerateIndexDdlAsync(connectionManager, schema, tableName);
+            if (!string.IsNullOrEmpty(indexDdl))
+            {
+                ddl.AppendLine();
+                ddl.Append(indexDdl);
+            }
+            
             Logger.Debug("Generated DDL for {Schema}.{Table} - {Columns} columns, {PKs} PKs",
                 schema, tableName, result.Rows.Count, pkColumns.Count);
             
@@ -186,6 +194,60 @@ public class SqlMermaidIntegrationService
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to generate FK DDL for {Schema}.{Table}", schema, tableName);
+            return string.Empty;
+        }
+    }
+    
+    /// <summary>
+    /// Generates CREATE INDEX statements for a DB2 table.
+    /// </summary>
+    private async Task<string> GenerateIndexDdlAsync(
+        DB2ConnectionManager connectionManager,
+        string schema,
+        string tableName)
+    {
+        try
+        {
+            var sql = $@"
+                SELECT 
+                    INDNAME, UNIQUERULE, COLNAMES
+                FROM SYSCAT.INDEXES
+                WHERE TABSCHEMA = '{schema}' 
+                  AND TABNAME = '{tableName}'
+                  AND UNIQUERULE <> 'P'
+                ORDER BY INDNAME
+            ";
+            
+            var result = await connectionManager.ExecuteQueryAsync(sql);
+            
+            if (result.Rows.Count == 0)
+                return string.Empty;
+            
+            var ddl = new StringBuilder();
+            
+            foreach (DataRow row in result.Rows)
+            {
+                var indexName = row["INDNAME"]?.ToString() ?? string.Empty;
+                var uniqueRule = row["UNIQUERULE"]?.ToString() ?? string.Empty;
+                var colNames = row["COLNAMES"]?.ToString()?.Replace("+", ", ").Replace("-", " DESC, ") ?? string.Empty;
+                
+                // Clean up column names (remove trailing DESC markers)
+                colNames = colNames.TrimEnd(',', ' ', 'D', 'E', 'S', 'C').Trim();
+                
+                var uniqueClause = uniqueRule == "U" ? "UNIQUE " : "";
+                
+                ddl.AppendLine($"CREATE {uniqueClause}INDEX {indexName}");
+                ddl.AppendLine($"    ON {schema}.{tableName} ({colNames});");
+            }
+            
+            Logger.Debug("Generated {Count} index DDL statements for {Schema}.{Table}",
+                result.Rows.Count, schema, tableName);
+            
+            return ddl.ToString();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate index DDL for {Schema}.{Table}", schema, tableName);
             return string.Empty;
         }
     }

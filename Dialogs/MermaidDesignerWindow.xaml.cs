@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Text.Json;
@@ -132,6 +134,12 @@ public partial class MermaidDesignerWindow : Window
             Logger.Debug("WebMessage received from JavaScript");
             var json = e.WebMessageAsJson;
             Logger.Debug("WebMessage JSON: {Json}", json?.Substring(0, Math.Min(200, json?.Length ?? 0)));
+            
+            if (string.IsNullOrEmpty(json))
+            {
+                Logger.Warn("WebMessage JSON is null or empty");
+                return;
+            }
             
             var message = JsonSerializer.Deserialize<WebMessage>(json);
             
@@ -403,8 +411,8 @@ public partial class MermaidDesignerWindow : Window
     }
     
     /// <summary>
-    /// REFACTORED: Now uses SqlMermaidErdTools for migration DDL generation.
-    /// Generates migration scripts directly from Mermaid diagrams.
+    /// ENHANCED: Generates ALTER statements and opens review dialog for safe execution.
+    /// Uses SqlMermaidErdTools for migration DDL generation from Mermaid diff.
     /// </summary>
     private async Task HandleGenerateDDL(string? original, string? edited)
     {
@@ -412,45 +420,106 @@ public partial class MermaidDesignerWindow : Window
         {
             if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(edited))
             {
-                MessageBox.Show("Please capture original version first using 'Show Diff' button.", 
-                    "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    "No changes to analyze.\n\n" +
+                    "1. Click 'Show Diff' to capture baseline\n" +
+                    "2. Modify the Mermaid diagram\n" +
+                    "3. Click 'Show Diff' again to see changes\n" +
+                    "4. Click 'Generate DDL' to create ALTER statements",
+                    "Info", 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Information);
                 return;
             }
             
-            Logger.Info("Generating DDL from diff using SqlMermaidErdTools");
+            Logger.Info("Generating ALTER statements from Mermaid diff using SqlMermaidErdTools");
             
-            // Use SqlMermaidErdTools for migration generation (ANSI SQL by default)
-            var ddl = await _ddlGenerator.GenerateMigrationScriptsAsync(
-                original,
-                edited,
-                _targetSchema,
-                SqlMermaidErdTools.Models.SqlDialect.AnsiSql);
+            // Try SqlMermaidErdTools first for advanced migration
+            string ddl;
+            try
+            {
+                ddl = await _sqlMermaidService.GenerateMigrationFromMermaidDiffAsync(
+                    original,
+                    edited,
+                    SqlMermaidErdTools.Models.SqlDialect.AnsiSql);
+                
+                Logger.Info("SqlMermaidErdTools generated migration: {Length} chars", ddl.Length);
+            }
+            catch (Exception sqlMermaidEx)
+            {
+                Logger.Warn(sqlMermaidEx, "SqlMermaidErdTools failed, using fallback DiffBasedDdlGenerator");
+                
+                // Fallback to legacy DiffBasedDdlGenerator
+                ddl = await _ddlGenerator.GenerateMigrationScriptsAsync(
+                    original,
+                    edited,
+                    _targetSchema,
+                    SqlMermaidErdTools.Models.SqlDialect.AnsiSql);
+            }
             
             // Check if migration has content
             if (string.IsNullOrWhiteSpace(ddl) || ddl.Contains("-- No changes detected"))
             {
-                MessageBox.Show("No changes detected. DDL not generated.", 
-                    "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    "No schema changes detected.\n\n" +
+                    "The original and modified diagrams appear to be identical.",
+                    "No Changes", 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Information);
                 return;
             }
             
-            var tempFile = Path.Combine(Path.GetTempPath(), $"migration_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            await File.WriteAllTextAsync(tempFile, ddl);
+            // Parse DDL into individual ALTER statements
+            var alterStatements = ParseDdlIntoStatements(ddl);
             
-            var result = MessageBox.Show(
-                $"Migration script generated using SqlMermaidErdTools.\n\n" +
-                $"Open in SQL editor for review?\n\n" +
-                "WARNING: Review carefully before executing!",
-                "DDL Generated",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
+            if (alterStatements.Count == 0)
             {
-                System.Diagnostics.Process.Start("notepad.exe", tempFile);
+                MessageBox.Show(
+                    "Generated DDL contains no executable statements.",
+                    "No Statements",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
             }
             
-            Logger.Info("DDL generation complete via SqlMermaidErdTools: {File}", tempFile);
+            Logger.Info("Parsed {Count} ALTER statements from DDL", alterStatements.Count);
+            
+            // Open ALTER statement review dialog
+            var reviewDialog = new AlterStatementReviewDialog(alterStatements, _connectionManager);
+            reviewDialog.Owner = this;
+            
+            var dialogResult = reviewDialog.ShowDialog();
+            
+            if (dialogResult == true && reviewDialog.StatementsExecuted)
+            {
+                Logger.Info("User executed {Count} ALTER statements successfully", reviewDialog.ExecutedCount);
+                
+                // Ask if user wants to reload diagram from DB to see changes
+                var reloadResult = MessageBox.Show(
+                    $"Successfully executed {reviewDialog.ExecutedCount} statement(s).\n\n" +
+                    $"Reload diagram from database to see the changes?",
+                    "Reload Diagram?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                
+                if (reloadResult == MessageBoxResult.Yes && _lastSelectedTables != null)
+                {
+                    // Reload diagram from same tables
+                    var mermaid = await _generatorService.GenerateMermaidDiagramAsync(
+                        _connectionManager,
+                        _lastSelectedTables);
+                    
+                    _lastGeneratedMermaid = mermaid;
+                    var escapedMermaid = EscapeForJavaScript(mermaid);
+                    await MermaidWebView.ExecuteScriptAsync($"setEditorContent(`{escapedMermaid}`);");
+                    
+                    Logger.Info("Diagram reloaded from database successfully");
+                }
+            }
+            else
+            {
+                Logger.Info("User closed ALTER review dialog without executing statements");
+            }
         }
         catch (Exception ex)
         {
@@ -529,6 +598,57 @@ public partial class MermaidDesignerWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+    
+    /// <summary>
+    /// Parse SQL DDL into individual executable statements.
+    /// Splits by semicolon and filters out comments.
+    /// </summary>
+    private List<string> ParseDdlIntoStatements(string ddl)
+    {
+        var statements = new List<string>();
+        
+        // Split by semicolon but preserve statements
+        var lines = ddl.Split('\n');
+        var currentStatement = new StringBuilder();
+        
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+            
+            // Skip comments and empty lines
+            if (trimmedLine.StartsWith("--") || string.IsNullOrWhiteSpace(trimmedLine))
+            {
+                continue;
+            }
+            
+            currentStatement.AppendLine(line);
+            
+            // If line ends with semicolon, statement is complete
+            if (trimmedLine.EndsWith(";"))
+            {
+                var statement = currentStatement.ToString().Trim();
+                
+                if (!string.IsNullOrWhiteSpace(statement))
+                {
+                    statements.Add(statement);
+                }
+                
+                currentStatement.Clear();
+            }
+        }
+        
+        // Add any remaining statement
+        if (currentStatement.Length > 0)
+        {
+            var statement = currentStatement.ToString().Trim();
+            if (!string.IsNullOrWhiteSpace(statement))
+            {
+                statements.Add(statement);
+            }
+        }
+        
+        return statements;
     }
     
     private string EscapeForJavaScript(string text)

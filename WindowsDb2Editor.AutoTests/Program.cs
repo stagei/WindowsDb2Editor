@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
@@ -9,6 +10,8 @@ using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using FlaUI.UIA3;
 using NLog;
+using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.AutoTests;
 
@@ -16,7 +19,7 @@ class Program
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         ConfigureLogging();
         
@@ -39,7 +42,7 @@ class Program
             Console.WriteLine();
             
             // Run tests
-            tester.RunAllTests(profileName, testSchema);
+            await tester.RunAllTestsAsync(profileName, testSchema);
             
             Console.WriteLine();
             Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -79,6 +82,7 @@ public class WindowsDb2EditorTester
     private Application? _app;
     private AutomationBase? _automation;
     private Window? _mainWindow;
+    private DB2ConnectionManager? _testConnectionManager;
     
     private string GetAppPath()
     {
@@ -119,7 +123,7 @@ public class WindowsDb2EditorTester
             $"WindowsDb2Editor.exe not found. Current directory: {Directory.GetCurrentDirectory()}");
     }
     
-    public void RunAllTests(string profileName, string testSchema)
+    public async Task RunAllTestsAsync(string profileName, string testSchema)
     {
         try
         {
@@ -147,13 +151,24 @@ public class WindowsDb2EditorTester
             Test_NewConnectionDialog();
             Thread.Sleep(1000);
             
-            // Test 7-13: Mermaid Designer tests (if connection successful)
+            // Test 7-12: Mermaid Designer tests (WebView2-aware)
             if (_mainWindow != null && _automation != null)
             {
                 Console.WriteLine();
-                Console.WriteLine("🎨 Running Mermaid Designer tests...");
-                var mermaidTester = new MermaidDesignerTests(_mainWindow, _automation);
-                mermaidTester.RunAllMermaidTests();
+                var mermaidTester = new MermaidWebViewTests(_mainWindow, _automation);
+                mermaidTester.RunMermaidDesignerTests();
+            }
+            
+            // Test 13-20: Mermaid Integration Deep Tests (establish real DB connection)
+            try
+            {
+                Console.WriteLine();
+                await Test_MermaidIntegrationAsync(profileName, testSchema);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   ⚠️  Mermaid integration tests skipped: {ex.Message}");
+                Logger.Warn(ex, "Mermaid integration tests skipped");
             }
             
             Console.WriteLine();
@@ -462,6 +477,57 @@ public class WindowsDb2EditorTester
         }
     }
     
+    private async Task Test_MermaidIntegrationAsync(string profileName, string testSchema)
+    {
+        Console.WriteLine("🔬 Test 13-20: Mermaid Integration Deep Tests...");
+        Logger.Info("Establishing test DB connection for Mermaid integration tests");
+        
+        try
+        {
+            // Get connection info from saved connections
+            var storageService = new ConnectionStorageService();
+            var connection = storageService.GetConnection(profileName);
+            
+            if (connection == null)
+            {
+                Console.WriteLine($"   ⚠️  Connection profile '{profileName}' not found");
+                return;
+            }
+            
+            Console.WriteLine($"   🔌 Connecting to {connection.Server}...");
+            _testConnectionManager = new DB2ConnectionManager(connection);
+            await _testConnectionManager.OpenAsync();
+            
+            if (!_testConnectionManager.IsConnected)
+            {
+                Console.WriteLine("   ❌ Failed to establish DB connection");
+                return;
+            }
+            
+            Console.WriteLine($"   ✅ DB connection established successfully");
+            
+            // Run deep integration tests
+            var integrationTester = new MermaidIntegrationTests(_testConnectionManager, testSchema);
+            await integrationTester.RunAllIntegrationTests();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Mermaid integration tests failed");
+            Console.WriteLine($"   ❌ Integration test error: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            // Clean up test connection
+            if (_testConnectionManager != null)
+            {
+                Console.WriteLine("   🧹 Closing test DB connection...");
+                _testConnectionManager.Dispose();
+                _testConnectionManager = null;
+            }
+        }
+    }
+    
     private void Cleanup()
     {
         Console.WriteLine();
@@ -469,6 +535,13 @@ public class WindowsDb2EditorTester
         
         try
         {
+            // Clean up test connection if still open
+            if (_testConnectionManager != null)
+            {
+                _testConnectionManager.Dispose();
+                _testConnectionManager = null;
+            }
+            
             if (_app != null && !_app.HasExited)
             {
                 Console.WriteLine("   Closing application...");
