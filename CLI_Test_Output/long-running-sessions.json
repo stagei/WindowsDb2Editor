@@ -1,0 +1,7 @@
+{
+  "durationThresholdSeconds": 60,
+  "longRunningSessionsFound": 0,
+  "note": "Long-running session detection requires SYSIBMADM.MON_CURRENT_SQL or APPLICATIONS view (needs DBA privileges)",
+  "recommendation": "Use db2 list applications show detail or GUI Active Sessions Panel",
+  "retrievedAt": "2025-12-14T18:49:23.9996303+01:00"
+}

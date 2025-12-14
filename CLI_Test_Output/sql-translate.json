@@ -1,0 +1,9 @@
+{
+  "sourceDialect": "DB2",
+  "targetDialect": "POSTGRESQL",
+  "inputSqlLength": 26,
+  "translatedSql": "CREATE TABLE TEST (\r\n  ID INT\r\n)",
+  "translatedLength": 32,
+  "note": "SQL DDL translated from DB2 to POSTGRESQL",
+  "retrievedAt": "2025-12-14T18:47:56.6977262+01:00"
+}

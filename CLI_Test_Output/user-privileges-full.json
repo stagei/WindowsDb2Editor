@@ -1,0 +1,5 @@
+{
+  "username": "DB2INST1",
+  "note": "Full privilege enumeration requires querying multiple auth catalog views",
+  "retrievedAt": "2025-12-14T18:48:01.5674591+01:00"
+}

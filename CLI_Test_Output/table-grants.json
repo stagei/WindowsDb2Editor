@@ -1,0 +1,60 @@
+{
+  "schema": "INL",
+  "tableName": "BILAGNR",
+  "grantCount": 4,
+  "grants": [
+    {
+      "grantor": "SYSIBM",
+      "grantee": "TRU",
+      "granteeType": "U",
+      "controlAuth": true,
+      "alterAuth": false,
+      "deleteAuth": false,
+      "indexAuth": false,
+      "insertAuth": false,
+      "refAuth": false,
+      "selectAuth": false,
+      "updateAuth": false
+    },
+    {
+      "grantor": "DB2ADMIN",
+      "grantee": "QMFRUN",
+      "granteeType": "U",
+      "controlAuth": false,
+      "alterAuth": false,
+      "deleteAuth": false,
+      "indexAuth": false,
+      "insertAuth": false,
+      "refAuth": false,
+      "selectAuth": true,
+      "updateAuth": false
+    },
+    {
+      "grantor": "NETADM",
+      "grantee": "FKKONTO",
+      "granteeType": "G",
+      "controlAuth": false,
+      "alterAuth": false,
+      "deleteAuth": false,
+      "indexAuth": false,
+      "insertAuth": false,
+      "refAuth": false,
+      "selectAuth": true,
+      "updateAuth": false
+    },
+    {
+      "grantor": "MEH",
+      "grantee": "ASK",
+      "granteeType": "U",
+      "controlAuth": false,
+      "alterAuth": true,
+      "deleteAuth": true,
+      "indexAuth": true,
+      "insertAuth": true,
+      "refAuth": true,
+      "selectAuth": true,
+      "updateAuth": true
+    }
+  ],
+  "retrievedAt": "2025-12-14T18:48:04.1338668+01:00"
+}

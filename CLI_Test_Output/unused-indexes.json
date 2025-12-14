@@ -1,0 +1,8 @@
+{
+  "schema": "INL",
+  "totalIndexes": 0,
+  "limitApplied": 0,
+  "note": "Excludes primary key indexes - review for actual usage patterns",
+  "indexes": [],
+  "retrievedAt": "2025-12-14T18:47:07.5853897+01:00"
+}

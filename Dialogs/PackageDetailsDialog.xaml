@@ -124,6 +124,141 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
+            
+            <!-- Dependencies Tab -->
+            <TabItem Header="🔗 Dependencies" x:Name="DependenciesTab">
+                <Grid Margin="10">
+                    <TabControl>
+                        <!-- Tables Used -->
+                        <TabItem Header="📋 Tables Used">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" x:Name="TablesUsedCount" Text="Loading..." 
+                                           Margin="10" FontWeight="SemiBold"/>
+                                
+                                <DataGrid Grid.Row="1" x:Name="TablesUsedGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          SelectionMode="Single"
+                                          GridLinesVisibility="Horizontal"
+                                          AlternatingRowBackground="{DynamicResource SystemControlBackgroundAltMediumLowBrush}"
+                                          Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                          MouseDoubleClick="DependencyItem_DoubleClick">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
+                                        <DataGridTextColumn Header="Table Name" Binding="{Binding Name}" Width="250"/>
+                                        <DataGridTextColumn Header="Usage Count" Binding="{Binding UsageCount}" Width="120"/>
+                                        <DataGridTextColumn Header="Statements" Binding="{Binding StatementsText}" Width="*"/>
+                                        <DataGridTextColumn Header="Verified" Binding="{Binding VerifiedText}" Width="80"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+                        
+                        <!-- Views Used -->
+                        <TabItem Header="👁️ Views Used">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" x:Name="ViewsUsedCount" Text="Loading..." 
+                                           Margin="10" FontWeight="SemiBold"/>
+                                
+                                <DataGrid Grid.Row="1" x:Name="ViewsUsedGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          SelectionMode="Single"
+                                          GridLinesVisibility="Horizontal"
+                                          AlternatingRowBackground="{DynamicResource SystemControlBackgroundAltMediumLowBrush}"
+                                          Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                          MouseDoubleClick="DependencyItem_DoubleClick">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
+                                        <DataGridTextColumn Header="View Name" Binding="{Binding Name}" Width="250"/>
+                                        <DataGridTextColumn Header="Usage Count" Binding="{Binding UsageCount}" Width="120"/>
+                                        <DataGridTextColumn Header="Statements" Binding="{Binding StatementsText}" Width="*"/>
+                                        <DataGridTextColumn Header="Verified" Binding="{Binding VerifiedText}" Width="80"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+                        
+                        <!-- Procedures Called -->
+                        <TabItem Header="⚙️ Procedures Called">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" x:Name="ProceduresCalledCount" Text="Loading..." 
+                                           Margin="10" FontWeight="SemiBold"/>
+                                
+                                <DataGrid Grid.Row="1" x:Name="ProceduresCalledGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          SelectionMode="Single"
+                                          GridLinesVisibility="Horizontal"
+                                          AlternatingRowBackground="{DynamicResource SystemControlBackgroundAltMediumLowBrush}"
+                                          Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                          MouseDoubleClick="DependencyItem_DoubleClick">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
+                                        <DataGridTextColumn Header="Procedure Name" Binding="{Binding Name}" Width="250"/>
+                                        <DataGridTextColumn Header="Usage Count" Binding="{Binding UsageCount}" Width="120"/>
+                                        <DataGridTextColumn Header="Statements" Binding="{Binding StatementsText}" Width="*"/>
+                                        <DataGridTextColumn Header="Verified" Binding="{Binding VerifiedText}" Width="80"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+                        
+                        <!-- Functions Called -->
+                        <TabItem Header="🔧 Functions Called">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" x:Name="FunctionsCalledCount" Text="Loading..." 
+                                           Margin="10" FontWeight="SemiBold"/>
+                                
+                                <DataGrid Grid.Row="1" x:Name="FunctionsCalledGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          SelectionMode="Single"
+                                          GridLinesVisibility="Horizontal"
+                                          AlternatingRowBackground="{DynamicResource SystemControlBackgroundAltMediumLowBrush}"
+                                          Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                          MouseDoubleClick="DependencyItem_DoubleClick">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
+                                        <DataGridTextColumn Header="Function Name" Binding="{Binding Name}" Width="250"/>
+                                        <DataGridTextColumn Header="Usage Count" Binding="{Binding UsageCount}" Width="120"/>
+                                        <DataGridTextColumn Header="Statements" Binding="{Binding StatementsText}" Width="*"/>
+                                        <DataGridTextColumn Header="Verified" Binding="{Binding VerifiedText}" Width="80"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Close Button -->

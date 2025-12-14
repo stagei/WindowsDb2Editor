@@ -1,0 +1,632 @@
+{
+  "schema": "ALL",
+  "totalTables": 78,
+  "limitApplied": 78,
+  "metrics": [
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "rowsRead": 834736,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUMNS",
+      "rowsRead": 735480,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLES",
+      "rowsRead": 80273,
+      "rowsInserted": 0,
+      "rowsUpdated": 111,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINES",
+      "rowsRead": 78538,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLAN",
+      "rowsRead": 11281,
+      "rowsInserted": 0,
+      "rowsUpdated": 14,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATATYPES",
+      "rowsRead": 10800,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTOTYPE",
+      "rowsRead": 3608,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWS",
+      "rowsRead": 3327,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDBAUTH",
+      "rowsRead": 2065,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSRELS",
+      "rowsRead": 1479,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMATA",
+      "rowsRead": 382,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSKEYCOLUSE",
+      "rowsRead": 242,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTRIGGERS",
+      "rowsRead": 222,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXES",
+      "rowsRead": 90,
+      "rowsInserted": 0,
+      "rowsUpdated": 126,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLESPACES",
+      "rowsRead": 160,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLANDEP",
+      "rowsRead": 64,
+      "rowsInserted": 14,
+      "rowsUpdated": 0,
+      "rowsDeleted": 64
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECTION",
+      "rowsRead": 96,
+      "rowsInserted": 6,
+      "rowsUpdated": 0,
+      "rowsDeleted": 32
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLEAUTH",
+      "rowsRead": 128,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEUSE",
+      "rowsRead": 73,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEBINS",
+      "rowsRead": 40,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLES",
+      "rowsRead": 27,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "ASK",
+      "tableName": "VASK_KUNDER",
+      "rowsRead": 15,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVICECLASSES",
+      "rowsRead": 14,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWDEP",
+      "rowsRead": 10,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTMT",
+      "rowsRead": 10,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVERSIONS",
+      "rowsRead": 10,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVARIABLES",
+      "rowsRead": 5,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADS",
+      "rowsRead": 4,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSERAUTH",
+      "rowsRead": 3,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNODEGROUPS",
+      "rowsRead": 2,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSATTRIBUTES",
+      "rowsRead": 2,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTS",
+      "rowsRead": 2,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADAUTH",
+      "rowsRead": 2,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABAUTH",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTMONITORS",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSURROGATEAUTHIDS",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTATTRIBUTES",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSES",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONS",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONSETS",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTHRESHOLDS",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATES",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITPOLICIES",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMAAUTH",
+      "rowsRead": 1,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESERVED",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DIRECTORY",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABCONST",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCHECKS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLCHECKS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDEPENDENCIES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLPROPERTIES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXCOLUSE",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLOPTIONS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSEQUENCES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVERS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPROPERTIES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOMMENTS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCODEPROPERTIES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPERIODS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTOGROUPS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSAGELISTS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITEXCEPTIONS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTENANTS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJOBS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTASKS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLLATIONS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADCONNATTR",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITUSE",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMODULES",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESOURCE_TABLE",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_REMARKS",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "PROFILE_TABLE",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "DBM",
+      "tableName": "AD_BRUKER",
+      "rowsRead": 0,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    }
+  ],
+  "retrievedAt": "2025-12-14T18:46:49.8300529+01:00"
+}

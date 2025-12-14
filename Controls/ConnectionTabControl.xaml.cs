@@ -30,6 +30,7 @@ public partial class ConnectionTabControl : UserControl
     private ObjectBrowserService? _objectBrowserService;
     private UserAccessLevel _userAccessLevel = UserAccessLevel.Standard;
     private readonly IntellisenseService _intellisenseService;
+    private IntelliSenseManager? _newIntelliSenseManager; // New IntelliSense system
     private CompletionWindow? _completionWindow;
     
     // Pagination state
@@ -583,10 +584,43 @@ public partial class ConnectionTabControl : UserControl
     /// <summary>
     /// Show intellisense completion window
     /// </summary>
+    /// <summary>
+    /// Initialize new IntelliSense system
+    /// </summary>
+    private async Task InitializeIntelliSenseAsync()
+    {
+        try
+        {
+            Logger.Debug("Initializing new IntelliSense system");
+            
+            _newIntelliSenseManager = new IntelliSenseManager();
+            _newIntelliSenseManager.RegisterProvider("DB2", new Db2IntelliSenseProvider());
+            
+            // Detect DB2 version (default to 12.1 for now)
+            var dbVersion = "12.1";
+            
+            // Initialize provider with metadata
+            await _newIntelliSenseManager.SetActiveProviderAsync("DB2", dbVersion, _connectionManager);
+            
+            Logger.Info("IntelliSense system initialized successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to initialize IntelliSense");
+        }
+    }
+    
     private void ShowCompletionWindow()
     {
         try
         {
+            // Use new IntelliSense if available, fallback to old
+            if (_newIntelliSenseManager != null)
+            {
+                ShowNewCompletionWindow();
+                return;
+            }
+            
             var currentWord = GetCurrentWord();
             if (string.IsNullOrWhiteSpace(currentWord))
                 return;
@@ -616,6 +650,48 @@ public partial class ConnectionTabControl : UserControl
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to show completion window");
+        }
+    }
+    
+    /// <summary>
+    /// Show new IntelliSense completion window
+    /// </summary>
+    private void ShowNewCompletionWindow()
+    {
+        try
+        {
+            if (_completionWindow != null)
+                return;
+            
+            Logger.Debug("Showing new IntelliSense completion window");
+            
+            var completions = _newIntelliSenseManager?.GetCompletions(
+                SqlEditor.Text,
+                SqlEditor.CaretOffset,
+                _connectionManager);
+            
+            if (completions == null || completions.Count == 0)
+            {
+                Logger.Debug("No completions available");
+                return;
+            }
+            
+            _completionWindow = new CompletionWindow(SqlEditor.TextArea);
+            var data = _completionWindow.CompletionList.CompletionData;
+            
+            foreach (var completion in completions)
+            {
+                data.Add(completion);
+            }
+            
+            _completionWindow.Closed += (s, args) => _completionWindow = null;
+            _completionWindow.Show();
+            
+            Logger.Info("New IntelliSense window shown with {Count} completions", completions.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show new IntelliSense completion window");
         }
     }
     
@@ -743,6 +819,9 @@ public partial class ConnectionTabControl : UserControl
             
             // Feature #2: Update commit/rollback button visibility
             UpdateTransactionButtonsVisibility();
+            
+            // Initialize new IntelliSense system
+            await InitializeIntelliSenseAsync();
 
             // Load database objects
             await LoadDatabaseObjectsAsync();

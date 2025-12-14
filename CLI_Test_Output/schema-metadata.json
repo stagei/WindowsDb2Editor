@@ -1,0 +1,16 @@
+{
+  "schema": "INL",
+  "objectCounts": {
+    "TABLES": 15,
+    "VIEWS": 0,
+    "PROCEDURES": 0,
+    "FUNCTIONS": 0,
+    "TRIGGERS": 5,
+    "INDEXES": 5
+  },
+  "approximateSize": {
+    "totalPages": 21297,
+    "totalRows": 833627
+  },
+  "retrievedAt": "2025-12-14T18:46:42.1457157+01:00"
+}

@@ -9,6 +9,7 @@ using IBM.Data.Db2;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -49,6 +50,7 @@ public partial class PackageDetailsDialog : Window
 
         LoadPackageDetails();
         _ = LoadStatementsAsync();
+        _ = LoadDependenciesAsync();
     }
     
     /// <summary>
@@ -65,6 +67,7 @@ public partial class PackageDetailsDialog : Window
         {
             "properties" or "props" => PropertiesTab,
             "statements" or "sql-statements" or "sql" => StatementsTab,
+            "dependencies" or "deps" => DependenciesTab,
             _ => null
         };
         
@@ -231,6 +234,101 @@ public partial class PackageDetailsDialog : Window
     {
         // Double-click on a statement row opens the full viewer
         ViewFullStatement_Click(sender, new RoutedEventArgs());
+    }
+    
+    /// <summary>
+    /// Load package dependencies using PackageDependencyAnalyzer
+    /// </summary>
+    private async Task LoadDependenciesAsync()
+    {
+        Logger.Info("Loading dependencies for package: {Schema}.{Package}", _package.PackageSchema, _package.PackageName);
+        
+        try
+        {
+            TablesUsedCount.Text = "⏳ Analyzing dependencies...";
+            ViewsUsedCount.Text = "⏳ Analyzing dependencies...";
+            ProceduresCalledCount.Text = "⏳ Analyzing dependencies...";
+            FunctionsCalledCount.Text = "⏳ Analyzing dependencies...";
+            
+            var analyzer = new PackageDependencyAnalyzer();
+            var dependencies = await analyzer.AnalyzeDependenciesAsync(
+                _connectionManager,
+                _package.PackageSchema,
+                _package.PackageName);
+            
+            // Populate Tables Used
+            var tablesData = dependencies.TablesUsed.Select(t => new
+            {
+                t.Schema,
+                t.Name,
+                t.UsageCount,
+                StatementsText = string.Join(", ", t.StatementsUsedIn.Take(10)),
+                VerifiedText = t.Verified ? "✅ Yes" : "❌ No"
+            }).ToList();
+            
+            TablesUsedGrid.ItemsSource = tablesData;
+            TablesUsedCount.Text = $"📋 {tablesData.Count} table(s) used";
+            
+            // Populate Views Used
+            var viewsData = dependencies.ViewsUsed.Select(v => new
+            {
+                v.Schema,
+                v.Name,
+                v.UsageCount,
+                StatementsText = string.Join(", ", v.StatementsUsedIn.Take(10)),
+                VerifiedText = v.Verified ? "✅ Yes" : "❌ No"
+            }).ToList();
+            
+            ViewsUsedGrid.ItemsSource = viewsData;
+            ViewsUsedCount.Text = $"👁️ {viewsData.Count} view(s) used";
+            
+            // Populate Procedures Called
+            var proceduresData = dependencies.ProceduresCalled.Select(p => new
+            {
+                p.Schema,
+                p.Name,
+                p.UsageCount,
+                StatementsText = string.Join(", ", p.StatementsUsedIn.Take(10)),
+                VerifiedText = p.Verified ? "✅ Yes" : "❌ No"
+            }).ToList();
+            
+            ProceduresCalledGrid.ItemsSource = proceduresData;
+            ProceduresCalledCount.Text = $"⚙️ {proceduresData.Count} procedure(s) called";
+            
+            // Populate Functions Called
+            var functionsData = dependencies.FunctionsCalled.Select(f => new
+            {
+                f.Schema,
+                f.Name,
+                f.UsageCount,
+                StatementsText = string.Join(", ", f.StatementsUsedIn.Take(10)),
+                VerifiedText = f.Verified ? "✅ Yes" : "❌ No"
+            }).ToList();
+            
+            FunctionsCalledGrid.ItemsSource = functionsData;
+            FunctionsCalledCount.Text = $"🔧 {functionsData.Count} function(s) called";
+            
+            Logger.Info("Dependencies loaded successfully: {Tables} tables, {Views} views, {Procs} procedures, {Funcs} functions",
+                       tablesData.Count, viewsData.Count, proceduresData.Count, functionsData.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load package dependencies");
+            TablesUsedCount.Text = "❌ Error loading dependencies";
+            ViewsUsedCount.Text = "❌ Error loading dependencies";
+            ProceduresCalledCount.Text = "❌ Error loading dependencies";
+            FunctionsCalledCount.Text = "❌ Error loading dependencies";
+            MessageBox.Show($"Failed to load dependencies: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Handle double-click on dependency item (navigate to object)
+    /// </summary>
+    private void DependencyItem_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Future enhancement: Navigate to table/view/procedure details
+        Logger.Debug("Dependency item double-clicked");
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)

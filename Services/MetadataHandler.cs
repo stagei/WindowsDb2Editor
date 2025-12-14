@@ -1,18 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
 /// Centralized handler for all ConfigFiles-based metadata.
 /// Loads SQL statements, UI text, and provider information at startup.
+/// Implements IMetadataProvider for provider-agnostic architecture.
 /// </summary>
-public class MetadataHandler
+public class MetadataHandler : IMetadataProvider
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly string _configFilesPath;
@@ -356,6 +360,89 @@ public class MetadataHandler
         }
         
         Logger.Info("Language changed successfully");
+    }
+    
+    // ========== IMetadataProvider Implementation ==========
+    
+    private string _currentProvider = "DB2";
+    private string _currentVersion = "12.1";
+    private Data.DB2ConnectionManager? _connectionManager;
+    
+    public void SetConnectionManager(Data.DB2ConnectionManager connectionManager)
+    {
+        _connectionManager = connectionManager;
+        _currentProvider = "DB2";
+        _currentVersion = "12.1";
+    }
+    
+    public string GetStatement(string statementName)
+    {
+        return GetQuery(_currentProvider, _currentVersion, statementName);
+    }
+    
+    public string GetStatement(string statementName, string provider, string version)
+    {
+        return GetQuery(provider, version, statementName);
+    }
+    
+    public async Task<DataTable> ExecuteMetadataQueryAsync(string statementName, Dictionary<string, object> parameters)
+    {
+        if (_connectionManager == null)
+        {
+            throw new InvalidOperationException("Connection manager not set");
+        }
+        
+        var sql = GetStatement(statementName);
+        
+        foreach (var param in parameters)
+        {
+            sql = sql.Replace("?", $"'{param.Value}'", 1);
+        }
+        
+        return await _connectionManager.ExecuteQueryAsync(sql);
+    }
+    
+    public async Task<object?> ExecuteScalarAsync(string statementName, Dictionary<string, object> parameters)
+    {
+        if (_connectionManager == null)
+        {
+            throw new InvalidOperationException("Connection manager not set");
+        }
+        
+        var sql = GetStatement(statementName);
+        
+        foreach (var param in parameters)
+        {
+            sql = sql.Replace("?", $"'{param.Value}'", 1);
+        }
+        
+        using var command = _connectionManager.CreateCommand(sql);
+        return await command.ExecuteScalarAsync();
+    }
+    
+    string IMetadataProvider.GetText(string key)
+    {
+        return GetText(_currentProvider, _currentVersion, key);
+    }
+    
+    public string GetCurrentProvider()
+    {
+        return _currentProvider;
+    }
+    
+    public string GetCurrentVersion()
+    {
+        return _currentVersion;
+    }
+    
+    public bool IsFeatureSupported(string featureName)
+    {
+        return true;
+    }
+    
+    List<string> IMetadataProvider.GetSupportedProviders()
+    {
+        return GetSupportedProviders().Select(p => p.ProviderCode).ToList();
     }
 }
 

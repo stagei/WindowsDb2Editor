@@ -1,0 +1,24 @@
+{
+  "schema": "INL",
+  "tableCount": 15,
+  "tables": [
+    "BILAGNR",
+    "FASTE_LISTE",
+    "FASTE_TRANS",
+    "FIRMA",
+    "KONTO",
+    "KONTOTYPE",
+    "KUNDEKONTO",
+    "KUNDEKONTO_TEST",
+    "KUNDEKTO_M_FEIL_ORGNR",
+    "MKK_AVSETNING",
+    "RENTESATSER",
+    "TRANSREG",
+    "TRANSREG_TEST",
+    "TRANSTYPE",
+    "UTBET_MK"
+  ],
+  "note": "Complete DDL export requires calling table-ddl for each table individually",
+  "recommendation": "Use db2look utility or GUI Migration Assistant for full schema DDL export",
+  "retrievedAt": "2025-12-14T18:48:33.2111988+01:00"
+}

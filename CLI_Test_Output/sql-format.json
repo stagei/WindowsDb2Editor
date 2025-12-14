@@ -1,0 +1,7 @@
+{
+  "inputLength": 36,
+  "formattedSql": "SELECT *\nFROM INL.BILAGNR\nWHERE ID=1",
+  "formattedLength": 36,
+  "note": "Basic formatting applied - use SqlFormatterService for advanced formatting",
+  "retrievedAt": "2025-12-14T18:48:25.5693532+01:00"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "INL",
+  "tableCount": 15,
+  "totalRows": 833627,
+  "totalDataPages": 21297,
+  "totalIndexPages": 22046,
+  "totalSizeMB": 169.30859375000,
+  "retrievedAt": "2025-12-14T18:48:09.5303882+01:00"
+}

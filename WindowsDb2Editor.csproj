@@ -47,7 +47,7 @@
     <PackageReference Include="NLog.Extensions.Logging" Version="6.0.6" />
     <PackageReference Include="NLog.Schema" Version="6.0.6" />
     <PackageReference Include="PoorMansTSQLFormatter" Version="1.4.3.1" />
-    <PackageReference Include="SqlMermaidErdTools" Version="0.2.8" />
+    <PackageReference Include="SqlMermaidErdTools" Version="0.3.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,19 +70,8 @@
     <None Update="ConfigFiles\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <!-- Copy Python scripts from project folder (more reliable than NuGet) -->
-    <None Update="PythonScripts\*.py">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   
-  <!-- Copy SqlMermaidErdTools Python scripts to output (fallback from NuGet) -->
-  <Target Name="CopySqlMermaidScripts" AfterTargets="Build">
-    <ItemGroup>
-      <MermaidScripts Include="$(NuGetPackageRoot)sqlmermaiderdtools\0.2.8\scripts\*.py" />
-    </ItemGroup>
-    <Copy SourceFiles="@(MermaidScripts)" DestinationFolder="$(OutputPath)scripts" SkipUnchangedFiles="true" />
-    <Message Text="Copied Python scripts from SqlMermaidErdTools to $(OutputPath)scripts" Importance="high" />
-  </Target>
+  <!-- SqlMermaidErdTools v0.3.1+ auto-deploys Python scripts via build targets -->
 
 </Project>

@@ -21,7 +21,7 @@
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
     
     <!-- SqlMermaidErdTools for integration tests -->
-    <PackageReference Include="SqlMermaidErdTools" Version="0.2.8" />
+    <PackageReference Include="SqlMermaidErdTools" Version="0.3.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,212 @@
+{
+  "schema": "ALL",
+  "totalTables": 138,
+  "limitApplied": 20,
+  "totalRowsInSample": 1694675,
+  "totalDataPages": 65458,
+  "approximateSizeMB": 255.6953125,
+  "tables": [
+    {
+      "schema": "LOG",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 358059,
+      "dataPages": 22390,
+      "freePages": 22390,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-28T16:00:02.2",
+      "approximateSizeMB": 87.4609375
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "rowCount": 653934,
+      "dataPages": 13967,
+      "freePages": 14626,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-28T16:00:04.567",
+      "approximateSizeMB": 54.55859375
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUNDER",
+      "rowCount": 32044,
+      "dataPages": 4449,
+      "freePages": 4449,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-07-12T17:34:26.865",
+      "approximateSizeMB": 17.37890625
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_FZLBAL",
+      "rowCount": 39807,
+      "dataPages": 4426,
+      "freePages": 4426,
+      "overflowPages": 0,
+      "lastStatsTime": "2019-03-17T17:24:47.722",
+      "approximateSizeMB": 17.2890625
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 52174,
+      "dataPages": 3542,
+      "freePages": 3542,
+      "overflowPages": 14,
+      "lastStatsTime": "2025-09-13T18:57:28.103",
+      "approximateSizeMB": 13.8359375
+    },
+    {
+      "schema": "DBM",
+      "tableName": "FK_LOG",
+      "rowCount": 23674,
+      "dataPages": 2959,
+      "freePages": 2959,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-07-26T16:00:03.968",
+      "approximateSizeMB": 11.55859375
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZACHOL",
+      "rowCount": 39835,
+      "dataPages": 2491,
+      "freePages": 2491,
+      "overflowPages": 0,
+      "lastStatsTime": "2019-03-17T17:24:49.003",
+      "approximateSizeMB": 9.73046875
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "rowCount": 35005,
+      "dataPages": 2066,
+      "freePages": 2066,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-07-12T16:00:07.168",
+      "approximateSizeMB": 8.0703125
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDIST",
+      "rowCount": 76980,
+      "dataPages": 1542,
+      "freePages": 1542,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-08T23:19:18.399",
+      "approximateSizeMB": 6.0234375
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZCUSAC",
+      "rowCount": 39835,
+      "dataPages": 1477,
+      "freePages": 1477,
+      "overflowPages": 0,
+      "lastStatsTime": "2019-03-17T17:24:49.316",
+      "approximateSizeMB": 5.76953125
+    },
+    {
+      "schema": "DBM",
+      "tableName": "SQLFEIL",
+      "rowCount": 15325,
+      "dataPages": 1395,
+      "freePages": 1395,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-21T16:00:03.589",
+      "approximateSizeMB": 5.44921875
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "rowCount": 52163,
+      "dataPages": 1183,
+      "freePages": 1272,
+      "overflowPages": 12,
+      "lastStatsTime": "2025-06-21T16:00:03.027",
+      "approximateSizeMB": 4.62109375
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUN_ADR2",
+      "rowCount": 199794,
+      "dataPages": 908,
+      "freePages": 908,
+      "overflowPages": 0,
+      "lastStatsTime": "2019-03-17T17:24:47.035",
+      "approximateSizeMB": 3.546875
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPARMS",
+      "rowCount": 14725,
+      "dataPages": 760,
+      "freePages": 773,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-08T23:19:07.164",
+      "approximateSizeMB": 2.96875
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUMNS",
+      "rowCount": 8851,
+      "dataPages": 581,
+      "freePages": 594,
+      "overflowPages": 9,
+      "lastStatsTime": "2025-06-21T16:00:37.072",
+      "approximateSizeMB": 2.26953125
+    },
+    {
+      "schema": "INL",
+      "tableName": "MKK_AVSETNING",
+      "rowCount": 32044,
+      "dataPages": 412,
+      "freePages": 412,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-07-19T16:00:03.385",
+      "approximateSizeMB": 1.609375
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTMT",
+      "rowCount": 8993,
+      "dataPages": 298,
+      "freePages": 298,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-21T16:00:09.365",
+      "approximateSizeMB": 1.1640625
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECTION",
+      "rowCount": 8993,
+      "dataPages": 260,
+      "freePages": 260,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-21T16:00:04.322",
+      "approximateSizeMB": 1.015625
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINES",
+      "rowCount": 1416,
+      "dataPages": 198,
+      "freePages": 198,
+      "overflowPages": 0,
+      "lastStatsTime": "2025-06-21T16:00:18.124",
+      "approximateSizeMB": 0.7734375
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLAN",
+      "rowCount": 1024,
+      "dataPages": 154,
+      "freePages": 154,
+      "overflowPages": 14,
+      "lastStatsTime": "2025-06-21T16:00:07.253",
+      "approximateSizeMB": 0.6015625
+    }
+  ],
+  "note": "Load metrics based on SYSCAT.TABLES statistics - may not reflect real-time activity",
+  "retrievedAt": "2025-12-14T18:46:52.1640095+01:00"
+}

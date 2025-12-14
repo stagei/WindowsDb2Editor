@@ -1,0 +1,13 @@
+{
+  "schema": "INL",
+  "tableCount": 3,
+  "tables": [
+    "INL.BILAGNR",
+    "INL.FASTE_LISTE",
+    "INL.FASTE_TRANS"
+  ],
+  "mermaidDiagram": "erDiagram\r\n    BILAGNR {\r\n        decimal FIRMA PK\r\n        decimal FIRMA PK\r\n        decimal AAR PK\r\n        decimal SISTE_BILAGNR \u0022NOT NULL\u0022\r\n        timestamp TIDSPUNKT \u0022NOT NULL\u0022\r\n        char BRUKERID \u0022NOT NULL\u0022\r\n    }\r\n\r\n    FASTE_LISTE {\r\n        decimal FIRMA PK\r\n        decimal FIRMA PK\r\n        decimal FIRMA PK\r\n        char LISTETYPE PK\r\n        char LISTENAVN \u0022NOT NULL\u0022\r\n        decimal TRANSTYPE PK\r\n        timestamp TIDSPUNKT \u0022NOT NULL\u0022\r\n        char BRUKERID \u0022NOT NULL\u0022\r\n    }\r\n\r\n    FASTE_TRANS {\r\n        decimal FIRMA PK\r\n        decimal FIRMA PK\r\n        decimal FIRMA PK\r\n        char LISTETYPE PK\r\n        char LISTETYPE PK\r\n        decimal LINJENR PK\r\n        decimal KUNDEKONTO PK\r\n        decimal KONTOTYPE PK\r\n        decimal BELOP \u0022NOT NULL\u0022\r\n        timestamp TIDSPUNKT \u0022NOT NULL\u0022\r\n        char BRUKERID \u0022NOT NULL\u0022\r\n    }\r\n\r\n    FIRMA ||--o{ BILAGNR : FIRMA\r\n    FIRMA ||--o{ FASTE_LISTE : FIRMA\r\n    TRANSTYPE ||--o{ FASTE_LISTE : FIRMATRANSTYPE\r\n    KONTO ||--o{ FASTE_TRANS : FIRMAKUNDEKONTOKONTOTYPE\r\n    FASTE_LISTE ||--o{ FASTE_TRANS : FIRMALISTETYPE",
+  "diagramLength": 1087,
+  "note": "Use this diagram in MermaidDesignerWindow or export",
+  "retrievedAt": "2025-12-14T18:47:48.669367+01:00"
+}

@@ -1,0 +1,304 @@
+{
+  "schema": "INL",
+  "tableName": "BILAGNR",
+  "rowCount": 41,
+  "limitApplied": 100,
+  "columns": [
+    "FIRMA",
+    "AAR",
+    "SISTE_BILAGNR",
+    "TIDSPUNKT",
+    "BRUKERID"
+  ],
+  "data": [
+    {
+      "FIRMA": 2054,
+      "AAR": 2001,
+      "SISTE_BILAGNR": 500160,
+      "TIDSPUNKT": "2001-12-01T00:00:00",
+      "BRUKERID": "A70     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2002,
+      "SISTE_BILAGNR": 502872,
+      "TIDSPUNKT": "2002-01-10T12:15:35.181001",
+      "BRUKERID": "ALK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2003,
+      "SISTE_BILAGNR": 504845,
+      "TIDSPUNKT": "2003-01-09T14:59:19.031001",
+      "BRUKERID": "ALK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2004,
+      "SISTE_BILAGNR": 506680,
+      "TIDSPUNKT": "2004-01-12T14:34:58.416",
+      "BRUKERID": "ALK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2005,
+      "SISTE_BILAGNR": 509553,
+      "TIDSPUNKT": "2005-01-17T09:41:19.042",
+      "BRUKERID": "KAN     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2006,
+      "SISTE_BILAGNR": 512552,
+      "TIDSPUNKT": "2006-01-19T08:51:04.003",
+      "BRUKERID": "KAN     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2007,
+      "SISTE_BILAGNR": 514337,
+      "TIDSPUNKT": "2007-01-11T08:52:35.865",
+      "BRUKERID": "YKL     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2008,
+      "SISTE_BILAGNR": 520884,
+      "TIDSPUNKT": "2008-01-08T12:43:01.855",
+      "BRUKERID": "KME     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2009,
+      "SISTE_BILAGNR": 602457,
+      "TIDSPUNKT": "2009-01-13T10:46:13.349",
+      "BRUKERID": "KME     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2010,
+      "SISTE_BILAGNR": 604944,
+      "TIDSPUNKT": "2010-01-12T08:10:43.326",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2011,
+      "SISTE_BILAGNR": 612111,
+      "TIDSPUNKT": "2011-01-07T08:49:31.784",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2012,
+      "SISTE_BILAGNR": 617237,
+      "TIDSPUNKT": "2012-01-05T09:47:49.172",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2010,
+      "SISTE_BILAGNR": 100001,
+      "TIDSPUNKT": "2010-12-31T08:00:36.013002",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2011,
+      "SISTE_BILAGNR": 100163,
+      "TIDSPUNKT": "2011-12-31T08:00:36.013002",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2012,
+      "SISTE_BILAGNR": 110172,
+      "TIDSPUNKT": "2012-01-17T08:00:36.013002",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2013,
+      "SISTE_BILAGNR": 622303,
+      "TIDSPUNKT": "2013-01-09T13:09:21.242",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2013,
+      "SISTE_BILAGNR": 120111,
+      "TIDSPUNKT": "2013-01-09T14:53:17.145",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2014,
+      "SISTE_BILAGNR": 632381,
+      "TIDSPUNKT": "2014-01-08T14:31:54.91",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2014,
+      "SISTE_BILAGNR": 130180,
+      "TIDSPUNKT": "2014-01-08T14:32:44.143",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2015,
+      "SISTE_BILAGNR": 642489,
+      "TIDSPUNKT": "2015-01-12T08:18:25.115",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2015,
+      "SISTE_BILAGNR": 140205,
+      "TIDSPUNKT": "2015-01-12T08:19:29.519",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2016,
+      "SISTE_BILAGNR": 644781,
+      "TIDSPUNKT": "2016-01-04T13:32:17.776",
+      "BRUKERID": "FKTOBERG"
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2016,
+      "SISTE_BILAGNR": 150231,
+      "TIDSPUNKT": "2016-01-29T07:48:20.488",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2017,
+      "SISTE_BILAGNR": 651597,
+      "TIDSPUNKT": "2017-01-03T07:50:33.488",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2017,
+      "SISTE_BILAGNR": 160530,
+      "TIDSPUNKT": "2017-01-03T07:51:22.923",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2018,
+      "SISTE_BILAGNR": 670919,
+      "TIDSPUNKT": "2018-01-03T07:48:14.653",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2018,
+      "SISTE_BILAGNR": 170462,
+      "TIDSPUNKT": "2018-01-03T07:49:33.71",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2019,
+      "SISTE_BILAGNR": 180572,
+      "TIDSPUNKT": "2019-01-02T08:58:50.738",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2019,
+      "SISTE_BILAGNR": 671350,
+      "TIDSPUNKT": "2019-01-02T12:47:29.343",
+      "BRUKERID": "ASK     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2020,
+      "SISTE_BILAGNR": 681276,
+      "TIDSPUNKT": "2020-01-03T15:36:11.059",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2020,
+      "SISTE_BILAGNR": 190940,
+      "TIDSPUNKT": "2020-01-03T15:37:20.243",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2021,
+      "SISTE_BILAGNR": 682833,
+      "TIDSPUNKT": "2021-01-05T14:18:46.426",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2021,
+      "SISTE_BILAGNR": 191862,
+      "TIDSPUNKT": "2021-01-05T14:19:53.941",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2022,
+      "SISTE_BILAGNR": 684176,
+      "TIDSPUNKT": "2022-01-03T10:46:14.796",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2022,
+      "SISTE_BILAGNR": 193471,
+      "TIDSPUNKT": "2022-01-03T10:47:08.181",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2023,
+      "SISTE_BILAGNR": 685602,
+      "TIDSPUNKT": "2023-01-02T13:48:11.622",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2023,
+      "SISTE_BILAGNR": 195586,
+      "TIDSPUNKT": "2023-01-02T13:48:51.192",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2024,
+      "SISTE_BILAGNR": 687025,
+      "TIDSPUNKT": "2024-01-01T12:11:47.044",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2024,
+      "SISTE_BILAGNR": 196831,
+      "TIDSPUNKT": "2024-01-01T12:12:20.169",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 2054,
+      "AAR": 2025,
+      "SISTE_BILAGNR": 689330,
+      "TIDSPUNKT": "2025-01-01T11:29:54.863",
+      "BRUKERID": "MEH     "
+    },
+    {
+      "FIRMA": 9000,
+      "AAR": 2025,
+      "SISTE_BILAGNR": 198856,
+      "TIDSPUNKT": "2025-01-01T11:30:40.456",
+      "BRUKERID": "MEH     "
+    }
+  ],
+  "format": "JSON",
+  "retrievedAt": "2025-12-14T18:48:28.0802187+01:00"
+}

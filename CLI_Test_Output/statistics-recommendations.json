@@ -1,0 +1,2450 @@
+{
+  "schema": "ALL",
+  "staleThresholdDays": 30,
+  "totalRecommendations": 271,
+  "criticalPriority": 16,
+  "highPriority": 255,
+  "mediumPriority": 0,
+  "recommendations": [
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "HMON_COLLECTION",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.HMON_COLLECTION"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTENANTAUTH",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTENANTAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAIMODELS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSAIMODELS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUNITSOFMEASURE",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSUNITSOFMEASURE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTSIZINGS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTSIZINGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOORDINATESYSTEMS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOORDINATESYSTEMS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSPATIALREFSYS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSPATIALREFSYS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTGEOMETRYCOLUMNS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTGEOMETRYCOLUMNS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLPARTITIONSTATS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLPARTITIONSTATS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPPARTITIONSTATS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLGROUPPARTITIONSTATS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSENCRYPTIONKEYS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSENCRYPTIONKEYS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSQUALIFIERS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSQUALIFIERS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSQUALIFIEROPTIONS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSQUALIFIEROPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTCATALOGS",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEXTCATALOGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTOGROUPAUTH",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTOGROUPAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLAUTH",
+      "rowCount": -1,
+      "lastStatsTime": {},
+      "daysSinceStats": 999,
+      "priority": "CRITICAL",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSBUFFERPOOLAUTH"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSTYPE",
+      "rowCount": 8,
+      "lastStatsTime": "2004-12-03T13:54:18.348",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.TRANSTYPE"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESERVED",
+      "rowCount": 1,
+      "lastStatsTime": "2004-12-03T13:54:16.738002",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.RESERVED"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESOURCE_TABLE",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.748001",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.RESOURCE_TABLE"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "rowCount": 1,
+      "lastStatsTime": "2004-12-03T13:54:16.388001",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.FASTE_LISTE"
+    },
+    {
+      "schema": "DB2ADMIN",
+      "tableName": "EXPLAIN_INSTANCE",
+      "rowCount": 1,
+      "lastStatsTime": "2004-12-03T13:54:16.368002",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DB2ADMIN.EXPLAIN_INSTANCE"
+    },
+    {
+      "schema": "DB2ADMIN",
+      "tableName": "EXPLAIN_STATEMENT",
+      "rowCount": 2,
+      "lastStatsTime": "2004-12-03T13:54:16.378001",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DB2ADMIN.EXPLAIN_STATEMENT"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "CATALOG_DIR_X",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.368",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.CATALOG_DIR_X"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESOURCE_TABLE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.758",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.RESOURCE_TABLE_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SERVER_INFO",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.668002",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_SERVER_INFO"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "SERVER_INFO",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.758002",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.SERVER_INFO"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SQLJ_PROFILES",
+      "rowCount": 0,
+      "lastStatsTime": "2004-12-03T13:54:16.688",
+      "daysSinceStats": 7681,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_SQLJ_PROFILES"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:06.401",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RC_NODE_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_AUTH_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:06.808",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RC_NODE_AUTH_X"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "AUTHID_TABLE",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:07.98",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.AUTHID_TABLE"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "PROFILE_TABLE",
+      "rowCount": 13,
+      "lastStatsTime": "2011-01-15T16:00:16.511",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.PROFILE_TABLE"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "AUTHID_TABLE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:08.917",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.AUTHID_TABLE_X"
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "PROFILE_TABLE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:12.87",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE RDBI.PROFILE_TABLE_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJ_ACTIVITY_DTL",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:09.183",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJ_ACTIVITY_DTL"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJ_ACTIVITY_SUMM",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:08.214",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJ_ACTIVITY_SUMM"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SUBTYPE",
+      "rowCount": 42,
+      "lastStatsTime": "2011-01-15T16:00:07.573",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_SUBTYPE"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DIR_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:07.151",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OBJ_DIR_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_REM_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:06.026",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OBJ_REM_X"
+    },
+    {
+      "schema": "DBE",
+      "tableName": "OBJECT_TABLE",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:05.589",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBE.OBJECT_TABLE"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DATA_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:05.183",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OBJ_DATA_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DATA2_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:04.745",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OBJ_DATA2_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OA_SUMM_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:04.167",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OA_SUMM_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OA_DTL_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:03.386",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RAA_OA_DTL_X"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:02.948",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RC_NODE"
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_AUTH",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:01.808",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.RC_NODE_AUTH"
+    },
+    {
+      "schema": "DBE",
+      "tableName": "JOBJECT_TABLE",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:14.823",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBE.JOBJECT_TABLE"
+    },
+    {
+      "schema": "DBE",
+      "tableName": "OBJECT_TABLE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:09.745",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBE.OBJECT_TABLE_X"
+    },
+    {
+      "schema": "DBE",
+      "tableName": "JOBJECT_TABLE_X",
+      "rowCount": 0,
+      "lastStatsTime": "2011-01-15T16:00:10.152",
+      "daysSinceStats": 5447,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBE.JOBJECT_TABLE_X"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTOTYPE",
+      "rowCount": 8,
+      "lastStatsTime": "2012-12-01T16:00:01.846",
+      "daysSinceStats": 4761,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.KONTOTYPE"
+    },
+    {
+      "schema": "INL",
+      "tableName": "RENTESATSER",
+      "rowCount": 49,
+      "lastStatsTime": "2012-12-22T16:26:46.266",
+      "daysSinceStats": 4740,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.RENTESATSER"
+    },
+    {
+      "schema": "ASK",
+      "tableName": "VASK_KUNDER",
+      "rowCount": 3205,
+      "lastStatsTime": "2014-01-18T16:00:06.351",
+      "daysSinceStats": 4348,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE ASK.VASK_KUNDER"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_REMARKS",
+      "rowCount": 121,
+      "lastStatsTime": "2016-01-16T18:56:23.547",
+      "daysSinceStats": 3620,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJECT_REMARKS"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "STMG_DBSIZE_INFO",
+      "rowCount": 1,
+      "lastStatsTime": "2016-11-26T19:03:19.346001",
+      "daysSinceStats": 3305,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.STMG_DBSIZE_INFO"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "DB2LOOK_INFO",
+      "rowCount": 2,
+      "lastStatsTime": "2017-10-14T16:00:03.872",
+      "daysSinceStats": 2983,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.DB2LOOK_INFO"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG_TEST",
+      "rowCount": 2963,
+      "lastStatsTime": "2017-11-18T16:00:03.515",
+      "daysSinceStats": 2948,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.TRANSREG_TEST"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FIRMA",
+      "rowCount": 2,
+      "lastStatsTime": "2018-01-20T16:00:02.42",
+      "daysSinceStats": 2885,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.FIRMA"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DIRECTORY",
+      "rowCount": 142,
+      "lastStatsTime": "2018-05-26T19:59:35.611",
+      "daysSinceStats": 2759,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJECT_DIRECTORY"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "AM_BASE_TASK_RPTS",
+      "rowCount": 36,
+      "lastStatsTime": "2018-05-26T16:00:32.127",
+      "daysSinceStats": 2759,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.AM_BASE_TASK_RPTS"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_TRANS",
+      "rowCount": 144,
+      "lastStatsTime": "2018-08-11T19:54:36.351",
+      "daysSinceStats": 2682,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.FASTE_TRANS"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "AM_BASE_TASKS",
+      "rowCount": 4,
+      "lastStatsTime": "2018-09-01T17:59:37.357",
+      "daysSinceStats": 2661,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.AM_BASE_TASKS"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DATA",
+      "rowCount": 601,
+      "lastStatsTime": "2018-10-13T16:00:03.045",
+      "daysSinceStats": 2619,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJECT_DATA"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPROFIL",
+      "rowCount": 6,
+      "lastStatsTime": "2019-03-17T17:24:53.019001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGPROFIL"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGNIVAA",
+      "rowCount": 3,
+      "lastStatsTime": "2019-03-17T17:24:52.878001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGNIVAA"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGGRUPPE",
+      "rowCount": 4,
+      "lastStatsTime": "2019-03-17T17:24:52.785001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGGRUPPE"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFUNKSJON",
+      "rowCount": 19,
+      "lastStatsTime": "2019-03-17T17:24:52.707001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGFUNKSJON"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "AD_BRUKER",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:46.378",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.AD_BRUKER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFUNK_NIVAA",
+      "rowCount": 6,
+      "lastStatsTime": "2019-03-17T17:24:52.628001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGFUNK_NIVAA"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGGRP_AVD",
+      "rowCount": 3,
+      "lastStatsTime": "2019-03-17T17:24:52.738001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGGRP_AVD"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGMENY",
+      "rowCount": 19,
+      "lastStatsTime": "2019-03-17T17:24:52.816001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGMENY"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPROF_FUNK",
+      "rowCount": 36,
+      "lastStatsTime": "2019-03-17T17:24:52.972001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGPROF_FUNK"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_AVDTAB",
+      "rowCount": 2,
+      "lastStatsTime": "2019-03-17T17:24:53.097001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.Z_AVDTAB"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BARE_SENTRALT",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:46.832001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.BARE_SENTRALT"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TRANSPORT\u00D8R",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:53.050001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TRANSPORT\u00D8R"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_BILER",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:53.144001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.Z_BILER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_DEF",
+      "rowCount": 2,
+      "lastStatsTime": "2019-03-17T17:24:49.550001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINT_DEF"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_LOKAL",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:49.597001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINT_LOKAL"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_TYPER",
+      "rowCount": 4,
+      "lastStatsTime": "2019-03-17T17:24:49.738001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINT_TYPER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_MASKIN",
+      "rowCount": 56,
+      "lastStatsTime": "2019-03-17T17:24:49.644001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINT_MASKIN"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINTERE",
+      "rowCount": 13,
+      "lastStatsTime": "2019-03-17T17:24:49.800001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINTERE"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "QMF_RAPPORTER",
+      "rowCount": 6,
+      "lastStatsTime": "2019-03-17T17:24:49.863001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.QMF_RAPPORTER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BANKTERM_ID",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:46.535",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.BANKTERM_ID"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BANKTERM_MASKIN",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:46.738",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.BANKTERM_MASKIN"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPASSORD",
+      "rowCount": 3,
+      "lastStatsTime": "2019-03-17T17:24:52.910001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGPASSORD"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "AKTIVISER",
+      "rowCount": 2,
+      "lastStatsTime": "2019-03-17T17:24:46.472001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.AKTIVISER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "SUPERBRUKER",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:51.925",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.SUPERBRUKER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUK_GRP_PRO_H",
+      "rowCount": 48,
+      "lastStatsTime": "2019-03-17T17:24:52.113001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGBRUK_GRP_PRO_H"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUKER_HIST",
+      "rowCount": 31,
+      "lastStatsTime": "2019-03-17T17:24:52.300001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGBRUKER_HIST"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_PNRTAB_20171231",
+      "rowCount": 5823,
+      "lastStatsTime": "2019-03-17T17:24:53.488",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.Z_PNRTAB_20171231"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFAVORITTER",
+      "rowCount": 25,
+      "lastStatsTime": "2019-03-17T17:24:52.566001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGFAVORITTER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFAV_KRITERIER",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:52.519001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGFAV_KRITERIER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_SELVSTYRT",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:49.691001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.PRINT_SELVSTYRT"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUN_ADR2",
+      "rowCount": 199794,
+      "lastStatsTime": "2019-03-17T17:24:47.035",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.KUN_ADR2"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "LAGERSTED",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:47.128001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.LAGERSTED"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TEKSTER",
+      "rowCount": 37,
+      "lastStatsTime": "2019-03-17T17:24:51.972001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TEKSTER"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZACHOL",
+      "rowCount": 39835,
+      "lastStatsTime": "2019-03-17T17:24:49.003",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.M3_ZACHOL"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZCUSAC",
+      "rowCount": 39835,
+      "lastStatsTime": "2019-03-17T17:24:49.316",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.M3_ZCUSAC"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_FZLEDG",
+      "rowCount": 0,
+      "lastStatsTime": "2019-03-17T17:24:48.207001",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.M3_FZLEDG"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_FZLBAL",
+      "rowCount": 39807,
+      "lastStatsTime": "2019-03-17T17:24:47.722",
+      "daysSinceStats": 2464,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.M3_FZLBAL"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDIST",
+      "rowCount": 76980,
+      "lastStatsTime": "2025-06-08T23:19:18.399",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLDIST"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLNODES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.406",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSBUFFERPOOLNODES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHIERARCHIES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.430002",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSHIERARCHIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWRAPPERS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.536003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWRAPPERS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNAMEMAPPINGS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.580003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSNAMEMAPPINGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVEROPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.792",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSERVEROPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTRANSFORMS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.857",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTRANSFORMS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUSE",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.926",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLUSE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYBINDFILES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:04.97",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSLIBRARYBINDFILES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:17.253",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLGROUPS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPDIST",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:05.003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLGROUPDIST"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPARMS",
+      "rowCount": 14725,
+      "lastStatsTime": "2025-06-08T23:19:07.164",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINEPARMS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONSTDEP",
+      "rowCount": 55,
+      "lastStatsTime": "2025-06-08T23:19:05.32",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCONSTDEP"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-08T23:19:05.377002",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEVENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPARTITIONMAPS",
+      "rowCount": 9,
+      "lastStatsTime": "2025-06-08T23:19:05.781",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPARTITIONMAPS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-08T23:19:05.806",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSBUFFERPOOLS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.021003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSFUNCMAPOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPPARMOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.054",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSFUNCMAPPARMOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXPLOITRULES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.201",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXEXPLOITRULES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONPARMS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.272",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXEXTENSIONPARMS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.353",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXEXTENSIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONMETHODS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.417",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXEXTENSIONMETHODS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.504",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPREDICATESPECS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:06.594003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPREDICATESPECS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTYPEMAPPINGS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.664",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTYPEMAPPINGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.911",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTABOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSEROPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.954",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSUSEROPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWRAPOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.991",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWRAPOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJARCONTENTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.018003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSJARCONTENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJAROBJECTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.054",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSJAROBJECTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARIES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:07.612",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSLIBRARIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYVERSIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:07.673",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSLIBRARYVERSIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPSCOLS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:17.315",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLGROUPSCOLS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPROPERTIES",
+      "rowCount": 149,
+      "lastStatsTime": "2025-06-08T23:19:07.864003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINEPROPERTIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOMMENTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:07.91",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOMMENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXMLSTRINGS",
+      "rowCount": 35,
+      "lastStatsTime": "2025-06-08T23:19:08.111",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXMLSTRINGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXMLPATHS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.142",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXMLPATHS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTCOMPONENTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.316002",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXSROBJECTCOMPONENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTHIERARCHIES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.477",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXSROBJECTHIERARCHIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXDBMAPSHREDTREES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:08.573",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXDBMAPSHREDTREES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTUNINGINFO",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-08T23:19:08.640003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTUNINGINFO"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELCOMPONENTELEMENTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:11.093",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYLABELCOMPONENTELEMENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICIES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:11.131003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYPOLICIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICYCOMPONENTRULES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:11.253",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYPOLICYCOMPONENTRULES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELACCESS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.096",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYLABELACCESS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICYEXEMPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.18",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYPOLICYEXEMPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.367003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINEOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPARMOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:09.413003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINEPARMOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSSETS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-08T23:19:09.959003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKCLASSSETS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABCONST",
+      "rowCount": 84,
+      "lastStatsTime": "2025-06-08T23:19:14.719",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTABCONST"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATATYPES",
+      "rowCount": 81,
+      "lastStatsTime": "2025-06-08T23:19:11.372",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSDATATYPES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSATTRIBUTES",
+      "rowCount": 48,
+      "lastStatsTime": "2025-06-08T23:19:12.107",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSATTRIBUTES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTTABLES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:12.311003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEVENTTABLES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXXMLPATTERNS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:12.362",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXXMLPATTERNS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTROLS",
+      "rowCount": 5,
+      "lastStatsTime": "2025-06-08T23:19:13.4",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCONTROLS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTATEMENTTEXTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:15.177",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTATEMENTTEXTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCPREFTBSPACES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:15.252003",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSCPREFTBSPACES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUPGRADERUNSTATSTASKS",
+      "rowCount": 147,
+      "lastStatsTime": "2025-06-08T23:19:15.286",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSUPGRADERUNSTATSTASKS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETATTRS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:15.496",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSMEMBERSUBSETATTRS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSENVIRONMENT",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:15.523002",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSENVIRONMENT"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTAB",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:16.221",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEXTTAB"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTABFILEOBJ",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:16.607",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEXTTABFILEOBJ"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTABCOLS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-08T23:19:16.64",
+      "daysSinceStats": 189,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEXTTABCOLS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVERS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:32.581",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSERVERS"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUK_GRP_PROF",
+      "rowCount": 200,
+      "lastStatsTime": "2025-06-21T16:00:05.156",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGBRUK_GRP_PROF"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "SQLFEIL",
+      "rowCount": 15325,
+      "lastStatsTime": "2025-06-21T16:00:03.589",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.SQLFEIL"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_PNRTAB",
+      "rowCount": 6063,
+      "lastStatsTime": "2025-06-21T16:00:01.318",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.Z_PNRTAB"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "rowCount": 52163,
+      "lastStatsTime": "2025-06-21T16:00:03.027",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.KONTO"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "POLICY",
+      "rowCount": 5,
+      "lastStatsTime": "2025-06-21T16:00:19.373002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.POLICY"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSKEYCOLUSE",
+      "rowCount": 153,
+      "lastStatsTime": "2025-06-21T16:00:20.168002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSKEYCOLUSE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLCHECKS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:20.504002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLCHECKS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNODEGROUPDEF",
+      "rowCount": 7,
+      "lastStatsTime": "2025-06-21T16:00:20.947002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSNODEGROUPDEF"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTENANTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:00.391",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTENANTS"
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "HMON_ATM_INFO",
+      "rowCount": 271,
+      "lastStatsTime": "2025-06-21T16:00:00.844",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSTOOLS.HMON_ATM_INFO"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWDEP",
+      "rowCount": 765,
+      "lastStatsTime": "2025-06-21T16:00:10.67",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSVIEWDEP"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLANDEP",
+      "rowCount": 3564,
+      "lastStatsTime": "2025-06-21T16:00:03.962",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPLANDEP"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECTION",
+      "rowCount": 8993,
+      "lastStatsTime": "2025-06-21T16:00:04.322",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECTION"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTMT",
+      "rowCount": 8993,
+      "lastStatsTime": "2025-06-21T16:00:09.365",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTMT"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABAUTH",
+      "rowCount": 752,
+      "lastStatsTime": "2025-06-21T16:00:10.226",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTABAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXAUTH",
+      "rowCount": 105,
+      "lastStatsTime": "2025-06-21T16:00:34.345",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSRELS",
+      "rowCount": 28,
+      "lastStatsTime": "2025-06-21T16:00:34.717",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSRELS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDEPENDENCIES",
+      "rowCount": 2282,
+      "lastStatsTime": "2025-06-21T16:00:36.222",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSDEPENDENCIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLAUTH",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:36.630001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSERAUTH",
+      "rowCount": 750,
+      "lastStatsTime": "2025-06-21T16:00:11.053",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSUSERAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNODEGROUPS",
+      "rowCount": 8,
+      "lastStatsTime": "2025-06-21T16:00:37.702",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSNODEGROUPS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLPROPERTIES",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:38.733",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLPROPERTIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTBSPACEAUTH",
+      "rowCount": 37,
+      "lastStatsTime": "2025-06-21T16:00:39.077",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTBSPACEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLOPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:38.423",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLOPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPASSTHRUAUTH",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:38.062",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPASSTHRUAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSEQUENCES",
+      "rowCount": 9,
+      "lastStatsTime": "2025-06-21T16:00:35.427",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSEQUENCES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVERSIONS",
+      "rowCount": 10,
+      "lastStatsTime": "2025-06-21T16:00:35.106002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSVERSIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEAUTH",
+      "rowCount": 1791,
+      "lastStatsTime": "2025-06-21T16:00:31.279",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSEQUENCEAUTH",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:30.813",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSEQUENCEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCODEPROPERTIES",
+      "rowCount": 303,
+      "lastStatsTime": "2025-06-21T16:00:30.485",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCODEPROPERTIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:30.063001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXSROBJECTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATAPARTITIONEXPRESSION",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:29.372001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSDATAPARTITIONEXPRESSION"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:29.039",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYLABELS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSURROGATEAUTHIDS",
+      "rowCount": 9,
+      "lastStatsTime": "2025-06-21T16:00:28.016",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSURROGATEAUTHIDS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLEAUTH",
+      "rowCount": 138,
+      "lastStatsTime": "2025-06-21T16:00:06.819",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROLEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTATTRIBUTES",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:27.312",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCONTEXTATTRIBUTES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLLATIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:26.968",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLLATIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVARIABLEAUTH",
+      "rowCount": 20,
+      "lastStatsTime": "2025-06-21T16:00:26.54",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSVARIABLEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADCONNATTR",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:26.176",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKLOADCONNATTR"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADAUTH",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:25.586",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKLOADAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONSETS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:25.068",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKACTIONSETS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATES",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:24.621",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSHISTOGRAMTEMPLATES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEBINS",
+      "rowCount": 40,
+      "lastStatsTime": "2025-06-21T16:00:24.202002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSHISTOGRAMTEMPLATEBINS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEUSE",
+      "rowCount": 66,
+      "lastStatsTime": "2025-06-21T16:00:23.853001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSHISTOGRAMTEMPLATEUSE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITPOLICIES",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:23.33",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSAUDITPOLICIES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMODULEAUTH",
+      "rowCount": 54,
+      "lastStatsTime": "2025-06-21T16:00:22.896002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSMODULEAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMODULES",
+      "rowCount": 22,
+      "lastStatsTime": "2025-06-21T16:00:22.469001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSMODULES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINVALIDOBJECTS",
+      "rowCount": 16,
+      "lastStatsTime": "2025-06-21T16:00:08.938",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINVALIDOBJECTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXPARTITIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:21.451001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXPARTITIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXES",
+      "rowCount": 528,
+      "lastStatsTime": "2025-06-21T16:00:05.96",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWS",
+      "rowCount": 369,
+      "lastStatsTime": "2025-06-21T16:00:09.799",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSVIEWS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLAN",
+      "rowCount": 1024,
+      "lastStatsTime": "2025-06-21T16:00:07.253",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPLAN"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDBAUTH",
+      "rowCount": 34,
+      "lastStatsTime": "2025-06-21T16:00:04.623001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSDBAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINES",
+      "rowCount": 1416,
+      "lastStatsTime": "2025-06-21T16:00:18.124",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROUTINES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCHECKS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:17.698001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCHECKS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTMONITORS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:17.249",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSEVENTMONITORS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLESPACES",
+      "rowCount": 37,
+      "lastStatsTime": "2025-06-21T16:00:16.846001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTABLESPACES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTRIGGERS",
+      "rowCount": 20,
+      "lastStatsTime": "2025-06-21T16:00:16.379001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTRIGGERS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMATA",
+      "rowCount": 39,
+      "lastStatsTime": "2025-06-21T16:00:15.934",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSCHEMATA"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXCOLUSE",
+      "rowCount": 1269,
+      "lastStatsTime": "2025-06-21T16:00:15.595",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSINDEXCOLUSE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTASKS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:14.797001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTASKS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLES",
+      "rowCount": 27,
+      "lastStatsTime": "2025-06-21T16:00:14.019",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSROLES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:12.751",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCONTEXTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVARIABLES",
+      "rowCount": 151,
+      "lastStatsTime": "2025-06-21T16:00:12.29",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSVARIABLES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADS",
+      "rowCount": 2,
+      "lastStatsTime": "2025-06-21T16:00:11.795001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKLOADS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSES",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:11.436002",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKCLASSES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:13.101001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKACTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTHRESHOLDS",
+      "rowCount": 1,
+      "lastStatsTime": "2025-06-21T16:00:13.549",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTHRESHOLDS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITUSE",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:14.470001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSAUDITUSE"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPERIODS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:18.969",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPERIODS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSAGELISTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:22.049001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSUSAGELISTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSATTRIBUTES",
+      "rowCount": 2,
+      "lastStatsTime": "2025-06-21T16:00:27.673",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSWORKCLASSATTRIBUTES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITEXCEPTIONS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-06-21T16:00:28.545",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSAUDITEXCEPTIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLES",
+      "rowCount": 641,
+      "lastStatsTime": "2025-06-21T16:00:08.095",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSTABLES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMAAUTH",
+      "rowCount": 34,
+      "lastStatsTime": "2025-06-21T16:00:32.11",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSCHEMAAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATAPARTITIONS",
+      "rowCount": 271,
+      "lastStatsTime": "2025-06-21T16:00:32.891",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSDATAPARTITIONS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVICECLASSES",
+      "rowCount": 7,
+      "lastStatsTime": "2025-06-21T16:00:33.844001",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSERVICECLASSES"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUMNS",
+      "rowCount": 8851,
+      "lastStatsTime": "2025-06-21T16:00:37.072",
+      "daysSinceStats": 176,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLUMNS"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "rowCount": 653934,
+      "lastStatsTime": "2025-06-28T16:00:04.567",
+      "daysSinceStats": 169,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.TRANSREG"
+    },
+    {
+      "schema": "LOG",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 358059,
+      "lastStatsTime": "2025-06-28T16:00:02.2",
+      "daysSinceStats": 169,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE LOG.KUNDEKONTO"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "OPPSTART",
+      "rowCount": 45,
+      "lastStatsTime": "2025-07-12T16:00:03.518",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.OPPSTART"
+    },
+    {
+      "schema": "INL",
+      "tableName": "UTBET_MK",
+      "rowCount": 2983,
+      "lastStatsTime": "2025-07-12T16:00:04.502",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.UTBET_MK"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "rowCount": 35005,
+      "lastStatsTime": "2025-07-12T16:00:07.168",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.KUNDEKONTO_TEST"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "OVFNR",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-12T16:00:02.474",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.OVFNR"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUNDER",
+      "rowCount": 32044,
+      "lastStatsTime": "2025-07-12T17:34:26.865",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.KUNDER"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKTO_M_FEIL_ORGNR",
+      "rowCount": 2108,
+      "lastStatsTime": "2025-07-12T16:00:04.088",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.KUNDEKTO_M_FEIL_ORGNR"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUNDER_M_AKTIV_KONTO",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-12T16:00:01.455",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.KUNDER_M_AKTIV_KONTO"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "DBQA_APPLICATION_SYSTEM",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-12T16:00:00.816",
+      "daysSinceStats": 155,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.DBQA_APPLICATION_SYSTEM"
+    },
+    {
+      "schema": "INL",
+      "tableName": "MKK_AVSETNING",
+      "rowCount": 32044,
+      "lastStatsTime": "2025-07-19T16:00:03.385",
+      "daysSinceStats": 148,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.MKK_AVSETNING"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSOBJECTID",
+      "rowCount": 3013,
+      "lastStatsTime": "2025-07-19T16:14:25.475",
+      "daysSinceStats": 148,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSOBJECTID"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPPINGS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-26T19:04:26.262",
+      "daysSinceStats": 141,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSFUNCMAPPINGS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYAUTH",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-26T19:04:26.78",
+      "daysSinceStats": 141,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSLIBRARYAUTH"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "FK_LOG",
+      "rowCount": 23674,
+      "lastStatsTime": "2025-07-26T16:00:03.968",
+      "daysSinceStats": 141,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.FK_LOG"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETMEMBERS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-07-26T16:59:26.51",
+      "daysSinceStats": 141,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSMEMBERSUBSETMEMBERS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTAUTH",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-02T16:00:03.199",
+      "daysSinceStats": 134,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXSROBJECTAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELCOMPONENTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-02T17:44:25.617",
+      "daysSinceStats": 134,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSECURITYLABELCOMPONENTS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDISTPARTITIONSTATS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-09T18:29:24.697",
+      "daysSinceStats": 127,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLDISTPARTITIONSTATS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-16T16:00:03.87",
+      "daysSinceStats": 120,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSMEMBERSUBSETS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLANAUTH",
+      "rowCount": 3055,
+      "lastStatsTime": "2025-08-23T17:54:25.893",
+      "daysSinceStats": 113,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSPLANAUTH"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJOBS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-23T16:00:04.166",
+      "daysSinceStats": 113,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSJOBS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXDBMAPGRAPHS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-08-30T16:34:25.737",
+      "daysSinceStats": 106,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSXDBMAPGRAPHS"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTOGROUPS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-09-06T17:19:26.434",
+      "daysSinceStats": 99,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSSTOGROUPS"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 52174,
+      "lastStatsTime": "2025-09-13T18:57:28.103",
+      "daysSinceStats": 92,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.KUNDEKONTO"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDEPENDENCIES",
+      "rowCount": 13,
+      "lastStatsTime": "2025-09-20T18:04:46.643002",
+      "daysSinceStats": 85,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLDEPENDENCIES"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUKER",
+      "rowCount": 64,
+      "lastStatsTime": "2025-09-27T16:00:02.722",
+      "daysSinceStats": 78,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGBRUKER"
+    },
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "rowCount": 41,
+      "lastStatsTime": "2025-09-27T16:00:01.147002",
+      "daysSinceStats": 78,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE INL.BILAGNR"
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DATA2",
+      "rowCount": 0,
+      "lastStatsTime": "2025-09-27T16:00:01.812001",
+      "daysSinceStats": 78,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE Q.OBJECT_DATA2"
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPDISTCOUNTS",
+      "rowCount": 0,
+      "lastStatsTime": "2025-09-27T16:44:45.555001",
+      "daysSinceStats": 78,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE SYSIBM.SYSCOLGROUPDISTCOUNTS"
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGANALYSE",
+      "rowCount": 217,
+      "lastStatsTime": "2025-09-27T16:00:03.604001",
+      "daysSinceStats": 78,
+      "priority": "HIGH",
+      "recommendedAction": "RUNSTATS ON TABLE DBM.TILGANALYSE"
+    }
+  ],
+  "retrievedAt": "2025-12-14T18:49:03.7536918+01:00"
+}

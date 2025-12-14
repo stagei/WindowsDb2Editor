@@ -1,0 +1,110 @@
+{
+  "schema": "ALL",
+  "topN": 10,
+  "actualCount": 10,
+  "sortedBy": "DataPages DESC, RowCount DESC",
+  "topTables": [
+    {
+      "rank": 1,
+      "schema": "LOG",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 358059,
+      "dataPages": 22390,
+      "overflowPages": 0,
+      "approximateSizeMB": 87.4609375,
+      "lastStatsTime": "2025-06-28T16:00:02.2"
+    },
+    {
+      "rank": 2,
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "rowCount": 653934,
+      "dataPages": 13967,
+      "overflowPages": 0,
+      "approximateSizeMB": 54.55859375,
+      "lastStatsTime": "2025-06-28T16:00:04.567"
+    },
+    {
+      "rank": 3,
+      "schema": "DBM",
+      "tableName": "KUNDER",
+      "rowCount": 32044,
+      "dataPages": 4449,
+      "overflowPages": 0,
+      "approximateSizeMB": 17.37890625,
+      "lastStatsTime": "2025-07-12T17:34:26.865"
+    },
+    {
+      "rank": 4,
+      "schema": "DBM",
+      "tableName": "M3_FZLBAL",
+      "rowCount": 39807,
+      "dataPages": 4426,
+      "overflowPages": 0,
+      "approximateSizeMB": 17.2890625,
+      "lastStatsTime": "2019-03-17T17:24:47.722"
+    },
+    {
+      "rank": 5,
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "rowCount": 52174,
+      "dataPages": 3542,
+      "overflowPages": 14,
+      "approximateSizeMB": 13.8359375,
+      "lastStatsTime": "2025-09-13T18:57:28.103"
+    },
+    {
+      "rank": 6,
+      "schema": "DBM",
+      "tableName": "FK_LOG",
+      "rowCount": 23674,
+      "dataPages": 2959,
+      "overflowPages": 0,
+      "approximateSizeMB": 11.55859375,
+      "lastStatsTime": "2025-07-26T16:00:03.968"
+    },
+    {
+      "rank": 7,
+      "schema": "DBM",
+      "tableName": "M3_ZACHOL",
+      "rowCount": 39835,
+      "dataPages": 2491,
+      "overflowPages": 0,
+      "approximateSizeMB": 9.73046875,
+      "lastStatsTime": "2019-03-17T17:24:49.003"
+    },
+    {
+      "rank": 8,
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "rowCount": 35005,
+      "dataPages": 2066,
+      "overflowPages": 0,
+      "approximateSizeMB": 8.0703125,
+      "lastStatsTime": "2025-07-12T16:00:07.168"
+    },
+    {
+      "rank": 9,
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDIST",
+      "rowCount": 76980,
+      "dataPages": 1542,
+      "overflowPages": 0,
+      "approximateSizeMB": 6.0234375,
+      "lastStatsTime": "2025-06-08T23:19:18.399"
+    },
+    {
+      "rank": 10,
+      "schema": "DBM",
+      "tableName": "M3_ZCUSAC",
+      "rowCount": 39835,
+      "dataPages": 1477,
+      "overflowPages": 0,
+      "approximateSizeMB": 5.76953125,
+      "lastStatsTime": "2019-03-17T17:24:49.316"
+    }
+  ],
+  "note": "Activity ranked by data pages (size) - not real-time access patterns",
+  "retrievedAt": "2025-12-14T18:46:57.2350452+01:00"
+}

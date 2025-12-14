@@ -1,0 +1,1362 @@
+{
+  "schema": "ALL",
+  "tableCount": 271,
+  "tables": [
+    {
+      "schema": "ASK",
+      "tableName": "VASK_KUNDER",
+      "property": ""
+    },
+    {
+      "schema": "DB2ADMIN",
+      "tableName": "EXPLAIN_INSTANCE",
+      "property": ""
+    },
+    {
+      "schema": "DB2ADMIN",
+      "tableName": "EXPLAIN_STATEMENT",
+      "property": ""
+    },
+    {
+      "schema": "DBE",
+      "tableName": "JOBJECT_TABLE",
+      "property": ""
+    },
+    {
+      "schema": "DBE",
+      "tableName": "JOBJECT_TABLE_X",
+      "property": ""
+    },
+    {
+      "schema": "DBE",
+      "tableName": "OBJECT_TABLE",
+      "property": ""
+    },
+    {
+      "schema": "DBE",
+      "tableName": "OBJECT_TABLE_X",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "AD_BRUKER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "AKTIVISER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BANKTERM_ID",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BANKTERM_MASKIN",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "BARE_SENTRALT",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "DBQA_APPLICATION_SYSTEM",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "FK_LOG",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUN_ADR2",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUNDER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "KUNDER_M_AKTIV_KONTO",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "LAGERSTED",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_FZLBAL",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_FZLEDG",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZACHOL",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "M3_ZCUSAC",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "OPPSTART",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "OVFNR",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_DEF",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_LOKAL",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_MASKIN",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_SELVSTYRT",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINT_TYPER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "PRINTERE",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "QMF_RAPPORTER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "SQLFEIL",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "SUPERBRUKER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TEKSTER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGANALYSE",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUK_GRP_PRO_H",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUK_GRP_PROF",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUKER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGBRUKER_HIST",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFAV_KRITERIER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFAVORITTER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFUNK_NIVAA",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGFUNKSJON",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGGRP_AVD",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGGRUPPE",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGMENY",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGNIVAA",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPASSORD",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPROF_FUNK",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TILGPROFIL",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "TRANSPORT\u00D8R",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_AVDTAB",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_BILER",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_PNRTAB",
+      "property": ""
+    },
+    {
+      "schema": "DBM",
+      "tableName": "Z_PNRTAB_20171231",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_TRANS",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "FIRMA",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTOTYPE",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKTO_M_FEIL_ORGNR",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "MKK_AVSETNING",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "RENTESATSER",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG_TEST",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSTYPE",
+      "property": ""
+    },
+    {
+      "schema": "INL",
+      "tableName": "UTBET_MK",
+      "property": ""
+    },
+    {
+      "schema": "LOG",
+      "tableName": "KUNDEKONTO",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJ_ACTIVITY_DTL",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJ_ACTIVITY_SUMM",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DATA",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DATA2",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_DIRECTORY",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "OBJECT_REMARKS",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OA_DTL_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OA_SUMM_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DATA_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DATA2_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_DIR_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_OBJ_REM_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SERVER_INFO",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SQLJ_PROFILES",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RAA_SUBTYPE",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_AUTH",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_AUTH_X",
+      "property": ""
+    },
+    {
+      "schema": "Q",
+      "tableName": "RC_NODE_X",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "AUTHID_TABLE",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "AUTHID_TABLE_X",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "CATALOG_DIR_X",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "PROFILE_TABLE",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "PROFILE_TABLE_X",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESERVED",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESOURCE_TABLE",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "RESOURCE_TABLE_X",
+      "property": ""
+    },
+    {
+      "schema": "RDBI",
+      "tableName": "SERVER_INFO",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAIMODELS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSATTRIBUTES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITEXCEPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITPOLICIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSAUDITUSE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLNODES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSBUFFERPOOLS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCHECKS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCODEPROPERTIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLCHECKS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDEPENDENCIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDIST",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLDISTPARTITIONSTATS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPDIST",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPDISTCOUNTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPPARTITIONSTATS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLGROUPSCOLS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLLATIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLPARTITIONSTATS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLPROPERTIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUMNS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUSE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOMMENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONSTDEP",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTATTRIBUTES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTEXTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCONTROLS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOORDINATESYSTEMS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATAPARTITIONEXPRESSION",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATAPARTITIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDATATYPES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDBAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSDEPENDENCIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSENCRYPTIONKEYS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSENVIRONMENT",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTMONITORS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEVENTTABLES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTCATALOGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTAB",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTABCOLS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSEXTTABFILEOBJ",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPPARMOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSFUNCMAPPINGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHIERARCHIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEBINS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSHISTOGRAMTEMPLATEUSE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXCOLUSE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXPLOITRULES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONMETHODS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONPARMS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXEXTENSIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXPARTITIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINDEXXMLPATTERNS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSINVALIDOBJECTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJARCONTENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJAROBJECTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSJOBS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSKEYCOLUSE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYBINDFILES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSLIBRARYVERSIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETATTRS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETMEMBERS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMEMBERSUBSETS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMODULEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSMODULES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNAMEMAPPINGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNODEGROUPDEF",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSNODEGROUPS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSOBJECTID",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPARTITIONMAPS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPASSTHRUAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPERIODS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLAN",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLANAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPLANDEP",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSPREDICATESPECS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSQUALIFIEROPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSQUALIFIERS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSRELS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROLES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPARMOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPARMS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINEPROPERTIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSROUTINES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMAAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCHEMATA",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSCPREFTBSPACES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECTION",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELACCESS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELCOMPONENTELEMENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELCOMPONENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYLABELS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICYCOMPONENTRULES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSECURITYPOLICYEXEMPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSEQUENCEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSEQUENCES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVEROPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVERS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSERVICECLASSES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSPATIALREFSYS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTATEMENTTEXTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTGEOMETRYCOLUMNS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTMT",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTOGROUPAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTOGROUPS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSTSIZINGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSSURROGATEAUTHIDS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABCONST",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABLESPACES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTABOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTASKS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTBSPACEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTENANTAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTENANTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTHRESHOLDS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTRANSFORMS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTRIGGERS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTUNINGINFO",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSTYPEMAPPINGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUNITSOFMEASURE",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUPGRADERUNSTATSTASKS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSAGELISTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSERAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSUSEROPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVARIABLEAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVARIABLES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVERSIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWDEP",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSVIEWS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKACTIONSETS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSATTRIBUTES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKCLASSSETS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADCONNATTR",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWORKLOADS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWRAPOPTIONS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSWRAPPERS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXDBMAPGRAPHS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXDBMAPSHREDTREES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXMLPATHS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXMLSTRINGS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTAUTH",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTCOMPONENTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTHIERARCHIES",
+      "property": ""
+    },
+    {
+      "schema": "SYSIBM",
+      "tableName": "SYSXSROBJECTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "AM_BASE_TASK_RPTS",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "AM_BASE_TASKS",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "DB2LOOK_INFO",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "HMON_ATM_INFO",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "HMON_COLLECTION",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "POLICY",
+      "property": ""
+    },
+    {
+      "schema": "SYSTOOLS",
+      "tableName": "STMG_DBSIZE_INFO",
+      "property": ""
+    }
+  ],
+  "retrievedAt": "2025-12-14T18:50:11.9485616+01:00"
+}

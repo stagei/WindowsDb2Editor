@@ -1,13 +1,46 @@
 # SqlMermaidErdTools NuGet Package - Bug Report
 
+**Status**: ✅ **RESOLVED IN v0.3.1**  
 **Package**: SqlMermaidErdTools  
-**Version**: 0.2.8  
-**Severity**: CRITICAL  
-**Status**: Package is unusable without manual workarounds  
+**Version with Issue**: 0.2.8  
+**Version with Fix**: 0.3.1  
+**Reported**: December 14, 2025  
+**Resolved**: December 14, 2025 (same day!)  
+**Original Severity**: CRITICAL  
+**Resolution**: Package maintainer added proper MSBuild targets and bundled runtimes  
 
 ---
 
-## Issue Summary
+## ✅ RESOLUTION (v0.3.1)
+
+**The package maintainer has FIXED all reported issues in version 0.3.1!**
+
+### What Was Fixed
+1. ✅ **Added `build/SqlMermaidErdTools.targets`** - MSBuild target file now properly deploys Python scripts
+2. ✅ **Added `buildTransitive/` folder** - Ensures transitive dependencies get scripts too
+3. ✅ **Bundled Python runtime** - Embedded Python 3.11.7 in `/runtimes/win-x64/python/`
+4. ✅ **Bundled Node.js runtime** - Embedded Node.js in `/runtimes/win-x64/node/`
+5. ✅ **Auto-deployment working** - Scripts automatically appear in `bin/Debug/net10.0-windows/scripts/`
+
+### Verification (December 14, 2025)
+```bash
+dotnet add package SqlMermaidErdTools  # Gets v0.3.1
+dotnet build
+# ✅ Python scripts auto-deployed to bin/Debug/net10.0-windows/scripts/
+# ✅ Python runtime at bin/Debug/net10.0-windows/runtimes/win-x64/python/python.exe
+# ✅ All 4 core functions work out-of-the-box
+```
+
+### Impact
+- **Before (v0.2.8)**: Package was broken, required manual workarounds
+- **After (v0.3.1)**: Package is professional-grade, works perfectly out-of-the-box
+- **Upgrade command**: `dotnet add package SqlMermaidErdTools` (automatically gets latest)
+
+---
+
+## Original Issue Report (v0.2.8)
+
+### Issue Summary
 
 The SqlMermaidErdTools NuGet package contains Python scripts in its `/scripts/` folder, but these scripts are **not automatically deployed** to consuming projects' output directories. This causes all core functionality to fail with "Python script not found" errors.
 
