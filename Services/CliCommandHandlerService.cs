@@ -4309,5 +4309,329 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
             throw;
         }
     }
+    
+    #region Missing CLI Method Implementations
+    
+    /// <summary>
+    /// CLI: ai-explain-view - AI explanation of view purpose
+    /// </summary>
+    private async Task<object> ExplainViewWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"AI analyzing view: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT * FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{parts[0]}' AND VIEWNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return new { command = "ai-explain-view", view = args.Object, explanation = "AI analysis placeholder", timestamp = DateTime.Now };
+    }
+    
+    /// <summary>
+    /// CLI: ai-analyze-procedure - AI code analysis for procedure
+    /// </summary>
+    private async Task<object> AnalyzeProcedureWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"AI analyzing procedure: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return new { command = "ai-analyze-procedure", procedure = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
+    }
+    
+    /// <summary>
+    /// CLI: ai-analyze-function - AI code analysis for function
+    /// </summary>
+    private async Task<object> AnalyzeFunctionWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"AI analyzing function: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return new { command = "ai-analyze-function", function = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
+    }
+    
+    /// <summary>
+    /// CLI: ai-analyze-package - AI analysis of package
+    /// </summary>
+    private async Task<object> AnalyzePackageWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"AI analyzing package: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT * FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return new { command = "ai-analyze-package", package = args.Object, analysis = "AI package analysis placeholder", timestamp = DateTime.Now };
+    }
+    
+    /// <summary>
+    /// CLI: db-compare-source-only - Tables only in source
+    /// </summary>
+    private async Task<object> CompareSourceOnlyAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Finding tables only in source schema: {args.Object}...");
+        var sourceSchema = args.Object;
+        var targetSchema = args.Schema;
+        var sql = $@"
+SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'
+EXCEPT
+SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: db-compare-target-only - Tables only in target
+    /// </summary>
+    private async Task<object> CompareTargetOnlyAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Finding tables only in target schema: {args.Schema}...");
+        var sourceSchema = args.Object;
+        var targetSchema = args.Schema;
+        var sql = $@"
+SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'
+EXCEPT
+SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: db-compare-different - Tables with structural differences
+    /// </summary>
+    private async Task<object> CompareDifferentAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Finding tables with differences: {args.Object} vs {args.Schema}...");
+        // Simplified: Returns table names present in both schemas (actual diff analysis requires deeper comparison)
+        var sourceSchema = args.Object;
+        var targetSchema = args.Schema;
+        var sql = $@"
+SELECT DISTINCT t1.TABNAME
+FROM SYSCAT.TABLES t1
+INNER JOIN SYSCAT.TABLES t2 ON t1.TABNAME = t2.TABNAME
+WHERE t1.TABSCHEMA = '{sourceSchema}' AND t2.TABSCHEMA = '{targetSchema}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: db-compare-ddl - Generate ALTER statements for migration
+    /// </summary>
+    private async Task<object> CompareDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Generating migration DDL: {args.Object} → {args.Schema}...");
+        return new { 
+            command = "db-compare-ddl", 
+            sourceSchema = args.Object, 
+            targetSchema = args.Schema,
+            ddl = "-- ALTER TABLE statements placeholder\n-- Use DatabaseComparisonService for full implementation",
+            timestamp = DateTime.Now 
+        };
+    }
+    
+    /// <summary>
+    /// CLI: view-definition - Get view definition (CREATE VIEW statement)
+    /// </summary>
+    private async Task<object> GetViewDefinitionAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching view definition: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT TEXT FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{parts[0]}' AND VIEWNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: view-columns - Get view columns
+    /// </summary>
+    private async Task<object> GetViewColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching view columns: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT COLNAME, COLNO, TYPENAME, LENGTH, SCALE, NULLS, REMARKS
+FROM SYSCAT.COLUMNS
+WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'
+ORDER BY COLNO";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: view-dependencies - Get view dependencies (tables/views used)
+    /// </summary>
+    private async Task<object> GetViewDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching view dependencies: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT BTYPE AS DEPENDENCY_TYPE, BSCHEMA, BNAME
+FROM SYSCAT.TABDEP
+WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: procedure-source - Get procedure source code
+    /// </summary>
+    private async Task<object> GetProcedureSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching procedure source: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: procedure-parameters - Get procedure parameters
+    /// </summary>
+    private async Task<object> GetProcedureParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching procedure parameters: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT PARMNAME, TYPENAME, LENGTH, SCALE, PARM_MODE, ORDINAL
+FROM SYSCAT.PROCPARMS
+WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'
+ORDER BY ORDINAL";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: function-source - Get function source code
+    /// </summary>
+    private async Task<object> GetFunctionSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching function source: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: function-parameters - Get function parameters
+    /// </summary>
+    private async Task<object> GetFunctionParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching function parameters: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT PARMNAME, TYPENAME, LENGTH, SCALE, ROWTYPE, ORDINAL
+FROM SYSCAT.FUNCPARMS
+WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'
+ORDER BY ORDINAL";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: package-properties - Get package properties
+    /// </summary>
+    private async Task<object> GetPackagePropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching package properties: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT PKGSCHEMA, PKGNAME, BOUNDBY, VALID, UNIQUE_ID, ISOLATION, SQLWARN, OWNER, CREATE_TIME
+FROM SYSCAT.PACKAGES
+WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: package-statements - Get package SQL statements
+    /// </summary>
+    private async Task<object> GetPackageStatementsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching package statements: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT STMTNO, SECTNO, SEQNO, TEXT
+FROM SYSCAT.STATEMENTS
+WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'
+ORDER BY STMTNO, SEQNO";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: table-relationships - Get table relationships (FK in/out)
+    /// </summary>
+    private async Task<object> GetTableRelationshipsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching table relationships: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT CONSTNAME, TABSCHEMA, TABNAME, REFTABSCHEMA, REFTABNAME
+FROM SYSCAT.REFERENCES
+WHERE (TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}')
+   OR (REFTABSCHEMA = '{parts[0]}' AND REFTABNAME = '{parts[1]}')";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: table-sample-data - Get sample data from table (top 100 rows)
+    /// </summary>
+    private async Task<object> GetTableSampleDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching sample data: {args.Object}...");
+        var sql = $"SELECT * FROM {args.Object} FETCH FIRST 100 ROWS ONLY";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: user-properties - Get user/database authority properties
+    /// </summary>
+    private async Task<object> GetUserPropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching user properties: {args.Object}...");
+        var sql = $@"
+SELECT GRANTEE, GRANTEETYPE, DBADMAUTH, CREATETABAUTH, BINDADDAUTH, CONNECTAUTH
+FROM SYSCAT.DBAUTH
+WHERE GRANTEE = '{args.Object}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: user-privileges - Get user privileges on specific object
+    /// </summary>
+    private async Task<object> GetUserPrivilegesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching user privileges: {args.Object}...");
+        var parts = args.Object.Split('.');
+        if (parts.Length < 2)
+        {
+            return new { error = "Format: USERNAME.SCHEMA.TABLE or just USERNAME for all privileges" };
+        }
+        var username = parts[0];
+        var sql = $@"
+SELECT GRANTEE, GRANTOR, TABSCHEMA, TABNAME, SELECTAUTH, INSERTAUTH, UPDATEAUTH, DELETEAUTH
+FROM SYSCAT.TABAUTH
+WHERE GRANTEE = '{username}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    /// <summary>
+    /// CLI: object-metadata - Get generic object metadata from SYSCAT.TABLES
+    /// </summary>
+    private async Task<object> GetObjectMetadataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Fetching object metadata: {args.Object}...");
+        var parts = args.Object.Split('.');
+        var sql = $@"
+SELECT TABSCHEMA, TABNAME, TYPE, STATUS, COLCOUNT, NPAGES, FPAGES, CARD, 
+       STATS_TIME, CREATE_TIME, ALTER_TIME, INVALIDATE_TIME, OWNER
+FROM SYSCAT.TABLES
+WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
+        var result = await connectionManager.ExecuteQueryAsync(sql);
+        return result;
+    }
+    
+    #endregion
 }
 
