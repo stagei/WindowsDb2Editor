@@ -1143,6 +1143,104 @@
       "parameters": ["PKGSCHEMA", "PKGNAME"],
       "returns": "Package SQL statements",
       "source": "PackageContextBuilder:GetPackageStatementsAsync"
+    },
+    "GetViewInfo_Full": {
+      "sql": "SELECT TRIM(VIEWSCHEMA) AS VIEWSCHEMA, TRIM(VIEWNAME) AS VIEWNAME, TRIM(DEFINER) AS DEFINER, TRIM(VALID) AS VALID, TRIM(READONLY) AS READONLY, TRIM(TEXT) AS TEXT FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ?",
+      "description": "Get full view metadata including SQL text. Used by CLI command 'ai-explain-view'.",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "Full view metadata",
+      "source": "CliCommandHandlerService:ExplainViewWithAiAsync"
+    },
+    "GetPackageInfo_Full": {
+      "sql": "SELECT TRIM(PKGSCHEMA) AS PKGSCHEMA, TRIM(PKGNAME) AS PKGNAME, TRIM(BOUNDBY) AS BOUNDBY, TRIM(VALID) AS VALID, TRIM(UNIQUE_ID) AS UNIQUE_ID, TRIM(ISOLATION) AS ISOLATION, TRIM(SQLWARN) AS SQLWARN, TRIM(OWNER) AS OWNER, CREATE_TIME, LAST_BIND_TIME FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?",
+      "description": "Get full package metadata. Used by CLI command 'ai-analyze-package'.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Full package metadata",
+      "source": "CliCommandHandlerService:AnalyzePackageWithAiAsync"
+    },
+    "CompareSourceOnlyTables": {
+      "sql": "SELECT TRIM(TABNAME) AS TABNAME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? EXCEPT SELECT TRIM(TABNAME) AS TABNAME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ?",
+      "description": "Find tables that exist only in source schema (not in target). Used by CLI command 'db-compare-source-only'.",
+      "parameters": ["SOURCE_SCHEMA", "TARGET_SCHEMA"],
+      "returns": "Tables only in source",
+      "source": "CliCommandHandlerService:CompareSourceOnlyAsync"
+    },
+    "CompareTargetOnlyTables": {
+      "sql": "SELECT TRIM(TABNAME) AS TABNAME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? EXCEPT SELECT TRIM(TABNAME) AS TABNAME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ?",
+      "description": "Find tables that exist only in target schema (not in source). Used by CLI command 'db-compare-target-only'.",
+      "parameters": ["TARGET_SCHEMA", "SOURCE_SCHEMA"],
+      "returns": "Tables only in target",
+      "source": "CliCommandHandlerService:CompareTargetOnlyAsync"
+    },
+    "CompareCommonTables": {
+      "sql": "SELECT DISTINCT TRIM(t1.TABNAME) AS TABNAME FROM SYSCAT.TABLES t1 INNER JOIN SYSCAT.TABLES t2 ON TRIM(t1.TABNAME) = TRIM(t2.TABNAME) WHERE TRIM(t1.TABSCHEMA) = ? AND TRIM(t2.TABSCHEMA) = ?",
+      "description": "Find tables that exist in both schemas (for structural comparison). Used by CLI command 'db-compare-different'.",
+      "parameters": ["SOURCE_SCHEMA", "TARGET_SCHEMA"],
+      "returns": "Tables in both schemas",
+      "source": "CliCommandHandlerService:CompareDifferentAsync"
+    },
+    "GetViewColumns_CLI": {
+      "sql": "SELECT TRIM(COLNAME) AS COLNAME, COLNO, TRIM(TYPENAME) AS TYPENAME, LENGTH, SCALE, TRIM(NULLS) AS NULLS, TRIM(REMARKS) AS REMARKS FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get view columns for CLI output. Uses TABSCHEMA/TABNAME to access view columns. Used by CLI command 'view-columns'.",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "View column details",
+      "source": "CliCommandHandlerService:GetViewColumnsAsync"
+    },
+    "GetViewDependencies_CLI": {
+      "sql": "SELECT TRIM(BTYPE) AS DEPENDENCY_TYPE, TRIM(BSCHEMA) AS BSCHEMA, TRIM(BNAME) AS BNAME FROM SYSCAT.TABDEP WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
+      "description": "Get view dependencies (tables/views it depends on). Uses SYSCAT.TABDEP. Used by CLI command 'view-dependencies'.",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "View dependencies",
+      "source": "CliCommandHandlerService:GetViewDependenciesAsync"
+    },
+    "GetRoutineParameters_CLI": {
+      "sql": "SELECT TRIM(PARMNAME) AS PARMNAME, TRIM(TYPENAME) AS TYPENAME, LENGTH, SCALE, TRIM(ROWTYPE) AS ROWTYPE, ORDINAL FROM SYSCAT.ROUTINEPARMS WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? ORDER BY ORDINAL",
+      "description": "Get routine (procedure/function) parameters. Uses SYSCAT.ROUTINEPARMS. Used by CLI commands 'procedure-parameters' and 'function-parameters'.",
+      "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
+      "returns": "Routine parameters",
+      "source": "CliCommandHandlerService:GetProcedureParametersAsync, GetFunctionParametersAsync"
+    },
+    "GetPackageProperties_CLI": {
+      "sql": "SELECT TRIM(PKGSCHEMA) AS PKGSCHEMA, TRIM(PKGNAME) AS PKGNAME, TRIM(BOUNDBY) AS BOUNDBY, TRIM(VALID) AS VALID, TRIM(UNIQUE_ID) AS UNIQUE_ID, TRIM(ISOLATION) AS ISOLATION, TRIM(SQLWARN) AS SQLWARN, TRIM(OWNER) AS OWNER, CREATE_TIME FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?",
+      "description": "Get package properties for CLI output. Used by CLI command 'package-properties'.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package properties",
+      "source": "CliCommandHandlerService:GetPackagePropertiesAsync"
+    },
+    "GetPackageStatements_CLI": {
+      "sql": "SELECT STMTNO, SECTNO, SEQNO, TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO, SEQNO",
+      "description": "Get package SQL statements for CLI output. Uses SYSCAT.STATEMENTS. Used by CLI command 'package-statements'.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package statements with section/sequence numbers",
+      "source": "CliCommandHandlerService:GetPackageStatementsAsync"
+    },
+    "GetTableRelationships_CLI": {
+      "sql": "SELECT TRIM(CONSTNAME) AS CONSTNAME, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TRIM(REFTABSCHEMA) AS REFTABSCHEMA, TRIM(REFTABNAME) AS REFTABNAME FROM SYSCAT.REFERENCES WHERE (TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?) OR (TRIM(REFTABSCHEMA) = ? AND TRIM(REFTABNAME) = ?)",
+      "description": "Get table relationships (both incoming and outgoing foreign keys). Used by CLI command 'table-relationships'.",
+      "parameters": ["TABSCHEMA", "TABNAME", "REFTABSCHEMA", "REFTABNAME"],
+      "returns": "Table relationships",
+      "source": "CliCommandHandlerService:GetTableRelationshipsAsync"
+    },
+    "GetUserProperties_CLI": {
+      "sql": "SELECT TRIM(GRANTEE) AS GRANTEE, TRIM(GRANTEETYPE) AS GRANTEETYPE, DBADMAUTH, CREATETABAUTH, BINDADDAUTH, CONNECTAUTH FROM SYSCAT.DBAUTH WHERE TRIM(GRANTEE) = ?",
+      "description": "Get user database authorities. Used by CLI command 'user-properties'.",
+      "parameters": ["USERNAME"],
+      "returns": "User properties and authorities",
+      "source": "CliCommandHandlerService:GetUserPropertiesAsync"
+    },
+    "GetUserPrivileges_CLI": {
+      "sql": "SELECT TRIM(GRANTEE) AS GRANTEE, TRIM(GRANTOR) AS GRANTOR, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, SELECTAUTH, INSERTAUTH, UPDATEAUTH, DELETEAUTH FROM SYSCAT.TABAUTH WHERE TRIM(GRANTEE) = ?",
+      "description": "Get user table privileges. Used by CLI command 'user-privileges'.",
+      "parameters": ["USERNAME"],
+      "returns": "User table privileges",
+      "source": "CliCommandHandlerService:GetUserPrivilegesAsync"
+    },
+    "GetObjectMetadata_CLI": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TRIM(TYPE) AS TYPE, TRIM(STATUS) AS STATUS, COLCOUNT, NPAGES, FPAGES, CARD, STATS_TIME, CREATE_TIME, ALTER_TIME, INVALIDATE_TIME, TRIM(OWNER) AS OWNER FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
+      "description": "Get generic object metadata from SYSCAT.TABLES. Used by CLI command 'object-metadata'.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "Object metadata",
+      "source": "CliCommandHandlerService:GetObjectMetadataAsync"
     }
   }
 }

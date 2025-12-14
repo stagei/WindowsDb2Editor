@@ -4319,8 +4319,13 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing view: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT * FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{parts[0]}' AND VIEWNAME = '{parts[1]}'";
-        var result = await connectionManager.ExecuteQueryAsync(sql);
+        var sql = _metadataHandler.GetQuery("GetViewInfo_Full");
+        var parameters = new Dictionary<string, object>
+        {
+            { "VIEWSCHEMA", parts[0] },
+            { "VIEWNAME", parts[1] }
+        };
+        var result = await connectionManager.ExecuteQueryAsync(sql, parameters);
         return new { command = "ai-explain-view", view = args.Object, explanation = "AI analysis placeholder", timestamp = DateTime.Now };
     }
     
