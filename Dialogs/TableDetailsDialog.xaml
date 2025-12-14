@@ -212,6 +212,30 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
+            
+            <!-- AI Assistant Tab -->
+            <TabItem Header="🤖 AI Assistant" x:Name="AiAssistantTab">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBox x:Name="AiResponseText" 
+                             Grid.Row="0"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Margin="0,0,0,10"
+                             Text="[AI Assistant - Not configured]&#10;&#10;Configure an AI provider (Ollama, OpenAI, Claude, etc.) in Settings to enable AI-powered explanations of this table's purpose, usage patterns, relationships, and optimization suggestions."/>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="📤 Export Context" Width="150" Margin="0,0,10,0" Click="ExportAiContext_Click"/>
+                        <Button Content="🔄 Analyze Table" Width="150" Click="AnalyzeTable_Click"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Buttons -->

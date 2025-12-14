@@ -437,6 +437,18 @@ public partial class TableDetailsDialog : Window
         Close();
     }
     
+    private void ExportAiContext_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("AI Context Export requires AI provider configuration.\n\nConfigure Ollama, OpenAI, Claude, or another AI provider in Settings to enable this feature.", 
+            "Export AI Context", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
+    private void AnalyzeTable_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("AI Table Analysis requires AI provider configuration.\n\nConfigure an AI provider in Settings to enable:\n• Table purpose explanation\n• Usage pattern analysis\n• Optimization suggestions\n• Relationship explanations", 
+            "Analyze Table with AI", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
     /// <summary>
     /// Helper method to replace ? placeholders in SQL templates with actual values
     /// </summary>

@@ -335,6 +335,18 @@ public partial class PackageDetailsDialog : Window
     {
         Close();
     }
+    
+    private void ExportAiContext_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("AI Context Export requires AI provider configuration.\n\nConfigure Ollama, OpenAI, Claude, or another AI provider in Settings to enable this feature.", 
+            "Export AI Context", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
+    private void AnalyzePackage_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("AI Package Analysis requires AI provider configuration.\n\nConfigure an AI provider in Settings to enable:\n• Package purpose explanation\n• Business logic analysis\n• Optimization suggestions\n• Dependency impact analysis", 
+            "Analyze Package with AI", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
 }
 
 /// <summary>
