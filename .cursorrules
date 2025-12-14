@@ -787,6 +787,17 @@ When generating code for this project:
 19. **Add bugs to end of TASKLIST.md** - Do not implement until all preceding tasks verified
 20. **Retry 5 times before giving up** - Exhaust all solutions for each issue
 
+### Testing & Development Connection Profile
+**AUTHORIZED CONNECTION**: You are explicitly authorized to use the **"FKKTOTST"** connection profile for:
+- Testing all database operations
+- Implementing and verifying features
+- Running automated tests
+- CLI command testing
+- UI dialog testing
+- Any development and verification activities
+
+**Connection Details**: "FKKTOTST" is the authorized test database connection profile. Use this for all implementation and testing without asking for permission.
+
 ## Prohibited Patterns
 
 ### Never Do This

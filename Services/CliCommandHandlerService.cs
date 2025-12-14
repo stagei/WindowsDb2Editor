@@ -4319,13 +4319,13 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing view: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = _metadataHandler.GetQuery("GetViewInfo_Full");
-        var parameters = new Dictionary<string, object>
-        {
-            { "VIEWSCHEMA", parts[0] },
-            { "VIEWNAME", parts[1] }
-        };
-        var result = await connectionManager.ExecuteQueryAsync(sql, parameters);
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo_Full");
+        var sql = sqlTemplate.Replace("?", $"'{parts[0]}'").Replace("?", $"'{parts[1]}'"); // Replace first ? then second ?
+        // Better approach: use string.Format or sequential replacement
+        sql = _metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo_Full")
+            .Replace("TRIM(VIEWSCHEMA) = ?", $"TRIM(VIEWSCHEMA) = '{parts[0]}'")
+            .Replace("TRIM(VIEWNAME) = ?", $"TRIM(VIEWNAME) = '{parts[1]}'");
+        var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-explain-view", view = args.Object, explanation = "AI analysis placeholder", timestamp = DateTime.Now };
     }
     
@@ -4336,7 +4336,9 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing procedure: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'P'";
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetProcedureDefinition")
+            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{parts[0]}'")
+            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{parts[1]}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-procedure", procedure = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4348,7 +4350,9 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing function: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'F'";
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetFunctionDefinition")
+            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{parts[0]}'")
+            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{parts[1]}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-function", function = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4360,7 +4364,9 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing package: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT * FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetPackageInfo_Full")
+            .Replace("TRIM(PKGSCHEMA) = ?", $"TRIM(PKGSCHEMA) = '{parts[0]}'")
+            .Replace("TRIM(PKGNAME) = ?", $"TRIM(PKGNAME) = '{parts[1]}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-package", package = args.Object, analysis = "AI package analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4373,10 +4379,12 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
         Console.WriteLine($"Finding tables only in source schema: {args.Object}...");
         var sourceSchema = args.Object;
         var targetSchema = args.Schema;
-        var sql = $@"
-SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'
-EXCEPT
-SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'";
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "CompareSourceOnlyTables");
+        // Sequential replacement: first occurrence = sourceSchema, second = targetSchema
+        var firstReplaceIndex = sqlTemplate.IndexOf("?");
+        var sql = sqlTemplate.Substring(0, firstReplaceIndex) + $"'{sourceSchema}'" + sqlTemplate.Substring(firstReplaceIndex + 1);
+        var secondReplaceIndex = sql.IndexOf("?");
+        sql = sql.Substring(0, secondReplaceIndex) + $"'{targetSchema}'" + sql.Substring(secondReplaceIndex + 1);
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4389,10 +4397,12 @@ SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'";
         Console.WriteLine($"Finding tables only in target schema: {args.Schema}...");
         var sourceSchema = args.Object;
         var targetSchema = args.Schema;
-        var sql = $@"
-SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'
-EXCEPT
-SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'";
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "CompareTargetOnlyTables");
+        // Sequential replacement: first occurrence = targetSchema, second = sourceSchema
+        var firstReplaceIndex = sqlTemplate.IndexOf("?");
+        var sql = sqlTemplate.Substring(0, firstReplaceIndex) + $"'{targetSchema}'" + sqlTemplate.Substring(firstReplaceIndex + 1);
+        var secondReplaceIndex = sql.IndexOf("?");
+        sql = sql.Substring(0, secondReplaceIndex) + $"'{sourceSchema}'" + sql.Substring(secondReplaceIndex + 1);
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4403,14 +4413,11 @@ SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'";
     private async Task<object> CompareDifferentAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Finding tables with differences: {args.Object} vs {args.Schema}...");
-        // Simplified: Returns table names present in both schemas (actual diff analysis requires deeper comparison)
         var sourceSchema = args.Object;
         var targetSchema = args.Schema;
-        var sql = $@"
-SELECT DISTINCT t1.TABNAME
-FROM SYSCAT.TABLES t1
-INNER JOIN SYSCAT.TABLES t2 ON t1.TABNAME = t2.TABNAME
-WHERE t1.TABSCHEMA = '{sourceSchema}' AND t2.TABSCHEMA = '{targetSchema}'";
+        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "CompareCommonTables");
+        var sql = sqlTemplate.Replace("TRIM(t1.TABSCHEMA) = ?", $"TRIM(t1.TABSCHEMA) = '{sourceSchema}'")
+            .Replace("TRIM(t2.TABSCHEMA) = ?", $"TRIM(t2.TABSCHEMA) = '{targetSchema}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4437,7 +4444,9 @@ WHERE t1.TABSCHEMA = '{sourceSchema}' AND t2.TABSCHEMA = '{targetSchema}'";
     {
         Console.WriteLine($"Fetching view definition: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{parts[0]}' AND VIEWNAME = '{parts[1]}'";
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetViewDefinition")
+            .Replace("V.VIEWSCHEMA = ?", $"V.VIEWSCHEMA = '{parts[0]}'")
+            .Replace("V.VIEWNAME = ?", $"V.VIEWNAME = '{parts[1]}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
