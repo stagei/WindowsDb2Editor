@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -469,6 +469,31 @@ public partial class MainWindow : Window
         var designerWindow = new MermaidDesignerWindow(connectionManager, schema);
         designerWindow.Owner = this;
         designerWindow.ShowDialog();
+    }
+    
+    private void DatabaseComparison_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Database Comparison dialog");
+        
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        {
+            MessageBox.Show("Please connect to a database first.", "No Active Connection", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        
+        var connectionManager = activeTab.ConnectionManager;
+        
+        try
+        {
+            var dialog = new DatabaseComparisonDialog(connectionManager);
+            dialog.Owner = this;
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open Database Comparison dialog");
+            MessageBox.Show($"Failed to open Database Comparison: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
     
     private void OpenMonitorPanel<T>(string title, int width, int height) where T : UserControl, new()

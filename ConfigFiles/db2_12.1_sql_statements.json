@@ -1241,6 +1241,293 @@
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Object metadata",
       "source": "CliCommandHandlerService:GetObjectMetadataAsync"
+    },
+    "GetUserAccessLevel": {
+      "sql": "SELECT DBADMAUTH, SECURITYADMAUTH, DATAACCESSAUTH, CREATETABAUTH, BINDADDAUTH FROM SYSCAT.DBAUTH WHERE GRANTEE = CURRENT USER AND GRANTEETYPE = 'U' FETCH FIRST 1 ROW ONLY",
+      "description": "Get current user's database authorities to determine access level (DBA/Advanced/Standard).",
+      "parameters": [],
+      "returns": "User authority flags",
+      "source": "ObjectBrowserService:GetUserAccessLevelAsync"
+    },
+    "GetAliasCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'A'",
+      "description": "Count total number of aliases in the database.",
+      "parameters": [],
+      "returns": "Count of aliases",
+      "source": "ObjectBrowserService:GetAliasCountAsync"
+    },
+    "GetSecurityObjectCount": {
+      "sql": "SELECT (SELECT COUNT(*) FROM SYSCAT.ROLES) + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G') + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U') FROM SYSIBM.SYSDUMMY1",
+      "description": "Count total security objects (roles + groups + users).",
+      "parameters": [],
+      "returns": "Count of security objects",
+      "source": "ObjectBrowserService:GetSecurityObjectCountAsync"
+    },
+    "GetTablesCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W')",
+      "description": "Count tables in a specific schema.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "Count of tables in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetViewsCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ?",
+      "description": "Count views in a specific schema.",
+      "parameters": ["VIEWSCHEMA"],
+      "returns": "Count of views in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetProceduresCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P'",
+      "description": "Count procedures in a specific schema.",
+      "parameters": ["ROUTINESCHEMA"],
+      "returns": "Count of procedures in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetFunctionsCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'F'",
+      "description": "Count functions in a specific schema.",
+      "parameters": ["ROUTINESCHEMA"],
+      "returns": "Count of functions in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetIndexesCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ?",
+      "description": "Count indexes in a specific schema.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "Count of indexes in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetTriggersCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ?",
+      "description": "Count triggers in a specific schema.",
+      "parameters": ["TRIGSCHEMA"],
+      "returns": "Count of triggers in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetSequencesCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ?",
+      "description": "Count sequences in a specific schema.",
+      "parameters": ["SEQSCHEMA"],
+      "returns": "Count of sequences in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetSynonymsCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A'",
+      "description": "Count synonyms (aliases) in a specific schema.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "Count of synonyms in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetTypesCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S')",
+      "description": "Count user-defined types in a specific schema.",
+      "parameters": ["TYPESCHEMA"],
+      "returns": "Count of UDTs in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetPackagesCountForSchema": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ?",
+      "description": "Count packages in a specific schema.",
+      "parameters": ["PKGSCHEMA"],
+      "returns": "Count of packages in schema",
+      "source": "ObjectBrowserService:GetObjectCountAsync"
+    },
+    "GetTablesForSchemaFull": {
+      "sql": "SELECT TRIM(TABNAME), TRIM(TYPE), TRIM(OWNER), CARD AS ROW_COUNT, TRIM(TBSPACE), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W') ORDER BY TABNAME",
+      "description": "Get all tables in a schema with full details including TYPE and TBSPACE.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of tables with full metadata",
+      "source": "ObjectBrowserService:GetTablesAsync"
+    },
+    "GetViewsForSchemaFull": {
+      "sql": "SELECT TRIM(V.VIEWNAME) AS VIEWNAME, TRIM(T.DEFINER) AS OWNER, TRIM(T.REMARKS) AS REMARKS FROM SYSCAT.TABLES T JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME WHERE T.TYPE = 'V' AND T.TABSCHEMA = ? ORDER BY V.VIEWNAME",
+      "description": "Get all views in a schema with owner and remarks.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of views with metadata",
+      "source": "ObjectBrowserService:GetViewsAsync"
+    },
+    "GetProceduresForSchemaFull": {
+      "sql": "SELECT TRIM(ROUTINENAME), TRIM(SPECIFICNAME), TRIM(LANGUAGE), PARM_COUNT, CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P' ORDER BY ROUTINENAME",
+      "description": "Get all procedures in a schema with full details.",
+      "parameters": ["ROUTINESCHEMA"],
+      "returns": "List of procedures with full metadata",
+      "source": "ObjectBrowserService:GetProceduresAsync"
+    },
+    "GetFunctionsForSchemaFull": {
+      "sql": "SELECT TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(SPECIFICNAME) AS SPECIFICNAME, TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT, TRIM(FUNCTIONTYPE) AS FUNCTIONTYPE, CREATE_TIME, TRIM(OWNER) AS OWNER, TRIM(REMARKS) AS REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' ORDER BY ROUTINENAME",
+      "description": "Get all functions in a schema with full details including FUNCTIONTYPE.",
+      "parameters": ["ROUTINESCHEMA"],
+      "returns": "List of functions with full metadata",
+      "source": "ObjectBrowserService:GetFunctionsAsync"
+    },
+    "GetTablespacesWithRemarks": {
+      "sql": "SELECT TRIM(TBSPACE), TRIM(TBSPACETYPE), TRIM(DATATYPE), PAGESIZE, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLESPACES ORDER BY TBSPACE",
+      "description": "Get all tablespaces with full details including REMARKS.",
+      "parameters": [],
+      "returns": "List of tablespaces with full metadata",
+      "source": "ObjectBrowserService:GetTablespacesAsync"
+    },
+    "GetRolesWithRemarks": {
+      "sql": "SELECT TRIM(ROLENAME), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.ROLES ORDER BY ROLENAME",
+      "description": "Get all roles with creation time and remarks.",
+      "parameters": [],
+      "returns": "List of roles with metadata",
+      "source": "ObjectBrowserService:GetRolesAsync"
+    },
+    "GetGroupsUnion": {
+      "sql": "SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G' UNION SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'G' ORDER BY GROUPNAME",
+      "description": "Get all groups from DBAUTH and TABAUTH combined.",
+      "parameters": [],
+      "returns": "List of all groups",
+      "source": "ObjectBrowserService:GetGroupsAsync"
+    },
+    "GetUsersUnion": {
+      "sql": "SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U' UNION SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'U' ORDER BY USERNAME",
+      "description": "Get all users from DBAUTH and TABAUTH combined.",
+      "parameters": [],
+      "returns": "List of all users",
+      "source": "ObjectBrowserService:GetUsersAsync"
+    },
+    "GetRoleAuthCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.ROLEAUTH WHERE TRIM(ROLENAME) = ?",
+      "description": "Count users who have a specific role.",
+      "parameters": ["ROLENAME"],
+      "returns": "Count of role members",
+      "source": "ObjectBrowserService:GetRolePrivilegeCountsAsync"
+    },
+    "GetGroupTablePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'",
+      "description": "Count table privileges for a group.",
+      "parameters": ["GROUPNAME"],
+      "returns": "Count of table privileges",
+      "source": "ObjectBrowserService:GetGroupPrivilegeCountsAsync"
+    },
+    "GetGroupRoutinePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'",
+      "description": "Count routine privileges for a group.",
+      "parameters": ["GROUPNAME"],
+      "returns": "Count of routine privileges",
+      "source": "ObjectBrowserService:GetGroupPrivilegeCountsAsync"
+    },
+    "GetGroupSchemaPrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'",
+      "description": "Count schema privileges for a group.",
+      "parameters": ["GROUPNAME"],
+      "returns": "Count of schema privileges",
+      "source": "ObjectBrowserService:GetGroupPrivilegeCountsAsync"
+    },
+    "GetGroupSequencePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'",
+      "description": "Count sequence privileges for a group.",
+      "parameters": ["GROUPNAME"],
+      "returns": "Count of sequence privileges",
+      "source": "ObjectBrowserService:GetGroupPrivilegeCountsAsync"
+    },
+    "GetUserTablePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count table privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of table privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserColumnPrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.COLAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count column privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of column privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserRoutinePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count routine privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of routine privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserSchemaPrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count schema privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of schema privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserSequencePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count sequence privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of sequence privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserTablespacePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.TBSPACEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count tablespace privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of tablespace privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserPackagePrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.PACKAGEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count package privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of package privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetUserIndexPrivCount": {
+      "sql": "SELECT COUNT(*) FROM SYSCAT.INDEXAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'",
+      "description": "Count index privileges for a user.",
+      "parameters": ["USERNAME"],
+      "returns": "Count of index privileges",
+      "source": "ObjectBrowserService:GetUserPrivilegeCountsAsync"
+    },
+    "GetIndexesForSchemaFull": {
+      "sql": "SELECT TRIM(INDNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(UNIQUERULE), TRIM(INDEXTYPE), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ? ORDER BY INDNAME",
+      "description": "Get all indexes in a schema with full details.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of indexes with full metadata",
+      "source": "ObjectBrowserService:GetIndexesAsync"
+    },
+    "GetTriggersForSchemaFull": {
+      "sql": "SELECT TRIM(TRIGNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(TRIGEVENT), TRIM(TRIGTIME), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ? ORDER BY TRIGNAME",
+      "description": "Get all triggers in a schema with full details.",
+      "parameters": ["TRIGSCHEMA"],
+      "returns": "List of triggers with full metadata",
+      "source": "ObjectBrowserService:GetTriggersAsync"
+    },
+    "GetSequencesForSchemaFull": {
+      "sql": "SELECT TRIM(SEQNAME), TRIM(SEQTYPE), START, INCREMENT, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? ORDER BY SEQNAME",
+      "description": "Get all sequences in a schema with full details.",
+      "parameters": ["SEQSCHEMA"],
+      "returns": "List of sequences with full metadata",
+      "source": "ObjectBrowserService:GetSequencesAsync"
+    },
+    "GetSynonymsForSchemaFull": {
+      "sql": "SELECT TRIM(TABNAME) AS ALIAS_NAME, TRIM(BASE_TABSCHEMA), TRIM(BASE_TABNAME), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A' ORDER BY TABNAME",
+      "description": "Get all synonyms in a schema with full details.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of synonyms with full metadata",
+      "source": "ObjectBrowserService:GetSynonymsAsync"
+    },
+    "GetTypesForSchemaFull": {
+      "sql": "SELECT TRIM(TYPENAME), TRIM(METATYPE), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S') ORDER BY TYPENAME",
+      "description": "Get all user-defined types in a schema with full details.",
+      "parameters": ["TYPESCHEMA"],
+      "returns": "List of UDTs with full metadata",
+      "source": "ObjectBrowserService:GetTypesAsync"
+    },
+    "GetPackagesAll": {
+      "sql": "SELECT TRIM(PKGSCHEMA), TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES ORDER BY PKGSCHEMA, PKGNAME",
+      "description": "Get all packages in the database with full details.",
+      "parameters": [],
+      "returns": "List of all packages with metadata",
+      "source": "ObjectBrowserService:GetPackagesAsync"
+    },
+    "GetPackagesForSchemaFull": {
+      "sql": "SELECT TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? ORDER BY PKGNAME",
+      "description": "Get all packages in a schema with full details.",
+      "parameters": ["PKGSCHEMA"],
+      "returns": "List of packages in schema with metadata",
+      "source": "ObjectBrowserService:GetPackagesForSchemaAsync"
     }
   }
 }

@@ -1050,3 +1050,212 @@ if (_userAccessLevel < UserAccessLevel.DBA)
 }
 ```
 
+---
+
+## 🔥 CRITICAL ARCHITECTURE DECISIONS
+
+### Provider-Agnostic SQL Abstraction (MANDATORY)
+
+**ABSOLUTE RULE**: NO hardcoded SQL statements in C# code.
+
+**ALL SQL statements MUST be:**
+1. Stored in JSON files: `ConfigFiles/db2_12.1_sql_statements.json`
+2. Retrieved via `MetadataHandler.GetStatement("StatementName")`
+3. Parameterized with `?` placeholders
+
+**File Structure**:
+```
+ConfigFiles/
+├── supported_providers.json           # List of supported databases
+├── db2_12.1_sql_statements.json       # DB2 12.1 specific SQL
+├── db2_11.5_sql_statements.json       # DB2 11.5 specific SQL (future)
+├── postgresql_16.0_sql_statements.json # PostgreSQL (future)
+├── oracle_19c_sql_statements.json     # Oracle (future)
+└── sqlserver_2022_sql_statements.json # SQL Server (future)
+```
+
+**JSON Statement Format**:
+```json
+{
+  "StatementName": {
+    "sql": "SELECT TRIM(COLNAME) FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ?",
+    "description": "Get columns for a table",
+    "parameters": ["TABSCHEMA", "TABNAME"],
+    "returns": "List of column names"
+  }
+}
+```
+
+**Code Pattern (CORRECT)**:
+```csharp
+// ✅ CORRECT - Use MetadataHandler
+var sql = _metadataHandler.GetStatement("GetColumnsForTable");
+var result = await _connectionManager.ExecuteQueryAsync(sql, schema, table);
+```
+
+**Code Pattern (FORBIDDEN)**:
+```csharp
+// ❌ FORBIDDEN - Hardcoded SQL
+var sql = "SELECT * FROM SYSCAT.COLUMNS WHERE TABSCHEMA = 'INL'";
+```
+
+**Benefits**:
+- Add PostgreSQL by creating JSON file (no code changes)
+- Update SQL queries without recompiling
+- Version-specific SQL per database version
+- Testable with mock data
+
+**Current Status**: 84+ hardcoded SQL statements MUST be moved to JSON
+
+---
+
+### CLI/WPF Parity (MANDATORY)
+
+**ABSOLUTE RULE**: Every WPF dialog tab MUST have a corresponding CLI command.
+
+**Parity Requirements**:
+1. Every tab in every property dialog = 1 CLI command
+2. CLI outputs JSON for automation
+3. Same data structure for CLI and WPF
+4. CLI commands are the "API" for the application
+
+**Example Parity**:
+```
+TableDetailsDialog (WPF)          CLI Commands
+├── Columns Tab             →     table-columns
+├── Foreign Keys Tab        →     table-foreign-keys  
+├── Indexes Tab             →     table-indexes
+├── Statistics Tab          →     table-statistics
+├── DDL Script Tab          →     table-ddl
+├── Incoming FK Tab         →     table-incoming-fks
+├── Used By Packages Tab    →     table-referencing-packages
+├── Used By Views Tab       →     table-referencing-views
+├── Used By Routines Tab    →     table-referencing-routines
+└── AI Assistant Tab        →     ai-explain-table
+```
+
+**Missing CLI Commands to Implement**:
+- `package-properties`, `package-statements`, `package-dependencies`
+- `view-definition`, `view-columns`, `view-dependencies`
+- `procedure-source`, `procedure-parameters`
+- `function-source`, `function-parameters`
+- All AI-related commands
+
+**CLI Command Naming Convention**:
+- Use kebab-case: `table-columns`, `view-definition`
+- Prefix with object type: `table-`, `view-`, `procedure-`, etc.
+- Action suffix when needed: `-ddl`, `-source`, `-sample-data`
+
+---
+
+### Comprehensive Automated CLI Testing (MANDATORY)
+
+**ABSOLUTE RULE**: ALL CLI commands MUST have automated tests.
+
+**Test Requirements**:
+1. Test ALL 119+ CLI commands
+2. Use FKKTOTST connection profile
+3. Output to `CLI_Test_Output/` directory
+4. Generate markdown test report
+5. Achieve 100% pass rate before completion
+
+**Test Script Location**: `_comprehensive_cli_test_all_119.ps1`
+
+**Test Execution**:
+```powershell
+# Run all CLI tests
+.\bin\Debug\net10.0-windows\WindowsDb2Editor.exe -profile FKKTOTST -command <cmd> -format json
+```
+
+**Test Categories**:
+- Connection commands (5)
+- Schema operations (10)
+- Table operations (15)
+- View operations (7)
+- Procedure operations (6)
+- Function operations (6)
+- Package operations (6)
+- User/privileges (5)
+- Statistics (8)
+- Monitoring (10)
+- AI commands (10)
+- Export/Import (8)
+- Mermaid (5)
+- Comparison (5)
+- Meta commands (3)
+
+**Test Report Format**:
+```markdown
+# CLI Test Report
+Date: YYYY-MM-DD HH:MM
+Profile: FKKTOTST
+Total: 119 | Passed: X | Failed: Y | Rate: Z%
+```
+
+---
+
+### Hourly Status SMS Updates (DURING CONTINUOUS IMPLEMENTATION)
+
+**RULE**: During continuous implementation, send hourly SMS updates.
+
+**Command**:
+```powershell
+Send-Sms "+4797188358" "WindowsDb2Editor: [TIME] Progress [X]% - [Y] tasks done, [Z] remaining. Current: [task]"
+```
+
+**Status Format**:
+- Time: HH:MM
+- Progress percentage
+- Tasks completed / remaining
+- Current task being worked on
+- Any blockers or issues
+
+**Example**:
+```powershell
+Send-Sms "+4797188358" "WindowsDb2Editor: 14:30 Progress 45% - 54/119 CLI tests passing. Current: Fixing table-statistics-full. No blockers."
+```
+
+---
+
+### UI Menu Wiring (MANDATORY)
+
+**All dialogs MUST be wired to menus**:
+
+1. **View Menu** additions needed:
+   - Database Comparison... (Ctrl+Shift+C)
+   - AI Settings...
+   
+2. **Context Menu** additions needed:
+   - Right-click table → Compare Across Databases...
+   - Right-click table → Deep Analysis...
+
+3. **Settings Dialog** additions needed:
+   - AI Provider tab (configure Ollama, OpenAI, etc.)
+   - Font Size Preferences tab
+
+---
+
+### IntelliSense Enhancements (FUTURE)
+
+**Planned Features**:
+1. SQL snippet templates from `sql_templates.json`
+2. Function signature hints
+3. Column suggestions from table aliases
+4. Query history learning
+
+**Required Package** (future): Microsoft.SqlServer.TransactSql.ScriptDom or similar SQL parser
+
+---
+
+### Font Size Management
+
+**FontSizeManager Service** controls:
+- Editor font size
+- Object Browser font size
+- Dialog font size
+- Menu font size
+- Status bar font size
+- Property window font size
+
+**All font sizes configurable in Settings Dialog** (must be implemented)
+

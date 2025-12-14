@@ -246,5 +246,67 @@ namespace WindowsDb2Editor.Dialogs
             DialogResult = false;
             Close();
         }
+        
+        private async void TestAiConnection_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.Info("Testing AI connection");
+            
+            try
+            {
+                TestAiConnectionButton.IsEnabled = false;
+                TestAiConnectionButton.Content = "⏳ Testing...";
+                
+                var provider = GetComboBoxValue(AiProviderComboBox);
+                var endpoint = OllamaEndpointTextBox.Text;
+                var model = AiModelNameTextBox.Text;
+                
+                Logger.Debug("Testing AI provider: {Provider}, Endpoint: {Endpoint}, Model: {Model}", provider, endpoint, model);
+                
+                // Simple test - try to connect to Ollama endpoint
+                if (provider == "ollama")
+                {
+                    using var client = new System.Net.Http.HttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    
+                    var response = await client.GetAsync($"{endpoint}/api/tags");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        Logger.Info("Ollama connection successful, response: {Response}", json.Substring(0, Math.Min(200, json.Length)));
+                        MessageBox.Show($"✅ Connection successful!\n\nProvider: {provider}\nEndpoint: {endpoint}\nModel: {model}", 
+                            "AI Connection Test", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"❌ Connection failed.\n\nHTTP Status: {response.StatusCode}\n\nMake sure Ollama is running.", 
+                            "AI Connection Test", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                else
+                {
+                    // For cloud providers, just verify API key is set
+                    if (string.IsNullOrWhiteSpace(AiApiKeyPasswordBox.Password))
+                    {
+                        MessageBox.Show($"⚠️ API key required for {provider}.\n\nPlease enter your API key.", 
+                            "AI Connection Test", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"✅ API key is configured for {provider}.\n\nActual connection test requires AI provider implementation.", 
+                            "AI Connection Test", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "AI connection test failed");
+                MessageBox.Show($"❌ Connection failed: {ex.Message}", "AI Connection Test", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestAiConnectionButton.IsEnabled = true;
+                TestAiConnectionButton.Content = "🧪 Test AI Connection";
+            }
+        }
     }
 }

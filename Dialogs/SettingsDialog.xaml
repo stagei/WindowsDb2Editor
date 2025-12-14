@@ -234,6 +234,173 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- AI Settings Tab -->
+            <TabItem Header="🤖 AI">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="AI Provider Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                        <!-- AI Provider Selection -->
+                        <TextBlock Text="AI Provider:" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <ComboBox x:Name="AiProviderComboBox" Width="250" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Ollama (Local)" Tag="ollama" IsSelected="True"/>
+                            <ComboBoxItem Content="LM Studio (Local)" Tag="lmstudio"/>
+                            <ComboBoxItem Content="OpenAI (Cloud)" Tag="openai"/>
+                            <ComboBoxItem Content="Azure OpenAI (Cloud)" Tag="azure"/>
+                            <ComboBoxItem Content="Claude (Cloud)" Tag="claude"/>
+                            <ComboBoxItem Content="Google Gemini (Cloud)" Tag="gemini"/>
+                        </ComboBox>
+                        <TextBlock Text="Ollama and LM Studio are free, local AI options" 
+                                   FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Ollama Settings -->
+                        <TextBlock Text="Ollama Endpoint:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <TextBox x:Name="OllamaEndpointTextBox" 
+                                 Width="300" 
+                                 Height="32"
+                                 VerticalContentAlignment="Center"
+                                 HorizontalAlignment="Left"
+                                 Text="http://localhost:11434"/>
+                        <TextBlock Text="Default: http://localhost:11434" 
+                                   FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Model Name -->
+                        <TextBlock Text="Model Name:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <TextBox x:Name="AiModelNameTextBox" 
+                                 Width="300" 
+                                 Height="32"
+                                 VerticalContentAlignment="Center"
+                                 HorizontalAlignment="Left"
+                                 Text="llama3.2"/>
+                        <TextBlock Text="Examples: llama3.2, codellama, mistral, gpt-4o" 
+                                   FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- API Key (for cloud providers) -->
+                        <TextBlock Text="API Key (Cloud Providers):" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <PasswordBox x:Name="AiApiKeyPasswordBox" 
+                                     Width="300" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"/>
+                        <TextBlock Text="Required for OpenAI, Claude, Gemini. Stored securely." 
+                                   FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Test Connection -->
+                        <Button x:Name="TestAiConnectionButton" 
+                                Content="🧪 Test AI Connection" 
+                                Width="200" 
+                                HorizontalAlignment="Left"
+                                Margin="0,20,0,0"
+                                Click="TestAiConnection_Click"
+                                Padding="10,5"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Font Size Settings Tab -->
+            <TabItem Header="🔤 Fonts">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Font Size Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                        <!-- Object Browser Font Size -->
+                        <TextBlock Text="Object Browser Font Size:" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="ObjectBrowserFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="24" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="12"/>
+                            <TextBlock x:Name="ObjectBrowserFontSizeText" 
+                                       Text="12" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Dialog Font Size -->
+                        <TextBlock Text="Dialog Font Size:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="DialogFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="24" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="14"/>
+                            <TextBlock x:Name="DialogFontSizeText" 
+                                       Text="14" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Menu Font Size -->
+                        <TextBlock Text="Menu Font Size:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="MenuFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="18" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="12"/>
+                            <TextBlock x:Name="MenuFontSizeText" 
+                                       Text="12" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Status Bar Font Size -->
+                        <TextBlock Text="Status Bar Font Size:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="StatusBarFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="16" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="11"/>
+                            <TextBlock x:Name="StatusBarFontSizeText" 
+                                       Text="11" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Property Window Font Size -->
+                        <TextBlock Text="Property Window Font Size:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="PropertyWindowFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="20" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="12"/>
+                            <TextBlock x:Name="PropertyWindowFontSizeText" 
+                                       Text="12" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Buttons -->

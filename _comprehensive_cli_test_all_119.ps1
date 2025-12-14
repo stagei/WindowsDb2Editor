@@ -35,9 +35,12 @@ Write-Host ""
 $testSchema = "INL"
 $testTable = "BILAGNR"
 $testView = "FAKTURA"
-$testProcedure = "GET_INVOICE_DATA"
-$testFunction = "CALCULATE_TOTAL"
-$testPackage = "BILAGNRPKG"
+$testProcSchema = "SYSPROC"             # System procedures schema
+$testProcedure = "ADMIN_CMD"            # System procedure
+$testFuncSchema = "SYSFUN"              # System functions schema
+$testFunction = "ABS"                   # System function
+$testPkgSchema = "NULLID"               # System package schema
+$testPackage = "SYSSH200"               # System package
 $testUser = "FKGEISTA"
 
 # Define all 119 CLI commands to test
@@ -87,21 +90,21 @@ $commands = @(
     @{ Name = "view-used-by-packages"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
     @{ Name = "view-used-by-views"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
     
-    # Procedure Operations (6)
-    @{ Name = "procedure-properties"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
-    @{ Name = "procedure-source"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
-    @{ Name = "procedure-parameters"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
-    @{ Name = "procedure-dependencies"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
-    @{ Name = "procedure-usage"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
-    @{ Name = "procedure-grants"; Args = "-profile $connectionProfile -object $testSchema.$testProcedure" }
+    # Procedure Operations (6) - using system procedure SYSPROC.ADMIN_CMD
+    @{ Name = "procedure-properties"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
+    @{ Name = "procedure-source"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
+    @{ Name = "procedure-parameters"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
+    @{ Name = "procedure-dependencies"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
+    @{ Name = "procedure-usage"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
+    @{ Name = "procedure-grants"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
     
-    # Function Operations (6)
-    @{ Name = "function-properties"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
-    @{ Name = "function-source"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
-    @{ Name = "function-parameters"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
-    @{ Name = "function-dependencies"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
-    @{ Name = "function-usage"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
-    @{ Name = "function-grants"; Args = "-profile $connectionProfile -object $testSchema.$testFunction" }
+    # Function Operations (6) - using system function SYSFUN.ABS
+    @{ Name = "function-properties"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
+    @{ Name = "function-source"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
+    @{ Name = "function-parameters"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
+    @{ Name = "function-dependencies"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
+    @{ Name = "function-usage"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
+    @{ Name = "function-grants"; Args = "-profile $connectionProfile -object $testFuncSchema.$testFunction" }
     
     # Package Operations (8)
     @{ Name = "package-properties"; Args = "-profile $connectionProfile -object $testSchema.$testPackage" }
@@ -201,7 +204,8 @@ foreach ($cmd in $commands) {
     $exitCode = 0
     
     try {
-        $fullCommand = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe -cli $($cmd.Name) $($cmd.Args)"
+        $outFile = "$outputDir/$($cmd.Name).json"
+        $fullCommand = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe -command $($cmd.Name) $($cmd.Args) -Outfile $outFile"
         $output = & cmd /c $fullCommand 2>&1
         $exitCode = $LASTEXITCODE
     }
@@ -212,13 +216,17 @@ foreach ($cmd in $commands) {
     
     $duration = ((Get-Date) - $startTime).TotalMilliseconds
     
+    # Check if output contains actual error (not log messages)
+    $outputStr = $output | Out-String
+    $hasError = $outputStr -match "^ERROR:|CRITICAL:|SQL0206N|SQLCODE=-|Invalid.*parameter|not found.*Error|Query failed"
+    
     $result = @{
         Command = $cmd.Name
         Args = $cmd.Args
         ExitCode = $exitCode
         Duration = [math]::Round($duration, 0)
-        Output = $output | Out-String
-        Passed = ($exitCode -eq 0 -and $output -notmatch "error|exception|failed")
+        Output = $outputStr
+        Passed = ($exitCode -eq 0 -and -not $hasError)
     }
     
     if ($result.Passed) {

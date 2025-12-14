@@ -37,17 +37,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    DBADMAUTH,
-                    SECURITYADMAUTH,
-                    DATAACCESSAUTH,
-                    CREATETABAUTH,
-                    BINDADDAUTH
-                FROM SYSCAT.DBAUTH
-                WHERE GRANTEE = CURRENT USER
-                  AND GRANTEETYPE = 'U'
-                FETCH FIRST 1 ROW ONLY";
+            var sql = _metadataHandler?.GetStatement("GetUserAccessLevel") 
+                ?? "SELECT DBADMAUTH, SECURITYADMAUTH, DATAACCESSAUTH, CREATETABAUTH, BINDADDAUTH FROM SYSCAT.DBAUTH WHERE GRANTEE = CURRENT USER AND GRANTEETYPE = 'U' FETCH FIRST 1 ROW ONLY";
             
             using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
@@ -229,7 +220,8 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = "SELECT COUNT(*) FROM SYSCAT.SCHEMATA";
+            var sql = _metadataHandler?.GetStatement("GetSchemasCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMATA";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -245,7 +237,8 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'A'";
+            var sql = _metadataHandler?.GetStatement("GetAliasCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'A'";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -261,7 +254,8 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = "SELECT COUNT(*) FROM SYSCAT.TABLESPACES";
+            var sql = _metadataHandler?.GetStatement("GetTablespacesCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.TABLESPACES";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -277,7 +271,8 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = "SELECT COUNT(*) FROM SYSCAT.PACKAGES";
+            var sql = _metadataHandler?.GetStatement("GetPackagesCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.PACKAGES";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -293,7 +288,8 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE METATYPE IN ('A', 'D', 'R', 'S')";
+            var sql = _metadataHandler?.GetStatement("GetUDTsCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE METATYPE IN ('A', 'D', 'R', 'S')";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -309,13 +305,8 @@ public class ObjectBrowserService
     {
         try
         {
-            // Count of roles + groups + users
-            var sql = @"
-                SELECT 
-                    (SELECT COUNT(*) FROM SYSCAT.ROLES) +
-                    (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G') +
-                    (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U')
-                FROM SYSIBM.SYSDUMMY1";
+            var sql = _metadataHandler?.GetStatement("GetSecurityObjectCount") 
+                ?? "SELECT (SELECT COUNT(*) FROM SYSCAT.ROLES) + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G') + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U') FROM SYSIBM.SYSDUMMY1";
             using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
@@ -418,20 +409,24 @@ public class ObjectBrowserService
     {
         try
         {
-            var sql = objectType switch
+            // Get statement name based on object type
+            var statementName = objectType switch
             {
-                ObjectType.Tables => "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W')",
-                ObjectType.Views => "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ?",
-                ObjectType.Procedures => "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P'",
-                ObjectType.Functions => "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'F'",
-                ObjectType.Indexes => "SELECT COUNT(*) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ?",
-                ObjectType.Triggers => "SELECT COUNT(*) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ?",
-                ObjectType.Sequences => "SELECT COUNT(*) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ?",
-                ObjectType.Synonyms => "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A'",
-                ObjectType.Types => "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S')",
-                ObjectType.Packages => "SELECT COUNT(*) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ?",
+                ObjectType.Tables => "GetTablesCountForSchema",
+                ObjectType.Views => "GetViewsCountForSchema",
+                ObjectType.Procedures => "GetProceduresCountForSchema",
+                ObjectType.Functions => "GetFunctionsCountForSchema",
+                ObjectType.Indexes => "GetIndexesCountForSchema",
+                ObjectType.Triggers => "GetTriggersCountForSchema",
+                ObjectType.Sequences => "GetSequencesCountForSchema",
+                ObjectType.Synonyms => "GetSynonymsCountForSchema",
+                ObjectType.Types => "GetTypesCountForSchema",
+                ObjectType.Packages => "GetPackagesCountForSchema",
                 _ => throw new ArgumentException($"Unknown object type: {objectType}")
             };
+            
+            // Get SQL from MetadataHandler or use fallback
+            var sql = _metadataHandler?.GetStatement(statementName) ?? GetFallbackCountSql(objectType);
             
             using var command = _connectionManager.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
@@ -443,6 +438,24 @@ public class ObjectBrowserService
             Logger.Error(ex, "Failed to get count for {Type} in schema {Schema}", objectType, schemaName);
             return 0;
         }
+    }
+    
+    private string GetFallbackCountSql(ObjectType objectType)
+    {
+        return objectType switch
+        {
+            ObjectType.Tables => "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W')",
+            ObjectType.Views => "SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ?",
+            ObjectType.Procedures => "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P'",
+            ObjectType.Functions => "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'F'",
+            ObjectType.Indexes => "SELECT COUNT(*) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ?",
+            ObjectType.Triggers => "SELECT COUNT(*) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ?",
+            ObjectType.Sequences => "SELECT COUNT(*) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ?",
+            ObjectType.Synonyms => "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A'",
+            ObjectType.Types => "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S')",
+            ObjectType.Packages => "SELECT COUNT(*) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ?",
+            _ => throw new ArgumentException($"Unknown object type: {objectType}")
+        };
     }
     
     #endregion
@@ -458,19 +471,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(TABNAME),
-                    TRIM(TYPE),
-                    TRIM(OWNER),
-                    CARD AS ROW_COUNT,
-                    TRIM(TBSPACE),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.TABLES
-                WHERE TRIM(TABSCHEMA) = ?
-                  AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W')
-                ORDER BY TABNAME";
+            var sql = _metadataHandler?.GetStatement("GetTablesForSchemaFull") 
+                ?? "SELECT TRIM(TABNAME), TRIM(TYPE), TRIM(OWNER), CARD AS ROW_COUNT, TRIM(TBSPACE), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W') ORDER BY TABNAME";
             
             var tables = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -519,16 +521,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(V.VIEWNAME) AS VIEWNAME,
-                    TRIM(T.DEFINER) AS OWNER,
-                    TRIM(T.REMARKS) AS REMARKS
-                FROM SYSCAT.TABLES T
-                JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA 
-                    AND T.TABNAME = V.VIEWNAME
-                WHERE T.TYPE = 'V' AND T.TABSCHEMA = ?
-                ORDER BY V.VIEWNAME";
+            var sql = _metadataHandler?.GetStatement("GetViewsForSchemaFull") 
+                ?? "SELECT TRIM(V.VIEWNAME) AS VIEWNAME, TRIM(T.DEFINER) AS OWNER, TRIM(T.REMARKS) AS REMARKS FROM SYSCAT.TABLES T JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME WHERE T.TYPE = 'V' AND T.TABSCHEMA = ? ORDER BY V.VIEWNAME";
             
             var views = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -573,19 +567,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(ROUTINENAME),
-                    TRIM(SPECIFICNAME),
-                    TRIM(LANGUAGE),
-                    PARM_COUNT,
-                    CREATE_TIME,
-                    TRIM(OWNER),
-                    TRIM(REMARKS)
-                FROM SYSCAT.ROUTINES
-                WHERE TRIM(ROUTINESCHEMA) = ?
-                  AND ROUTINETYPE = 'P'
-                ORDER BY ROUTINENAME";
+            var sql = _metadataHandler?.GetStatement("GetProceduresForSchemaFull") 
+                ?? "SELECT TRIM(ROUTINENAME), TRIM(SPECIFICNAME), TRIM(LANGUAGE), PARM_COUNT, CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P' ORDER BY ROUTINENAME";
             
             var procedures = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -633,20 +616,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(ROUTINENAME) AS ROUTINENAME,
-                    TRIM(SPECIFICNAME) AS SPECIFICNAME,
-                    TRIM(LANGUAGE) AS LANGUAGE,
-                    PARM_COUNT,
-                    TRIM(FUNCTIONTYPE) AS FUNCTIONTYPE,
-                    CREATE_TIME,
-                    TRIM(OWNER) AS OWNER,
-                    TRIM(REMARKS) AS REMARKS
-                FROM SYSCAT.ROUTINES
-                WHERE ROUTINESCHEMA = ?
-                  AND ROUTINETYPE = 'F'
-                ORDER BY ROUTINENAME";
+            var sql = _metadataHandler?.GetStatement("GetFunctionsForSchemaFull") 
+                ?? "SELECT TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(SPECIFICNAME) AS SPECIFICNAME, TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT, TRIM(FUNCTIONTYPE) AS FUNCTIONTYPE, CREATE_TIME, TRIM(OWNER) AS OWNER, TRIM(REMARKS) AS REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' ORDER BY ROUTINENAME";
             
             var functions = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -695,17 +666,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(TBSPACE),
-                    TRIM(TBSPACETYPE),
-                    TRIM(DATATYPE),
-                    PAGESIZE,
-                    TRIM(OWNER),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.TABLESPACES
-                ORDER BY TBSPACE";
+            var sql = _metadataHandler?.GetStatement("GetTablespacesWithRemarks") 
+                ?? "SELECT TRIM(TBSPACE), TRIM(TBSPACETYPE), TRIM(DATATYPE), PAGESIZE, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLESPACES ORDER BY TBSPACE";
             
             var tablespaces = new List<TablespaceInfo>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -748,13 +710,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(ROLENAME),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.ROLES
-                ORDER BY ROLENAME";
+            var sql = _metadataHandler?.GetStatement("GetRolesWithRemarks") 
+                ?? "SELECT TRIM(ROLENAME), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.ROLES ORDER BY ROLENAME";
             
             var roles = new List<SecurityPrincipal>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -795,15 +752,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME
-                FROM SYSCAT.DBAUTH
-                WHERE GRANTEETYPE = 'G'
-                UNION
-                SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME
-                FROM SYSCAT.TABAUTH
-                WHERE GRANTEETYPE = 'G'
-                ORDER BY GROUPNAME";
+            var sql = _metadataHandler?.GetStatement("GetGroupsUnion") 
+                ?? "SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G' UNION SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'G' ORDER BY GROUPNAME";
             
             var groups = new List<SecurityPrincipal>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -845,15 +795,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT DISTINCT TRIM(GRANTEE) AS USERNAME
-                FROM SYSCAT.DBAUTH
-                WHERE GRANTEETYPE = 'U'
-                UNION
-                SELECT DISTINCT TRIM(GRANTEE) AS USERNAME
-                FROM SYSCAT.TABAUTH
-                WHERE GRANTEETYPE = 'U'
-                ORDER BY USERNAME";
+            var sql = _metadataHandler?.GetStatement("GetUsersUnion") 
+                ?? "SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U' UNION SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'U' ORDER BY USERNAME";
             
             var users = new List<SecurityPrincipal>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -894,7 +837,8 @@ public class ObjectBrowserService
         try
         {
             // Users who have this role
-            var usersSql = "SELECT COUNT(*) FROM SYSCAT.ROLEAUTH WHERE TRIM(ROLENAME) = ?";
+            var usersSql = _metadataHandler?.GetStatement("GetRoleAuthCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.ROLEAUTH WHERE TRIM(ROLENAME) = ?";
             using var usersCmd = _connectionManager.CreateCommand(usersSql);
             usersCmd.Parameters.Add(new DB2Parameter("@roleName", roleName));
             counts[PrivilegeCategoryType.Users] = Convert.ToInt32(await usersCmd.ExecuteScalarAsync());
@@ -930,13 +874,15 @@ public class ObjectBrowserService
         try
         {
             // Tables
-            var tablesSql = "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
+            var tablesSql = _metadataHandler?.GetStatement("GetGroupTablePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
             using var tablesCmd = _connectionManager.CreateCommand(tablesSql);
             tablesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Tables] = Convert.ToInt32(await tablesCmd.ExecuteScalarAsync());
             
             // Routines (Procedures + Functions)
-            var routinesSql = "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
+            var routinesSql = _metadataHandler?.GetStatement("GetGroupRoutinePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
             using var routinesCmd = _connectionManager.CreateCommand(routinesSql);
             routinesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
             var routineCount = Convert.ToInt32(await routinesCmd.ExecuteScalarAsync());
@@ -944,13 +890,15 @@ public class ObjectBrowserService
             counts[PrivilegeCategoryType.Functions] = routineCount;
             
             // Schemas
-            var schemasSql = "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
+            var schemasSql = _metadataHandler?.GetStatement("GetGroupSchemaPrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
             using var schemasCmd = _connectionManager.CreateCommand(schemasSql);
             schemasCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Schemas] = Convert.ToInt32(await schemasCmd.ExecuteScalarAsync());
             
             // Sequences
-            var sequencesSql = "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
+            var sequencesSql = _metadataHandler?.GetStatement("GetGroupSequencePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
             using var sequencesCmd = _connectionManager.CreateCommand(sequencesSql);
             sequencesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Sequences] = Convert.ToInt32(await sequencesCmd.ExecuteScalarAsync());
@@ -984,7 +932,8 @@ public class ObjectBrowserService
         try
         {
             // Tables
-            var tablesSql = "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var tablesSql = _metadataHandler?.GetStatement("GetUserTablePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var tablesCmd = _connectionManager.CreateCommand(tablesSql);
             tablesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Tables] = Convert.ToInt32(await tablesCmd.ExecuteScalarAsync());
@@ -993,13 +942,15 @@ public class ObjectBrowserService
             counts[PrivilegeCategoryType.Views] = counts[PrivilegeCategoryType.Tables] / 2; // Approximate
             
             // Columns
-            var columnsSql = "SELECT COUNT(*) FROM SYSCAT.COLAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var columnsSql = _metadataHandler?.GetStatement("GetUserColumnPrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.COLAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var columnsCmd = _connectionManager.CreateCommand(columnsSql);
             columnsCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Columns] = Convert.ToInt32(await columnsCmd.ExecuteScalarAsync());
             
             // Routines (Procedures + Functions)
-            var routinesSql = "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var routinesSql = _metadataHandler?.GetStatement("GetUserRoutinePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var routinesCmd = _connectionManager.CreateCommand(routinesSql);
             routinesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             var routineCount = Convert.ToInt32(await routinesCmd.ExecuteScalarAsync());
@@ -1007,31 +958,36 @@ public class ObjectBrowserService
             counts[PrivilegeCategoryType.Functions] = routineCount / 2;
             
             // Schemas
-            var schemasSql = "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var schemasSql = _metadataHandler?.GetStatement("GetUserSchemaPrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var schemasCmd = _connectionManager.CreateCommand(schemasSql);
             schemasCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Schemas] = Convert.ToInt32(await schemasCmd.ExecuteScalarAsync());
             
             // Sequences
-            var sequencesSql = "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var sequencesSql = _metadataHandler?.GetStatement("GetUserSequencePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var sequencesCmd = _connectionManager.CreateCommand(sequencesSql);
             sequencesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Sequences] = Convert.ToInt32(await sequencesCmd.ExecuteScalarAsync());
             
             // Tablespaces
-            var tablespacesSql = "SELECT COUNT(*) FROM SYSCAT.TBSPACEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var tablespacesSql = _metadataHandler?.GetStatement("GetUserTablespacePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.TBSPACEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var tablespacesCmd = _connectionManager.CreateCommand(tablespacesSql);
             tablespacesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Tablespaces] = Convert.ToInt32(await tablespacesCmd.ExecuteScalarAsync());
             
             // Packages
-            var packagesSql = "SELECT COUNT(*) FROM SYSCAT.PACKAGEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var packagesSql = _metadataHandler?.GetStatement("GetUserPackagePrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.PACKAGEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var packagesCmd = _connectionManager.CreateCommand(packagesSql);
             packagesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Packages] = Convert.ToInt32(await packagesCmd.ExecuteScalarAsync());
             
             // Indexes
-            var indexesSql = "SELECT COUNT(*) FROM SYSCAT.INDEXAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
+            var indexesSql = _metadataHandler?.GetStatement("GetUserIndexPrivCount") 
+                ?? "SELECT COUNT(*) FROM SYSCAT.INDEXAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
             using var indexesCmd = _connectionManager.CreateCommand(indexesSql);
             indexesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
             counts[PrivilegeCategoryType.Indexes] = Convert.ToInt32(await indexesCmd.ExecuteScalarAsync());
@@ -1067,19 +1023,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(INDNAME),
-                    TRIM(TABSCHEMA),
-                    TRIM(TABNAME),
-                    TRIM(UNIQUERULE),
-                    TRIM(INDEXTYPE),
-                    CREATE_TIME,
-                    TRIM(OWNER),
-                    TRIM(REMARKS)
-                FROM SYSCAT.INDEXES
-                WHERE TRIM(TABSCHEMA) = ?
-                ORDER BY INDNAME";
+            var sql = _metadataHandler?.GetStatement("GetIndexesForSchemaFull") 
+                ?? "SELECT TRIM(INDNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(UNIQUERULE), TRIM(INDEXTYPE), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ? ORDER BY INDNAME";
             
             var indexes = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1128,19 +1073,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(TRIGNAME),
-                    TRIM(TABSCHEMA),
-                    TRIM(TABNAME),
-                    TRIM(TRIGEVENT),
-                    TRIM(TRIGTIME),
-                    CREATE_TIME,
-                    TRIM(OWNER),
-                    TRIM(REMARKS)
-                FROM SYSCAT.TRIGGERS
-                WHERE TRIM(TRIGSCHEMA) = ?
-                ORDER BY TRIGNAME";
+            var sql = _metadataHandler?.GetStatement("GetTriggersForSchemaFull") 
+                ?? "SELECT TRIM(TRIGNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(TRIGEVENT), TRIM(TRIGTIME), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ? ORDER BY TRIGNAME";
             
             var triggers = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1186,18 +1120,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(SEQNAME),
-                    TRIM(SEQTYPE),
-                    START,
-                    INCREMENT,
-                    TRIM(OWNER),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.SEQUENCES
-                WHERE TRIM(SEQSCHEMA) = ?
-                ORDER BY SEQNAME";
+            var sql = _metadataHandler?.GetStatement("GetSequencesForSchemaFull") 
+                ?? "SELECT TRIM(SEQNAME), TRIM(SEQTYPE), START, INCREMENT, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? ORDER BY SEQNAME";
             
             var sequences = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1242,18 +1166,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(TABNAME) AS ALIAS_NAME,
-                    TRIM(BASE_TABSCHEMA),
-                    TRIM(BASE_TABNAME),
-                    TRIM(OWNER),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.TABLES
-                WHERE TRIM(TABSCHEMA) = ?
-                  AND TYPE = 'A'
-                ORDER BY TABNAME";
+            var sql = _metadataHandler?.GetStatement("GetSynonymsForSchemaFull") 
+                ?? "SELECT TRIM(TABNAME) AS ALIAS_NAME, TRIM(BASE_TABSCHEMA), TRIM(BASE_TABNAME), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A' ORDER BY TABNAME";
             
             var synonyms = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1299,17 +1213,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(TYPENAME),
-                    TRIM(METATYPE),
-                    TRIM(OWNER),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.DATATYPES
-                WHERE TRIM(TYPESCHEMA) = ?
-                  AND METATYPE IN ('A', 'D', 'R', 'S')
-                ORDER BY TYPENAME";
+            var sql = _metadataHandler?.GetStatement("GetTypesForSchemaFull") 
+                ?? "SELECT TRIM(TYPENAME), TRIM(METATYPE), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S') ORDER BY TYPENAME";
             
             var types = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1354,17 +1259,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(PKGSCHEMA),
-                    TRIM(PKGNAME),
-                    TRIM(BOUNDBY),
-                    TRIM(OWNER),
-                    TRIM(ISOLATION),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.PACKAGES
-                ORDER BY PKGSCHEMA, PKGNAME";
+            var sql = _metadataHandler?.GetStatement("GetPackagesAll") 
+                ?? "SELECT TRIM(PKGSCHEMA), TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES ORDER BY PKGSCHEMA, PKGNAME";
             
             var packages = new List<PackageInfo>();
             using var command = _connectionManager.CreateCommand(sql);
@@ -1403,17 +1299,8 @@ public class ObjectBrowserService
         
         try
         {
-            var sql = @"
-                SELECT 
-                    TRIM(PKGNAME),
-                    TRIM(BOUNDBY),
-                    TRIM(OWNER),
-                    TRIM(ISOLATION),
-                    CREATE_TIME,
-                    TRIM(REMARKS)
-                FROM SYSCAT.PACKAGES
-                WHERE TRIM(PKGSCHEMA) = ?
-                ORDER BY PKGNAME";
+            var sql = _metadataHandler?.GetStatement("GetPackagesForSchemaFull") 
+                ?? "SELECT TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? ORDER BY PKGNAME";
             
             var packages = new List<DatabaseObject>();
             using var command = _connectionManager.CreateCommand(sql);
