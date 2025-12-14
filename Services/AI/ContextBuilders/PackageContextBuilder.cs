@@ -3,16 +3,19 @@ using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Services;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 
 /// <summary>
 /// Builds AI-friendly context for a DB2 package.
+/// PROVIDER-AGNOSTIC: Uses IMetadataProvider for all queries.
 /// </summary>
 public class PackageContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly IMetadataProvider _metadataProvider;
     private readonly PackageDependencyAnalyzer _dependencyAnalyzer;
     
     public PackageContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider, PackageDependencyAnalyzer dependencyAnalyzer)
