@@ -26,7 +26,7 @@ public class AiProviderTests
     public void OllamaProvider_CanBeCreated()
     {
         // Arrange & Act
-        var provider = new OllamaProvider("http://localhost:11434", "llama2");
+        var provider = new OllamaProvider("http://localhost:11434");
 
         // Assert
         Assert.NotNull(provider);
@@ -37,7 +37,7 @@ public class AiProviderTests
     public void LmStudioProvider_CanBeCreated()
     {
         // Arrange & Act
-        var provider = new LmStudioProvider("http://localhost:1234", "local-model");
+        var provider = new LmStudioProvider("http://localhost:1234");
 
         // Assert
         Assert.NotNull(provider);
@@ -48,7 +48,7 @@ public class AiProviderTests
     public void OpenAiProvider_CanBeCreated()
     {
         // Arrange & Act
-        var provider = new OpenAiProvider("test-api-key", "gpt-4");
+        var provider = new OpenAiProvider("test-api-key");
 
         // Assert
         Assert.NotNull(provider);

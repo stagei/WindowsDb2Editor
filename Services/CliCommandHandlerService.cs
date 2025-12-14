@@ -4331,7 +4331,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing procedure: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'";
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'P'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-procedure", procedure = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4343,7 +4343,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Console.WriteLine($"AI analyzing function: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'";
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'F'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-function", function = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4475,7 +4475,7 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
     {
         Console.WriteLine($"Fetching procedure source: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'";
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'P'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4488,9 +4488,9 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
         Console.WriteLine($"Fetching procedure parameters: {args.Object}...");
         var parts = args.Object.Split('.');
         var sql = $@"
-SELECT PARMNAME, TYPENAME, LENGTH, SCALE, PARM_MODE, ORDINAL
-FROM SYSCAT.PROCPARMS
-WHERE PROCSCHEMA = '{parts[0]}' AND PROCNAME = '{parts[1]}'
+SELECT PARMNAME, TYPENAME, LENGTH, SCALE, ROWTYPE, ORDINAL
+FROM SYSCAT.ROUTINEPARMS
+WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'
 ORDER BY ORDINAL";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
@@ -4503,7 +4503,7 @@ ORDER BY ORDINAL";
     {
         Console.WriteLine($"Fetching function source: {args.Object}...");
         var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.FUNCTIONS WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'";
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'F'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4517,8 +4517,8 @@ ORDER BY ORDINAL";
         var parts = args.Object.Split('.');
         var sql = $@"
 SELECT PARMNAME, TYPENAME, LENGTH, SCALE, ROWTYPE, ORDINAL
-FROM SYSCAT.FUNCPARMS
-WHERE FUNCSCHEMA = '{parts[0]}' AND FUNCNAME = '{parts[1]}'
+FROM SYSCAT.ROUTINEPARMS
+WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'
 ORDER BY ORDINAL";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
