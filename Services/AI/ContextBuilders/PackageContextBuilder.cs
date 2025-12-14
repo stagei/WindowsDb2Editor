@@ -15,9 +15,10 @@ public class PackageContextBuilder
     private readonly DB2ConnectionManager _connectionManager;
     private readonly PackageDependencyAnalyzer _dependencyAnalyzer;
     
-    public PackageContextBuilder(DB2ConnectionManager connectionManager, PackageDependencyAnalyzer dependencyAnalyzer)
+    public PackageContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider, PackageDependencyAnalyzer dependencyAnalyzer)
     {
         _connectionManager = connectionManager;
+        _metadataProvider = metadataProvider;
         _dependencyAnalyzer = dependencyAnalyzer;
     }
     
@@ -96,13 +97,12 @@ public class PackageContextBuilder
     
     private async Task<PackageMetadata?> GetPackageMetadataAsync(string schema, string packageName)
     {
-        var sql = $@"
-SELECT PKGTYPE, ISOLATION, CREATE_TIME, LAST_BIND_TIME
-FROM SYSCAT.PACKAGES
-WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{packageName}'
-FETCH FIRST 1 ROW ONLY";
-        
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetPackageMetadata",
+            new Dictionary<string, object>
+            {
+                { "PKGSCHEMA", schema },
+                { "PKGNAME", packageName }
+            });
         
         if (dataTable.Rows.Count > 0)
         {

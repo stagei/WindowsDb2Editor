@@ -2,20 +2,24 @@ using NLog;
 using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 
 /// <summary>
 /// Builds AI-friendly context for a database view.
+/// PROVIDER-AGNOSTIC: Uses IMetadataProvider for all queries.
 /// </summary>
 public class ViewContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly IMetadataProvider _metadataProvider;
     
-    public ViewContextBuilder(DB2ConnectionManager connectionManager)
+    public ViewContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
+        _metadataProvider = metadataProvider;
     }
     
     /// <summary>
@@ -83,26 +87,26 @@ public class ViewContextBuilder
     
     private async Task<string> GetViewDefinitionAsync(string schema, string viewName)
     {
-        var sql = $@"
-SELECT TEXT
-FROM SYSCAT.VIEWS
-WHERE VIEWSCHEMA = '{schema}' AND VIEWNAME = '{viewName}'";
+        var result = await _metadataProvider.ExecuteScalarAsync("GetViewDefinition",
+            new Dictionary<string, object>
+            {
+                { "VIEWSCHEMA", schema },
+                { "VIEWNAME", viewName }
+            });
         
-        using var command = _connectionManager.CreateCommand(sql);
-        var result = await command.ExecuteScalarAsync();
         return result?.ToString() ?? string.Empty;
     }
     
     private async Task<List<ColumnMetadata>> GetViewColumnsAsync(string schema, string viewName)
     {
-        var sql = $@"
-SELECT COLNAME, TYPENAME, LENGTH, NULLS
-FROM SYSCAT.COLUMNS
-WHERE TABSCHEMA = '{schema}' AND TABNAME = '{viewName}'
-ORDER BY COLNO";
-        
         var columns = new List<ColumnMetadata>();
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetViewColumns",
+            new Dictionary<string, object>
+            {
+                { "TABSCHEMA", schema },
+                { "TABNAME", viewName }
+            });
         
         foreach (System.Data.DataRow row in dataTable.Rows)
         {
@@ -120,15 +124,14 @@ ORDER BY COLNO";
     
     private async Task<List<string>> GetViewDependenciesAsync(string schema, string viewName)
     {
-        var sql = $@"
-SELECT DISTINCT BSCHEMA || '.' || BNAME as DEPENDENCY
-FROM SYSCAT.VIEWDEP
-WHERE VIEWSCHEMA = '{schema}' AND VIEWNAME = '{viewName}'
-AND BTYPE = 'T'
-ORDER BY DEPENDENCY";
-        
         var dependencies = new List<string>();
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetViewDependencies",
+            new Dictionary<string, object>
+            {
+                { "VIEWSCHEMA", schema },
+                { "VIEWNAME", viewName }
+            });
         
         foreach (System.Data.DataRow row in dataTable.Rows)
         {

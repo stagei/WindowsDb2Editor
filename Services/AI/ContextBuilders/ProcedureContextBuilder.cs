@@ -2,20 +2,24 @@ using NLog;
 using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 
 /// <summary>
 /// Builds AI-friendly context for a stored procedure.
+/// PROVIDER-AGNOSTIC: Uses IMetadataProvider for all queries.
 /// </summary>
 public class ProcedureContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly IMetadataProvider _metadataProvider;
     
-    public ProcedureContextBuilder(DB2ConnectionManager connectionManager)
+    public ProcedureContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
+        _metadataProvider = metadataProvider;
     }
     
     /// <summary>
@@ -99,13 +103,12 @@ public class ProcedureContextBuilder
     
     private async Task<ProcedureMetadata?> GetProcedureMetadataAsync(string schema, string procedureName)
     {
-        var sql = $@"
-SELECT LANGUAGE, DETERMINISTIC, SQL_DATA_ACCESS, REMARKS
-FROM SYSCAT.PROCEDURES
-WHERE PROCSCHEMA = '{schema}' AND PROCNAME = '{procedureName}'
-FETCH FIRST 1 ROW ONLY";
-        
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetProcedureMetadata",
+            new Dictionary<string, object>
+            {
+                { "PROCSCHEMA", schema },
+                { "PROCNAME", procedureName }
+            });
         
         if (dataTable.Rows.Count > 0)
         {
@@ -124,14 +127,14 @@ FETCH FIRST 1 ROW ONLY";
     
     private async Task<List<ParameterInfo>> GetProcedureParametersAsync(string schema, string procedureName)
     {
-        var sql = $@"
-SELECT PARMNAME, TYPENAME, PARM_MODE, REMARKS, ORDINAL
-FROM SYSCAT.PROCPARMS
-WHERE PROCSCHEMA = '{schema}' AND PROCNAME = '{procedureName}'
-ORDER BY ORDINAL";
-        
         var parameters = new List<ParameterInfo>();
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetProcedureParameters",
+            new Dictionary<string, object>
+            {
+                { "PROCSCHEMA", schema },
+                { "PROCNAME", procedureName }
+            });
         
         foreach (System.Data.DataRow row in dataTable.Rows)
         {
@@ -149,29 +152,28 @@ ORDER BY ORDINAL";
     
     private async Task<string> GetProcedureSourceAsync(string schema, string procedureName)
     {
-        var sql = $@"
-SELECT TEXT
-FROM SYSCAT.PROCEDURES
-WHERE PROCSCHEMA = '{schema}' AND PROCNAME = '{procedureName}'";
+        var result = await _metadataProvider.ExecuteScalarAsync("GetProcedureSource",
+            new Dictionary<string, object>
+            {
+                { "PROCSCHEMA", schema },
+                { "PROCNAME", procedureName }
+            });
         
-        using var command = _connectionManager.CreateCommand(sql);
-        var result = await command.ExecuteScalarAsync();
         return result?.ToString() ?? string.Empty;
     }
     
     private async Task<List<string>> GetProcedureDependenciesAsync(string schema, string procedureName)
     {
-        var sql = $@"
-SELECT DISTINCT BSCHEMA || '.' || BNAME || ' (' || BTYPE || ')' as DEPENDENCY
-FROM SYSCAT.ROUTINEDEP
-WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{procedureName}'
-ORDER BY DEPENDENCY";
-        
         var dependencies = new List<string>();
         
         try
         {
-            var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+            var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetProcedureDependencies",
+                new Dictionary<string, object>
+                {
+                    { "ROUTINESCHEMA", schema },
+                    { "ROUTINENAME", procedureName }
+                });
             
             foreach (System.Data.DataRow row in dataTable.Rows)
             {

@@ -7,22 +7,26 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services.AI;
 
 /// <summary>
 /// Deep Analysis Service - extracts comprehensive context for AI analysis.
 /// Fetches: table/column comments, data samples, column profiling, relationships.
+/// PROVIDER-AGNOSTIC: Uses IMetadataProvider for all queries.
 /// </summary>
 public class DeepAnalysisService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly IMetadataProvider _metadataProvider;
     
-    public DeepAnalysisService(DB2ConnectionManager connectionManager)
+    public DeepAnalysisService(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
-        Logger.Debug("DeepAnalysisService initialized");
+        _metadataProvider = metadataProvider;
+        Logger.Debug("DeepAnalysisService initialized with provider: {Provider}", metadataProvider.GetCurrentProvider());
     }
     
     /// <summary>
@@ -103,13 +107,13 @@ public class DeepAnalysisService
     {
         Logger.Debug("Fetching table comment: {Schema}.{Table}", schema, tableName);
         
-        var sql = $@"
-SELECT REMARKS
-FROM SYSCAT.TABLES
-WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
+        var result = await _metadataProvider.ExecuteScalarAsync("GetTableComment", 
+            new Dictionary<string, object>
+            {
+                { "TABSCHEMA", schema },
+                { "TABNAME", tableName }
+            });
         
-        using var command = _connectionManager.CreateCommand(sql);
-        var result = await command.ExecuteScalarAsync();
         return result?.ToString()?.Trim() ?? string.Empty;
     }
     
@@ -120,16 +124,14 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     {
         Logger.Debug("Fetching column comments: {Schema}.{Table}", schema, tableName);
         
-        var sql = $@"
-SELECT COLNAME, REMARKS
-FROM SYSCAT.COLUMNS
-WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-AND REMARKS IS NOT NULL AND REMARKS <> ''
-ORDER BY COLNO";
-        
         var comments = new Dictionary<string, string>();
         
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetColumnComments",
+            new Dictionary<string, object>
+            {
+                { "TABSCHEMA", schema },
+                { "TABNAME", tableName }
+            });
         
         foreach (DataRow row in dataTable.Rows)
         {
@@ -153,15 +155,14 @@ ORDER BY COLNO";
     {
         Logger.Debug("Fetching column metadata: {Schema}.{Table}", schema, tableName);
         
-        var sql = $@"
-SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, IDENTITY, DEFAULT
-FROM SYSCAT.COLUMNS
-WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'
-ORDER BY COLNO";
-        
         var columns = new List<ColumnMetadata>();
         
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetColumnMetadata",
+            new Dictionary<string, object>
+            {
+                { "TABSCHEMA", schema },
+                { "TABNAME", tableName }
+            });
         
         foreach (DataRow row in dataTable.Rows)
         {
@@ -258,26 +259,16 @@ FROM {schema}.{tableName}";
     {
         Logger.Debug("Fetching relationships: {Schema}.{Table}", schema, tableName);
         
-        var sql = $@"
-SELECT 
-    R.CONSTNAME,
-    R.TABSCHEMA,
-    R.TABNAME,
-    R.REFTABSCHEMA,
-    R.REFTABNAME,
-    K.COLNAME,
-    K.COLSEQ
-FROM SYSCAT.REFERENCES R
-JOIN SYSCAT.KEYCOLUSE K ON R.CONSTNAME = K.CONSTNAME 
-    AND R.TABSCHEMA = K.TABSCHEMA 
-    AND R.TABNAME = K.TABNAME
-WHERE (R.TABSCHEMA = '{schema}' AND R.TABNAME = '{tableName}')
-   OR (R.REFTABSCHEMA = '{schema}' AND R.REFTABNAME = '{tableName}')
-ORDER BY R.CONSTNAME, K.COLSEQ";
-        
         var relationships = new List<TableRelationship>();
         
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetTableRelationships",
+            new Dictionary<string, object>
+            {
+                { "TABSCHEMA", schema },
+                { "TABNAME", tableName },
+                { "REFTABSCHEMA", schema },
+                { "REFTABNAME", tableName }
+            });
         
         var grouped = dataTable.AsEnumerable()
             .GroupBy(r => r["CONSTNAME"].ToString());

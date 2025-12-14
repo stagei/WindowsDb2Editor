@@ -2,20 +2,24 @@ using NLog;
 using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services.Interfaces;
 
 namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 
 /// <summary>
 /// Builds AI-friendly context for a user-defined function.
+/// PROVIDER-AGNOSTIC: Uses IMetadataProvider for all queries.
 /// </summary>
 public class FunctionContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly IMetadataProvider _metadataProvider;
     
-    public FunctionContextBuilder(DB2ConnectionManager connectionManager)
+    public FunctionContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
+        _metadataProvider = metadataProvider;
     }
     
     /// <summary>
@@ -83,13 +87,12 @@ public class FunctionContextBuilder
     
     private async Task<FunctionMetadata?> GetFunctionMetadataAsync(string schema, string functionName)
     {
-        var sql = $@"
-SELECT RETURN_TYPE, LANGUAGE, DETERMINISTIC, SQL_DATA_ACCESS, REMARKS
-FROM SYSCAT.FUNCTIONS
-WHERE FUNCSCHEMA = '{schema}' AND FUNCNAME = '{functionName}'
-FETCH FIRST 1 ROW ONLY";
-        
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetFunctionMetadata",
+            new Dictionary<string, object>
+            {
+                { "FUNCSCHEMA", schema },
+                { "FUNCNAME", functionName }
+            });
         
         if (dataTable.Rows.Count > 0)
         {
@@ -109,14 +112,14 @@ FETCH FIRST 1 ROW ONLY";
     
     private async Task<List<ParameterInfo>> GetFunctionParametersAsync(string schema, string functionName)
     {
-        var sql = $@"
-SELECT PARMNAME, TYPENAME, PARM_MODE, ORDINAL
-FROM SYSCAT.FUNCPARMS
-WHERE FUNCSCHEMA = '{schema}' AND FUNCNAME = '{functionName}'
-ORDER BY ORDINAL";
-        
         var parameters = new List<ParameterInfo>();
-        var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
+        
+        var dataTable = await _metadataProvider.ExecuteMetadataQueryAsync("GetFunctionParameters",
+            new Dictionary<string, object>
+            {
+                { "FUNCSCHEMA", schema },
+                { "FUNCNAME", functionName }
+            });
         
         foreach (System.Data.DataRow row in dataTable.Rows)
         {
@@ -133,13 +136,13 @@ ORDER BY ORDINAL";
     
     private async Task<string> GetFunctionSourceAsync(string schema, string functionName)
     {
-        var sql = $@"
-SELECT TEXT
-FROM SYSCAT.FUNCTIONS
-WHERE FUNCSCHEMA = '{schema}' AND FUNCNAME = '{functionName}'";
+        var result = await _metadataProvider.ExecuteScalarAsync("GetFunctionSource",
+            new Dictionary<string, object>
+            {
+                { "FUNCSCHEMA", schema },
+                { "FUNCNAME", functionName }
+            });
         
-        using var command = _connectionManager.CreateCommand(sql);
-        var result = await command.ExecuteScalarAsync();
         return result?.ToString() ?? string.Empty;
     }
 }

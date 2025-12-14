@@ -7,6 +7,7 @@ namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 
 /// <summary>
 /// Builds AI-friendly context for a table, including structure, relationships, and data insights.
+/// PROVIDER-AGNOSTIC: Uses DeepAnalysisService (which uses IMetadataProvider).
 /// </summary>
 public class TableContextBuilder
 {
