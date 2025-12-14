@@ -70,15 +70,19 @@
     <None Update="ConfigFiles\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <!-- Copy Python scripts from project folder (more reliable than NuGet) -->
+    <None Update="PythonScripts\*.py">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   
-  <!-- Copy SqlMermaidErdTools Python scripts to output -->
+  <!-- Copy SqlMermaidErdTools Python scripts to output (fallback from NuGet) -->
   <Target Name="CopySqlMermaidScripts" AfterTargets="Build">
     <ItemGroup>
       <MermaidScripts Include="$(NuGetPackageRoot)sqlmermaiderdtools\0.2.8\scripts\*.py" />
     </ItemGroup>
     <Copy SourceFiles="@(MermaidScripts)" DestinationFolder="$(OutputPath)scripts" SkipUnchangedFiles="true" />
-    <Message Text="Copied $(MermaidScripts->Count()) Python scripts from SqlMermaidErdTools" Importance="high" />
+    <Message Text="Copied Python scripts from SqlMermaidErdTools to $(OutputPath)scripts" Importance="high" />
   </Target>
 
 </Project>

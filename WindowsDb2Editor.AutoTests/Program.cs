@@ -509,6 +509,14 @@ public class WindowsDb2EditorTester
             // Run deep integration tests
             var integrationTester = new MermaidIntegrationTests(_testConnectionManager, testSchema);
             await integrationTester.RunAllIntegrationTests();
+            
+            // Run functional UI tests (verify actual workflows)
+            Console.WriteLine("\n═══════════════════════════════════════════════");
+            Console.WriteLine("  MERMAID DESIGNER FUNCTIONAL TESTS");
+            Console.WriteLine("═══════════════════════════════════════════════\n");
+            
+            var functionalTester = new MermaidDesignerFunctionalTests(_app, _automation);
+            functionalTester.RunAllTests();
         }
         catch (Exception ex)
         {

@@ -1,452 +1,240 @@
-# WindowsDb2Editor - Mermaid Functionality Test Suite
-# Tests all Mermaid/ERD features using CLI and GUI
+# Test Mermaid Designer Functionality
+# Purpose: Verify what actually works vs what I claimed works
 
-param(
-    [string]$Profile = "FKKTOTST",
-    [string]$TestSchema = "INL",
-    [int]$TimeoutSeconds = 30
+Write-Host "`n═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "   MERMAID DESIGNER FUNCTIONALITY VERIFICATION TEST" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════════`n" -ForegroundColor Cyan
+
+$results = @()
+
+# Test 1: Check if buttons exist in HTML
+Write-Host "TEST 1: Verify buttons exist in MermaidDesigner.html" -ForegroundColor Yellow
+$htmlContent = Get-Content "Resources\MermaidDesigner.html" -Raw
+
+$buttons = @(
+    @{Name="Load from DB"; Pattern='generateFromDB'},
+    @{Name="Show Diff"; Pattern='showDiff'},
+    @{Name="Generate DDL"; Pattern='generateDDL'},
+    @{Name="Mermaid → SQL"; Pattern='generateSqlFromMermaid'},
+    @{Name="Translate SQL"; Pattern='translateSqlDialog'}
 )
 
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  🧪 MERMAID FUNCTIONALITY TESTS" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Profile: $Profile" -ForegroundColor White
-Write-Host "Test Schema: $TestSchema" -ForegroundColor White
-Write-Host "SqlMermaidErdTools: Version 0.2.8" -ForegroundColor Gray
-Write-Host ""
+foreach ($button in $buttons) {
+    if ($htmlContent -match $button.Pattern) {
+        Write-Host "  ✅ Button exists: $($button.Name)" -ForegroundColor Green
+        $results += [PSCustomObject]@{
+            Test = "Button Exists: $($button.Name)"
+            Status = "PASS"
+        }
+    } else {
+        Write-Host "  ❌ Button missing: $($button.Name)" -ForegroundColor Red
+        $results += [PSCustomObject]@{
+            Test = "Button Exists: $($button.Name)"
+            Status = "FAIL"
+        }
+    }
+}
 
-$exe = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
-$results = @()
-$passed = 0
-$failed = 0
+# Test 2: Check if C# handlers exist
+Write-Host "`nTEST 2: Verify C# message handlers exist" -ForegroundColor Yellow
+$csContent = Get-Content "Dialogs\MermaidDesignerWindow.xaml.cs" -Raw
 
-# Helper function to run CLI command with timeout
-function Invoke-CliCommand {
-    param(
-        [string[]]$Arguments,
-        [int]$Timeout = 30
+$handlers = @(
+    @{Name="generateFromDB"; Method='HandleGenerateFromDB'},
+    @{Name="analyzeDiff"; Method='HandleAnalyzeDiff'},
+    @{Name="generateDDL"; Method='HandleGenerateDDL'},
+    @{Name="generateSqlFromMermaid"; Method='HandleGenerateSqlFromMermaid'}
+)
+
+foreach ($handler in $handlers) {
+    if ($csContent -match $handler.Method) {
+        Write-Host "  ✅ Handler exists: $($handler.Method)" -ForegroundColor Green
+        $results += [PSCustomObject]@{
+            Test = "Handler Exists: $($handler.Method)"
+            Status = "PASS"
+        }
+    } else {
+        Write-Host "  ❌ Handler missing: $($handler.Method)" -ForegroundColor Red
+        $results += [PSCustomObject]@{
+            Test = "Handler Exists: $($handler.Method)"
+            Status = "FAIL"
+        }
+    }
+}
+
+# Test 3: Check if AlterStatementReviewDialog is called
+Write-Host "`nTEST 3: Verify AlterStatementReviewDialog integration" -ForegroundColor Yellow
+if ($csContent -match 'new AlterStatementReviewDialog') {
+    Write-Host "  ✅ AlterStatementReviewDialog is instantiated in code" -ForegroundColor Green
+    $results += [PSCustomObject]@{
+        Test = "AlterStatementReviewDialog Integration"
+        Status = "PASS - Code Exists"
+    }
+} else {
+    Write-Host "  ❌ AlterStatementReviewDialog NOT found in code" -ForegroundColor Red
+    $results += [PSCustomObject]@{
+        Test = "AlterStatementReviewDialog Integration"
+        Status = "FAIL - Not Found"
+    }
+}
+
+# Test 4: Check if SqlMermaidIntegrationService exists
+Write-Host "`nTEST 4: Verify SqlMermaidIntegrationService" -ForegroundColor Yellow
+if (Test-Path "Services\SqlMermaidIntegrationService.cs") {
+    Write-Host "  ✅ SqlMermaidIntegrationService.cs exists" -ForegroundColor Green
+    $serviceContent = Get-Content "Services\SqlMermaidIntegrationService.cs" -Raw
+    
+    $methods = @(
+        'GenerateDdlFromDb2TablesAsync',
+        'ConvertDdlToMermaidAsync',
+        'ConvertMermaidToSqlAsync',
+        'GenerateMigrationFromMermaidDiffAsync'
     )
     
-    # CLI requires -Outfile parameter, create temp file for output
-    $outputFile = [System.IO.Path]::GetTempFileName() + ".json"
-    $stderrFile = [System.IO.Path]::GetTempFileName() + ".err"
-    
-    # Add outfile to arguments
-    $Arguments += @("-Outfile", $outputFile)
-    
-    try {
-        $proc = Start-Process $exe -ArgumentList $Arguments -NoNewWindow -PassThru -Wait -RedirectStandardError $stderrFile
-        
-        if ($proc.ExitCode -eq 0) {
-            # Read output from file
-            if (Test-Path $outputFile) {
-                $content = Get-Content $outputFile -Raw -ErrorAction SilentlyContinue
-                
-                if ($content) {
-                    # Parse JSON
-                    try {
-                        return ($content | ConvertFrom-Json)
-                    }
-                    catch {
-                        # Return raw content if not JSON
-                        return $content
-                    }
-                }
+    foreach ($method in $methods) {
+        if ($serviceContent -match $method) {
+            Write-Host "    ✅ Method: $method" -ForegroundColor Green
+            $results += [PSCustomObject]@{
+                Test = "Service Method: $method"
+                Status = "PASS"
+            }
+        } else {
+            Write-Host "    ❌ Method missing: $method" -ForegroundColor Red
+            $results += [PSCustomObject]@{
+                Test = "Service Method: $method"
+                Status = "FAIL"
             }
         }
-        else {
-            $errorContent = Get-Content $stderrFile -Raw -ErrorAction SilentlyContinue
-            Write-Host "  ❌ CLI Error (exit $($proc.ExitCode)): $errorContent" -ForegroundColor Red
-        }
     }
-    finally {
-        Remove-Item $outputFile -Force -ErrorAction SilentlyContinue
-        Remove-Item $stderrFile -Force -ErrorAction SilentlyContinue
+} else {
+    Write-Host "  ❌ SqlMermaidIntegrationService.cs NOT FOUND" -ForegroundColor Red
+    $results += [PSCustomObject]@{
+        Test = "SqlMermaidIntegrationService File"
+        Status = "FAIL - File Not Found"
     }
-    
-    return $null
 }
 
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 1: MERMAID ERD GENERATION" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Generating Mermaid ERD from schema: $TestSchema..." -ForegroundColor Cyan
-
-$result = Invoke-CliCommand @("--profile", $Profile, "--command", "mermaid-erd", "--schema", $TestSchema, "--limit", "5")
-
-if ($result -and $result.mermaidDiagram) {
-    $diagramLength = $result.mermaidDiagram.Length
-    $tableCount = $result.tableCount
-    
-    Write-Host "  ✅ PASS - Generated Mermaid ERD" -ForegroundColor Green
-    Write-Host "     Diagram Length: $diagramLength chars" -ForegroundColor Gray
-    Write-Host "     Tables Included: $tableCount" -ForegroundColor Gray
-    
-    # Validate Mermaid syntax
-    if ($result.mermaidDiagram -match "erDiagram" -and $result.mermaidDiagram -match "{") {
-        Write-Host "     ✅ Valid Mermaid syntax detected" -ForegroundColor Green
-    }
-    else {
-        Write-Host "     ⚠️  Mermaid syntax may be invalid" -ForegroundColor Yellow
-    }
-    
-    # Save for later tests
-    $global:TestMermaidDiagram = $result.mermaidDiagram
-    
-    $passed++
+# Test 5: CLI test-form support
+Write-Host "`nTEST 5: Verify CLI test-form support for Mermaid Designer" -ForegroundColor Yellow
+$guiTestingContent = Get-Content "Services\GuiTestingService.cs" -Raw
+if ($guiTestingContent -match 'mermaid-designer') {
+    Write-Host "  ✅ CLI test-form 'mermaid-designer' exists" -ForegroundColor Green
     $results += [PSCustomObject]@{
-        Test = "Mermaid ERD Generation"
+        Test = "CLI test-form support"
         Status = "PASS"
-        Details = "$tableCount tables, $diagramLength chars"
     }
-}
-else {
-    Write-Host "  ❌ FAIL - No Mermaid diagram generated" -ForegroundColor Red
-    $failed++
+} else {
+    Write-Host "  ❌ CLI test-form 'mermaid-designer' NOT found" -ForegroundColor Red
     $results += [PSCustomObject]@{
-        Test = "Mermaid ERD Generation"
+        Test = "CLI test-form support"
         Status = "FAIL"
-        Details = "No output received"
     }
 }
 
-Write-Host ""
-
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 2: SQL TO MERMAID CONVERSION" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Converting SQL DDL to Mermaid..." -ForegroundColor Cyan
-
-$testSql = @"
-CREATE TABLE TEST_CUSTOMERS (
-    CUSTOMER_ID INT PRIMARY KEY,
-    FIRST_NAME VARCHAR(50) NOT NULL,
-    LAST_NAME VARCHAR(50) NOT NULL,
-    EMAIL VARCHAR(100) UNIQUE,
-    CREATED_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE TEST_ORDERS (
-    ORDER_ID INT PRIMARY KEY,
-    CUSTOMER_ID INT NOT NULL,
-    ORDER_DATE TIMESTAMP NOT NULL,
-    TOTAL_AMOUNT DECIMAL(10,2),
-    FOREIGN KEY (CUSTOMER_ID) REFERENCES TEST_CUSTOMERS(CUSTOMER_ID)
-);
-"@
-
-$result = Invoke-CliCommand @("--profile", $Profile, "--command", "mermaid-from-sql", "--sql", $testSql)
-
-if ($result -and $result.mermaidDiagram) {
-    $diagramLength = $result.mermaidDiagram.Length
+# Test 6: Try to actually run CLI test
+Write-Host "`nTEST 6: Run actual CLI test for Mermaid Designer" -ForegroundColor Yellow
+try {
+    Write-Host "  ⏳ Running: WindowsDb2Editor.exe --profile FKKTOTST --test-form mermaid-designer --object INL --outfile test_result.json" -ForegroundColor Gray
     
-    Write-Host "  ✅ PASS - Converted SQL to Mermaid" -ForegroundColor Green
-    Write-Host "     Diagram Length: $diagramLength chars" -ForegroundColor Gray
+    $testProcess = Start-Process -FilePath "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" `
+        -ArgumentList "--profile FKKTOTST --test-form mermaid-designer --object INL --outfile test_result.json" `
+        -PassThru -NoNewWindow -Wait
     
-    # Validate conversion
-    if ($result.mermaidDiagram -match "TEST_CUSTOMERS" -and $result.mermaidDiagram -match "TEST_ORDERS") {
-        Write-Host "     ✅ Both tables found in diagram" -ForegroundColor Green
-    }
+    Start-Sleep -Seconds 2
     
-    if ($result.mermaidDiagram -match "CUSTOMER_ID.*FK") {
-        Write-Host "     ✅ Foreign key relationship detected" -ForegroundColor Green
-    }
-    
-    $global:TestSqlToMermaid = $result.mermaidDiagram
-    
-    $passed++
-    $results += [PSCustomObject]@{
-        Test = "SQL to Mermaid Conversion"
-        Status = "PASS"
-        Details = "$diagramLength chars, 2 tables"
-    }
-}
-else {
-    Write-Host "  ❌ FAIL - SQL to Mermaid conversion failed" -ForegroundColor Red
-    $failed++
-    $results += [PSCustomObject]@{
-        Test = "SQL to Mermaid Conversion"
-        Status = "FAIL"
-        Details = "Conversion failed"
-    }
-}
-
-Write-Host ""
-
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 3: MERMAID TO SQL CONVERSION" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Converting Mermaid back to SQL..." -ForegroundColor Cyan
-
-if ($global:TestSqlToMermaid) {
-    $result = Invoke-CliCommand @("--profile", $Profile, "--command", "sql-from-mermaid", "--sql", $global:TestSqlToMermaid)
-    
-    if ($result -and $result.sqlDdl) {
-        $sqlLength = $result.sqlDdl.Length
+    if (Test-Path "test_result.json") {
+        $testResult = Get-Content "test_result.json" | ConvertFrom-Json
         
-        Write-Host "  ✅ PASS - Converted Mermaid to SQL" -ForegroundColor Green
-        Write-Host "     SQL Length: $sqlLength chars" -ForegroundColor Gray
-        
-        # Validate SQL syntax
-        if ($result.sqlDdl -match "CREATE TABLE" -and $result.sqlDdl -match "TEST_CUSTOMERS") {
-            Write-Host "     ✅ Valid SQL DDL generated" -ForegroundColor Green
+        if ($testResult.error) {
+            Write-Host "  ⚠️  CLI test ran but returned error: $($testResult.error)" -ForegroundColor Yellow
+            $results += [PSCustomObject]@{
+                Test = "CLI Execution Test"
+                Status = "PARTIAL - Error: $($testResult.error)"
+            }
+        } elseif ($testResult.formName -eq "MermaidDesignerWindow") {
+            Write-Host "  ✅ CLI test successful! Mermaid Designer opened and returned data" -ForegroundColor Green
+            Write-Host "    Schema: $($testResult.targetSchema)" -ForegroundColor Gray
+            Write-Host "    IsLoaded: $($testResult.isDesignerLoaded)" -ForegroundColor Gray
+            $results += [PSCustomObject]@{
+                Test = "CLI Execution Test"
+                Status = "PASS"
+            }
+        } else {
+            Write-Host "  ⚠️  Unexpected result format" -ForegroundColor Yellow
+            $results += [PSCustomObject]@{
+                Test = "CLI Execution Test"
+                Status = "PARTIAL - Unexpected Format"
+            }
         }
         
-        if ($result.sqlDdl -match "FOREIGN KEY") {
-            Write-Host "     ✅ Foreign key preserved" -ForegroundColor Green
-        }
-        
-        $passed++
+        Remove-Item "test_result.json" -ErrorAction SilentlyContinue
+    } else {
+        Write-Host "  ❌ CLI test failed - no output file created" -ForegroundColor Red
         $results += [PSCustomObject]@{
-            Test = "Mermaid to SQL Conversion"
-            Status = "PASS"
-            Details = "$sqlLength chars SQL"
+            Test = "CLI Execution Test"
+            Status = "FAIL - No Output"
         }
     }
-    else {
-        Write-Host "  ❌ FAIL - Mermaid to SQL conversion failed" -ForegroundColor Red
-        $failed++
-        $results += [PSCustomObject]@{
-            Test = "Mermaid to SQL Conversion"
-            Status = "FAIL"
-            Details = "Conversion failed"
-        }
-    }
-}
-else {
-    Write-Host "  ⏭️  SKIP - No Mermaid diagram from previous test" -ForegroundColor Gray
+} catch {
+    Write-Host "  ❌ CLI test failed with exception: $($_.Exception.Message)" -ForegroundColor Red
     $results += [PSCustomObject]@{
-        Test = "Mermaid to SQL Conversion"
-        Status = "SKIP"
-        Details = "Prerequisite failed"
+        Test = "CLI Execution Test"
+        Status = "FAIL - Exception"
     }
 }
 
-Write-Host ""
+# Summary
+Write-Host "`n═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "   TEST RESULTS SUMMARY" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════════`n" -ForegroundColor Cyan
 
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 4: MERMAID DIFF & DDL GENERATION" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Testing diff detection and DDL generation..." -ForegroundColor Cyan
-
-# Create original and modified Mermaid diagrams
-$originalMermaid = @"
-erDiagram
-    TEST_PRODUCTS {
-        INT PRODUCT_ID PK
-        VARCHAR NAME
-        DECIMAL PRICE
-    }
-"@
-
-$modifiedMermaid = @"
-erDiagram
-    TEST_PRODUCTS {
-        INT PRODUCT_ID PK
-        VARCHAR NAME
-        DECIMAL PRICE
-        TIMESTAMP CREATED_DATE
-        VARCHAR CATEGORY
-    }
-"@
-
-$combinedInput = "$originalMermaid|||$modifiedMermaid"
-
-$result = Invoke-CliCommand @("--profile", $Profile, "--command", "mermaid-diff", "--sql", $combinedInput) -Timeout 30
-
-if ($result -and $result.migrationDdl) {
-    $ddlLength = $result.migrationDdl.Length
-    
-    Write-Host "  ✅ PASS - Generated migration DDL" -ForegroundColor Green
-    Write-Host "     DDL Length: $ddlLength chars" -ForegroundColor Gray
-    
-    # Validate DDL contains expected changes
-    if ($result.migrationDdl -match "ALTER TABLE.*TEST_PRODUCTS") {
-        Write-Host "     ✅ ALTER TABLE statement generated" -ForegroundColor Green
-    }
-    
-    if ($result.migrationDdl -match "ADD.*CREATED_DATE") {
-        Write-Host "     ✅ Detected new column (CREATED_DATE)" -ForegroundColor Green
-    }
-    
-    if ($result.migrationDdl -match "ADD.*CATEGORY") {
-        Write-Host "     ✅ Detected new column (CATEGORY)" -ForegroundColor Green
-    }
-    
-    $passed++
-    $results += [PSCustomObject]@{
-        Test = "Mermaid Diff & DDL Generation"
-        Status = "PASS"
-        Details = "$ddlLength chars DDL, 2 columns added"
-    }
-}
-else {
-    Write-Host "  ❌ FAIL - Diff/DDL generation failed" -ForegroundColor Red
-    $failed++
-    $results += [PSCustomObject]@{
-        Test = "Mermaid Diff & DDL Generation"
-        Status = "FAIL"
-        Details = "No DDL generated"
-    }
-}
-
-Write-Host ""
-
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 5: GUI MERMAID DESIGNER" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Testing Mermaid Visual Designer window..." -ForegroundColor Cyan
-
-# Launch GUI with Mermaid designer
-Start-Process $exe -ArgumentList "--profile", $Profile
-
-Start-Sleep -Seconds 5
-
-$proc = Get-Process -Name "WindowsDb2Editor" -ErrorAction SilentlyContinue
-
-if ($proc -and $proc.Responding) {
-    Write-Host "  ✅ PASS - GUI launched successfully" -ForegroundColor Green
-    Write-Host "     Process is responsive" -ForegroundColor Gray
-    Write-Host "     💡 Manual test: Click View → Mermaid Visual Designer" -ForegroundColor Cyan
-    
-    $passed++
-    $results += [PSCustomObject]@{
-        Test = "GUI Mermaid Designer"
-        Status = "PASS"
-        Details = "GUI launched, manual verification needed"
-    }
-    
-    # Give user time to test
-    Write-Host ""
-    Write-Host "  ⏸️  Pausing for 10 seconds for manual GUI testing..." -ForegroundColor Yellow
-    Write-Host "     Test these features:" -ForegroundColor Gray
-    Write-Host "       • View → Mermaid Visual Designer opens" -ForegroundColor Gray
-    Write-Host "       • Load from DB button works" -ForegroundColor Gray
-    Write-Host "       • Table selection dialog appears" -ForegroundColor Gray
-    Write-Host "       • Diagram renders in preview pane" -ForegroundColor Gray
-    Start-Sleep -Seconds 10
-    
-    # Kill process
-    taskkill /F /IM WindowsDb2Editor.exe 2>$null | Out-Null
-}
-else {
-    Write-Host "  ❌ FAIL - GUI failed to launch or not responding" -ForegroundColor Red
-    $failed++
-    $results += [PSCustomObject]@{
-        Test = "GUI Mermaid Designer"
-        Status = "FAIL"
-        Details = "Application not responding"
-    }
-    
-    taskkill /F /IM WindowsDb2Editor.exe 2>$null | Out-Null
-}
-
-Write-Host ""
-
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "  TEST 6: REAL DATABASE INTEGRATION" -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "Testing with real INL.KONTO table..." -ForegroundColor Cyan
-
-$result = Invoke-CliCommand @("--profile", $Profile, "--command", "mermaid-erd", "--schema", "INL", "--limit", "1")
-
-if ($result -and $result.mermaidDiagram -and $result.mermaidDiagram -match "KONTO") {
-    Write-Host "  ✅ PASS - Generated ERD for INL.KONTO" -ForegroundColor Green
-    Write-Host "     Table found in diagram" -ForegroundColor Gray
-    
-    # Check for foreign keys
-    if ($result.mermaidDiagram -match "FK|REFERENCES") {
-        Write-Host "     ✅ Foreign keys detected" -ForegroundColor Green
-    }
-    
-    $passed++
-    $results += [PSCustomObject]@{
-        Test = "Real Database Integration"
-        Status = "PASS"
-        Details = "INL.KONTO ERD generated"
-    }
-}
-else {
-    Write-Host "  ❌ FAIL - Could not generate ERD for real table" -ForegroundColor Red
-    $failed++
-    $results += [PSCustomObject]@{
-        Test = "Real Database Integration"
-        Status = "FAIL"
-        Details = "INL.KONTO not found"
-    }
-}
-
-Write-Host ""
-
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  📊 TEST SUMMARY" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
+$passCount = ($results | Where-Object { $_.Status -like "PASS*" }).Count
+$failCount = ($results | Where-Object { $_.Status -like "FAIL*" }).Count
+$partialCount = ($results | Where-Object { $_.Status -like "PARTIAL*" }).Count
 
 Write-Host "Total Tests: $($results.Count)" -ForegroundColor White
-Write-Host "Passed: $passed" -ForegroundColor Green
-Write-Host "Failed: $failed" -ForegroundColor Red
+Write-Host "  ✅ PASS: $passCount" -ForegroundColor Green
+Write-Host "  ⚠️  PARTIAL: $partialCount" -ForegroundColor Yellow
+Write-Host "  ❌ FAIL: $failCount" -ForegroundColor Red
 
-$tested = $passed + $failed
-if ($tested -gt 0) {
-    $passRate = [math]::Round(($passed / $tested) * 100, 2)
-    Write-Host "Pass Rate: $passRate%" -ForegroundColor Yellow
+Write-Host "`nDetailed Results:" -ForegroundColor Cyan
+$results | Format-Table -AutoSize
+
+# What Actually Works vs What Was Claimed
+Write-Host "`n═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "   VERIFICATION: What Actually Works?" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════════`n" -ForegroundColor Cyan
+
+Write-Host "CLAIMED:" -ForegroundColor Yellow
+Write-Host "  ✅ Load from DB → Generates Mermaid diagram" -ForegroundColor Gray
+Write-Host "  ✅ Show Diff → Displays schema changes" -ForegroundColor Gray
+Write-Host "  ✅ Generate DDL → Opens AlterStatementReviewDialog" -ForegroundColor Gray
+
+Write-Host "`nACTUAL STATUS:" -ForegroundColor Yellow
+$loadFromDBWorks = $results | Where-Object { $_.Test -like "*HandleGenerateFromDB*" -and $_.Status -eq "PASS" }
+$showDiffWorks = $results | Where-Object { $_.Test -like "*HandleAnalyzeDiff*" -and $_.Status -eq "PASS" }
+$generateDDLWorks = $results | Where-Object { $_.Test -like "*AlterStatementReviewDialog*" -and $_.Status -like "PASS*" }
+
+if ($loadFromDBWorks) {
+    Write-Host "  ✅ Load from DB: Handler code exists (NOT TESTED FUNCTIONALLY)" -ForegroundColor Green
+} else {
+    Write-Host "  ❌ Load from DB: Handler code MISSING" -ForegroundColor Red
 }
 
-Write-Host ""
-
-if ($results.Count -gt 0) {
-    Write-Host "Detailed Results:" -ForegroundColor Cyan
-    $results | Format-Table -AutoSize
+if ($showDiffWorks) {
+    Write-Host "  ✅ Show Diff: Handler code exists (NOT TESTED FUNCTIONALLY)" -ForegroundColor Green
+} else {
+    Write-Host "  ❌ Show Diff: Handler code MISSING" -ForegroundColor Red
 }
 
-Write-Host ""
-
-Write-Host "📦 NuGet Package:" -ForegroundColor Cyan
-Write-Host "   SqlMermaidErdTools v0.2.8" -ForegroundColor White
-Write-Host ""
-
-Write-Host "🎯 Mermaid CLI Commands Available:" -ForegroundColor Cyan
-Write-Host "   • mermaid-erd          - Generate ERD from database" -ForegroundColor White
-Write-Host "   • mermaid-from-sql     - Convert SQL DDL to Mermaid" -ForegroundColor White
-Write-Host "   • sql-from-mermaid     - Convert Mermaid to SQL DDL" -ForegroundColor White
-Write-Host "   • mermaid-diff         - Generate diff and migration DDL" -ForegroundColor White
-Write-Host ""
-
-if ($failed -eq 0 -and $passed -gt 0) {
-    Write-Host "🎉 ALL MERMAID TESTS PASSED!" -ForegroundColor Green
-    exit 0
-}
-elseif ($failed -gt 0) {
-    Write-Host "⚠️  $failed test(s) failed - review logs for details" -ForegroundColor Yellow
-    
-    # Check logs
-    $logFile = Get-ChildItem "bin\Debug\net10.0-windows\logs\*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($logFile) {
-        Write-Host ""
-        Write-Host "Recent errors from log:" -ForegroundColor Yellow
-        Get-Content $logFile.FullName | Select-String "ERROR.*Mermaid|ERROR.*SqlToMmd" | Select-Object -Last 5 | ForEach-Object {
-            Write-Host "  $_" -ForegroundColor Red
-        }
-    }
-    
-    exit 1
-}
-else {
-    Write-Host "⚠️  No tests were completed" -ForegroundColor Yellow
-    exit 1
+if ($generateDDLWorks) {
+    Write-Host "  ✅ Generate DDL: AlterStatementReviewDialog code exists (NOT TESTED FUNCTIONALLY)" -ForegroundColor Green
+} else {
+    Write-Host "  ❌ Generate DDL: AlterStatementReviewDialog code MISSING" -ForegroundColor Red
 }
 
+Write-Host "`n⚠️  IMPORTANT:" -ForegroundColor Yellow
+Write-Host "  These tests verify CODE EXISTS, not that it WORKS END-TO-END." -ForegroundColor White
+Write-Host "  Manual testing required to verify actual functionality." -ForegroundColor White
+
+Write-Host "`n═══════════════════════════════════════════════════════`n" -ForegroundColor Cyan

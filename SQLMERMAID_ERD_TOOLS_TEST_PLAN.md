@@ -1,12 +1,29 @@
-# SqlMermaidErdTools Integration - Comprehensive Test Plan
+# WindowsDb2Editor CLI - Mermaid Functionality Test Plan
 
 **Date**: December 14, 2025  
-**Purpose**: Validate complete round-trip workflow of SqlMermaidErdTools NuGet package  
-**Test Tables**: INL.BILAGNR, INL.FASTE_LISTE, INL.FASTE_TRANS (3 related tables from FKKTOTST)
+**Purpose**: Test WindowsDb2Editor's CLI interface for all 4 Mermaid/SQL functionalities  
+**Test Tables**: INL.BILAGNR, INL.FASTE_LISTE, INL.FASTE_TRANS (3 related tables from FKKTOTST)  
+**Goal**: Validate CLI behavior and use results to redesign Mermaid Designer UI
 
 ---
 
-## My Understanding of SqlMermaidErdTools
+## What We're Testing
+
+**NOT**: The SqlMermaidErdTools NuGet package directly (already tested by package maintainer)  
+**YES**: WindowsDb2Editor's CLI interface that USES the NuGet package
+
+### Why This Matters
+
+CLI testing will reveal:
+1. **What file formats work** (`.mmd`, `.sql`, `.txt`)
+2. **What parameters are needed** (dialect, connection, options)
+3. **What workflows make sense** (export → new tab → execute)
+4. **What error handling is needed** (invalid files, connection failures)
+5. **How to redesign the UI** (dialogs, buttons, tab integration)
+
+---
+
+## Understanding WindowsDb2Editor's Mermaid Integration
 
 ### What is SqlMermaidErdTools?
 
@@ -554,29 +571,117 @@ case "generate-alter":
 
 ---
 
+## How CLI Tests Inform UI Redesign
+
+### Test Results → UI Requirements
+
+| CLI Test | UI Feature Needed | Priority |
+|----------|------------------|----------|
+| **Test 1: DB → Mermaid** | File input dialog for table selection | Medium |
+| **Test 2: Mermaid → SQL** | SqlExportDialog with dialect dropdown | High |
+| **Test 3: Diff → ALTER** | Enhanced AlterStatementReviewDialog | Medium |
+| **Test 4: Translate SQL** | SqlDialectTranslationDialog | High |
+| **All tests** | "Open in SQL Editor tab" functionality | Critical |
+
+### Key Insights from CLI Testing
+
+**If CLI Test 1 works**:
+- ✅ Backend can read table list from file
+- 💡 UI should allow: Browse for file OR select from tree view
+- 💡 UI should allow: Save generated .mmd for later use
+
+**If CLI Test 2 works**:
+- ✅ Backend can convert Mermaid → SQL for any dialect
+- 💡 UI needs: Dialect selection dialog
+- 💡 UI needs: "Open in new tab" option (critical!)
+- 💡 UI needs: Connection selector for target database
+
+**If CLI Test 3 works**:
+- ✅ Backend can generate ALTER statements from diff
+- 💡 UI needs: "Execute on different connection" option
+- 💡 UI needs: "Save as migration script" option
+- 💡 UI needs: "Open in SQL Editor" for review
+
+**If CLI Test 4 works**:
+- ✅ Backend can translate SQL between dialects
+- 💡 UI needs: Translation dialog (from/to dialect)
+- 💡 UI needs: Multi-database workflow support
+- 💡 UI needs: Side-by-side comparison view
+
+### Critical UI Feature: Open SQL in New Tab
+
+**Why This Matters**:
+
+Currently, generated SQL goes to:
+- ❌ Notepad (external app, no integration)
+- ❌ Temp file (user has to manage files)
+
+**Should go to**:
+- ✅ **New SQL Editor tab** in WindowsDb2Editor
+- ✅ User can immediately execute, modify, save
+- ✅ Integrated with connection management
+- ✅ Professional UX (like DBeaver, DataGrip)
+
+**Implementation** (see MERMAID_DESIGNER_REDESIGN_PROPOSAL.md):
+```csharp
+// After generating SQL from Mermaid
+var sqlDdl = await _sqlMermaidService.ConvertMermaidToSqlAsync(mermaid, dialect);
+
+// Create new tab with SQL content
+var newTab = MainWindow.CreateSqlEditorTab(sqlDdl, selectedConnection, $"Generated SQL - {dialect}");
+
+// User sees SQL in familiar editor, can execute with F5
+```
+
+---
+
 ## Conclusion
 
 ### My Understanding
 
-I understand that SqlMermaidErdTools provides **three key functions**:
+I understand that:
 
-1. **SQL → Mermaid** (forward engineering)
-2. **Mermaid → SQL** (reverse engineering)
-3. **Mermaid Diff → ALTER** (schema migration)
+**We are testing WindowsDb2Editor's CLI** (not the NuGet package directly):
 
-The current Mermaid Designer implementation:
-- ✅ **Fully integrates** #1 and #3
-- ⚠️ **Partially integrates** #2 (backend exists, UI incomplete)
-- ⚠️ **Missing CLI file I/O** for automated testing
+1. **CLI → Backend → NuGet** architecture
+2. WindowsDb2Editor wraps SqlMermaidErdTools functionality
+3. CLI testing validates our integration, not the NuGet
+4. Test results inform UI redesign decisions
 
-### Required Modifications (Minimal Code)
+**WindowsDb2Editor provides 4 Mermaid/SQL functions**:
 
-**To enable these tests, we need**:
-1. `--infile` parameter (~30 lines)
-2. `.mmd` file output (~10 lines)
-3. `--mermaid-to-sql` action (~50 lines)
+1. **SQL → Mermaid** (DB to diagram) ✅ Working
+2. **Mermaid → SQL** (diagram to DDL) ⚠️ Backend exists, needs CLI + UI
+3. **Mermaid Diff → ALTER** (schema migration) ✅ Working
+4. **SQL Dialect Translation** (DB2 → PostgreSQL, etc.) ⚠️ Backend exists, needs CLI + UI
 
-**Total: ~90 lines of code**
+**Current gaps**:
+- ❌ No file I/O for CLI testing
+- ❌ No UI dialogs for functions #2 and #4
+- ❌ Generated SQL goes to Notepad (not integrated)
+- ❌ No "Open in SQL Editor tab" feature
+
+### Required CLI Modifications (for testing)
+
+**To enable the 4 CLI tests**:
+1. `--db-to-mermaid --infile <tables.txt> --outfile <diagram.mmd>` (~40 lines)
+2. `--mermaid-to-sql --infile <diagram.mmd> --dialect <X> --outfile <schema.sql>` (~50 lines)
+3. `--mermaid-diff-to-alter --original <A.mmd> --modified <B.mmd> --outfile <alter.sql>` (~50 lines)
+4. `--translate-sql --infile <db2.sql> --from-dialect DB2 --to-dialect PostgreSQL --outfile <pg.sql>` (~60 lines)
+
+**Total: ~200 lines of code** (CLI handlers only)
+
+### Required UI Enhancements (from test insights)
+
+**Based on CLI test results** (see MERMAID_DESIGNER_REDESIGN_PROPOSAL.md):
+
+1. **SqlExportDialog** - Choose dialect, output destination (~100 lines)
+2. **SqlDialectTranslationDialog** - Translate between databases (~120 lines)
+3. **MainWindow.CreateSqlEditorTab()** - Open SQL in new tab (~100 lines)
+4. **Enhanced AlterStatementReviewDialog** - Add "Open in Editor" option (~50 lines)
+5. **Connection selector** - Choose target connection for SQL (~80 lines)
+
+**Total: ~450 lines of code** (UI enhancements)
 
 ### Test Value
 
