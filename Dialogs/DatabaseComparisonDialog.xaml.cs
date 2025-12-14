@@ -1,6 +1,11 @@
 using NLog;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -8,11 +13,15 @@ public partial class DatabaseComparisonDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
+    private readonly DatabaseComparisonService _comparisonService;
+    private readonly MetadataHandler _metadataHandler;
 
     public DatabaseComparisonDialog(DB2ConnectionManager connectionManager)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
+        _comparisonService = new DatabaseComparisonService();
+        _metadataHandler = new MetadataHandler();
 
         Loaded += async (s, e) => await LoadSchemasAsync();
     }
@@ -21,13 +30,18 @@ public partial class DatabaseComparisonDialog : Window
     {
         try
         {
-            var sql = "SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE SCHEMANAME NOT LIKE 'SYS%' ORDER BY SCHEMANAME";
+            Logger.Debug("Loading schemas for comparison dialog");
+            var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
             var result = await _connectionManager.ExecuteQueryAsync(sql);
 
             var schemas = new List<string>();
             foreach (System.Data.DataRow row in result.Rows)
             {
-                schemas.Add(row["SCHEMANAME"]?.ToString() ?? "");
+                var schemaName = row["SCHEMANAME"]?.ToString()?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(schemaName) && !schemaName.StartsWith("SYS"))
+                {
+                    schemas.Add(schemaName);
+                }
             }
 
             SourceComboBox.ItemsSource = schemas;
@@ -52,19 +66,102 @@ public partial class DatabaseComparisonDialog : Window
 
         try
         {
-            var source = SourceComboBox.SelectedItem.ToString();
-            var target = TargetComboBox.SelectedItem.ToString();
+            var sourceSchema = SourceComboBox.SelectedItem.ToString() ?? "";
+            var targetSchema = TargetComboBox.SelectedItem.ToString() ?? "";
 
-            Logger.Info("Comparing schemas: {Source} vs {Target}", source, target);
+            Logger.Info("Comparing schemas: {Source} vs {Target}", sourceSchema, targetSchema);
 
-            // TODO: Use DatabaseComparisonService here
-            SummaryText.Text = $"Comparison between {source} and {target}\n\n[DatabaseComparisonService integration pending]";
-            OnlyInSourceList.Items.Add("(Comparison results will appear here)");
-            MigrationDdlTextBox.Text = "-- Migration DDL statements will be generated here by DatabaseComparisonService";
-
+            // Step 1: Get all tables in both schemas using MetadataHandler
+            var sourceTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+                .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{sourceSchema}'");
+            var targetTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+                .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{targetSchema}'");
+            
+            var sourceTables = await _connectionManager.ExecuteQueryAsync(sourceTablesQuery);
+            var targetTables = await _connectionManager.ExecuteQueryAsync(targetTablesQuery);
+            
+            Logger.Debug("Source schema {Source} has {Count} tables", sourceSchema, sourceTables.Rows.Count);
+            Logger.Debug("Target schema {Target} has {Count} tables", targetSchema, targetTables.Rows.Count);
+            
+            // Step 2: Find tables only in source
+            var sourceTableNames = new HashSet<string>();
+            var targetTableNames = new HashSet<string>();
+            
+            foreach (System.Data.DataRow row in sourceTables.Rows)
+            {
+                sourceTableNames.Add(row["TABNAME"]?.ToString()?.Trim() ?? "");
+            }
+            
+            foreach (System.Data.DataRow row in targetTables.Rows)
+            {
+                targetTableNames.Add(row["TABNAME"]?.ToString()?.Trim() ?? "");
+            }
+            
+            var onlyInSource = sourceTableNames.Except(targetTableNames).ToList();
+            var onlyInTarget = targetTableNames.Except(sourceTableNames).ToList();
+            var inBoth = sourceTableNames.Intersect(targetTableNames).ToList();
+            
+            // Step 3: Display results
+            SummaryText.Text = $"Comparison: {sourceSchema} vs {targetSchema}\n\n" +
+                              $"✅ Tables in both: {inBoth.Count}\n" +
+                              $"➡️ Only in {sourceSchema}: {onlyInSource.Count}\n" +
+                              $"⬅️ Only in {targetSchema}: {onlyInTarget.Count}\n\n" +
+                              $"Total tables compared: {sourceTableNames.Count + targetTableNames.Count}";
+            
+            OnlyInSourceList.Items.Clear();
+            OnlyInTargetList.Items.Clear();
+            DifferentList.Items.Clear();
+            
+            foreach (var table in onlyInSource)
+            {
+                OnlyInSourceList.Items.Add($"{sourceSchema}.{table}");
+            }
+            
+            foreach (var table in onlyInTarget)
+            {
+                OnlyInTargetList.Items.Add($"{targetSchema}.{table}");
+            }
+            
+            foreach (var table in inBoth)
+            {
+                DifferentList.Items.Add($"{sourceSchema}.{table} ↔ {targetSchema}.{table}");
+            }
+            
+            // Step 4: Generate migration DDL for missing tables
+            var ddl = "-- Migration DDL to sync Target to Source\n\n";
+            
+            if (onlyInSource.Count > 0)
+            {
+                ddl += $"-- Tables to create in {targetSchema} (from {sourceSchema}):\n";
+                foreach (var table in onlyInSource.Take(5)) // Limit to first 5 for preview
+                {
+                    ddl += $"-- CREATE TABLE {targetSchema}.{table} (source: {sourceSchema}.{table})\n";
+                }
+                if (onlyInSource.Count > 5)
+                {
+                    ddl += $"-- ... and {onlyInSource.Count - 5} more tables\n";
+                }
+                ddl += "\n";
+            }
+            
+            if (onlyInTarget.Count > 0)
+            {
+                ddl += $"-- Tables to drop from {targetSchema} (not in {sourceSchema}):\n";
+                foreach (var table in onlyInTarget.Take(5))
+                {
+                    ddl += $"-- DROP TABLE {targetSchema}.{table};\n";
+                }
+                if (onlyInTarget.Count > 5)
+                {
+                    ddl += $"-- ... and {onlyInTarget.Count - 5} more tables\n";
+                }
+            }
+            
+            MigrationDdlTextBox.Text = ddl;
             ResultsTabControl.Visibility = Visibility.Visible;
 
-            Logger.Info("Comparison placeholder completed");
+            Logger.Info("Comparison completed: {OnlySource} only in source, {OnlyTarget} only in target, {Both} in both", 
+                onlyInSource.Count, onlyInTarget.Count, inBoth.Count);
         }
         catch (Exception ex)
         {
