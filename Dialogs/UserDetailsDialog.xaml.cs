@@ -46,6 +46,38 @@ public partial class UserDetailsDialog : Window
         
         _ = LoadDetailsAsync();
     }
+    
+    /// <summary>
+    /// Activates a specific tab by name for automated testing and direct navigation
+    /// </summary>
+    public void ActivateTab(string? tabName)
+    {
+        if (string.IsNullOrEmpty(tabName))
+            return;
+            
+        Logger.Debug("Activating tab: {Tab}", tabName);
+        
+        var tab = tabName.ToLowerInvariant() switch
+        {
+            "authorities" or "database-authorities" or "dbauth" => AuthoritiesTab,
+            "table-privileges" or "tableprivileges" or "tables" => TablePrivilegesTab,
+            "schema-privileges" or "schemaprivileges" or "schemas" => SchemaPrivilegesTab,
+            "routine-privileges" or "routineprivileges" or "routines" => RoutinePrivilegesTab,
+            "roles" => RolesTab,
+            "members" => MembersTab,
+            _ => null
+        };
+        
+        if (tab != null)
+        {
+            DetailsTabControl.SelectedItem = tab;
+            Logger.Info("Activated tab: {Tab}", tabName);
+        }
+        else
+        {
+            Logger.Warn("Unknown tab name: {Tab}", tabName);
+        }
+    }
 
     private async Task LoadDetailsAsync()
     {

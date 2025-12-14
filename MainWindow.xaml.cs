@@ -949,6 +949,320 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Auto-connect to a profile and open a details dialog for any object type
+    /// Used for automated testing and debugging
+    /// </summary>
+    public async Task AutoConnectAndOpenAsync(Models.DB2Connection connection, string elementName, string? objectType = null, string? tabName = null)
+    {
+        Logger.Info("Auto-connecting to {Profile} and opening {Type}: {Element}, Tab: {Tab}", connection.Name, objectType ?? "table", elementName, tabName ?? "default");
+        
+        try
+        {
+            // Add connection tab
+            AddConnectionTab(connection);
+            
+            // Wait for connection to establish
+            await Task.Delay(2000);
+            
+            // Find the newly added tab
+            if (ConnectionTabs.Items.Count > 0)
+            {
+                var tabItem = ConnectionTabs.Items[ConnectionTabs.Items.Count - 1] as TabItem;
+                if (tabItem?.Content is ConnectionTabControl tabControl)
+                {
+                    Logger.Info("Tab found, waiting for connection to open...");
+                    await Task.Delay(3000); // Wait for connection to be fully established
+                    
+                    // Determine object type and open appropriate dialog
+                    Window? dialog = (objectType?.ToLowerInvariant()) switch
+                    {
+                        "table" or null => OpenTableDialog(tabControl, elementName, tabName),
+                        "view" => await OpenViewDialogAsync(tabControl, elementName, tabName),
+                        "procedure" => await OpenProcedureDialogAsync(tabControl, elementName, tabName),
+                        "function" => await OpenFunctionDialogAsync(tabControl, elementName, tabName),
+                        "index" => await OpenIndexDialogAsync(tabControl, elementName, tabName),
+                        "trigger" => await OpenTriggerDialogAsync(tabControl, elementName, tabName),
+                        "sequence" => await OpenSequenceDialogAsync(tabControl, elementName, tabName),
+                        "synonym" => await OpenSynonymDialogAsync(tabControl, elementName, tabName),
+                        "type" => await OpenTypeDialogAsync(tabControl, elementName, tabName),
+                        "package" => await OpenPackageDialogAsync(tabControl, elementName, tabName),
+                        "user" or "role" or "group" => await OpenUserDialogAsync(tabControl, elementName, objectType, tabName),
+                        "mermaid" => await OpenMermaidDesignerAsync(tabControl, elementName, tabName),
+                        _ => throw new ArgumentException($"Unknown object type: {objectType}")
+                    };
+                    
+                    if (dialog != null)
+                    {
+                        dialog.Owner = this;
+                        dialog.Show();
+                        
+                        // Activate tab after dialog is fully loaded and data populated
+                        if (!string.IsNullOrEmpty(tabName))
+                        {
+                            await Task.Delay(2000); // Wait for async data loading
+                            
+                            // Activate tab based on dialog type
+                            if (dialog is Dialogs.TableDetailsDialog tableDialog)
+                            {
+                                tableDialog.ActivateTab(tabName);
+                            }
+                            else if (dialog is Dialogs.ObjectDetailsDialog objectDialog)
+                            {
+                                objectDialog.ActivateTab(tabName);
+                            }
+                            else if (dialog is Dialogs.PackageDetailsDialog packageDialog)
+                            {
+                                packageDialog.ActivateTab(tabName);
+                            }
+                            else if (dialog is Dialogs.UserDetailsDialog userDialog)
+                            {
+                                userDialog.ActivateTab(tabName);
+                            }
+                            else if (dialog is Dialogs.MermaidDesignerWindow mermaidDialog)
+                            {
+                                // Mermaid designer has no tabs, but may need initial data load
+                                await Task.Delay(1000);
+                            }
+                        }
+                        
+                        Logger.Info("{Type} dialog opened successfully on tab: {Tab}", objectType ?? "table", tabName ?? "default");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to auto-connect and open element");
+            throw;
+        }
+    }
+    
+    private Window OpenTableDialog(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var dialog = new Dialogs.TableDetailsDialog(tabControl.ConnectionManager, fullName);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            // Need to activate tab after dialog loads
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenViewDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Views,
+            Icon = "👁️"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenProcedureDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Procedures,
+            Icon = "⚙️"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenFunctionDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Functions,
+            Icon = "🔧"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenIndexDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Indexes,
+            Icon = "📇"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenTriggerDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Triggers,
+            Icon = "⚡"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenSequenceDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Sequences,
+            Icon = "🔢"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenSynonymDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Synonyms,
+            Icon = "🔗"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenTypeDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var databaseObject = new Models.DatabaseObject
+        {
+            SchemaName = parts.Length == 2 ? parts[0] : "UNKNOWN",
+            Name = parts.Length == 2 ? parts[1] : fullName,
+            FullName = fullName,
+            Type = Models.ObjectType.Types,
+            Icon = "📦"
+        };
+        
+        var dialog = new Dialogs.ObjectDetailsDialog(tabControl.ConnectionManager, databaseObject, tabControl.Connection);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenPackageDialogAsync(ConnectionTabControl tabControl, string fullName, string? tabName)
+    {
+        var parts = fullName.Split('.');
+        var packageInfo = new Models.PackageInfo
+        {
+            PackageSchema = parts.Length == 2 ? parts[0] : "NULLID",
+            PackageName = parts.Length == 2 ? parts[1] : fullName
+        };
+        
+        var dialog = new Dialogs.PackageDetailsDialog(tabControl.ConnectionManager, packageInfo);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+    
+    private async Task<Window> OpenMermaidDesignerAsync(ConnectionTabControl tabControl, string schemaName, string? tabName)
+    {
+        Logger.Info("Opening Mermaid Designer for schema: {Schema}", schemaName);
+        var dialog = new Dialogs.MermaidDesignerWindow(tabControl.ConnectionManager, schemaName);
+        return dialog;
+    }
+    
+    private async Task<Window> OpenUserDialogAsync(ConnectionTabControl tabControl, string principalName, string? type, string? tabName)
+    {
+        var principalType = type?.ToLowerInvariant() switch
+        {
+            "role" => Models.SecurityPrincipalType.Role,
+            "group" => Models.SecurityPrincipalType.Group,
+            _ => Models.SecurityPrincipalType.User
+        };
+        
+        var principal = new Models.SecurityPrincipal
+        {
+            Name = principalName,
+            Type = principalType,
+            Icon = principalType switch
+            {
+                Models.SecurityPrincipalType.User => "👤",
+                Models.SecurityPrincipalType.Role => "🎭",
+                Models.SecurityPrincipalType.Group => "👥",
+                _ => "❓"
+            }
+        };
+        
+        var dialog = new Dialogs.UserDetailsDialog(tabControl.ConnectionManager, principal);
+        if (!string.IsNullOrEmpty(tabName))
+        {
+            dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);
+        }
+        return dialog;
+    }
+
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         Logger.Info("MainWindow closing");

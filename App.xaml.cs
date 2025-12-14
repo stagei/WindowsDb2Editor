@@ -54,6 +54,16 @@ public partial class App : Application
                     return;
                 }
                 
+                // Check if this is GUI mode with auto-open
+                if (!string.IsNullOrEmpty(cliArgs.Open) && !string.IsNullOrEmpty(cliArgs.ProfileName))
+                {
+                    Logger.Info("GUI mode with auto-open - Profile: {Profile}, Element: {Element}", 
+                        cliArgs.ProfileName, cliArgs.Open);
+                    
+                    await LaunchGuiWithAutoOpenAsync(cliArgs);
+                    return; // Keep GUI running
+                }
+                
                 // Check if this is GUI form testing mode
                 if (!string.IsNullOrEmpty(cliArgs.TestForm))
                 {
@@ -213,6 +223,52 @@ public partial class App : Application
             Logger.Error(ex, "GUI testing failed");
             Console.WriteLine($"Error: {ex.Message}");
             return 1;
+        }
+    }
+
+    private async Task LaunchGuiWithAutoOpenAsync(CliArguments args)
+    {
+        Logger.Info("Launching GUI with auto-connect and auto-open");
+        
+        // Set up global exception handling
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        DispatcherUnhandledException += App_DispatcherUnhandledException;
+
+        Logger.Debug("Global exception handlers registered");
+        
+        // Create and show main window
+        var mainWindow = new MainWindow();
+        mainWindow.Show();
+        
+        Logger.Info("MainWindow shown, now auto-connecting to profile: {Profile}", args.ProfileName);
+        
+        // Wait a bit for window to fully render
+        await Task.Delay(500);
+        
+        // Auto-connect to profile
+        try
+        {
+            var connectionService = new ConnectionStorageService();
+            var profile = connectionService.GetConnection(args.ProfileName!);
+            
+            if (profile == null)
+            {
+                Logger.Error("Profile not found: {Profile}", args.ProfileName);
+                MessageBox.Show($"Profile '{args.ProfileName}' not found!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            Logger.Info("Profile loaded, establishing connection...");
+            
+            // Connect via MainWindow's connection method (pass tab parameter from CLI)
+            await mainWindow.AutoConnectAndOpenAsync(profile, args.Open!, args.OpenType, args.Tab);
+            
+            Logger.Info("Auto-connect and auto-open completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to auto-connect and open element");
+            MessageBox.Show($"Failed to connect:\n\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

@@ -28,7 +28,7 @@
         <!-- Tab Control for Details -->
         <TabControl Grid.Row="1" x:Name="DetailsTabControl">
             <!-- Properties Tab -->
-            <TabItem Header="📋 Properties">
+            <TabItem Header="📋 Properties" x:Name="PropertiesTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="PropertiesPanel" Margin="10">
                         <!-- Properties will be added dynamically -->
@@ -142,9 +142,9 @@
                               AutoGenerateColumns="False" 
                               IsReadOnly="True">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="120"/>
-                            <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding [Type]}" Width="120"/>
+                            <DataGridTextColumn Header="Schema" Binding="{Binding [Schema]}" Width="150"/>
+                            <DataGridTextColumn Header="Name" Binding="{Binding [Name]}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

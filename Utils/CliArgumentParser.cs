@@ -27,6 +27,10 @@ public class CliArguments
     // NEW: GUI Form Testing for automated validation
     public string? TestForm { get; set; } // table-details, object-details, package-details, etc.
     public string? Tab { get; set; } // Specific tab to test (columns, foreign-keys, indexes, ddl-script, etc.)
+    
+    // NEW: GUI mode with auto-open
+    public string? Open { get; set; } // Element to open (SCHEMA.TABLE, SCHEMA.VIEW, etc.)
+    public string? OpenType { get; set; } // Object type: table, view, procedure, function, package, user, etc.
 }
 
 /// <summary>
@@ -181,11 +185,30 @@ public class CliArgumentParser
                     cliArgs.IncludeSourceCode = true;
                     Logger.Debug("IncludeSourceCode: true");
                     break;
+                    
+                case "-open":
+                case "--open":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Open = args[++i];
+                        Logger.Debug("Open: {Open}", cliArgs.Open);
+                    }
+                    break;
+                    
+                case "-opentype":
+                case "--opentype":
+                case "--type":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.OpenType = args[++i].ToLowerInvariant();
+                        Logger.Debug("OpenType: {OpenType}", cliArgs.OpenType);
+                    }
+                    break;
             }
         }
         
-        Logger.Info("CLI arguments parsed - Profile: {Profile}, Command: {Command}, Object: {Object}, HasSQL: {HasSQL}, TestForm: {TestForm}, Tab: {Tab}", 
-            cliArgs.ProfileName, cliArgs.Command, cliArgs.Object, !string.IsNullOrEmpty(cliArgs.Sql), cliArgs.TestForm, cliArgs.Tab);
+        Logger.Info("CLI arguments parsed - Profile: {Profile}, Command: {Command}, Object: {Object}, HasSQL: {HasSQL}, TestForm: {TestForm}, Tab: {Tab}, Open: {Open}, OpenType: {OpenType}", 
+            cliArgs.ProfileName, cliArgs.Command, cliArgs.Object, !string.IsNullOrEmpty(cliArgs.Sql), cliArgs.TestForm, cliArgs.Tab, cliArgs.Open, cliArgs.OpenType);
         
         return cliArgs;
     }

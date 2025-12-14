@@ -64,6 +64,41 @@ public partial class TableDetailsDialog : Window
         
         _ = LoadTableDetailsAsync();
     }
+    
+    /// <summary>
+    /// Activates a specific tab by name for automated testing and direct navigation
+    /// </summary>
+    public void ActivateTab(string? tabName)
+    {
+        if (string.IsNullOrEmpty(tabName))
+            return;
+            
+        Logger.Debug("Activating tab: {Tab}", tabName);
+        
+        var tab = tabName.ToLowerInvariant() switch
+        {
+            "columns" => ColumnsTab,
+            "foreign-keys" or "foreignkeys" or "fks" => ForeignKeysTab,
+            "indexes" => IndexesTab,
+            "ddl-script" or "ddlscript" or "ddl" => DdlScriptTab,
+            "statistics" or "stats" => StatisticsTab,
+            "incoming-fk" or "incomingfk" or "incoming" => IncomingFKTab,
+            "packages" or "used-by-packages" => PackagesTab,
+            "views" or "used-by-views" => ViewsTab,
+            "routines" or "used-by-routines" => RoutinesTab,
+            _ => null
+        };
+        
+        if (tab != null)
+        {
+            DetailsTabControl.SelectedItem = tab;
+            Logger.Info("Activated tab: {Tab}", tabName);
+        }
+        else
+        {
+            Logger.Warn("Unknown tab name: {Tab}", tabName);
+        }
+    }
 
     private async Task LoadTableDetailsAsync()
     {
@@ -199,8 +234,8 @@ public partial class TableDetailsDialog : Window
                 
                 if (infoTable.Rows.Count > 0)
                 {
-                    var type = infoTable.Rows[0]["TYPE"]?.ToString() ?? "Unknown";
-                    var tbspace = infoTable.Rows[0]["TBSPACE"]?.ToString() ?? "Unknown";
+                    var type = infoTable.Rows[0]["TableType"]?.ToString() ?? "Unknown";
+                    var tbspace = infoTable.Rows[0]["Tablespace"]?.ToString() ?? "Unknown";
                     
                     TableTypeText.Text = type switch
                     {

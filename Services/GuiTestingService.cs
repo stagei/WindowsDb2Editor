@@ -80,9 +80,7 @@ public class GuiTestingService
         Dictionary<string, object>? result = null;
         Exception? exception = null;
         
-        var tcs = new TaskCompletionSource<bool>();
-        
-        Application.Current.Dispatcher.Invoke(async () =>
+        await Application.Current.Dispatcher.InvokeAsync(async () =>
         {
             try
             {
@@ -99,18 +97,13 @@ public class GuiTestingService
                 
                 dialog.Close();
                 Logger.Debug("Dialog closed");
-                
-                tcs.SetResult(true);
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Exception during dialog extraction");
                 exception = ex;
-                tcs.SetResult(false);
             }
         });
-        
-        await tcs.Task;
         
         if (exception != null)
         {

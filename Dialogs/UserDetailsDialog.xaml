@@ -28,7 +28,7 @@
         <!-- Tab Control -->
         <TabControl Grid.Row="1" x:Name="DetailsTabControl">
             <!-- Database Authorities Tab -->
-            <TabItem Header="🔐 Database Authorities">
+            <TabItem Header="🔐 Database Authorities" x:Name="AuthoritiesTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="AuthoritiesPanel" Margin="10">
                         <!-- Authorities will be added dynamically -->
@@ -37,48 +37,48 @@
             </TabItem>
 
             <!-- Table Privileges Tab -->
-            <TabItem Header="📋 Table Privileges">
+            <TabItem Header="📋 Table Privileges" x:Name="TablePrivilegesTab">
                 <DataGrid x:Name="TablePrivilegesGrid" 
                           AutoGenerateColumns="False" 
                           IsReadOnly="True"
                           Margin="10">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
-                        <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="200"/>
-                        <DataGridTextColumn Header="SELECT" Binding="{Binding SelectAuth}" Width="80"/>
-                        <DataGridTextColumn Header="INSERT" Binding="{Binding InsertAuth}" Width="80"/>
-                        <DataGridTextColumn Header="UPDATE" Binding="{Binding UpdateAuth}" Width="80"/>
-                        <DataGridTextColumn Header="DELETE" Binding="{Binding DeleteAuth}" Width="80"/>
-                        <DataGridTextColumn Header="ALTER" Binding="{Binding AlterAuth}" Width="80"/>
+                        <DataGridTextColumn Header="Schema" Binding="{Binding [Schema]}" Width="150"/>
+                        <DataGridTextColumn Header="Table" Binding="{Binding [TableName]}" Width="200"/>
+                        <DataGridTextColumn Header="SELECT" Binding="{Binding [SelectAuth]}" Width="80"/>
+                        <DataGridTextColumn Header="INSERT" Binding="{Binding [InsertAuth]}" Width="80"/>
+                        <DataGridTextColumn Header="UPDATE" Binding="{Binding [UpdateAuth]}" Width="80"/>
+                        <DataGridTextColumn Header="DELETE" Binding="{Binding [DeleteAuth]}" Width="80"/>
+                        <DataGridTextColumn Header="ALTER" Binding="{Binding [AlterAuth]}" Width="80"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
 
             <!-- Schema Privileges Tab -->
-            <TabItem Header="📁 Schema Privileges">
+            <TabItem Header="📁 Schema Privileges" x:Name="SchemaPrivilegesTab">
                 <DataGrid x:Name="SchemaPrivilegesGrid" 
                           AutoGenerateColumns="False" 
                           IsReadOnly="True"
                           Margin="10">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="200"/>
-                        <DataGridTextColumn Header="CREATE IN" Binding="{Binding CreateInAuth}" Width="100"/>
-                        <DataGridTextColumn Header="ALTER IN" Binding="{Binding AlterInAuth}" Width="100"/>
-                        <DataGridTextColumn Header="DROP IN" Binding="{Binding DropInAuth}" Width="100"/>
+                        <DataGridTextColumn Header="Schema" Binding="{Binding [SchemaName]}" Width="200"/>
+                        <DataGridTextColumn Header="CREATE IN" Binding="{Binding [CreateInAuth]}" Width="100"/>
+                        <DataGridTextColumn Header="ALTER IN" Binding="{Binding [AlterInAuth]}" Width="100"/>
+                        <DataGridTextColumn Header="DROP IN" Binding="{Binding [DropInAuth]}" Width="100"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
 
             <!-- Routine Privileges Tab -->
-            <TabItem Header="⚙️ Routine Privileges">
+            <TabItem Header="⚙️ Routine Privileges" x:Name="RoutinePrivilegesTab">
                 <DataGrid x:Name="RoutinePrivilegesGrid" 
                           AutoGenerateColumns="False" 
                           IsReadOnly="True"
                           Margin="10">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
-                        <DataGridTextColumn Header="Routine" Binding="{Binding SpecificName}" Width="250"/>
-                        <DataGridTextColumn Header="Execute" Binding="{Binding ExecuteAuth}" Width="100"/>
+                        <DataGridTextColumn Header="Schema" Binding="{Binding [Schema]}" Width="150"/>
+                        <DataGridTextColumn Header="Routine" Binding="{Binding [SpecificName]}" Width="250"/>
+                        <DataGridTextColumn Header="Execute" Binding="{Binding [ExecuteAuth]}" Width="100"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

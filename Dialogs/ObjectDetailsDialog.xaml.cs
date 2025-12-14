@@ -39,6 +39,37 @@ public partial class ObjectDetailsDialog : Window
         
         _ = LoadDetailsAsync();
     }
+    
+    /// <summary>
+    /// Activates a specific tab by name for automated testing and direct navigation
+    /// </summary>
+    public void ActivateTab(string? tabName)
+    {
+        if (string.IsNullOrEmpty(tabName))
+            return;
+            
+        Logger.Debug("Activating tab: {Tab}", tabName);
+        
+        var tab = tabName.ToLowerInvariant() switch
+        {
+            "properties" or "props" => PropertiesTab,
+            "source-code" or "sourcecode" or "source" => SourceCodeTab,
+            "create-ddl" or "createddl" or "create" => CreateDdlTab,
+            "drop-ddl" or "dropddl" or "drop" => DropDdlTab,
+            "dependencies" or "deps" => DependenciesTab,
+            _ => null
+        };
+        
+        if (tab != null)
+        {
+            DetailsTabControl.SelectedItem = tab;
+            Logger.Info("Activated tab: {Tab}", tabName);
+        }
+        else
+        {
+            Logger.Warn("Unknown tab name: {Tab}", tabName);
+        }
+    }
 
     private async Task LoadDetailsAsync()
     {

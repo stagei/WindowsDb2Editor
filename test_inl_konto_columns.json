@@ -1,0 +1,107 @@
+{
+  "schema": "INL",
+  "tableName": "KONTO",
+  "columnCount": 9,
+  "columns": [
+    {
+      "columnName": "FIRMA",
+      "ordinalPosition": 0,
+      "dataType": "DECIMAL",
+      "length": 6,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "KUNDEKONTO",
+      "ordinalPosition": 1,
+      "dataType": "DECIMAL",
+      "length": 6,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "KONTOTYPE",
+      "ordinalPosition": 2,
+      "dataType": "DECIMAL",
+      "length": 3,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "OPPRETTET_DATO",
+      "ordinalPosition": 3,
+      "dataType": "DECIMAL",
+      "length": 8,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "OPPSAGT_DATO",
+      "ordinalPosition": 4,
+      "dataType": "DECIMAL",
+      "length": 8,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "MERKNAD",
+      "ordinalPosition": 5,
+      "dataType": "VARCHAR",
+      "length": 256,
+      "scale": 0,
+      "isNullable": true,
+      "defaultValue": "",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "SALDO",
+      "ordinalPosition": 6,
+      "dataType": "DECIMAL",
+      "length": 13,
+      "scale": 2,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "TIDSPUNKT",
+      "ordinalPosition": 7,
+      "dataType": "TIMESTAMP",
+      "length": 10,
+      "scale": 6,
+      "isNullable": false,
+      "defaultValue": "CURRENT TIMESTAMP",
+      "comment": "",
+      "isIdentity": false
+    },
+    {
+      "columnName": "BRUKERID",
+      "ordinalPosition": 8,
+      "dataType": "CHARACTER",
+      "length": 8,
+      "scale": 0,
+      "isNullable": false,
+      "defaultValue": "\u0027 \u0027",
+      "comment": "",
+      "isIdentity": false
+    }
+  ],
+  "retrievedAt": "2025-12-13T21:42:50.3368464+01:00"
+}

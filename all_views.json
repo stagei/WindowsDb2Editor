@@ -1,0 +1,38 @@
+{
+  "schema": "ALL",
+  "totalViews": 369,
+  "limitApplied": 5,
+  "views": [
+    {
+      "schema": "DBE",
+      "viewName": "JOBJECT_VIEW",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "DBE",
+      "viewName": "JOBJECT_VIEW_X",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "DBE",
+      "viewName": "OBJECT_VIEW",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "DBE",
+      "viewName": "OBJECT_VIEW_X",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "Q",
+      "viewName": "DSQ_RESERVED_OBJ",
+      "isValid": true,
+      "isReadOnly": false
+    }
+  ],
+  "retrievedAt": "2025-12-13T22:58:45.9957775+01:00"
+}

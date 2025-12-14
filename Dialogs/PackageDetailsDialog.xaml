@@ -30,9 +30,9 @@
         </StackPanel>
 
         <!-- Tabs -->
-        <TabControl Grid.Row="2" Margin="0,10,0,10">
+        <TabControl Grid.Row="2" Margin="0,10,0,10" x:Name="DetailsTabControl">
             <!-- Properties Tab -->
-            <TabItem Header="⚙️ Properties">
+            <TabItem Header="⚙️ Properties" x:Name="PropertiesTab">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="15">
                         <Grid>
@@ -77,7 +77,7 @@
             </TabItem>
 
             <!-- SQL Statements Tab -->
-            <TabItem Header="📝 SQL Statements">
+            <TabItem Header="📝 SQL Statements" x:Name="StatementsTab">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -108,10 +108,10 @@
                               Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                               MouseDoubleClick="StatementsGrid_DoubleClick">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Stmt No" Binding="{Binding StmtNo}" Width="80"/>
-                            <DataGridTextColumn Header="Type" Binding="{Binding StmtType}" Width="100"/>
-                            <DataGridTextColumn Header="Section" Binding="{Binding SectionNumber}" Width="80"/>
-                            <DataGridTextColumn Header="Preview" Binding="{Binding TextPreview}" Width="*"/>
+                            <DataGridTextColumn Header="Stmt No" Binding="{Binding [StmtNo]}" Width="80"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding [StmtType]}" Width="100"/>
+                            <DataGridTextColumn Header="Section" Binding="{Binding [SectionNumber]}" Width="80"/>
+                            <DataGridTextColumn Header="Preview" Binding="{Binding [TextPreview]}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
 

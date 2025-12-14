@@ -21,6 +21,14 @@ public partial class MermaidDesignerWindow : Window
     private readonly DiffBasedDdlGeneratorService _ddlGenerator;
     private readonly SqlMermaidIntegrationService _sqlMermaidService;
     private string _targetSchema;
+    private string? _lastGeneratedMermaid;
+    private List<string>? _lastSelectedTables;
+    
+    // Public properties for testing automation
+    public bool IsDesignerLoaded { get; private set; }
+    public string? LastGeneratedMermaid => _lastGeneratedMermaid;
+    public List<string>? LastSelectedTables => _lastSelectedTables;
+    public string TargetSchema => _targetSchema;
     
     public MermaidDesignerWindow(DB2ConnectionManager connectionManager, string targetSchema)
     {
@@ -40,19 +48,44 @@ public partial class MermaidDesignerWindow : Window
     {
         try
         {
-            Logger.Info("Initializing Mermaid Designer WebView2");
+            Logger.Info("Initializing Mermaid Designer WebView2 for schema: {Schema}", _targetSchema);
+            Logger.Debug("MermaidDesignerWindow_Loaded event fired");
+            Logger.Debug("BaseDirectory: {BaseDir}", AppDomain.CurrentDomain.BaseDirectory);
             
+            Logger.Debug("Step 1: Ensuring WebView2 runtime");
             await MermaidWebView.EnsureCoreWebView2Async();
+            Logger.Info("WebView2 runtime initialized successfully");
             
+            Logger.Debug("Step 2: Registering web message handler");
             MermaidWebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
+            Logger.Debug("Web message handler registered");
             
+            Logger.Debug("Step 3: Locating MermaidDesigner.html");
             var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MermaidDesigner.html");
+            Logger.Debug("Expected HTML path: {HtmlPath}", htmlPath);
             
             if (!File.Exists(htmlPath))
             {
                 Logger.Error("MermaidDesigner.html not found at: {Path}", htmlPath);
+                Logger.Debug("Checking if Resources directory exists...");
+                
+                var resourcesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources");
+                if (Directory.Exists(resourcesDir))
+                {
+                    Logger.Debug("Resources directory exists. Contents:");
+                    var files = Directory.GetFiles(resourcesDir);
+                    foreach (var file in files)
+                    {
+                        Logger.Debug("  - {File}", Path.GetFileName(file));
+                    }
+                }
+                else
+                {
+                    Logger.Error("Resources directory does not exist: {Dir}", resourcesDir);
+                }
+                
                 MessageBox.Show(
-                    "MermaidDesigner.html not found. Please ensure it exists in Resources folder.",
+                    $"MermaidDesigner.html not found at:\n{htmlPath}\n\nPlease ensure it exists in Resources folder.",
                     "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -60,15 +93,31 @@ public partial class MermaidDesignerWindow : Window
                 return;
             }
             
-            MermaidWebView.Source = new Uri(htmlPath);
+            Logger.Info("MermaidDesigner.html found, loading into WebView2");
+            Logger.Debug("File size: {Size} bytes", new FileInfo(htmlPath).Length);
             
-            Logger.Info("Mermaid Designer initialized successfully");
+            Logger.Debug("Step 4: Setting WebView2 source");
+            MermaidWebView.Source = new Uri(htmlPath);
+            Logger.Debug("WebView2 source set to: {Uri}", htmlPath);
+            
+            IsDesignerLoaded = true;
+            Logger.Info("Mermaid Designer initialized successfully for schema: {Schema}", _targetSchema);
         }
         catch (Exception ex)
         {
+            IsDesignerLoaded = false;
             Logger.Error(ex, "Failed to initialize Mermaid Designer");
+            Logger.Debug("Exception type: {Type}", ex.GetType().Name);
+            Logger.Debug("Exception message: {Message}", ex.Message);
+            Logger.Debug("Stack trace: {StackTrace}", ex.StackTrace);
+            
+            if (ex.InnerException != null)
+            {
+                Logger.Error(ex.InnerException, "Inner exception details");
+            }
+            
             MessageBox.Show(
-                $"Failed to initialize Mermaid Designer: {ex.Message}",
+                $"Failed to initialize Mermaid Designer:\n\n{ex.Message}\n\nSee logs for details.",
                 "Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -80,51 +129,87 @@ public partial class MermaidDesignerWindow : Window
     {
         try
         {
+            Logger.Debug("WebMessage received from JavaScript");
             var json = e.WebMessageAsJson;
+            Logger.Debug("WebMessage JSON: {Json}", json?.Substring(0, Math.Min(200, json?.Length ?? 0)));
+            
             var message = JsonSerializer.Deserialize<WebMessage>(json);
             
-            if (message == null) return;
+            if (message == null)
+            {
+                Logger.Warn("WebMessage deserialized to null");
+                return;
+            }
             
-            Logger.Debug("Received web message: {Action}", message.Action);
+            Logger.Info("Processing web message action: {Action}", message.Action);
+            Logger.Debug("Message details - Action: {Action}, TableName: {Table}, Diagram length: {DiagramLen}, Original length: {OrigLen}, Edited length: {EditLen}",
+                message.Action, message.TableName, message.Diagram?.Length ?? 0, message.Original?.Length ?? 0, message.Edited?.Length ?? 0);
             
             switch (message.Action)
             {
                 case "generateFromDB":
+                    Logger.Debug("Handling generateFromDB action");
                     await HandleGenerateFromDB();
                     break;
                     
                 case "analyzeDiff":
+                    Logger.Debug("Handling analyzeDiff action");
                     await HandleAnalyzeDiff(message.Original, message.Edited);
                     break;
                     
                 case "generateDDL":
+                    Logger.Debug("Handling generateDDL action");
                     await HandleGenerateDDL(message.Original, message.Edited);
                     break;
                     
                 case "exportDiagram":
+                    Logger.Debug("Handling exportDiagram action");
                     HandleExportDiagram(message.Diagram);
                     break;
                     
                 case "openTableProperties":
+                    Logger.Debug("Handling openTableProperties action for table: {Table}", message.TableName);
                     HandleOpenTableProperties(message.TableName);
                     break;
                     
                 case "generateSqlFromMermaid":
+                    Logger.Debug("Handling generateSqlFromMermaid action");
                     await HandleGenerateSqlFromMermaid(message.Diagram, message.Dialect);
                     break;
                     
                 case "translateSqlDialect":
+                    Logger.Debug("Handling translateSqlDialect action");
                     await HandleTranslateSqlDialect(message.SourceSql, message.SourceDialect, message.TargetDialect);
                     break;
                     
                 case "generateMigrationAdvanced":
+                    Logger.Debug("Handling generateMigrationAdvanced action");
                     await HandleGenerateMigrationAdvanced(message.Original, message.Edited, message.Dialect);
                     break;
+                    
+                default:
+                    Logger.Warn("Unknown web message action: {Action}", message.Action);
+                    break;
             }
+            
+            Logger.Debug("Web message action completed: {Action}", message.Action);
+        }
+        catch (JsonException jsonEx)
+        {
+            Logger.Error(jsonEx, "Failed to deserialize web message JSON");
+            Logger.Debug("Raw JSON: {Json}", e.WebMessageAsJson);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error handling web message");
+            Logger.Debug("Exception type: {Type}", ex.GetType().Name);
+            Logger.Debug("Stack trace: {StackTrace}", ex.StackTrace);
+            
+            MessageBox.Show(
+                $"Error processing web message: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
     
@@ -132,34 +217,160 @@ public partial class MermaidDesignerWindow : Window
     {
         try
         {
-            Logger.Info("Generating Mermaid diagram from database");
+            Logger.Info("Generating Mermaid diagram from database - Target schema: {Schema}", _targetSchema);
+            Logger.Debug("Step 1: Opening SchemaTableSelectionDialog");
             
             var dialog = new SchemaTableSelectionDialog(_connectionManager, _targetSchema);
-            if (dialog.ShowDialog() != true)
+            Logger.Debug("SchemaTableSelectionDialog created");
+            
+            var dialogResult = dialog.ShowDialog();
+            Logger.Debug("SchemaTableSelectionDialog closed - Result: {Result}", dialogResult);
+            
+            if (dialogResult != true)
+            {
+                Logger.Info("User cancelled table selection");
                 return;
+            }
             
             var selectedTables = dialog.SelectedTables;
+            Logger.Info("User selected {Count} tables", selectedTables.Count);
+            
             if (selectedTables.Count == 0)
             {
+                Logger.Warn("No tables selected by user");
                 MessageBox.Show("No tables selected.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             
+            Logger.Debug("Step 2: Generating Mermaid diagram for {Count} tables", selectedTables.Count);
+            foreach (var table in selectedTables)
+            {
+                Logger.Debug("  - Selected table: {Table}", table);
+            }
+            
             var mermaid = await _generatorService.GenerateMermaidDiagramAsync(_connectionManager, selectedTables);
+            Logger.Info("Mermaid diagram generated: {Length} characters", mermaid.Length);
+            Logger.Debug("First 200 chars of Mermaid: {Preview}", mermaid.Substring(0, Math.Min(200, mermaid.Length)));
             
-            await MermaidWebView.ExecuteScriptAsync($"setEditorContent(`{EscapeForJavaScript(mermaid)}`);");
+            _lastGeneratedMermaid = mermaid;
+            _lastSelectedTables = selectedTables;
             
-            Logger.Info("Mermaid diagram generated successfully");
+            Logger.Debug("Step 3: Injecting diagram into WebView2 editor");
+            var escapedMermaid = EscapeForJavaScript(mermaid);
+            Logger.Debug("Escaped Mermaid length: {Length}", escapedMermaid.Length);
+            
+            var script = $"setEditorContent(`{escapedMermaid}`);";
+            Logger.Debug("Executing JavaScript: setEditorContent (length: {Length})", script.Length);
+            
+            await MermaidWebView.ExecuteScriptAsync(script);
+            Logger.Debug("JavaScript executed successfully");
+            
+            Logger.Info("Mermaid diagram generated and displayed successfully ({Length} chars for {Count} tables)", 
+                mermaid.Length, selectedTables.Count);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException invOpEx)
         {
-            Logger.Error(ex, "Failed to generate Mermaid diagram");
+            Logger.Error(invOpEx, "Invalid operation during diagram generation");
+            Logger.Debug("InvalidOperationException details: {Message}", invOpEx.Message);
             MessageBox.Show(
-                $"Failed to generate diagram: {ex.Message}",
+                $"Invalid operation: {invOpEx.Message}",
                 "Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate Mermaid diagram");
+            Logger.Debug("Exception type: {Type}", ex.GetType().Name);
+            Logger.Debug("Exception message: {Message}", ex.Message);
+            Logger.Debug("Stack trace: {StackTrace}", ex.StackTrace);
+            
+            if (ex.InnerException != null)
+            {
+                Logger.Error(ex.InnerException, "Inner exception during diagram generation");
+            }
+            
+            MessageBox.Show(
+                $"Failed to generate diagram:\n\n{ex.Message}\n\nSee logs for details.",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Programmatically generate Mermaid diagram for testing automation.
+    /// </summary>
+    public async Task<string> GenerateDiagramAutomatedAsync(List<string> tableNames)
+    {
+        Logger.Info("Automated diagram generation for {Count} tables", tableNames.Count);
+        Logger.Debug("Tables requested:");
+        foreach (var table in tableNames)
+        {
+            Logger.Debug("  - {Table}", table);
+        }
+        
+        try
+        {
+            Logger.Debug("Step 1: Calling MermaidDiagramGeneratorService.GenerateMermaidDiagramAsync");
+            var mermaid = await _generatorService.GenerateMermaidDiagramAsync(_connectionManager, tableNames);
+            Logger.Info("Diagram generated: {Length} characters", mermaid.Length);
+            Logger.Debug("Mermaid preview (first 300 chars): {Preview}", mermaid.Substring(0, Math.Min(300, mermaid.Length)));
+            
+            _lastGeneratedMermaid = mermaid;
+            _lastSelectedTables = tableNames;
+            
+            Logger.Debug("Step 2: Setting WebView2 editor content");
+            await MermaidWebView.ExecuteScriptAsync($"setEditorContent(`{EscapeForJavaScript(mermaid)}`);");
+            Logger.Debug("Editor content set successfully");
+            
+            Logger.Info("Automated diagram generated successfully: {Length} chars", mermaid.Length);
+            return mermaid;
+        }
+        catch (IBM.Data.Db2.DB2Exception db2Ex)
+        {
+            Logger.Error(db2Ex, "DB2 error during automated diagram generation - SqlState: {SqlState}, ErrorCode: {ErrorCode}", 
+                db2Ex.SqlState, db2Ex.ErrorCode);
+            Logger.Debug("DB2 Exception details: {Details}", db2Ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Automated diagram generation failed");
+            Logger.Debug("Exception type: {Type}", ex.GetType().Name);
+            Logger.Debug("Exception message: {Message}", ex.Message);
+            Logger.Debug("Stack trace: {StackTrace}", ex.StackTrace);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Extract data for testing automation.
+    /// </summary>
+    public object ExtractDataForTesting()
+    {
+        Logger.Info("Extracting Mermaid Designer data for testing automation");
+        Logger.Debug("Target Schema: {Schema}", _targetSchema);
+        Logger.Debug("IsDesignerLoaded: {Loaded}", IsDesignerLoaded);
+        Logger.Debug("HasDiagram: {HasDiagram}", !string.IsNullOrEmpty(_lastGeneratedMermaid));
+        Logger.Debug("MermaidLength: {Length}", _lastGeneratedMermaid?.Length ?? 0);
+        Logger.Debug("SelectedTablesCount: {Count}", _lastSelectedTables?.Count ?? 0);
+        
+        var extractedData = new
+        {
+            TargetSchema = _targetSchema,
+            IsLoaded = IsDesignerLoaded,
+            LastGeneratedMermaid = _lastGeneratedMermaid,
+            MermaidLength = _lastGeneratedMermaid?.Length ?? 0,
+            SelectedTablesCount = _lastSelectedTables?.Count ?? 0,
+            SelectedTables = _lastSelectedTables ?? new List<string>(),
+            HasDiagram = !string.IsNullOrEmpty(_lastGeneratedMermaid)
+        };
+        
+        Logger.Info("Data extraction complete - Schema: {Schema}, Diagram: {HasDiagram}, Tables: {Count}", 
+            _targetSchema, extractedData.HasDiagram, extractedData.SelectedTablesCount);
+        
+        return extractedData;
     }
     
     private async Task HandleAnalyzeDiff(string? original, string? edited)

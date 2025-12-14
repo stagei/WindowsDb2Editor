@@ -634,7 +634,7 @@
       "source": "TableDetailsDialog:LoadIndexesAsync"
     },
     "GetTableBasicInfo": {
-      "sql": "SELECT TRIM(TYPE), TRIM(TBSPACE) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
+      "sql": "SELECT TRIM(TYPE) AS TableType, TRIM(TBSPACE) AS Tablespace FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ?",
       "description": "Get basic table information - table type and tablespace. Used by TableDetailsDialog Tab 4 (Statistics) to display table type and tablespace name.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "Table type and tablespace",
