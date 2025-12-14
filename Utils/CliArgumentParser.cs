@@ -31,6 +31,9 @@ public class CliArguments
     // NEW: GUI mode with auto-open
     public string? Open { get; set; } // Element to open (SCHEMA.TABLE, SCHEMA.VIEW, etc.)
     public string? OpenType { get; set; } // Object type: table, view, procedure, function, package, user, etc.
+    
+    // NEW: AI Assistant parameters
+    public string? Prompt { get; set; } // Natural language prompt for AI query generation
 }
 
 /// <summary>
@@ -202,6 +205,17 @@ public class CliArgumentParser
                     {
                         cliArgs.OpenType = args[++i].ToLowerInvariant();
                         Logger.Debug("OpenType: {OpenType}", cliArgs.OpenType);
+                    }
+                    break;
+                    
+                // NEW: AI Assistant parameters
+                case "-prompt":
+                case "--prompt":
+                case "-p":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Prompt = args[++i];
+                        Logger.Debug("Prompt: {Prompt}", cliArgs.Prompt);
                     }
                     break;
             }

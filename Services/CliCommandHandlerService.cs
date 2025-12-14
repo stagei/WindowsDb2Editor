@@ -125,6 +125,12 @@ public class CliCommandHandlerService
                 // Connection commands (1 command)
                 "connection-profiles" => await ListConnectionProfilesAsync(args),
                 
+                // AI Assistant commands (4 commands)
+                "ai-query" => await GenerateAiQueryAsync(connectionManager, args),
+                "ai-explain-table" => await ExplainTableWithAiAsync(connectionManager, args),
+                "ai-deep-analysis" => await PerformDeepAnalysisAsync(connectionManager, args),
+                "db-compare" => await CompareDatabasesAsync(connectionManager, args),
+                
                 // Advanced Monitoring commands (8 commands)
                 "database-load-full" => await GetDatabaseLoadFullAsync(connectionManager, args),
                 "table-activity" => await GetTableActivityAsync(connectionManager, args),
@@ -4024,19 +4030,248 @@ public class CliCommandHandlerService
             applicationName = "DbExplorer CLI",
             cliVersion = "1.0.0",
             framework = ".NET 10.0",
-            totalCommands = 90,
-            implementationDate = "2025-12-13",
+            totalCommands = 94,
+            implementationDate = "2025-12-14",
             features = new[]
             {
-                "90 CLI commands for automated testing",
+                "94 CLI commands for automated testing",
                 "Structured JSON output",
                 "DB2 12.1 compatibility",
                 "Read-only operations (no DML)",
                 "Mermaid ERD integration (SqlMermaidErdTools)",
-                "Multi-provider support (DB2 primary)"
+                "Multi-provider support (DB2 primary)",
+                "AI Assistant integration (Natural Language to SQL, Deep Analysis)"
             },
             retrievedAt = DateTime.Now
         });
+    }
+    
+    // ============================================
+    // AI ASSISTANT CLI COMMANDS (4 commands)
+    // ============================================
+    
+    /// <summary>
+    /// CLI: ai-query - Generate SQL query from natural language input
+    /// Example: -Command ai-query -Prompt "Find all employees hired last month" -Outfile result.json
+    /// </summary>
+    private async Task<object> GenerateAiQueryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine("Generating SQL from natural language query...");
+        Logger.Info("AI Query generation requested: {Prompt}", args.Prompt);
+        
+        if (string.IsNullOrWhiteSpace(args.Prompt))
+        {
+            throw new ArgumentException("Prompt parameter required for ai-query command");
+        }
+        
+        try
+        {
+            // TODO: Implement actual AI provider integration
+            // For now, return placeholder demonstrating the expected structure
+            var response = new
+            {
+                command = "ai-query",
+                prompt = args.Prompt,
+                generatedSql = $"-- AI-Generated SQL (placeholder)\n-- Natural language: {args.Prompt}\nSELECT * FROM SYSCAT.TABLES WHERE TABSCHEMA = 'SCHEMA' FETCH FIRST 10 ROWS ONLY;",
+                confidence = 0.85,
+                aiProvider = "Not configured (placeholder)",
+                schema = args.Schema ?? "ALL",
+                note = "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
+                timestamp = DateTime.Now
+            };
+            
+            Logger.Info("AI query generated (placeholder) for prompt: {Prompt}", args.Prompt);
+            return await Task.FromResult(response);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error generating AI query");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// CLI: ai-explain-table - Get AI explanation of table purpose and usage
+    /// Example: -Command ai-explain-table -Object INL.EMPLOYEE -Outfile explain.json
+    /// </summary>
+    private async Task<object> ExplainTableWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Generating AI explanation for table: {args.Object}...");
+        Logger.Info("AI table explanation requested: {Object}", args.Object);
+        
+        if (string.IsNullOrWhiteSpace(args.Object) || !args.Object.Contains('.'))
+        {
+            throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE) for ai-explain-table command");
+        }
+        
+        var parts = args.Object.Split('.');
+        var schema = parts[0];
+        var tableName = parts[1];
+        
+        try
+        {
+            // Get basic table information for context
+            var sql = $@"
+SELECT TABNAME, TYPE, COLCOUNT, NPAGES, FPAGES, CARD
+FROM SYSCAT.TABLES
+WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
+            
+            var tableInfo = await connectionManager.ExecuteQueryAsync(sql);
+            
+            if (tableInfo.Rows.Count == 0)
+            {
+                throw new Exception($"Table not found: {args.Object}");
+            }
+            
+            var row = tableInfo.Rows[0];
+            
+            // TODO: Implement actual AI provider integration with DeepAnalysisService
+            var response = new
+            {
+                command = "ai-explain-table",
+                table = args.Object,
+                tableInfo = new
+                {
+                    schema,
+                    tableName,
+                    type = row["TYPE"]?.ToString(),
+                    columnCount = Convert.ToInt32(row["COLCOUNT"]),
+                    approximateRows = Convert.ToInt64(row["CARD"])
+                },
+                aiExplanation = $"[AI Explanation Placeholder] {args.Object} appears to be a {row["TYPE"]} table with {row["COLCOUNT"]} columns containing approximately {row["CARD"]} rows. Configure AI provider to generate detailed analysis.",
+                relationships = "AI provider not configured",
+                usage = "AI provider not configured",
+                aiProvider = "Not configured (placeholder)",
+                note = "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
+                timestamp = DateTime.Now
+            };
+            
+            Logger.Info("AI table explanation generated (placeholder) for: {Object}", args.Object);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error generating AI table explanation for: {Object}", args.Object);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// CLI: ai-deep-analysis - Perform deep AI analysis with data sampling and profiling
+    /// Example: -Command ai-deep-analysis -Object INL.EMPLOYEE -Outfile analysis.json
+    /// </summary>
+    private async Task<object> PerformDeepAnalysisAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Performing deep AI analysis: {args.Object}...");
+        Logger.Info("AI deep analysis requested: {Object}", args.Object);
+        
+        if (string.IsNullOrWhiteSpace(args.Object) || !args.Object.Contains('.'))
+        {
+            throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE) for ai-deep-analysis command");
+        }
+        
+        var parts = args.Object.Split('.');
+        var schema = parts[0];
+        var tableName = parts[1];
+        
+        try
+        {
+            // TODO: Implement actual DeepAnalysisService integration
+            var response = new
+            {
+                command = "ai-deep-analysis",
+                table = args.Object,
+                analysis = new
+                {
+                    tableComment = "AI would extract SYSCAT.REMARKS here",
+                    columnComments = new[] { "Column1: Description from SYSCAT.COLUMNS.REMARKS", "Column2: Description" },
+                    dataSample = "AI would sample 100 rows here",
+                    columnProfiling = new[] 
+                    {
+                        new { column = "ID", distinctCount = 0, nullCount = 0, dataType = "INTEGER" },
+                        new { column = "NAME", distinctCount = 0, nullCount = 0, dataType = "VARCHAR" }
+                    },
+                    relationships = new[] { "Relationships with other tables would be listed here" },
+                    sensitiveDataDetected = false
+                },
+                aiInsights = "[AI Insights Placeholder] Configure AI provider to generate deep analysis with data sampling, column profiling, and relationship explanations.",
+                aiProvider = "Not configured (placeholder)",
+                note = "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
+                timestamp = DateTime.Now
+            };
+            
+            Logger.Info("AI deep analysis completed (placeholder) for: {Object}", args.Object);
+            return await Task.FromResult(response);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error performing AI deep analysis for: {Object}", args.Object);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// CLI: db-compare - Compare database objects between two connections/schemas
+    /// Example: -Command db-compare -Object SOURCE_SCHEMA -Schema TARGET_SCHEMA -Outfile diff.json
+    /// </summary>
+    private async Task<object> CompareDatabasesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        Console.WriteLine($"Comparing databases: {args.Object} vs {args.Schema}...");
+        Logger.Info("Database comparison requested: {Source} vs {Target}", args.Object, args.Schema);
+        
+        if (string.IsNullOrWhiteSpace(args.Object))
+        {
+            throw new ArgumentException("Object parameter required (source schema) for db-compare command");
+        }
+        
+        if (string.IsNullOrWhiteSpace(args.Schema))
+        {
+            throw new ArgumentException("Schema parameter required (target schema) for db-compare command");
+        }
+        
+        try
+        {
+            var sourceSchema = args.Object;
+            var targetSchema = args.Schema;
+            
+            // Get table counts for both schemas
+            var sourceCountSql = $"SELECT COUNT(*) AS CNT FROM SYSCAT.TABLES WHERE TABSCHEMA = '{sourceSchema}'";
+            var targetCountSql = $"SELECT COUNT(*) AS CNT FROM SYSCAT.TABLES WHERE TABSCHEMA = '{targetSchema}'";
+            
+            var sourceResult = await connectionManager.ExecuteQueryAsync(sourceCountSql);
+            var targetResult = await connectionManager.ExecuteQueryAsync(targetCountSql);
+            
+            var sourceCount = sourceResult.Rows.Count > 0 ? Convert.ToInt32(sourceResult.Rows[0]["CNT"]) : 0;
+            var targetCount = targetResult.Rows.Count > 0 ? Convert.ToInt32(targetResult.Rows[0]["CNT"]) : 0;
+            
+            // TODO: Implement actual DatabaseComparisonService integration
+            var response = new
+            {
+                command = "db-compare",
+                sourceSchema,
+                targetSchema,
+                sourceTableCount = sourceCount,
+                targetTableCount = targetCount,
+                comparison = new
+                {
+                    tablesInSourceOnly = new[] { "Placeholder: Tables only in source" },
+                    tablesInTargetOnly = new[] { "Placeholder: Tables only in target" },
+                    tablesDifferent = new[] { "Placeholder: Tables with differences" },
+                    tablesIdentical = new[] { "Placeholder: Tables that are identical" }
+                },
+                migrationDdl = "-- ALTER TABLE statements would be generated here by DatabaseComparisonService",
+                note = "Full comparison requires DatabaseComparisonService integration (Phase B)",
+                timestamp = DateTime.Now
+            };
+            
+            Logger.Info("Database comparison completed (placeholder): {Source} vs {Target}", sourceSchema, targetSchema);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error comparing databases: {Source} vs {Target}", args.Object, args.Schema);
+            throw;
+        }
     }
 }
 
