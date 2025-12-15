@@ -172,7 +172,7 @@
                         <TextBlock Text="🎨" FontSize="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Database _Comparison..." Click="DatabaseComparison_Click" InputGestureText="Ctrl+Shift+C" Tag="AccessLevel:Middle">
+                <MenuItem Header="Cross-Database Schema _Comparison..." Click="CrossDatabaseComparison_Click" InputGestureText="Ctrl+Shift+C" Tag="AccessLevel:Middle">
                     <MenuItem.Icon>
                         <TextBlock Text="🔍" FontSize="16"/>
                     </MenuItem.Icon>

@@ -11,7 +11,7 @@
       "applicationName": "WindowsDb2Editor.exe",
       "lockStatus": "GRNT",
       "lockMode": "IS",
-      "agentId": 8841
+      "agentId": 9389
     },
     {
       "database": "INLTST",
@@ -23,8 +23,8 @@
       "applicationName": "WindowsDb2Editor.exe",
       "lockStatus": "GRNT",
       "lockMode": "IS",
-      "agentId": 8841
+      "agentId": 9389
     }
   ],
-  "retrievedAt": "2025-12-15T02:20:19.0043395+01:00"
+  "retrievedAt": "2025-12-15T10:03:11.3696102+01:00"
 }

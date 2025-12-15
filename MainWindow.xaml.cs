@@ -471,28 +471,21 @@ public partial class MainWindow : Window
         designerWindow.ShowDialog();
     }
     
-    private void DatabaseComparison_Click(object sender, RoutedEventArgs e)
+    private void CrossDatabaseComparison_Click(object sender, RoutedEventArgs e)
     {
-        Logger.Info("Opening Database Comparison dialog");
-        
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
-        {
-            MessageBox.Show("Please connect to a database first.", "No Active Connection", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        
-        var connectionManager = activeTab.ConnectionManager;
+        Logger.Info("Opening Cross-Database Schema Comparison dialog");
         
         try
         {
-            var dialog = new DatabaseComparisonDialog(connectionManager);
+            // The new dialog doesn't require an active connection - it uses connection profiles
+            var dialog = new CrossDatabaseComparisonDialog();
             dialog.Owner = this;
             dialog.ShowDialog();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to open Database Comparison dialog");
-            MessageBox.Show($"Failed to open Database Comparison: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error(ex, "Failed to open Cross-Database Comparison dialog");
+            MessageBox.Show($"Failed to open Cross-Database Comparison: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
     

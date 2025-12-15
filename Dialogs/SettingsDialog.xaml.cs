@@ -308,5 +308,124 @@ namespace WindowsDb2Editor.Dialogs
                 TestAiConnectionButton.Content = "🧪 Test AI Connection";
             }
         }
+        
+        private void AiProvider_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            var provider = GetComboBoxValue(AiProviderComboBox);
+            
+            // Show/hide auto-detect button based on provider
+            AutoDetectOllamaButton.Visibility = provider == "ollama" ? Visibility.Visible : Visibility.Collapsed;
+            
+            // Reset status when provider changes
+            OllamaStatusBorder.Visibility = Visibility.Collapsed;
+            AvailableModelsExpander.Visibility = Visibility.Collapsed;
+            
+            Logger.Debug("AI provider changed to: {Provider}", provider);
+        }
+        
+        private async void AutoDetectOllama_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.Info("Auto-detecting Ollama configuration");
+            
+            try
+            {
+                AutoDetectOllamaButton.IsEnabled = false;
+                AutoDetectOllamaButton.Content = "⏳ Detecting...";
+                
+                var ollamaService = new OllamaDetectionService();
+                var config = await ollamaService.GetFullConfigurationAsync();
+                
+                // Update endpoint
+                OllamaEndpointTextBox.Text = config.Endpoint;
+                
+                // Show status
+                OllamaStatusBorder.Visibility = Visibility.Visible;
+                
+                if (config.IsRunning)
+                {
+                    OllamaStatusBorder.Background = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(30, 58, 30)); // Dark green
+                    OllamaStatusText.Text = "✅ Ollama is running";
+                    OllamaStatusDetails.Text = $"Endpoint: {config.Endpoint}\n" +
+                                               $"Models path: {config.ModelsPath}\n" +
+                                               $"Available models: {config.AvailableModels.Count}";
+                }
+                else
+                {
+                    OllamaStatusBorder.Background = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(58, 45, 30)); // Dark orange
+                    OllamaStatusText.Text = "⚠️ Ollama not running";
+                    OllamaStatusDetails.Text = $"Expected endpoint: {config.Endpoint}\n" +
+                                               $"Models path: {config.ModelsPath}\n" +
+                                               $"Cached models found: {config.AvailableModels.Count}";
+                }
+                
+                // Populate available models
+                if (config.AvailableModels.Count > 0)
+                {
+                    AvailableModelsExpander.Header = $"Available Models ({config.AvailableModels.Count})";
+                    AvailableModelsExpander.Visibility = Visibility.Visible;
+                    
+                    AvailableModelsList.Items.Clear();
+                    foreach (var model in config.AvailableModels)
+                    {
+                        var displayText = $"{model.FullName}";
+                        if (model.SizeBytes > 0)
+                        {
+                            displayText += $" ({model.SizeFormatted})";
+                        }
+                        AvailableModelsList.Items.Add(new System.Windows.Controls.ListBoxItem 
+                        { 
+                            Content = displayText,
+                            Tag = model.FullName
+                        });
+                    }
+                    
+                    // Auto-select first model if no model is set
+                    if (string.IsNullOrWhiteSpace(AiModelNameTextBox.Text) || AiModelNameTextBox.Text == "llama3.2")
+                    {
+                        var firstModel = config.AvailableModels.FirstOrDefault();
+                        if (firstModel != null)
+                        {
+                            AiModelNameTextBox.Text = firstModel.FullName;
+                        }
+                    }
+                }
+                else
+                {
+                    AvailableModelsExpander.Visibility = Visibility.Collapsed;
+                }
+                
+                Logger.Info("Ollama auto-detection complete: Running={Running}, Models={Count}", 
+                    config.IsRunning, config.AvailableModels.Count);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Ollama auto-detection failed");
+                MessageBox.Show($"Auto-detection failed: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                AutoDetectOllamaButton.IsEnabled = true;
+                AutoDetectOllamaButton.Content = "🔍 Auto-Detect";
+            }
+        }
+        
+        private async void RefreshModels_Click(object sender, RoutedEventArgs e)
+        {
+            // Trigger auto-detect to refresh models
+            await Task.Run(() => { });
+            AutoDetectOllama_Click(sender, e);
+        }
+        
+        private void AvailableModelsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (AvailableModelsList.SelectedItem is System.Windows.Controls.ListBoxItem item && item.Tag is string modelName)
+            {
+                AiModelNameTextBox.Text = modelName;
+                Logger.Debug("Selected model: {Model}", modelName);
+            }
+        }
     }
 }

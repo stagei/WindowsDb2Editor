@@ -20,5 +20,5 @@
   },
   "migrationDdl": "-- ALTER TABLE statements would be generated here by DatabaseComparisonService",
   "note": "Full comparison requires DatabaseComparisonService integration (Phase B)",
-  "timestamp": "2025-12-15T02:20:43.5336586+01:00"
+  "timestamp": "2025-12-15T10:03:43.1306069+01:00"
 }

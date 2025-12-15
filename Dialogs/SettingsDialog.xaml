@@ -243,16 +243,35 @@
 
                         <!-- AI Provider Selection -->
                         <TextBlock Text="AI Provider:" FontWeight="SemiBold" Margin="0,10,0,5"/>
-                        <ComboBox x:Name="AiProviderComboBox" Width="250" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Ollama (Local)" Tag="ollama" IsSelected="True"/>
-                            <ComboBoxItem Content="LM Studio (Local)" Tag="lmstudio"/>
-                            <ComboBoxItem Content="OpenAI (Cloud)" Tag="openai"/>
-                            <ComboBoxItem Content="Azure OpenAI (Cloud)" Tag="azure"/>
-                            <ComboBoxItem Content="Claude (Cloud)" Tag="claude"/>
-                            <ComboBoxItem Content="Google Gemini (Cloud)" Tag="gemini"/>
-                        </ComboBox>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0" x:Name="AiProviderComboBox" Width="250" SelectionChanged="AiProvider_SelectionChanged">
+                                <ComboBoxItem Content="Ollama (Local)" Tag="ollama" IsSelected="True"/>
+                                <ComboBoxItem Content="LM Studio (Local)" Tag="lmstudio"/>
+                                <ComboBoxItem Content="OpenAI (Cloud)" Tag="openai"/>
+                                <ComboBoxItem Content="Azure OpenAI (Cloud)" Tag="azure"/>
+                                <ComboBoxItem Content="Claude (Cloud)" Tag="claude"/>
+                                <ComboBoxItem Content="Google Gemini (Cloud)" Tag="gemini"/>
+                            </ComboBox>
+                            <Button Grid.Column="1" x:Name="AutoDetectOllamaButton" Content="🔍 Auto-Detect" 
+                                    Margin="10,0,0,0" Padding="10,5" Click="AutoDetectOllama_Click"/>
+                        </Grid>
                         <TextBlock Text="Ollama and LM Studio are free, local AI options" 
                                    FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Ollama Status Banner -->
+                        <Border x:Name="OllamaStatusBorder" Background="#1E3A1E" CornerRadius="4" 
+                                Padding="10" Margin="0,15,0,0" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="OllamaStatusText" Text="✅ Ollama detected" 
+                                           FontWeight="SemiBold" Foreground="LightGreen"/>
+                                <TextBlock x:Name="OllamaStatusDetails" Text="" 
+                                           FontSize="11" Foreground="LightGray" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
                         <!-- Ollama Settings -->
                         <TextBlock Text="Ollama Endpoint:" FontWeight="SemiBold" Margin="0,20,0,5"/>
@@ -265,16 +284,34 @@
                         <TextBlock Text="Default: http://localhost:11434" 
                                    FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
 
-                        <!-- Model Name -->
-                        <TextBlock Text="Model Name:" FontWeight="SemiBold" Margin="0,20,0,5"/>
-                        <TextBox x:Name="AiModelNameTextBox" 
-                                 Width="300" 
-                                 Height="32"
-                                 VerticalContentAlignment="Center"
-                                 HorizontalAlignment="Left"
-                                 Text="llama3.2"/>
-                        <TextBlock Text="Examples: llama3.2, codellama, mistral, gpt-4o" 
+                        <!-- Model Selection (ComboBox for auto-detected, TextBox as fallback) -->
+                        <TextBlock Text="Model:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0" x:Name="AiModelComboBox" Height="32" IsEditable="True"
+                                      Text="llama3.2" Visibility="Collapsed"/>
+                            <TextBox Grid.Column="0" x:Name="AiModelNameTextBox" 
+                                     Width="300" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Text="llama3.2"/>
+                            <Button Grid.Column="1" x:Name="RefreshModelsButton" Content="🔄" 
+                                    ToolTip="Refresh available models"
+                                    Margin="5,0,0,0" Padding="8,5" Click="RefreshModels_Click" Visibility="Collapsed"/>
+                        </Grid>
+                        <TextBlock Text="Examples: llama3.2, codellama, mistral, phi3" 
                                    FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Available Models List (shown after auto-detect) -->
+                        <Expander x:Name="AvailableModelsExpander" Header="Available Models (0)" 
+                                  Margin="0,15,0,0" Visibility="Collapsed">
+                            <ListBox x:Name="AvailableModelsList" MaxHeight="150" Margin="0,5,0,0"
+                                     SelectionChanged="AvailableModelsList_SelectionChanged"/>
+                        </Expander>
 
                         <!-- API Key (for cloud providers) -->
                         <TextBlock Text="API Key (Cloud Providers):" FontWeight="SemiBold" Margin="0,20,0,5"/>
