@@ -1,5 +1,5 @@
 {
   "cdcEnabled": false,
   "note": "CDC status requires SYSCAT.DATAPARTITIONS or CDC-specific views",
-  "retrievedAt": "2025-12-15T10:03:33.2287721+01:00"
+  "retrievedAt": "2025-12-15T15:22:11.6014087+01:00"
 }

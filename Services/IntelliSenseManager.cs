@@ -58,9 +58,12 @@ public class IntelliSenseManager
         // Load metadata for this provider
         try
         {
-            var keywordsFile = $"ConfigFiles/{providerName}_{version}_keywords.json";
-            var statementsFile = $"ConfigFiles/{providerName}_{version}_sql_statements.json";
-            var metadataFile = $"ConfigFiles/{providerName}_{version}_system_metadata.json";
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var keywordsFile = Path.Combine(baseDir, "ConfigFiles", $"{providerName}_{version}_keywords.json");
+            var statementsFile = Path.Combine(baseDir, "ConfigFiles", $"{providerName}_{version}_sql_statements.json");
+            var metadataFile = Path.Combine(baseDir, "ConfigFiles", $"{providerName}_{version}_system_metadata.json");
+            
+            Logger.Debug("Loading IntelliSense metadata from: {KeywordsFile}", keywordsFile);
             
             await _activeProvider.LoadMetadataAsync(keywordsFile, statementsFile, metadataFile);
             

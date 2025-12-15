@@ -42,27 +42,35 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         
         try
         {
-            // Load keywords
+            // Load keywords from db2_12.1_keywords.json
             if (File.Exists(keywordsFile))
             {
                 var keywordsJson = await File.ReadAllTextAsync(keywordsFile);
-                var keywordsData = JsonSerializer.Deserialize<KeywordsMetadata>(keywordsJson);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var keywordsData = JsonSerializer.Deserialize<KeywordsMetadata>(keywordsJson, options);
                 
-                if (keywordsData != null)
+                if (keywordsData?.Keywords != null)
                 {
-                    _keywords = keywordsData.Keywords ?? new List<string>();
-                    _dataTypes = keywordsData.DataTypes ?? new List<string>();
-                    _functions = keywordsData.Functions ?? new List<string>();
-                    _systemTables = keywordsData.SystemTables ?? new List<string>();
+                    // Get all keywords from nested structure
+                    _keywords = keywordsData.GetAllKeywords();
+                    _dataTypes = keywordsData.Keywords.Datatypes ?? new List<string>();
+                    _functions = keywordsData.Keywords.Functions ?? new List<string>();
+                    _systemTables = keywordsData.Keywords.SystemTables ?? new List<string>();
                     
                     Logger.Info("Loaded {KeywordCount} keywords, {DataTypeCount} data types, " +
                               "{FunctionCount} functions, {SystemTableCount} system tables",
                               _keywords.Count, _dataTypes.Count, _functions.Count, _systemTables.Count);
                 }
+                else
+                {
+                    Logger.Warn("Keywords file loaded but structure is null: {File}", keywordsFile);
+                    LoadDefaultKeywords();
+                }
             }
             else
             {
-                Logger.Warn("Keywords file not found: {File}", keywordsFile);
+                Logger.Warn("Keywords file not found: {File}, loading defaults", keywordsFile);
+                LoadDefaultKeywords();
             }
             
             // Load statement templates
@@ -73,15 +81,64 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             }
             else
             {
-                Logger.Warn("Statements file not found: {File}", statementsFile);
+                Logger.Debug("Statements file not found: {File}", statementsFile);
             }
             
-            Logger.Info("Metadata loading complete");
+            Logger.Info("Metadata loading complete - Total: {Keywords} keywords, {DataTypes} datatypes, {Functions} functions, {SystemTables} system tables",
+                _keywords.Count, _dataTypes.Count, _functions.Count, _systemTables.Count);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to load metadata files");
+            LoadDefaultKeywords();
         }
+    }
+    
+    /// <summary>
+    /// Load default SQL keywords when JSON file is not available.
+    /// </summary>
+    private void LoadDefaultKeywords()
+    {
+        Logger.Info("Loading default SQL keywords");
+        
+        _keywords = new List<string>
+        {
+            "SELECT", "INSERT", "UPDATE", "DELETE", "MERGE",
+            "CREATE", "ALTER", "DROP", "TRUNCATE",
+            "BEGIN", "END", "COMMIT", "ROLLBACK",
+            "FROM", "WHERE", "GROUP BY", "HAVING", "ORDER BY",
+            "JOIN", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN",
+            "ON", "AND", "OR", "NOT", "IN", "EXISTS",
+            "BETWEEN", "LIKE", "IS NULL", "IS NOT NULL",
+            "DISTINCT", "ALL", "AS", "UNION", "INTERSECT", "EXCEPT",
+            "FETCH FIRST", "ROWS ONLY", "WITH", "VALUES",
+            "SET", "DECLARE", "CALL", "RETURN"
+        };
+        
+        _dataTypes = new List<string>
+        {
+            "INTEGER", "INT", "SMALLINT", "BIGINT",
+            "DECIMAL", "NUMERIC", "REAL", "DOUBLE", "FLOAT",
+            "CHAR", "VARCHAR", "CLOB", "BLOB",
+            "DATE", "TIME", "TIMESTAMP",
+            "BOOLEAN", "XML"
+        };
+        
+        _functions = new List<string>
+        {
+            "COUNT", "SUM", "AVG", "MIN", "MAX",
+            "SUBSTR", "TRIM", "UPPER", "LOWER", "LENGTH",
+            "COALESCE", "NULLIF", "CAST",
+            "CURRENT DATE", "CURRENT TIME", "CURRENT TIMESTAMP",
+            "ROW_NUMBER", "RANK", "DENSE_RANK"
+        };
+        
+        _systemTables = new List<string>
+        {
+            "SYSCAT.TABLES", "SYSCAT.COLUMNS", "SYSCAT.INDEXES",
+            "SYSCAT.VIEWS", "SYSCAT.ROUTINES", "SYSCAT.TRIGGERS",
+            "SYSIBM.SYSDUMMY1"
+        };
     }
     
     public async Task LoadLiveSchemaMetadataAsync(DB2ConnectionManager connection)
@@ -466,14 +523,49 @@ public enum SqlContext
 }
 
 /// <summary>
-/// Keywords metadata structure.
+/// Keywords metadata structure matching db2_12.1_keywords.json.
 /// </summary>
 public class KeywordsMetadata
 {
-    public List<string>? Keywords { get; set; }
-    public List<string>? DataTypes { get; set; }
+    public string Provider { get; set; } = string.Empty;
+    public string Version { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public KeywordCategories? Keywords { get; set; }
+    
+    /// <summary>
+    /// Get all keywords as a flat list.
+    /// </summary>
+    public List<string> GetAllKeywords()
+    {
+        var all = new List<string>();
+        if (Keywords != null)
+        {
+            if (Keywords.Statements != null) all.AddRange(Keywords.Statements);
+            if (Keywords.Clauses != null) all.AddRange(Keywords.Clauses);
+            if (Keywords.Operators != null) all.AddRange(Keywords.Operators);
+            if (Keywords.Constraints != null) all.AddRange(Keywords.Constraints);
+            if (Keywords.Modifiers != null) all.AddRange(Keywords.Modifiers);
+        }
+        return all.Distinct().ToList();
+    }
+}
+
+/// <summary>
+/// Nested keyword categories.
+/// </summary>
+public class KeywordCategories
+{
+    public List<string>? Statements { get; set; }
+    public List<string>? Clauses { get; set; }
+    public List<string>? Datatypes { get; set; }
     public List<string>? Functions { get; set; }
+    public List<string>? Operators { get; set; }
+    
+    [System.Text.Json.Serialization.JsonPropertyName("system_tables")]
     public List<string>? SystemTables { get; set; }
+    
+    public List<string>? Constraints { get; set; }
+    public List<string>? Modifiers { get; set; }
 }
 
 /// <summary>

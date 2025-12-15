@@ -4,6 +4,14 @@
   "limitApplied": 80,
   "metrics": [
     {
+      "schema": "SYSIBM",
+      "tableName": "SYSCOLUMNS",
+      "rowsRead": 841868,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
       "schema": "INL",
       "tableName": "KONTO",
       "rowsRead": 834736,
@@ -13,16 +21,8 @@
     },
     {
       "schema": "SYSIBM",
-      "tableName": "SYSCOLUMNS",
-      "rowsRead": 833002,
-      "rowsInserted": 0,
-      "rowsUpdated": 0,
-      "rowsDeleted": 0
-    },
-    {
-      "schema": "SYSIBM",
       "tableName": "SYSROUTINES",
-      "rowsRead": 279855,
+      "rowsRead": 300162,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -30,7 +30,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSROUTINEPARMS",
-      "rowsRead": 240822,
+      "rowsRead": 267580,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -38,7 +38,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSTABLES",
-      "rowsRead": 117056,
+      "rowsRead": 121335,
       "rowsInserted": 0,
       "rowsUpdated": 130,
       "rowsDeleted": 0
@@ -46,7 +46,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSDEPENDENCIES",
-      "rowsRead": 18256,
+      "rowsRead": 20538,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -54,7 +54,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSDATATYPES",
-      "rowsRead": 12640,
+      "rowsRead": 12800,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -62,7 +62,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSPLAN",
-      "rowsRead": 12346,
+      "rowsRead": 12348,
       "rowsInserted": 0,
       "rowsUpdated": 16,
       "rowsDeleted": 0
@@ -70,7 +70,7 @@
     {
       "schema": "INL",
       "tableName": "KONTOTYPE",
-      "rowsRead": 4096,
+      "rowsRead": 4264,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -78,7 +78,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSVIEWS",
-      "rowsRead": 3729,
+      "rowsRead": 3731,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -86,7 +86,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSDBAUTH",
-      "rowsRead": 3509,
+      "rowsRead": 3624,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -94,7 +94,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSRELS",
-      "rowsRead": 2063,
+      "rowsRead": 2121,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -102,7 +102,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSSCHEMATA",
-      "rowsRead": 1201,
+      "rowsRead": 1279,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -110,15 +110,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSTABLESPACES",
-      "rowsRead": 826,
-      "rowsInserted": 0,
-      "rowsUpdated": 0,
-      "rowsDeleted": 0
-    },
-    {
-      "schema": "INL",
-      "tableName": "BILAGNR",
-      "rowsRead": 461,
+      "rowsRead": 900,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -126,7 +118,15 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSTABCONST",
-      "rowsRead": 420,
+      "rowsRead": 504,
+      "rowsInserted": 0,
+      "rowsUpdated": 0,
+      "rowsDeleted": 0
+    },
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "rowsRead": 502,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -134,7 +134,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSINDEXES",
-      "rowsRead": 200,
+      "rowsRead": 219,
       "rowsInserted": 0,
       "rowsUpdated": 151,
       "rowsDeleted": 0
@@ -142,7 +142,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSKEYCOLUSE",
-      "rowsRead": 289,
+      "rowsRead": 294,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -190,7 +190,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSTABAUTH",
-      "rowsRead": 45,
+      "rowsRead": 49,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -206,7 +206,7 @@
     {
       "schema": "SYSIBM",
       "tableName": "SYSROUTINEAUTH",
-      "rowsRead": 32,
+      "rowsRead": 36,
       "rowsInserted": 0,
       "rowsUpdated": 0,
       "rowsDeleted": 0
@@ -644,5 +644,5 @@
       "rowsDeleted": 0
     }
   ],
-  "retrievedAt": "2025-12-15T10:03:09.1656495+01:00"
+  "retrievedAt": "2025-12-15T15:21:52.0229972+01:00"
 }

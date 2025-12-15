@@ -3,5 +3,5 @@
   "sourceSchema": "INL",
   "targetSchema": "INL_TEST",
   "ddl": "-- ALTER TABLE statements placeholder\n-- Use DatabaseComparisonService for full implementation",
-  "timestamp": "2025-12-15T10:03:50.2821965+01:00"
+  "timestamp": "2025-12-15T15:22:25.6799477+01:00"
 }

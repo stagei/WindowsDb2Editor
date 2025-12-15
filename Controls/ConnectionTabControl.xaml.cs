@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -660,10 +661,15 @@ public partial class ConnectionTabControl : UserControl
     {
         try
         {
+            // Close existing window first
             if (_completionWindow != null)
-                return;
+            {
+                _completionWindow.Close();
+                _completionWindow = null;
+            }
             
-            Logger.Debug("Showing new IntelliSense completion window");
+            var currentWord = GetCurrentWord();
+            Logger.Debug("Showing new IntelliSense for word: '{Word}'", currentWord);
             
             var completions = _newIntelliSenseManager?.GetCompletions(
                 SqlEditor.Text,
@@ -672,26 +678,77 @@ public partial class ConnectionTabControl : UserControl
             
             if (completions == null || completions.Count == 0)
             {
-                Logger.Debug("No completions available");
+                Logger.Debug("No completions available from provider");
+                
+                // Fallback to old IntelliSense
+                var suggestions = _intellisenseService.GetSuggestions(currentWord);
+                if (suggestions.Count == 0)
+                {
+                    Logger.Debug("No suggestions found");
+                    return;
+                }
+                
+                _completionWindow = new CompletionWindow(SqlEditor.TextArea);
+                _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+                
+                foreach (var suggestion in suggestions)
+                {
+                    _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(suggestion));
+                }
+                
+                _completionWindow.Closed += (s, args) => _completionWindow = null;
+                _completionWindow.Show();
+                
+                Logger.Debug("Fallback IntelliSense shown with {Count} suggestions", suggestions.Count);
+                return;
+            }
+            
+            // Filter completions based on current word
+            var filteredCompletions = completions;
+            if (!string.IsNullOrWhiteSpace(currentWord))
+            {
+                filteredCompletions = completions
+                    .Where(c => c.Text.StartsWith(currentWord, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                // If no prefix matches, try contains
+                if (filteredCompletions.Count == 0)
+                {
+                    filteredCompletions = completions
+                        .Where(c => c.Text.Contains(currentWord, StringComparison.OrdinalIgnoreCase))
+                        .Take(30)
+                        .ToList();
+                }
+            }
+            else
+            {
+                filteredCompletions = completions.Take(30).ToList();
+            }
+            
+            if (filteredCompletions.Count == 0)
+            {
+                Logger.Debug("No matching completions after filtering");
                 return;
             }
             
             _completionWindow = new CompletionWindow(SqlEditor.TextArea);
-            var data = _completionWindow.CompletionList.CompletionData;
             
-            foreach (var completion in completions)
+            // Set the start offset to replace the current word
+            _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+            
+            foreach (var completion in filteredCompletions)
             {
-                data.Add(completion);
+                _completionWindow.CompletionList.CompletionData.Add(completion);
             }
             
             _completionWindow.Closed += (s, args) => _completionWindow = null;
             _completionWindow.Show();
             
-            Logger.Info("New IntelliSense window shown with {Count} completions", completions.Count);
+            Logger.Info("IntelliSense window shown with {Count} completions", filteredCompletions.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to show new IntelliSense completion window");
+            Logger.Error(ex, "Failed to show IntelliSense completion window");
         }
     }
     
