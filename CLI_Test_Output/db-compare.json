@@ -1,0 +1,24 @@
+{
+  "command": "db-compare",
+  "sourceSchema": "INL",
+  "targetSchema": "INL_TEST",
+  "sourceTableCount": 15,
+  "targetTableCount": 0,
+  "comparison": {
+    "tablesInSourceOnly": [
+      "Placeholder: Tables only in source"
+    ],
+    "tablesInTargetOnly": [
+      "Placeholder: Tables only in target"
+    ],
+    "tablesDifferent": [
+      "Placeholder: Tables with differences"
+    ],
+    "tablesIdentical": [
+      "Placeholder: Tables that are identical"
+    ]
+  },
+  "migrationDdl": "-- ALTER TABLE statements would be generated here by DatabaseComparisonService",
+  "note": "Full comparison requires DatabaseComparisonService integration (Phase B)",
+  "timestamp": "2025-12-15T02:20:43.5336586+01:00"
+}

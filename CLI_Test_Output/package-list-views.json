@@ -1,0 +1,6 @@
+{
+  "command": "package-list-views",
+  "schema": "INL",
+  "package": "SYSSH200",
+  "views": []
+}

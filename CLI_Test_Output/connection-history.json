@@ -1,0 +1,5 @@
+{
+  "command": "connection-history",
+  "message": "Connection history not available in current session",
+  "history": []
+}

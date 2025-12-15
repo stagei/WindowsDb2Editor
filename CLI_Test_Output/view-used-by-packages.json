@@ -1,0 +1,31 @@
+{
+  "command": "view-used-by-packages",
+  "schema": "SYSIBM",
+  "view": "SYSDUMMY1",
+  "packages": [
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "ALGORITH"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "AOTMQ07 "
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "DB2L2Q44"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "SQLL9Q1Q"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "SQLUAQ23"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "SYSSTAT "
+    }
+  ]
+}

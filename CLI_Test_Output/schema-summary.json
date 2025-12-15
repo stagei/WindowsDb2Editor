@@ -1,0 +1,8 @@
+{
+  "command": "schema-summary",
+  "schema": "INL",
+  "tables": 15,
+  "views": 0,
+  "procedures": 0,
+  "functions": 0
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "GRANTEE": "FKGEISTA",
+    "GRANTEETYPE": "U",
+    "DBADMAUTH": "Y",
+    "CREATETABAUTH": "Y",
+    "BINDADDAUTH": "Y",
+    "CONNECTAUTH": "Y"
+  },
+  {
+    "GRANTEE": "FKGEISTA",
+    "GRANTEETYPE": "U",
+    "DBADMAUTH": "Y",
+    "CREATETABAUTH": "Y",
+    "BINDADDAUTH": "Y",
+    "CONNECTAUTH": "Y"
+  },
+  {
+    "GRANTEE": "FKGEISTA",
+    "GRANTEETYPE": "U",
+    "DBADMAUTH": "Y",
+    "CREATETABAUTH": "Y",
+    "BINDADDAUTH": "Y",
+    "CONNECTAUTH": "Y"
+  },
+  {
+    "GRANTEE": "FKGEISTA",
+    "GRANTEETYPE": "U",
+    "DBADMAUTH": "Y",
+    "CREATETABAUTH": "Y",
+    "BINDADDAUTH": "Y",
+    "CONNECTAUTH": "Y"
+  }
+]

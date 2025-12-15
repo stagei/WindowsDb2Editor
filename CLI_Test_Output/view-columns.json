@@ -1,0 +1,11 @@
+[
+  {
+    "COLNAME": "IBMREQD",
+    "COLNO": 0,
+    "TYPENAME": "CHARACTER",
+    "LENGTH": 1,
+    "SCALE": 0,
+    "NULLS": "N",
+    "REMARKS": null
+  }
+]

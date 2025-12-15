@@ -1,0 +1,6 @@
+{
+  "command": "table-dependencies",
+  "schema": "INL",
+  "table": "BILAGNR",
+  "dependencies": []
+}

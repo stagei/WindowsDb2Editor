@@ -1,0 +1,17 @@
+[
+  {
+    "TABSCHEMA": "INL     ",
+    "TABNAME": "BILAGNR",
+    "TYPE": "T",
+    "STATUS": "N",
+    "COLCOUNT": 5,
+    "NPAGES": 1,
+    "FPAGES": 1,
+    "CARD": 41,
+    "STATS_TIME": "2025-09-27T16:00:01.147002",
+    "CREATE_TIME": "2001-11-15T10:33:24.814001",
+    "ALTER_TIME": "2010-04-11T12:49:29.613001",
+    "INVALIDATE_TIME": "2025-06-08T23:17:38.255002",
+    "OWNER": "TRU     "
+  }
+]

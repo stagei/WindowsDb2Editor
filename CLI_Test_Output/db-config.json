@@ -1,0 +1,407 @@
+{
+  "command": "db-config",
+  "configCount": 100,
+  "config": [
+    {
+      "name": "act_sortmem_limit",
+      "value": "100"
+    },
+    {
+      "name": "alt_collate",
+      "value": ""
+    },
+    {
+      "name": "app_ctl_heap_sz",
+      "value": "128"
+    },
+    {
+      "name": "appgroup_mem_sz",
+      "value": "30000"
+    },
+    {
+      "name": "appl_memory",
+      "value": "40000"
+    },
+    {
+      "name": "applheapsz",
+      "value": "128"
+    },
+    {
+      "name": "archretrydelay",
+      "value": "20"
+    },
+    {
+      "name": "authn_cache_duration",
+      "value": "3"
+    },
+    {
+      "name": "authn_cache_users",
+      "value": "0"
+    },
+    {
+      "name": "auto_ai_maint",
+      "value": "ON"
+    },
+    {
+      "name": "auto_ai_optimizer",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_cg_stats",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_db_backup",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_del_rec_obj",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_maint",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_model_discover",
+      "value": "ON"
+    },
+    {
+      "name": "auto_reorg",
+      "value": "ON"
+    },
+    {
+      "name": "auto_reval",
+      "value": "DISABLED"
+    },
+    {
+      "name": "auto_runstats",
+      "value": "ON"
+    },
+    {
+      "name": "auto_sampling",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_stats_views",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_stmt_stats",
+      "value": "OFF"
+    },
+    {
+      "name": "auto_tbl_maint",
+      "value": "ON"
+    },
+    {
+      "name": "autorestart",
+      "value": "ON"
+    },
+    {
+      "name": "avg_appls",
+      "value": "1"
+    },
+    {
+      "name": "backup_pending",
+      "value": "NO"
+    },
+    {
+      "name": "blk_log_dsk_ful",
+      "value": "NO"
+    },
+    {
+      "name": "blocknonlogged",
+      "value": "NO"
+    },
+    {
+      "name": "catalogcache_sz",
+      "value": "-1"
+    },
+    {
+      "name": "cf_catchup_trgt",
+      "value": "15"
+    },
+    {
+      "name": "cf_db_mem_sz",
+      "value": "32768"
+    },
+    {
+      "name": "cf_deda_ratio",
+      "value": "4"
+    },
+    {
+      "name": "cf_gbp_sz",
+      "value": "4096"
+    },
+    {
+      "name": "cf_lock_sz",
+      "value": "16384"
+    },
+    {
+      "name": "cf_sca_sz",
+      "value": "4096"
+    },
+    {
+      "name": "cf_self_tuning_mem",
+      "value": "OFF"
+    },
+    {
+      "name": "chngpgs_thresh",
+      "value": "60"
+    },
+    {
+      "name": "codepage",
+      "value": "1252"
+    },
+    {
+      "name": "codeset",
+      "value": "1252"
+    },
+    {
+      "name": "collate_info",
+      "value": ""
+    },
+    {
+      "name": "connect_proc",
+      "value": ""
+    },
+    {
+      "name": "country",
+      "value": "47"
+    },
+    {
+      "name": "ctrl_file_recov_path",
+      "value": ""
+    },
+    {
+      "name": "cur_commit",
+      "value": "DISABLED"
+    },
+    {
+      "name": "database_consistent",
+      "value": "NO"
+    },
+    {
+      "name": "database_level",
+      "value": "0x1600"
+    },
+    {
+      "name": "database_memory",
+      "value": "818832"
+    },
+    {
+      "name": "date_compat",
+      "value": "OFF"
+    },
+    {
+      "name": "db_collname",
+      "value": "UNIQUE"
+    },
+    {
+      "name": "db_mem_thresh",
+      "value": "10"
+    },
+    {
+      "name": "db_seed",
+      "value": "1005332344"
+    },
+    {
+      "name": "db_update_lvl_state",
+      "value": "0"
+    },
+    {
+      "name": "dbheap",
+      "value": "600"
+    },
+    {
+      "name": "ddl_compression_def",
+      "value": "NO"
+    },
+    {
+      "name": "ddl_constraint_def",
+      "value": "YES"
+    },
+    {
+      "name": "dec_arithmetic",
+      "value": ""
+    },
+    {
+      "name": "dec_to_char_fmt",
+      "value": "V95"
+    },
+    {
+      "name": "decflt_rounding",
+      "value": "ROUND_HALF_EVEN"
+    },
+    {
+      "name": "dft_degree",
+      "value": "1"
+    },
+    {
+      "name": "dft_extent_sz",
+      "value": "32"
+    },
+    {
+      "name": "dft_loadrec_ses",
+      "value": "1"
+    },
+    {
+      "name": "dft_mttb_types",
+      "value": "SYSTEM"
+    },
+    {
+      "name": "dft_prefetch_sz",
+      "value": "16"
+    },
+    {
+      "name": "dft_queryopt",
+      "value": "5"
+    },
+    {
+      "name": "dft_refresh_age",
+      "value": "0"
+    },
+    {
+      "name": "dft_schemas_dcc",
+      "value": "NO"
+    },
+    {
+      "name": "dft_schemas_rmt",
+      "value": "NO"
+    },
+    {
+      "name": "dft_sqlmathwarn",
+      "value": "NO"
+    },
+    {
+      "name": "dft_table_org",
+      "value": "ROW"
+    },
+    {
+      "name": "dlchktime",
+      "value": "10000"
+    },
+    {
+      "name": "enable_xmlchar",
+      "value": "YES"
+    },
+    {
+      "name": "encrlib",
+      "value": ""
+    },
+    {
+      "name": "encropts",
+      "value": ""
+    },
+    {
+      "name": "encrypted_database",
+      "value": "NO"
+    },
+    {
+      "name": "extbl_location",
+      "value": "E:"
+    },
+    {
+      "name": "extbl_strict_io",
+      "value": "NO"
+    },
+    {
+      "name": "extended_row_sz",
+      "value": "DISABLE"
+    },
+    {
+      "name": "failarchpath",
+      "value": ""
+    },
+    {
+      "name": "groupheap_ratio",
+      "value": "70"
+    },
+    {
+      "name": "hadr_db_role",
+      "value": "STANDARD"
+    },
+    {
+      "name": "hadr_local_host",
+      "value": ""
+    },
+    {
+      "name": "hadr_local_svc",
+      "value": ""
+    },
+    {
+      "name": "hadr_peer_window",
+      "value": "0"
+    },
+    {
+      "name": "hadr_remote_host",
+      "value": ""
+    },
+    {
+      "name": "hadr_remote_inst",
+      "value": ""
+    },
+    {
+      "name": "hadr_remote_svc",
+      "value": ""
+    },
+    {
+      "name": "hadr_replay_delay",
+      "value": "0"
+    },
+    {
+      "name": "hadr_spool_limit",
+      "value": "0"
+    },
+    {
+      "name": "hadr_ssl_host_val",
+      "value": "OFF"
+    },
+    {
+      "name": "hadr_ssl_label",
+      "value": ""
+    },
+    {
+      "name": "hadr_syncmode",
+      "value": "NEARSYNC"
+    },
+    {
+      "name": "hadr_target_list",
+      "value": ""
+    },
+    {
+      "name": "hadr_timeout",
+      "value": "120"
+    },
+    {
+      "name": "indexrec",
+      "value": "SYSTEM"
+    },
+    {
+      "name": "large_aggregation",
+      "value": "NO"
+    },
+    {
+      "name": "locklist",
+      "value": "200"
+    },
+    {
+      "name": "locktimeout",
+      "value": "120"
+    },
+    {
+      "name": "log_appl_info",
+      "value": "NO"
+    },
+    {
+      "name": "log_ddl_stmts",
+      "value": "YES"
+    },
+    {
+      "name": "log_disk_cap",
+      "value": "0"
+    }
+  ],
+  "retrievedAt": "2025-12-15T02:18:57.5604843+01:00"
+}

@@ -1,0 +1,1190 @@
+{
+  "schema": "SYSCAT",
+  "totalViews": 197,
+  "limitApplied": 197,
+  "views": [
+    {
+      "schema": "SYSCAT",
+      "viewName": "AIOPT_TABLECARDMODELS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ATTRIBUTES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "AUDITEXCEPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "AUDITPOLICIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "AUDITUSE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "BUFFERPOOLAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "BUFFERPOOLDBPARTITIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "BUFFERPOOLEXCEPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "BUFFERPOOLNODES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "BUFFERPOOLS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CASTFUNCTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CHECKS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLCHECKS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLDIST",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLDISTPARTITIONSTATS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLGROUPCOLS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLGROUPDIST",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLGROUPDISTCOUNTS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLGROUPPARTITIONSTATS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLGROUPS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLIDENTATTRIBUTES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLLATIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLPARTITIONSTATS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLUMNS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "COLUSE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONDITIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONSTDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONTEXTATTRIBUTES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONTEXTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONTROLDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "CONTROLS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DATAPARTITIONEXPRESSION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DATAPARTITIONS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DATATYPEDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DATATYPES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DBAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DBPARTITIONGROUPDEF",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "DBPARTITIONGROUPS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "EVENTMONITORS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "EVENTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "EVENTTABLES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "EXTERNALTABLEOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FULLHIERARCHIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCMAPOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCMAPPARMOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCMAPPINGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCPARMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "FUNCTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "HIERARCHIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "HISTOGRAMTEMPLATEBINS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "HISTOGRAMTEMPLATES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "HISTOGRAMTEMPLATEUSE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXCOLUSE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXES",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXEXPLOITRULES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXEXTENSIONDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXEXTENSIONMETHODS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXEXTENSIONPARMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXEXTENSIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXPARTITIONS",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INDEXXMLPATTERNS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "INVALIDOBJECTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "KEYCOLUSE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "LIBRARIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "LIBRARYAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "LIBRARYBINDFILES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "LIBRARYVERSIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MEMBERSUBSETATTRS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MEMBERSUBSETMEMBERS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MEMBERSUBSETS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MODULEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MODULEOBJECTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "MODULES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "NAMEMAPPINGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "NICKNAMES",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "NODEGROUPDEF",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "NODEGROUPS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PACKAGEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PACKAGEDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PACKAGES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PARTITIONMAPS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PASSTHRUAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PERIODS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PREDICATESPECS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PROCEDURES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "PROCPARMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "REFERENCES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "RESERVED_PKGNAME",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "RESERVED_PKGNAME_PRE3",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "RESERVED_PKGNAME_PRE4",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "RESERVED_SCHEMA",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROLEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROLES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINEDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINEOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINEPARMOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINEPARMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROUTINESFEDERATED",
+      "isValid": true,
+      "isReadOnly": false
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ROWFIELDS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SCHEMAAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SCHEMATA",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SCPREFTBSPACES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYLABELACCESS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYLABELCOMPONENTELEMENTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYLABELCOMPONENTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYLABELS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYPOLICIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYPOLICYCOMPONENTRULES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SECURITYPOLICYEXEMPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SEQUENCEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SEQUENCES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SERVEROPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SERVERS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SERVICECLASSES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SHARED_CATALOGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ST_COORDINATE_SYSTEMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ST_GEOMETRY_COLUMNS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ST_SIZINGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ST_SPATIAL_REFERENCE_SYSTEMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "ST_UNITS_OF_MEASURE",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "STATEMENTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "STATEMENTTEXTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "STOGROUPAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "STOGROUPS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SURROGATEAUTHIDS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCHECKS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCOLCHECKS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCOLOPTIONS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCOLPROPERTIES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCOLUMNS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSCOMMENTS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSDATATYPES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSMODULEAUTH_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSMODULES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSPLAN_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSPLANAUTH_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSROUTINEAUTH_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSROUTINEPARMS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSROUTINES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSSCHEMAAUTH_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSSCHEMATA_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSSEQUENCES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSSPATIALREFSYS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSTABAUTH_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSTABLES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSUNITSOFMEASURE_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSVARIABLES_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "SYSVIEWS_UNION",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABCONST",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABDETACHEDDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABLES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABLESPACES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TABOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TBSPACEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TENANTAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TENANTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "THRESHOLDS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TRANSFORMS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TRIGDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TRIGGERS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "TYPEMAPPINGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "USAGELISTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "USEROPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "VARIABLEAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "VARIABLEDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "VARIABLES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "VIEWDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "VIEWS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKACTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKACTIONSETS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKCLASSATTRIBUTES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKCLASSES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKCLASSSETS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKLOADAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKLOADCONNATTR",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WORKLOADS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WRAPOPTIONS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "WRAPPERS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XDBMAPGRAPHS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XDBMAPSHREDTREES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XMLSTRINGS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTAUTH",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTCOMPONENTS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTDEP",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTDETAILS",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTHIERARCHIES",
+      "isValid": true,
+      "isReadOnly": true
+    },
+    {
+      "schema": "SYSCAT",
+      "viewName": "XSROBJECTS",
+      "isValid": true,
+      "isReadOnly": true
+    }
+  ],
+  "retrievedAt": "2025-12-15T01:25:39.6677299+01:00"
+}

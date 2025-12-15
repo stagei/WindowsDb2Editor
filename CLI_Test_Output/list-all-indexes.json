@@ -1,0 +1,110 @@
+{
+  "command": "list-all-indexes",
+  "indexCount": 17,
+  "limitApplied": 17,
+  "indexes": [
+    {
+      "schema": "INL",
+      "indexName": "KUNDEKONTO_I1",
+      "tableName": "KUNDEKONTO",
+      "uniqueRule": "D"
+    },
+    {
+      "schema": "INL",
+      "indexName": "KUNDEKONTO_TEST",
+      "tableName": "KUNDEKONTO_TEST",
+      "uniqueRule": "D"
+    },
+    {
+      "schema": "INL",
+      "indexName": "KUNDEKONTOT_KNRI1",
+      "tableName": "KUNDEKONTO_TEST",
+      "uniqueRule": "D"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324040",
+      "tableName": "FIRMA",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324220",
+      "tableName": "KUNDEKONTO",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324360",
+      "tableName": "KONTOTYPE",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324430",
+      "tableName": "KONTO",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324640",
+      "tableName": "TRANSTYPE",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011115103324840",
+      "tableName": "BILAGNR",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011119113415320",
+      "tableName": "RENTESATSER",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011205101347070",
+      "tableName": "FASTE_LISTE",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL011205101347310",
+      "tableName": "FASTE_TRANS",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL171114133531600",
+      "tableName": "KUNDEKONTO_TEST",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL190320140707700",
+      "tableName": "KUNDEKTO_M_FEIL_ORGNR",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "SYSIBM",
+      "indexName": "SQL210629153335490",
+      "tableName": "MKK_AVSETNING",
+      "uniqueRule": "P"
+    },
+    {
+      "schema": "INL",
+      "indexName": "TRANSREG_I1",
+      "tableName": "TRANSREG",
+      "uniqueRule": "D"
+    },
+    {
+      "schema": "INL",
+      "indexName": "UTBET_XX",
+      "tableName": "UTBET_MK",
+      "uniqueRule": "D"
+    }
+  ],
+  "retrievedAt": "2025-12-15T02:19:07.9978059+01:00"
+}

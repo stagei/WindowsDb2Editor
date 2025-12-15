@@ -1,0 +1,188 @@
+{
+  "command": "list-constraints",
+  "constraintCount": 30,
+  "limitApplied": 30,
+  "constraints": [
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "constraintName": "BILAGNR_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "constraintName": "FASTE_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_TRANS",
+      "constraintName": "FASTE_KUNDEKONT",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_TRANS",
+      "constraintName": "FASTE_LT",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "constraintName": "FASTE_TRANSTYPE",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "constraintName": "KONTO_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "constraintName": "KONTO_KTO_TYPE",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "constraintName": "KONTO_KTO_TYPE",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "constraintName": "KONTO_KUN_KTO",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTOTYPE",
+      "constraintName": "KTYPE_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "constraintName": "KUNDE_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "constraintName": "KUNDE_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "RENTESATSER",
+      "constraintName": "RENTE_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "RENTESATSER",
+      "constraintName": "RENTE_KTOTYPE",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FIRMA",
+      "constraintName": "SQL011115103324120",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO",
+      "constraintName": "SQL011115103324250",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTOTYPE",
+      "constraintName": "SQL011115103324390",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KONTO",
+      "constraintName": "SQL011115103324480",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSTYPE",
+      "constraintName": "SQL011115103324670",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "BILAGNR",
+      "constraintName": "SQL011115103324870",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "RENTESATSER",
+      "constraintName": "SQL011119113415340",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_LISTE",
+      "constraintName": "SQL011205101347170",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "FASTE_TRANS",
+      "constraintName": "SQL011205101347340",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKONTO_TEST",
+      "constraintName": "SQL171114133531690",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "KUNDEKTO_M_FEIL_ORGNR",
+      "constraintName": "SQL190320140707760",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "MKK_AVSETNING",
+      "constraintName": "SQL210629153335550",
+      "type": "P"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "constraintName": "TRANSREG_FIR",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "constraintName": "TRANSREG_KTO",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSREG",
+      "constraintName": "TRANSREG_TT",
+      "type": "F"
+    },
+    {
+      "schema": "INL",
+      "tableName": "TRANSTYPE",
+      "constraintName": "TRANSTYPE_FIR",
+      "type": "F"
+    }
+  ],
+  "retrievedAt": "2025-12-15T02:19:09.3517737+01:00"
+}

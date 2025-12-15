@@ -1,0 +1,45 @@
+{
+  "command": "db-registry",
+  "registry": [
+    {
+      "REG_VAR_NAME": "DB2_COMMON_APP_DATA_PATH",
+      "REG_VAR_VALUE": "C:\\ProgramData"
+    },
+    {
+      "REG_VAR_NAME": "DB2_EXTSECURITY",
+      "REG_VAR_VALUE": "YES"
+    },
+    {
+      "REG_VAR_NAME": "DB2ADMINSERVER",
+      "REG_VAR_VALUE": "T-NO1INLTST-DB"
+    },
+    {
+      "REG_VAR_NAME": "DB2COMM",
+      "REG_VAR_VALUE": "TCPIP"
+    },
+    {
+      "REG_VAR_NAME": "DB2INSTDEF",
+      "REG_VAR_VALUE": "DB2"
+    },
+    {
+      "REG_VAR_NAME": "DB2INSTOWNER",
+      "REG_VAR_VALUE": "t-no1inltst-db"
+    },
+    {
+      "REG_VAR_NAME": "DB2INSTPROF",
+      "REG_VAR_VALUE": "C:\\PROGRAMDATA\\IBM\\DB2\\DB2COPY1"
+    },
+    {
+      "REG_VAR_NAME": "DB2PATH",
+      "REG_VAR_VALUE": "C:\\DbInst"
+    },
+    {
+      "REG_VAR_NAME": "DB2PORTRANGE",
+      "REG_VAR_VALUE": "20000:20005"
+    },
+    {
+      "REG_VAR_NAME": "DB2SYSTEM",
+      "REG_VAR_VALUE": "T-NO1INLTST-DB"
+    }
+  ]
+}

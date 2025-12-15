@@ -1,0 +1,890 @@
+{
+  "schema": "SYSFUN",
+  "totalFunctions": 147,
+  "limitApplied": 147,
+  "functions": [
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABSVAL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABSVAL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABSVAL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ABSVAL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ACOS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "APPLICATION_ID",
+      "language": "",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ASCII",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ASCII",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ASCII",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ASIN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ATAN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ATAN2",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEIL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEIL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEIL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEIL",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEILING",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEILING",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEILING",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CEILING",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CHAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "CHR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "COS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "COT",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFWEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFYEAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFYEAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DAYOFYEAR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DEGREES",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DIFFERENCE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "DOUBLE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "EXP",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FLOOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FLOOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FLOOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FLOOR",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FMPROWS",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "FMPTHREADS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "GET_DBM_CONFIG",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "GROUPS",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "GROUPS_FOR_USER",
+      "language": "SQL",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "INSERT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "INSERT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "INSERT",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "JULIAN_DAY",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "JULIAN_DAY",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "JULIAN_DAY",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LCASE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LCASE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LEFT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LEFT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LEFT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOG",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LOG10",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LTRIM",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "LTRIM",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MIDNIGHT_SECONDS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MIDNIGHT_SECONDS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MIDNIGHT_SECONDS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MOD",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MOD",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MOD",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MONTHNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MONTHNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "MONTHNAME",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBDATASOURCES",
+      "language": "OLE",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBINITPROPS",
+      "language": "OLE",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBLISTCOLUMNS",
+      "language": "OLE",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBLISTTABLES",
+      "language": "OLE",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBPROVIDERS",
+      "language": "OLE",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBSOURCES",
+      "language": "OLE",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBTESTCONNECT",
+      "language": "OLE",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "OLEDBTYPECONVERT",
+      "language": "OLE",
+      "parameterCount": 5
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "POWER",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "POWER",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "POWER",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "POWER",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "QUARTER",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "QUARTER",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "QUARTER",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RADIANS",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RAND",
+      "language": "C",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RAND",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPEAT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPEAT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPEAT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPLACE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPLACE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "REPLACE",
+      "language": "C",
+      "parameterCount": 3
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RIGHT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RIGHT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RIGHT",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ROUND",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ROUND",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "ROUND",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RTRIM",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "RTRIM",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SIGN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SIGN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SIGN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SIGN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SIN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SOUNDEX",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SPACE",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "SQRT",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TAN",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TIMESTAMP_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TIMESTAMP_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TIMESTAMP_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TIMESTAMP_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TIMESTAMPDIFF",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNC",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNC",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNC",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "TRUNCATE",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "UCASE",
+      "language": "",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "USERS",
+      "language": "SQL",
+      "parameterCount": 0
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "USERS_GROUPS",
+      "language": "C",
+      "parameterCount": 2
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "VEBLOB_CP_LARGE",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "VEBLOB_CP_SMALL",
+      "language": "C",
+      "parameterCount": 4
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    },
+    {
+      "schema": "SYSFUN",
+      "functionName": "WEEK_ISO",
+      "language": "C",
+      "parameterCount": 1
+    }
+  ],
+  "retrievedAt": "2025-12-15T00:48:48.738574+01:00"
+}

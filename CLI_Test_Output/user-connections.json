@@ -1,0 +1,5 @@
+{
+  "command": "user-connections",
+  "connections": [],
+  "note": "SYSIBMADM.APPLICATIONS requires SYSADM authority"
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "SYSIBM",
+  "viewName": "SYSDUMMY1",
+  "definer": "SYSIBM",
+  "isReadOnly": true,
+  "isValid": true,
+  "remarks": "",
+  "createTime": "2025-06-08T23:17:58.506003",
+  "dependsOn": null,
+  "retrievedAt": "2025-12-15T01:54:41.62616+01:00"
+}

@@ -1,0 +1,34 @@
+{
+  "command": "ai-deep-analysis",
+  "table": "INL.BILAGNR",
+  "analysis": {
+    "tableComment": "AI would extract SYSCAT.REMARKS here",
+    "columnComments": [
+      "Column1: Description from SYSCAT.COLUMNS.REMARKS",
+      "Column2: Description"
+    ],
+    "dataSample": "AI would sample 100 rows here",
+    "columnProfiling": [
+      {
+        "column": "ID",
+        "distinctCount": 0,
+        "nullCount": 0,
+        "dataType": "INTEGER"
+      },
+      {
+        "column": "NAME",
+        "distinctCount": 0,
+        "nullCount": 0,
+        "dataType": "VARCHAR"
+      }
+    ],
+    "relationships": [
+      "Relationships with other tables would be listed here"
+    ],
+    "sensitiveDataDetected": false
+  },
+  "aiInsights": "[AI Insights Placeholder] Configure AI provider to generate deep analysis with data sampling, column profiling, and relationship explanations.",
+  "aiProvider": "Not configured (placeholder)",
+  "note": "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
+  "timestamp": "2025-12-15T02:21:08.1018223+01:00"
+}

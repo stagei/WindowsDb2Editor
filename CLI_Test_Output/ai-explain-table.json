@@ -1,0 +1,17 @@
+{
+  "command": "ai-explain-table",
+  "table": "INL.BILAGNR",
+  "tableInfo": {
+    "schema": "INL",
+    "tableName": "BILAGNR",
+    "type": "T",
+    "columnCount": 5,
+    "approximateRows": 41
+  },
+  "aiExplanation": "[AI Explanation Placeholder] INL.BILAGNR appears to be a T table with 5 columns containing approximately 41 rows. Configure AI provider to generate detailed analysis.",
+  "relationships": "AI provider not configured",
+  "usage": "AI provider not configured",
+  "aiProvider": "Not configured (placeholder)",
+  "note": "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
+  "timestamp": "2025-12-15T02:21:01.4703391+01:00"
+}

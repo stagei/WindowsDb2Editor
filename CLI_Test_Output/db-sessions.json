@@ -1,0 +1,12 @@
+{
+  "totalSessions": 1,
+  "limitApplied": 1,
+  "sessions": [
+    {
+      "authId": "FKGEISTA",
+      "connectTime": "2025-12-15T02:20:20.47",
+      "message": "Session monitoring requires admin views"
+    }
+  ],
+  "retrievedAt": "2025-12-15T02:20:20.3755546+01:00"
+}

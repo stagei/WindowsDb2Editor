@@ -1,0 +1,6 @@
+{
+  "command": "package-list-tables",
+  "schema": "INL",
+  "package": "SYSSH200",
+  "tables": []
+}

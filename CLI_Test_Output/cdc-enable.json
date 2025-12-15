@@ -1,0 +1,7 @@
+{
+  "command": "cdc-enable",
+  "schema": "INL",
+  "table": "BILAGNR",
+  "status": "CDC enable command would require ALTER TABLE permissions",
+  "note": "Use: ALTER TABLE schema.table DATA CAPTURE CHANGES"
+}

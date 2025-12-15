@@ -1,0 +1,8 @@
+{
+  "command": "gui-test",
+  "form": null,
+  "Object": null,
+  "tab": null,
+  "status": "GUI tests require WPF context and cannot be run in CLI mode",
+  "note": "Use the WPF application directly for GUI testing"
+}

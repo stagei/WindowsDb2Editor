@@ -2,5 +2,5 @@
   "note": "Query history is session-based and not available in CLI mode",
   "sessionMode": "CLI",
   "historyAvailable": false,
-  "retrievedAt": "2025-12-14T18:46:39.4558876+01:00"
+  "retrievedAt": "2025-12-15T02:20:55.0608246+01:00"
 }

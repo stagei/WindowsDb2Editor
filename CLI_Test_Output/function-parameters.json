@@ -1,0 +1,66 @@
+[
+  {
+    "PARMNAME": null,
+    "TYPENAME": "SMALLINT",
+    "LENGTH": 2,
+    "SCALE": 0,
+    "ROWTYPE": "C",
+    "ORDINAL": 0
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "INTEGER",
+    "LENGTH": 4,
+    "SCALE": 0,
+    "ROWTYPE": "C",
+    "ORDINAL": 0
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "DOUBLE",
+    "LENGTH": 8,
+    "SCALE": 0,
+    "ROWTYPE": "C",
+    "ORDINAL": 0
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "BIGINT",
+    "LENGTH": 8,
+    "SCALE": 0,
+    "ROWTYPE": "C",
+    "ORDINAL": 0
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "SMALLINT",
+    "LENGTH": 2,
+    "SCALE": 0,
+    "ROWTYPE": "P",
+    "ORDINAL": 1
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "INTEGER",
+    "LENGTH": 4,
+    "SCALE": 0,
+    "ROWTYPE": "P",
+    "ORDINAL": 1
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "DOUBLE",
+    "LENGTH": 8,
+    "SCALE": 0,
+    "ROWTYPE": "P",
+    "ORDINAL": 1
+  },
+  {
+    "PARMNAME": null,
+    "TYPENAME": "BIGINT",
+    "LENGTH": 8,
+    "SCALE": 0,
+    "ROWTYPE": "P",
+    "ORDINAL": 1
+  }
+]

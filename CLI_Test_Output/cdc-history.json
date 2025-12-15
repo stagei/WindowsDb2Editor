@@ -1,0 +1,13 @@
+{
+  "command": "cdc-history",
+  "schema": "INL",
+  "table": "BILAGNR",
+  "history": [
+    {
+      "TABSCHEMA": "INL",
+      "TABNAME": "BILAGNR",
+      "DATACAPTURE": "N",
+      "ALTER_TIME": "2010-04-11T12:49:29.613001"
+    }
+  ]
+}

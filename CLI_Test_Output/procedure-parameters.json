@@ -1,0 +1,10 @@
+[
+  {
+    "PARMNAME": "CMD",
+    "TYPENAME": "CLOB",
+    "LENGTH": 2097152,
+    "SCALE": 0,
+    "ROWTYPE": "P",
+    "ORDINAL": 1
+  }
+]

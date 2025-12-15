@@ -1,0 +1,47 @@
+[
+  {
+    "TABNAME": "BILAGNR"
+  },
+  {
+    "TABNAME": "FASTE_LISTE"
+  },
+  {
+    "TABNAME": "FASTE_TRANS"
+  },
+  {
+    "TABNAME": "FIRMA"
+  },
+  {
+    "TABNAME": "KONTO"
+  },
+  {
+    "TABNAME": "KONTOTYPE"
+  },
+  {
+    "TABNAME": "KUNDEKONTO"
+  },
+  {
+    "TABNAME": "KUNDEKONTO_TEST"
+  },
+  {
+    "TABNAME": "KUNDEKTO_M_FEIL_ORGNR"
+  },
+  {
+    "TABNAME": "MKK_AVSETNING"
+  },
+  {
+    "TABNAME": "RENTESATSER"
+  },
+  {
+    "TABNAME": "TRANSREG"
+  },
+  {
+    "TABNAME": "TRANSREG_TEST"
+  },
+  {
+    "TABNAME": "TRANSTYPE"
+  },
+  {
+    "TABNAME": "UTBET_MK"
+  }
+]

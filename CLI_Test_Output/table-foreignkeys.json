@@ -1,0 +1,17 @@
+{
+  "schema": "INL",
+  "tableName": "BILAGNR",
+  "foreignKeyCount": 1,
+  "foreignKeys": [
+    {
+      "fkName": "BILAGNR_FIR",
+      "fkColumns": "FIRMA",
+      "refSchema": "INL",
+      "refTable": "FIRMA",
+      "refColumns": "FIRMA",
+      "deleteRule": "A",
+      "updateRule": "A"
+    }
+  ],
+  "retrievedAt": "2025-12-15T02:19:15.8915914+01:00"
+}

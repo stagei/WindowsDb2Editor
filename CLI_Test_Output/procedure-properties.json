@@ -1,0 +1,8 @@
+{
+  "schema": "SYSPROC",
+  "procedureName": "ADMIN_CMD",
+  "language": "C",
+  "isDeterministic": false,
+  "sourceCode": null,
+  "retrievedAt": "2025-12-15T02:19:40.4141599+01:00"
+}

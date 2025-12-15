@@ -1,0 +1,9 @@
+[
+  {
+    "CONSTNAME": "BILAGNR_FIR",
+    "TABSCHEMA": "INL     ",
+    "TABNAME": "BILAGNR",
+    "REFTABSCHEMA": "INL     ",
+    "REFTABNAME": "FIRMA"
+  }
+]

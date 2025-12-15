@@ -1,0 +1,6 @@
+{
+  "command": "function-usage",
+  "schema": "SYSFUN",
+  "function": "ABS",
+  "usedBy": []
+}

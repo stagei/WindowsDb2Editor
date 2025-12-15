@@ -1,0 +1,10 @@
+{
+  "schema": "SYSFUN",
+  "functionName": "ABS",
+  "definer": "SYSIBM",
+  "language": "C",
+  "isDeterministic": true,
+  "origin": "E",
+  "createTime": "2001-11-09T09:52:30.628001",
+  "retrievedAt": "2025-12-15T02:19:48.2640319+01:00"
+}

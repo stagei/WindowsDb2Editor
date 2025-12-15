@@ -1,0 +1,6 @@
+{
+  "command": "function-grants",
+  "schema": "SYSFUN",
+  "function": "ABS",
+  "grants": []
+}

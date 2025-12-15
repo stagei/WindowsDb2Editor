@@ -1,0 +1,264 @@
+{
+  "command": "tablespace-usage",
+  "usage": [
+    {
+      "TBSP_NAME": "SYSCATSPACE",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "TEMPSPACE1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "USERSPACE1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSDF",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSGV",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSPR",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSRS",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSSC",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DSQ1STBT",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DSQTSCT1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DSQTSCT2",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DSQTSCT3",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATS1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATS2",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATS7",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSX1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSX2",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSX3",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSX4",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSX1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSX2",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSX3",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSX4",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSX5",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSRC1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSRC2",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSRC3",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATSRC4",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DSQTSDEF",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RDBITSX5",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATS9",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "RAATS8",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "SYSTOOLSPACE",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DBETS1",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "DBETSSMP",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "SYSTOOLSTMPSPACE",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    },
+    {
+      "TBSP_NAME": "TEMPSPACE32",
+      "TBSP_TYPE": "SMS",
+      "TBSP_TOTAL_SIZE_KB": 0,
+      "TBSP_USED_SIZE_KB": 0,
+      "TBSP_FREE_SIZE_KB": 0
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "command": "connection-test",
+  "profileName": "FKKTOTST",
+  "testResult": "SUCCESS",
+  "message": "Connection opened successfully",
+  "retrievedAt": "2025-12-15T02:18:53.3675289+01:00"
+}

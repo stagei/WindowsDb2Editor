@@ -2066,6 +2066,190 @@ public partial class ConnectionTabControl : UserControl
             SqlEditor.AppendText($"SELECT * FROM {fullTableName};\n");
         }
     }
+    
+    #region TreeView Context Menu Handlers
+    
+    private void DatabaseTreeView_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Get the clicked item
+        if (e.OriginalSource is DependencyObject source)
+        {
+            var treeViewItem = FindParent<TreeViewItem>(source);
+            if (treeViewItem != null)
+            {
+                treeViewItem.IsSelected = true;
+                UpdateContextMenuForSelectedItem();
+            }
+        }
+    }
+    
+    private void DatabaseTreeView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            // Generate SELECT statement
+            SqlEditor.AppendText($"SELECT * FROM {fullName} FETCH FIRST 100 ROWS ONLY;\n");
+        }
+    }
+    
+    private void UpdateContextMenuForSelectedItem()
+    {
+        var selectedItem = DatabaseTreeView.SelectedItem as TreeViewItem;
+        if (selectedItem?.Tag == null) return;
+        
+        // Show/hide menu items based on what's selected
+        var isTable = selectedItem.Header?.ToString()?.Contains("📋") == true || 
+                      selectedItem.Parent is TreeViewItem parent && parent.Header?.ToString()?.Contains("Tables") == true;
+        var isView = selectedItem.Header?.ToString()?.Contains("👁") == true;
+        var isProcedure = selectedItem.Header?.ToString()?.Contains("⚙") == true;
+        var isFunction = selectedItem.Header?.ToString()?.Contains("ƒ") == true;
+        
+        ViewPropertiesMenuItem.IsEnabled = true;
+        ViewDdlMenuItem.IsEnabled = isTable || isView;
+        SelectTopMenuItem.IsEnabled = isTable || isView;
+        ViewSampleDataMenuItem.IsEnabled = isTable || isView;
+        DeepAnalysisMenuItem.IsEnabled = true;
+        CompareMenuItem.IsEnabled = isTable;
+    }
+    
+    private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
+    {
+        var parent = VisualTreeHelper.GetParent(child);
+        while (parent != null && parent is not T)
+        {
+            parent = VisualTreeHelper.GetParent(parent);
+        }
+        return parent as T;
+    }
+    
+    private void ContextMenu_ViewProperties_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            ViewTableDetails(fullName);
+        }
+    }
+    
+    private void ContextMenu_ViewDdl_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            GenerateDdl(fullName);
+        }
+    }
+    
+    private async void GenerateDdl(string fullName)
+    {
+        try
+        {
+            Logger.Info("Generating DDL for {FullName}", fullName);
+            var parts = fullName.Split('.');
+            if (parts.Length != 2)
+            {
+                MessageBox.Show("Invalid object name format. Expected SCHEMA.NAME", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            var ddlService = new Services.DdlGeneratorService(ConnectionManager);
+            var obj = new Models.DatabaseObject 
+            { 
+                SchemaName = parts[0], 
+                Name = parts[1], 
+                Type = Models.ObjectType.Tables 
+            };
+            
+            var (createDdl, _) = await ddlService.GenerateDdlAsync(obj);
+            
+            // Show DDL in a dialog
+            var dialog = new Dialogs.SqlStatementViewerDialog(createDdl, $"DDL for {fullName}");
+            dialog.Owner = Window.GetWindow(this);
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate DDL for {FullName}", fullName);
+            MessageBox.Show($"Failed to generate DDL: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private void ContextMenu_SelectTop_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            SqlEditor.Text = $"SELECT * FROM {fullName} FETCH FIRST 100 ROWS ONLY";
+            Execute_Click(sender, e);
+        }
+    }
+    
+    private void ContextMenu_ViewSampleData_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            SelectTopRows(fullName, 100);
+        }
+    }
+    
+    private void ContextMenu_DeepAnalysis_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            try
+            {
+                var targetObjects = new List<string> { fullName };
+                var dialog = new Dialogs.DeepAnalysisDialog(ConnectionManager, targetObjects);
+                dialog.Owner = Window.GetWindow(this);
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open Deep Analysis dialog");
+                MessageBox.Show($"Failed to open Deep Analysis: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+    
+    private void ContextMenu_Compare_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            try
+            {
+                var dialog = new Dialogs.DatabaseComparisonDialog(ConnectionManager);
+                dialog.Owner = Window.GetWindow(this);
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open Database Comparison dialog");
+                MessageBox.Show($"Failed to open Database Comparison: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+    
+    private void ContextMenu_CopyName_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item)
+        {
+            var header = item.Header?.ToString() ?? "";
+            // Remove emoji prefix
+            var name = System.Text.RegularExpressions.Regex.Replace(header, @"^[\p{So}\p{Sc}]\s*", "");
+            Clipboard.SetText(name);
+        }
+    }
+    
+    private void ContextMenu_CopyFullName_Click(object sender, RoutedEventArgs e)
+    {
+        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        {
+            Clipboard.SetText(fullName);
+        }
+    }
+    
+    #endregion
 
     /// <summary>
     /// Create context menu for table nodes with various options
@@ -2543,7 +2727,10 @@ public partial class ConnectionTabControl : UserControl
         FormatSql();
     }
 
-    private void FormatSql()
+    /// <summary>
+    /// Format SQL in the editor (public for menu access)
+    /// </summary>
+    public void FormatSql()
     {
         var sql = SqlEditor.Text;
         if (string.IsNullOrWhiteSpace(sql))
@@ -2566,6 +2753,34 @@ public partial class ConnectionTabControl : UserControl
             MessageBox.Show($"Formatting error:\n\n{ex.Message}", "Format Error",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+    
+    /// <summary>
+    /// Show Find dialog (public for menu access)
+    /// </summary>
+    public void ShowFindDialog()
+    {
+        // AvalonEdit doesn't have built-in find dialog, use Ctrl+F behavior
+        // For now, just select the search box if visible or show message
+        MessageBox.Show("Use Ctrl+F in the SQL editor to find text.\n\nThe find panel appears at the top of the editor.", 
+            "Find", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
+    /// <summary>
+    /// Show Find and Replace dialog (public for menu access)
+    /// </summary>
+    public void ShowReplaceDialog()
+    {
+        MessageBox.Show("Use Ctrl+H in the SQL editor to find and replace text.\n\nThe replace panel appears at the top of the editor.", 
+            "Find and Replace", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
+    /// <summary>
+    /// Open SQL file (public for menu access)
+    /// </summary>
+    public void OpenSqlFile()
+    {
+        OpenScript();
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)

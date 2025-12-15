@@ -1,0 +1,9 @@
+{
+  "command": "db-version",
+  "version": [
+    {
+      "SERVICE_LEVEL": "DB2 v12.1.1000.77",
+      "FIXPACK_NUM": 0
+    }
+  ]
+}

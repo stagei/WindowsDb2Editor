@@ -47,13 +47,65 @@
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
+            <!-- Edit Menu -->
+            <MenuItem Header="_Edit" Padding="12,8">
+                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Click="EditUndo_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="↩️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Click="EditRedo_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="↪️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Cu_t" InputGestureText="Ctrl+X" Click="EditCut_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="✂️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Copy" InputGestureText="Ctrl+C" Click="EditCopy_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📋" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Paste" InputGestureText="Ctrl+V" Click="EditPaste_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📄" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Click="EditSelectAll_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="☑️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Find..." InputGestureText="Ctrl+F" Click="EditFind_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🔍" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Find and _Replace..." InputGestureText="Ctrl+H" Click="EditReplace_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🔄" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="F_ormat SQL" InputGestureText="Ctrl+Shift+F" Click="EditFormatSql_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="✨" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            
             <MenuItem Header="_View" Padding="12,8">
                 <MenuItem Header="_Dark Theme" Click="ToggleDarkMode_Click" InputGestureText="Ctrl+D">
                     <MenuItem.Icon>
                         <TextBlock Text="🌙" FontSize="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Cycle _Theme (Dark/Light/System)" ToolTip="Press Ctrl+D to cycle through themes"/>
                 <Separator/>
                 <MenuItem Header="Database _Load Monitor..." Click="DatabaseLoadMonitor_Click" Tag="AccessLevel:Middle">
                     <MenuItem.Icon>
@@ -137,8 +189,56 @@
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
+            <!-- Tools Menu -->
+            <MenuItem Header="_Tools" Padding="12,8">
+                <MenuItem Header="Manage _Connections..." Click="ManageConnections_Click" InputGestureText="Ctrl+M">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🔌" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Execute SQL Script..." Click="ExecuteSqlScript_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="▶️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Generate DDL for Schema..." Click="GenerateSchemaDdl_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📝" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Options..." Click="Settings_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="⚙️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            
             <MenuItem Header="_Help" Padding="12,8">
-                <MenuItem Header="_About" Click="About_Click">
+                <MenuItem Header="_Keyboard Shortcuts" Click="KeyboardShortcuts_Click" InputGestureText="F1">
+                    <MenuItem.Icon>
+                        <TextBlock Text="⌨️" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Documentation" Click="Documentation_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📖" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_View Logs" Click="ViewLogs_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📋" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Open _Data Folder" Click="OpenDataFolder_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📁" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_About DbExplorer" Click="About_Click">
                     <MenuItem.Icon>
                         <TextBlock Text="ℹ" FontSize="16"/>
                     </MenuItem.Icon>

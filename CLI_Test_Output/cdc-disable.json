@@ -1,0 +1,7 @@
+{
+  "command": "cdc-disable",
+  "schema": "INL",
+  "table": "BILAGNR",
+  "status": "CDC disable command would require ALTER TABLE permissions",
+  "note": "Use: ALTER TABLE schema.table DATA CAPTURE NONE"
+}

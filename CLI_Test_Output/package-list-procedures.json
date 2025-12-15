@@ -1,0 +1,6 @@
+{
+  "command": "package-list-procedures",
+  "schema": "INL",
+  "package": "SYSSH200",
+  "procedures": []
+}

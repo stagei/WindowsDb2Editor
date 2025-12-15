@@ -1,0 +1,6 @@
+{
+  "command": "procedure-dependencies",
+  "schema": "SYSPROC",
+  "procedure": "ADMIN_CMD",
+  "dependencies": []
+}

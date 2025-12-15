@@ -1,0 +1,6 @@
+{
+  "command": "function-dependencies",
+  "schema": "SYSFUN",
+  "function": "ABS",
+  "dependencies": []
+}

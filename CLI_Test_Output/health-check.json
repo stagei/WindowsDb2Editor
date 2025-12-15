@@ -1,0 +1,16 @@
+{
+  "command": "health-check",
+  "overallStatus": "HEALTHY",
+  "checks": [
+    {
+      "check": "Connection",
+      "status": "OK",
+      "message": "Database connection is active"
+    },
+    {
+      "check": "Tables",
+      "status": "OK",
+      "count": 271
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "command": "view-sample-data",
+  "schema": "SYSIBM",
+  "view": "SYSDUMMY1",
+  "data": [
+    {
+      "IBMREQD": "Y"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "command": "procedure-usage",
+  "schema": "SYSPROC",
+  "procedure": "ADMIN_CMD",
+  "usedBy": [
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "REVALH03"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "REVALK07"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "REVALP08"
+    },
+    {
+      "PKGSCHEMA": "NULLID  ",
+      "PKGNAME": "REVALQ08"
+    },
+    {
+      "PKGSCHEMA": "SYSIBMADM",
+      "PKGNAME": "P12857957"
+    },
+    {
+      "PKGSCHEMA": "SYSIBMADM",
+      "PKGNAME": "P1962280900"
+    },
+    {
+      "PKGSCHEMA": "SYSIBMADM",
+      "PKGNAME": "P450594709"
+    },
+    {
+      "PKGSCHEMA": "SYSIBMADM",
+      "PKGNAME": "P529433644"
+    },
+    {
+      "PKGSCHEMA": "SYSIBMADM",
+      "PKGNAME": "P550837822"
+    }
+  ]
+}

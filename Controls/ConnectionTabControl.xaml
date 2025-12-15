@@ -83,7 +83,26 @@
                               Margin="5" 
                               Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              MouseRightButtonUp="DatabaseTreeView_MouseRightButtonUp"
+                              MouseDoubleClick="DatabaseTreeView_MouseDoubleClick">
+                        <TreeView.ContextMenu>
+                            <ContextMenu x:Name="TreeViewContextMenu">
+                                <MenuItem x:Name="ViewPropertiesMenuItem" Header="📋 View Properties" Click="ContextMenu_ViewProperties_Click"/>
+                                <MenuItem x:Name="ViewDdlMenuItem" Header="📝 Generate DDL" Click="ContextMenu_ViewDdl_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="SelectTopMenuItem" Header="▶️ SELECT TOP 100 *" Click="ContextMenu_SelectTop_Click"/>
+                                <MenuItem x:Name="ViewSampleDataMenuItem" Header="📊 View Sample Data" Click="ContextMenu_ViewSampleData_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="DeepAnalysisMenuItem" Header="🤖 Deep Analysis (AI)" Click="ContextMenu_DeepAnalysis_Click"/>
+                                <MenuItem x:Name="CompareMenuItem" Header="🔍 Compare Across Databases..." Click="ContextMenu_Compare_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="RefreshMenuItem" Header="🔄 Refresh" Click="RefreshObjectBrowser_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="CopyNameMenuItem" Header="📄 Copy Name" Click="ContextMenu_CopyName_Click"/>
+                                <MenuItem x:Name="CopyFullNameMenuItem" Header="📄 Copy Full Name (SCHEMA.NAME)" Click="ContextMenu_CopyFullName_Click"/>
+                            </ContextMenu>
+                        </TreeView.ContextMenu>
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem">
                                 <Setter Property="IsExpanded" Value="False"/>

@@ -1,0 +1,11 @@
+{
+  "command": "object-search",
+  "pattern": "BILAG%",
+  "objects": [
+    {
+      "TABSCHEMA": "INL     ",
+      "TABNAME": "BILAGNR",
+      "TYPE": "T"
+    }
+  ]
+}

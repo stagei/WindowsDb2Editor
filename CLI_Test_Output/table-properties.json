@@ -1,0 +1,101 @@
+{
+  "schema": "INL",
+  "tableName": "BILAGNR",
+  "columnCount": 5,
+  "columns": [
+    {
+      "columnName": "FIRMA",
+      "ordinalPosition": null,
+      "dataType": "DECIMAL",
+      "length": 6,
+      "scale": null,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false,
+      "isPrimaryKey": true
+    },
+    {
+      "columnName": "AAR",
+      "ordinalPosition": null,
+      "dataType": "DECIMAL",
+      "length": 4,
+      "scale": null,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false,
+      "isPrimaryKey": true
+    },
+    {
+      "columnName": "SISTE_BILAGNR",
+      "ordinalPosition": null,
+      "dataType": "DECIMAL",
+      "length": 6,
+      "scale": null,
+      "isNullable": false,
+      "defaultValue": "0.0",
+      "comment": "",
+      "isIdentity": false,
+      "isPrimaryKey": false
+    },
+    {
+      "columnName": "TIDSPUNKT",
+      "ordinalPosition": null,
+      "dataType": "TIMESTAMP",
+      "length": 10,
+      "scale": null,
+      "isNullable": false,
+      "defaultValue": "CURRENT TIMESTAMP",
+      "comment": "",
+      "isIdentity": false,
+      "isPrimaryKey": false
+    },
+    {
+      "columnName": "BRUKERID",
+      "ordinalPosition": null,
+      "dataType": "CHARACTER",
+      "length": 8,
+      "scale": null,
+      "isNullable": false,
+      "defaultValue": "\u0027 \u0027",
+      "comment": "",
+      "isIdentity": false,
+      "isPrimaryKey": false
+    }
+  ],
+  "primaryKeyCount": 2,
+  "primaryKeys": [
+    "FIRMA",
+    "AAR"
+  ],
+  "foreignKeyCount": 1,
+  "foreignKeys": [
+    {
+      "constraintName": "BILAGNR_FIR",
+      "columns": "FIRMA",
+      "referencedSchema": "INL",
+      "referencedTable": "FIRMA",
+      "referencedColumns": "FIRMA",
+      "deleteRule": "A",
+      "updateRule": "A"
+    }
+  ],
+  "indexCount": 1,
+  "indexes": [
+    {
+      "indexName": "SQL011115103324840",
+      "uniqueRule": "Primary Key",
+      "isUnique": false,
+      "isPrimaryKey": true,
+      "columns": "FIRMA, AAR",
+      "indexType": "Regular",
+      "columnCount": null,
+      "firstKeyCard": null,
+      "fullKeyCard": null,
+      "comment": null
+    }
+  ],
+  "statistics": null,
+  "retrievedAt": "2025-12-15T02:19:12.0018999+01:00"
+}

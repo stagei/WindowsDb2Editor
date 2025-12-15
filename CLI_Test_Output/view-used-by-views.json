@@ -1,0 +1,6 @@
+{
+  "command": "view-used-by-views",
+  "schema": "SYSIBM",
+  "view": "SYSDUMMY1",
+  "views": []
+}

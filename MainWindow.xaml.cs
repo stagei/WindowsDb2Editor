@@ -685,6 +685,241 @@ public partial class MainWindow : Window
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
+    
+    #region Edit Menu Handlers
+    
+    private void EditUndo_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor && editor.CanUndo)
+            editor.Undo();
+    }
+    
+    private void EditRedo_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor && editor.CanRedo)
+            editor.Redo();
+    }
+    
+    private void EditCut_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor)
+            editor.Cut();
+    }
+    
+    private void EditCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor)
+            editor.Copy();
+    }
+    
+    private void EditPaste_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor)
+            editor.Paste();
+    }
+    
+    private void EditSelectAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveEditor() is { } editor)
+            editor.SelectAll();
+    }
+    
+    private void EditFind_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveTabControl() is { } tabControl)
+            tabControl.ShowFindDialog();
+    }
+    
+    private void EditReplace_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveTabControl() is { } tabControl)
+            tabControl.ShowReplaceDialog();
+    }
+    
+    private void EditFormatSql_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetActiveTabControl() is { } tabControl)
+            tabControl.FormatSql();
+    }
+    
+    private ICSharpCode.AvalonEdit.TextEditor? GetActiveEditor()
+    {
+        if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+            selectedTab.Content is ConnectionTabControl tabControl)
+        {
+            return tabControl.SqlEditor;
+        }
+        return null;
+    }
+    
+    private ConnectionTabControl? GetActiveTabControl()
+    {
+        if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+            selectedTab.Content is ConnectionTabControl tabControl)
+        {
+            return tabControl;
+        }
+        return null;
+    }
+    
+    #endregion
+    
+    #region Tools Menu Handlers
+    
+    private void ManageConnections_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Manage connections clicked");
+        WelcomePanel_ManageConnectionsRequested(sender, e);
+    }
+    
+    private void ExecuteSqlScript_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Execute SQL script clicked");
+        if (GetActiveTabControl() is { } tabControl)
+        {
+            tabControl.OpenSqlFile();
+        }
+        else
+        {
+            MessageBox.Show("Please connect to a database first.", "No Active Connection", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+    
+    private void GenerateSchemaDdl_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Generate Schema DDL clicked");
+        DdlGenerator_Click(sender, e);
+    }
+    
+    #endregion
+    
+    #region Help Menu Handlers
+    
+    private void KeyboardShortcuts_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Keyboard shortcuts dialog requested");
+        var shortcuts = @"
+╔══════════════════════════════════════════════════════════════════╗
+║                    KEYBOARD SHORTCUTS                            ║
+╠══════════════════════════════════════════════════════════════════╣
+║ FILE OPERATIONS                                                  ║
+╟──────────────────────────────────────────────────────────────────╢
+║ Ctrl+N         New Connection                                    ║
+║ Ctrl+W         Close Current Tab                                 ║
+║ Ctrl+O         Open SQL Script                                   ║
+║ Ctrl+S         Save SQL Script                                   ║
+║ Alt+F4         Exit Application                                  ║
+╟──────────────────────────────────────────────────────────────────╢
+║ EDITING                                                          ║
+╟──────────────────────────────────────────────────────────────────╢
+║ Ctrl+Z         Undo                                              ║
+║ Ctrl+Y         Redo                                              ║
+║ Ctrl+X         Cut                                               ║
+║ Ctrl+C         Copy                                              ║
+║ Ctrl+V         Paste                                             ║
+║ Ctrl+A         Select All                                        ║
+║ Ctrl+F         Find                                              ║
+║ Ctrl+H         Find and Replace                                  ║
+║ Ctrl+Shift+F   Format SQL                                        ║
+╟──────────────────────────────────────────────────────────────────╢
+║ QUERY EXECUTION                                                  ║
+╟──────────────────────────────────────────────────────────────────╢
+║ F5             Execute Query                                     ║
+║ Ctrl+Enter     Execute Current Statement                         ║
+╟──────────────────────────────────────────────────────────────────╢
+║ VIEW                                                             ║
+╟──────────────────────────────────────────────────────────────────╢
+║ Ctrl+D         Toggle Dark/Light Theme                           ║
+║ Ctrl+Shift+C   Database Comparison                               ║
+╚══════════════════════════════════════════════════════════════════╝";
+        
+        MessageBox.Show(shortcuts, "Keyboard Shortcuts", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+    
+    private void Documentation_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Documentation clicked");
+        try
+        {
+            var docPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MarkdownDoc");
+            if (Directory.Exists(docPath))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = docPath,
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                MessageBox.Show("Documentation folder not found.\n\nCheck the MarkdownDoc folder in the application directory.", 
+                    "Documentation", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open documentation");
+            MessageBox.Show($"Failed to open documentation: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private void ViewLogs_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("View logs clicked");
+        try
+        {
+            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+            if (Directory.Exists(logPath))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = logPath,
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                MessageBox.Show("Logs folder not found.", "View Logs", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open logs folder");
+            MessageBox.Show($"Failed to open logs: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Open data folder clicked");
+        try
+        {
+            var dataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WindowsDb2Editor");
+            
+            if (!Directory.Exists(dataPath))
+                Directory.CreateDirectory(dataPath);
+                
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = dataPath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open data folder");
+            MessageBox.Show($"Failed to open data folder: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    #endregion
 
     /// <summary>
     /// Populate the Recent Connections menu with saved connections

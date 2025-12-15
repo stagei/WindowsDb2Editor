@@ -1,0 +1,86 @@
+{
+  "command": "user-tables",
+  "user": "FKGEISTA",
+  "tables": [
+    {
+      "TABSCHEMA": "DBM     ",
+      "TABNAME": "DBQA_APPLICATION_SYSTEM"
+    },
+    {
+      "TABSCHEMA": "DBM     ",
+      "TABNAME": "FK_LOG"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_ACTIVE_DB_SESSIONS"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DB_SET_DATA_CAPTURE_ON"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_COLUMN_INFO"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_COLUMN_REMARK"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_CREATE_TABLE"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_FOREIGN_KEY"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_INDEX"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_PRIMARY_KEY"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DDL_SOURCE_TABLE_REMARK"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_DROP_DB_CODE"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_GROUP_LOCK_TERMINATE_SCRIPT"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_OBJECT_LOCK_INFO"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_OBJECT_LOCK_TERMINATE_SCRIPT"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_PACKAGE_SQL_SOURCE"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_SCHEMA_NAME"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_SOURCE"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_TABLE_DEPENDENCY"
+    },
+    {
+      "TABSCHEMA": "TV      ",
+      "TABNAME": "V_DBQA_UPDATE_STATISTICS_ON_TABLES"
+    }
+  ]
+}

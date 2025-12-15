@@ -1,0 +1,6 @@
+{
+  "command": "package-statistics",
+  "schema": "INL",
+  "package": "SYSSH200",
+  "statistics": []
+}

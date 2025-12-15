@@ -1,0 +1,10 @@
+{
+  "command": "view-definition",
+  "schema": "SYSIBM",
+  "view": "SYSDUMMY1",
+  "definition": [
+    {
+      "VIEW_DEFINITION": "create or replace view sysibm.sysdummy1 (ibmreqd) as values (char(\u0027Y\u0027)) \n\n"
+    }
+  ]
+}

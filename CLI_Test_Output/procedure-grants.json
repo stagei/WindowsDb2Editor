@@ -1,0 +1,17 @@
+{
+  "command": "procedure-grants",
+  "schema": "SYSPROC",
+  "procedure": "ADMIN_CMD",
+  "grants": [
+    {
+      "GRANTEE": "NETADM  ",
+      "GRANTEETYPE": "U",
+      "EXECUTEAUTH": "G"
+    },
+    {
+      "GRANTEE": "PUBLIC  ",
+      "GRANTEETYPE": "G",
+      "EXECUTEAUTH": "G"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "command": "database-summary",
+  "schemas": 39,
+  "tables": 271,
+  "views": 369,
+  "procedures": 584,
+  "functions": 3466
+}

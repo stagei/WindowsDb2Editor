@@ -1,0 +1,30 @@
+{
+  "command": "column-search",
+  "pattern": "BILAG%",
+  "columns": [
+    {
+      "TABSCHEMA": "INL     ",
+      "TABNAME": "TRANSREG",
+      "COLNAME": "BILAGDATO",
+      "TYPENAME": "DECIMAL"
+    },
+    {
+      "TABSCHEMA": "INL     ",
+      "TABNAME": "TRANSREG",
+      "COLNAME": "BILAGNR",
+      "TYPENAME": "DECIMAL"
+    },
+    {
+      "TABSCHEMA": "INL     ",
+      "TABNAME": "TRANSREG_TEST",
+      "COLNAME": "BILAGDATO",
+      "TYPENAME": "DECIMAL"
+    },
+    {
+      "TABSCHEMA": "INL     ",
+      "TABNAME": "TRANSREG_TEST",
+      "COLNAME": "BILAGNR",
+      "TYPENAME": "DECIMAL"
+    }
+  ]
+}

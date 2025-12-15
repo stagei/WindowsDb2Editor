@@ -1,0 +1,7 @@
+{
+  "command": "db-compare-ddl",
+  "sourceSchema": "INL",
+  "targetSchema": "INL_TEST",
+  "ddl": "-- ALTER TABLE statements placeholder\n-- Use DatabaseComparisonService for full implementation",
+  "timestamp": "2025-12-15T02:20:48.5181415+01:00"
+}

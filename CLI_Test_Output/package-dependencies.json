@@ -1,0 +1,6 @@
+{
+  "command": "package-dependencies",
+  "schema": "INL",
+  "package": "SYSSH200",
+  "dependencies": []
+}
