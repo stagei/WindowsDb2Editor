@@ -1528,6 +1528,41 @@
       "parameters": ["PKGSCHEMA"],
       "returns": "List of packages in schema with metadata",
       "source": "ObjectBrowserService:GetPackagesForSchemaAsync"
+    },
+    "ListAllIndexes": {
+      "sql": "SELECT TRIM(INDSCHEMA) AS INDSCHEMA, TRIM(INDNAME) AS INDNAME, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, UNIQUERULE, PCTFREE, NLEAF, NLEVELS, CLUSTERRATIO FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) LIKE ? ORDER BY INDNAME FETCH FIRST 200 ROWS ONLY",
+      "description": "List all indexes in a schema with details.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of indexes with metadata",
+      "source": "CliCommandHandlerService:ListAllIndexesAsync"
+    },
+    "ListConstraints": {
+      "sql": "SELECT TRIM(CONSTNAME) AS CONSTNAME, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TYPE, ENFORCED FROM SYSCAT.TABCONST WHERE TRIM(TABSCHEMA) LIKE ? ORDER BY CONSTNAME FETCH FIRST 200 ROWS ONLY",
+      "description": "List all constraints in a schema.",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of constraints",
+      "source": "CliCommandHandlerService:ListConstraintsAsync"
+    },
+    "ListSequences": {
+      "sql": "SELECT TRIM(SEQSCHEMA) AS SEQSCHEMA, TRIM(SEQNAME) AS SEQNAME, SEQTYPE, START, INCREMENT, MINVALUE, MAXVALUE, CYCLE, CACHE FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) LIKE ? ORDER BY SEQNAME FETCH FIRST 200 ROWS ONLY",
+      "description": "List all sequences in a schema.",
+      "parameters": ["SEQSCHEMA"],
+      "returns": "List of sequences",
+      "source": "CliCommandHandlerService:ListSequencesAsync"
+    },
+    "GetDbConfig": {
+      "sql": "SELECT NAME, VALUE FROM SYSIBMADM.DBCFG ORDER BY NAME FETCH FIRST 100 ROWS ONLY",
+      "description": "Get database configuration parameters.",
+      "parameters": [],
+      "returns": "Database configuration key-value pairs",
+      "source": "CliCommandHandlerService:GetDbConfigAsync"
+    },
+    "TestConnection": {
+      "sql": "SELECT 1 FROM SYSIBM.SYSDUMMY1",
+      "description": "Simple query to test database connectivity.",
+      "parameters": [],
+      "returns": "Single row if connection is successful",
+      "source": "CliCommandHandlerService:TestConnectionAsync"
     }
   }
 }

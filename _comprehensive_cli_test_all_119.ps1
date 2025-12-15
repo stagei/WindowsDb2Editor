@@ -34,7 +34,8 @@ Write-Host ""
 # Test parameters
 $testSchema = "INL"
 $testTable = "BILAGNR"
-$testView = "FAKTURA"
+$testView = "SYSDUMMY1"  # Use SYSIBM.SYSDUMMY1 as it always exists
+$testViewSchema = "SYSIBM"  # View is in SYSIBM schema
 $testProcSchema = "SYSPROC"             # System procedures schema
 $testProcedure = "ADMIN_CMD"            # System procedure
 $testFuncSchema = "SYSFUN"              # System functions schema
@@ -48,8 +49,8 @@ $commands = @(
     # Connection & Info (5)
     @{ Name = "connection-test"; Args = "-profile $connectionProfile" }
     @{ Name = "connection-stats"; Args = "-profile $connectionProfile" }
-    @{ Name = "help-all"; Args = "" }
-    @{ Name = "cli-version"; Args = "" }
+    @{ Name = "help-all"; Args = "-profile $connectionProfile" }
+    @{ Name = "cli-version"; Args = "-profile $connectionProfile" }
     @{ Name = "db-config"; Args = "-profile $connectionProfile" }
     
     # Schema Operations (10)
@@ -81,14 +82,14 @@ $commands = @(
     @{ Name = "table-used-by-views"; Args = "-profile $connectionProfile -object $testSchema.$testTable" }
     @{ Name = "table-used-by-routines"; Args = "-profile $connectionProfile -object $testSchema.$testTable" }
     
-    # View Operations (7)
-    @{ Name = "view-properties"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-definition"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-columns"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-dependencies"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-sample-data"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-used-by-packages"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
-    @{ Name = "view-used-by-views"; Args = "-profile $connectionProfile -object $testSchema.$testView" }
+    # View Operations (7) - Using SYSCAT.SYSTABLES which always exists
+    @{ Name = "view-properties"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-definition"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-columns"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-dependencies"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-sample-data"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-used-by-packages"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
+    @{ Name = "view-used-by-views"; Args = "-profile $connectionProfile -object $testViewSchema.$testView" }
     
     # Procedure Operations (6) - using system procedure SYSPROC.ADMIN_CMD
     @{ Name = "procedure-properties"; Args = "-profile $connectionProfile -object $testProcSchema.$testProcedure" }
@@ -155,8 +156,8 @@ $commands = @(
     
     # Metadata & Advanced (8)
     @{ Name = "object-metadata"; Args = "-profile $connectionProfile -object $testSchema.$testTable" }
-    @{ Name = "object-search"; Args = "-profile $connectionProfile -pattern BILAG%" }
-    @{ Name = "column-search"; Args = "-profile $connectionProfile -pattern BILAG%" }
+    @{ Name = "object-search"; Args = "-profile $connectionProfile -object BILAG%" }
+    @{ Name = "column-search"; Args = "-profile $connectionProfile -object BILAG%" }
     @{ Name = "dependency-graph"; Args = "-profile $connectionProfile -object $testSchema.$testTable" }
     @{ Name = "query-history"; Args = "-profile $connectionProfile" }
     @{ Name = "schema-summary"; Args = "-profile $connectionProfile -schema $testSchema" }

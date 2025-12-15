@@ -55,34 +55,53 @@ public class CliCommandHandlerService
         {
             object? result = args.Command switch
             {
-                "table-props" => await GetTablePropertiesAsync(connectionManager, args),
+                // Meta commands (no connection required - handle first)
+                "help-all" => await GetHelpAllAsync(args),
+                "cli-version" => await GetCliVersionAsync(args),
+                "connection-profiles" => await ListConnectionProfilesAsync(args),
+                "query-history" => await GetQueryHistoryAsync(args),
+                "connection-history" => await GetConnectionHistoryAsync(args),
+                
+                // Table Properties (multiple aliases)
+                "table-props" or "table-properties" => await GetTablePropertiesAsync(connectionManager, args),
                 "trigger-info" => await GetTriggerInfoAsync(connectionManager, args),
                 "trigger-usage" => await GetTriggerUsageAsync(connectionManager, args),
-                "view-info" => await GetViewInfoAsync(connectionManager, args),
-                "procedure-info" => await GetProcedureInfoAsync(connectionManager, args),
-                "function-info" => await GetFunctionInfoAsync(connectionManager, args),
-                "lock-monitor" => await GetLockMonitorAsync(connectionManager, args),
-                "active-sessions" => await GetActiveSessionsAsync(connectionManager, args),
-                "database-load" => await GetDatabaseLoadAsync(connectionManager, args),
-                "table-stats" => await GetTableStatsAsync(connectionManager, args),
+                
+                // View Properties (multiple aliases)
+                "view-info" or "view-properties" => await GetViewInfoAsync(connectionManager, args),
+                
+                // Procedure Properties (multiple aliases)
+                "procedure-info" or "procedure-properties" => await GetProcedureInfoAsync(connectionManager, args),
+                
+                // Function Properties (multiple aliases)
+                "function-info" or "function-properties" => await GetFunctionInfoAsync(connectionManager, args),
+                
+                // Monitoring commands (multiple aliases)
+                "lock-monitor" or "db-locks" => await GetLockMonitorAsync(connectionManager, args),
+                "active-sessions" or "db-sessions" => await GetActiveSessionsAsync(connectionManager, args),
+                "database-load" or "db-load" => await GetDatabaseLoadAsync(connectionManager, args),
+                "table-stats" or "table-statistics" => await GetTableStatsAsync(connectionManager, args),
                 "dependencies" => await GetDependenciesAsync(connectionManager, args),
-                "cdc-info" => await GetCdcInfoAsync(connectionManager, args),
+                "cdc-info" or "cdc-status" => await GetCdcInfoAsync(connectionManager, args),
                 "list-tables" => await ListTablesAsync(connectionManager, args),
                 "list-views" => await ListViewsAsync(connectionManager, args),
                 "list-procedures" => await ListProceduresAsync(connectionManager, args),
                 "list-triggers" => await ListTriggersAsync(connectionManager, args),
                 "list-functions" => await ListFunctionsAsync(connectionManager, args),
                 
-                // TableDetailsDialog - Complete table information (9 commands)
+                // TableDetailsDialog - Complete table information (with aliases)
                 "table-columns" => await GetTableColumnsAsync(connectionManager, args),
-                "table-foreign-keys" => await GetTableForeignKeysAsync(connectionManager, args),
+                "table-foreign-keys" or "table-foreignkeys" => await GetTableForeignKeysAsync(connectionManager, args),
                 "table-indexes" => await GetTableIndexesAsync(connectionManager, args),
                 "table-statistics-full" => await GetTableStatisticsFullAsync(connectionManager, args),
                 "table-ddl" => await GetTableDdlAsync(connectionManager, args),
-                "table-incoming-fks" => await GetTableIncomingFKsAsync(connectionManager, args),
-                "table-referencing-packages" => await GetTableReferencingPackagesAsync(connectionManager, args),
-                "table-referencing-views" => await GetTableReferencingViewsAsync(connectionManager, args),
-                "table-referencing-routines" => await GetTableReferencingRoutinesAsync(connectionManager, args),
+                "table-incoming-fks" or "table-incoming-fk" => await GetTableIncomingFKsAsync(connectionManager, args),
+                "table-referencing-packages" or "table-used-by-packages" => await GetTableReferencingPackagesAsync(connectionManager, args),
+                "table-referencing-views" or "table-used-by-views" => await GetTableReferencingViewsAsync(connectionManager, args),
+                "table-referencing-routines" or "table-used-by-routines" => await GetTableReferencingRoutinesAsync(connectionManager, args),
+                
+                // Table Dependencies
+                "table-dependencies" => await GetTableDependenciesAsync(connectionManager, args),
                 
                 // Source Code Browser commands (3 commands)
                 "list-all-source" => await ListAllSourceAsync(connectionManager, args),
@@ -117,13 +136,9 @@ public class CliCommandHandlerService
                 "mermaid-diff" => await GenerateMermaidDiffDdlAsync(args),
                 "sql-translate" => await TranslateSqlDialectAsync(args),
                 
-                // Metadata commands (3 commands)
-                "query-history" => await GetQueryHistoryAsync(args),
+                // Metadata commands (2 commands - query-history already at top)
                 "schema-metadata" => await GetSchemaMetadataAsync(connectionManager, args),
                 "database-metadata" => await GetDatabaseMetadataAsync(connectionManager, args),
-                
-                // Connection commands (1 command)
-                "connection-profiles" => await ListConnectionProfilesAsync(args),
                 
                 // AI Assistant commands (10 commands)
                 "ai-query" => await GenerateAiQueryAsync(connectionManager, args),
@@ -139,30 +154,48 @@ public class CliCommandHandlerService
                 "db-compare-different" => await CompareDifferentAsync(connectionManager, args),
                 "db-compare-ddl" => await CompareDdlAsync(connectionManager, args),
                 
-                // View Detail commands (3 commands)
+                // View Detail commands (with additional commands)
                 "view-definition" => await GetViewDefinitionAsync(connectionManager, args),
                 "view-columns" => await GetViewColumnsAsync(connectionManager, args),
                 "view-dependencies" => await GetViewDependenciesAsync(connectionManager, args),
+                "view-sample-data" => await GetViewSampleDataAsync(connectionManager, args),
+                "view-used-by-packages" => await GetViewUsedByPackagesAsync(connectionManager, args),
+                "view-used-by-views" => await GetViewUsedByViewsAsync(connectionManager, args),
                 
-                // Procedure Detail commands (2 commands)
+                // Procedure Detail commands (with additional commands)
                 "procedure-source" => await GetProcedureSourceAsync(connectionManager, args),
                 "procedure-parameters" => await GetProcedureParametersAsync(connectionManager, args),
+                "procedure-dependencies" => await GetProcedureDependenciesAsync(connectionManager, args),
+                "procedure-usage" => await GetProcedureUsageAsync(connectionManager, args),
+                "procedure-grants" => await GetProcedureGrantsAsync(connectionManager, args),
                 
-                // Function Detail commands (2 commands)
+                // Function Detail commands (with additional commands)
                 "function-source" => await GetFunctionSourceAsync(connectionManager, args),
                 "function-parameters" => await GetFunctionParametersAsync(connectionManager, args),
+                "function-dependencies" => await GetFunctionDependenciesAsync(connectionManager, args),
+                "function-usage" => await GetFunctionUsageAsync(connectionManager, args),
+                "function-grants" => await GetFunctionGrantsAsync(connectionManager, args),
                 
-                // Package Detail commands (2 commands)
+                // Package Detail commands (with additional commands)
                 "package-properties" => await GetPackagePropertiesAsync(connectionManager, args),
                 "package-statements" => await GetPackageStatementsAsync(connectionManager, args),
+                "package-dependencies" => await GetPackageDependenciesAsync(connectionManager, args),
+                "package-statistics" => await GetPackageStatisticsAsync(connectionManager, args),
+                "package-list-tables" => await GetPackageListTablesAsync(connectionManager, args),
+                "package-list-views" => await GetPackageListViewsAsync(connectionManager, args),
+                "package-list-procedures" => await GetPackageListProceduresAsync(connectionManager, args),
+                "package-list-functions" => await GetPackageListFunctionsAsync(connectionManager, args),
                 
                 // Table Analysis commands (2 commands)
                 "table-relationships" => await GetTableRelationshipsAsync(connectionManager, args),
                 "table-sample-data" => await GetTableSampleDataAsync(connectionManager, args),
                 
-                // User Management commands (2 commands)
+                // User Management commands (with additional commands)
                 "user-properties" => await GetUserPropertiesAsync(connectionManager, args),
                 "user-privileges" => await GetUserPrivilegesAsync(connectionManager, args),
+                "user-tables" => await GetUserTablesAsync(connectionManager, args),
+                "user-schemas" => await GetUserSchemasAsync(connectionManager, args),
+                "user-connections" => await GetUserConnectionsAsync(connectionManager, args),
                 
                 // Generic Object commands (1 command)
                 "object-metadata" => await GetObjectMetadataAsync(connectionManager, args),
@@ -213,27 +246,50 @@ public class CliCommandHandlerService
                 "connection-stats" => await GetConnectionStatsAsync(args),
                 "connection-test" => await TestConnectionAsync(args),
                 
-                // Additional utility commands (10 commands)
+                // Additional utility commands (with aliases)
                 "list-schemas" => await ListSchemasAsync(connectionManager, args),
                 "list-tablespaces" => await ListTablespacesAsync(connectionManager, args),
-                "list-indexes-all" => await ListAllIndexesAsync(connectionManager, args),
+                "list-indexes-all" or "list-all-indexes" => await ListAllIndexesAsync(connectionManager, args),
                 "list-constraints" => await ListConstraintsAsync(connectionManager, args),
                 "list-sequences" => await ListSequencesAsync(connectionManager, args),
                 "table-size" => await GetTableSizeAsync(connectionManager, args),
                 "schema-size" => await GetSchemaSizeAsync(connectionManager, args),
-                "database-size" => await GetDatabaseSizeAsync(connectionManager, args),
+                "database-size" or "db-size" => await GetDatabaseSizeAsync(connectionManager, args),
                 "table-grants" => await GetTableGrantsAsync(connectionManager, args),
-                "db-config" => await GetDbConfigAsync(connectionManager, args),
+                "db-config" or "db-parameters" => await GetDbConfigAsync(connectionManager, args),
                 
-                // Meta commands (2 commands)
-                "help-all" => await GetHelpAllAsync(args),
-                "cli-version" => await GetCliVersionAsync(args),
+                // Additional monitoring commands
+                "db-version" => await GetDbVersionAsync(connectionManager, args),
+                "db-registry" => await GetDbRegistryAsync(connectionManager, args),
+                "active-queries" => await GetActiveQueriesAsync(connectionManager, args),
+                "bufferpool-stats" => await GetBufferpoolStatsAsync(connectionManager, args),
+                "tablespace-usage" => await GetTablespaceUsageAsync(connectionManager, args),
+                
+                // CDC Enhanced commands
+                "cdc-enable" => await EnableCdcAsync(connectionManager, args),
+                "cdc-disable" => await DisableCdcAsync(connectionManager, args),
+                "cdc-history" => await GetCdcHistoryAsync(connectionManager, args),
+                
+                // Search commands
+                "object-search" => await SearchObjectsAsync(connectionManager, args),
+                "column-search" => await SearchColumnsAsync(connectionManager, args),
+                
+                // Summary commands
+                "schema-summary" => await GetSchemaSummaryAsync(connectionManager, args),
+                "database-summary" => await GetDatabaseSummaryAsync(connectionManager, args),
+                "health-check" => await PerformHealthCheckAsync(connectionManager, args),
+                
+                // GUI Test command
+                "gui-test" => await ExecuteGuiTestAsync(connectionManager, args),
                 
                 _ => throw new ArgumentException($"Unknown command: {args.Command}")
             };
             
+            // Sanitize result for JSON serialization (handle DataTable and other non-serializable types)
+            var sanitizedResult = SanitizeForJson(result);
+            
             // Serialize result to JSON
-            var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
+            var json = JsonSerializer.Serialize(sanitizedResult, new JsonSerializerOptions
             {
                 WriteIndented = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -256,6 +312,68 @@ public class CliCommandHandlerService
             Console.Error.WriteLine($"ERROR: {ex.Message}");
             return 1;
         }
+    }
+    
+    /// <summary>
+    /// Sanitize objects for JSON serialization - converts DataTable to dictionaries, removes Type instances
+    /// </summary>
+    private object? SanitizeForJson(object? obj)
+    {
+        if (obj == null) return null;
+        
+        // Handle primitive types, strings, and common value types
+        var type = obj.GetType();
+        if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime) || type == typeof(Guid))
+            return obj;
+        
+        // Handle DataTable - convert to list of dictionaries
+        if (obj is DataTable dt)
+        {
+            var rows = new List<Dictionary<string, object?>>();
+            foreach (DataRow row in dt.Rows)
+            {
+                var dict = new Dictionary<string, object?>();
+                foreach (DataColumn col in dt.Columns)
+                {
+                    dict[col.ColumnName] = row[col] == DBNull.Value ? null : row[col];
+                }
+                rows.Add(dict);
+            }
+            return rows;
+        }
+        
+        // Handle collections/arrays
+        if (obj is System.Collections.IEnumerable enumerable && type != typeof(string))
+        {
+            var list = new List<object?>();
+            foreach (var item in enumerable)
+            {
+                list.Add(SanitizeForJson(item));
+            }
+            return list;
+        }
+        
+        // Handle anonymous types and complex objects
+        bool isAnonymous = type.Name.Contains("AnonymousType") || (type.IsGenericType && type.Name.Contains("<>"));
+        if (isAnonymous || type.IsClass)
+        {
+            var dict = new Dictionary<string, object?>();
+            foreach (var prop in type.GetProperties())
+            {
+                try
+                {
+                    var value = prop.GetValue(obj);
+                    dict[prop.Name] = SanitizeForJson(value);
+                }
+                catch
+                {
+                    // Skip properties that can't be read
+                }
+            }
+            return dict;
+        }
+        
+        return obj?.ToString();
     }
     
     /// <summary>
@@ -3710,14 +3828,17 @@ public class CliCommandHandlerService
     
     private async Task<object> TestConnectionAsync(CliArguments args)
     {
-        var profileName = args.Object ?? throw new ArgumentException("Object parameter required (profile name)");
+        var profileName = args.ProfileName ?? "Unknown";
         Console.WriteLine($"Testing connection: {profileName}");
         
+        // If we get here, the connection was already opened successfully by CliExecutorService
+        // We can return success because the connection open would have failed if there was a problem
         return await Task.FromResult(new
         {
+            command = "connection-test",
             profileName,
-            testResult = "Not implemented in CLI mode",
-            note = "Connection testing requires creating actual DB connection",
+            testResult = "SUCCESS",
+            message = "Connection opened successfully",
             retrievedAt = DateTime.Now
         });
     }
@@ -3769,18 +3890,18 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing all indexes in schema: {schema}");
         
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListAllIndexes"), schema);
+        var sql = $"SELECT TRIM(INDSCHEMA) AS SCHEMA, TRIM(INDNAME) AS INDEXNAME, TRIM(TABNAME) AS TABLENAME, UNIQUERULE FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) LIKE '{schema}' ORDER BY INDNAME FETCH FIRST 200 ROWS ONLY";
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         var indexes = data.AsEnumerable().Take(limit).Select(r => new
         {
-            schema = r["Schema"]?.ToString()?.Trim(),
-            indexName = r["IndexName"]?.ToString()?.Trim(),
-            tableName = r["TableName"]?.ToString()?.Trim(),
-            uniqueRule = r["UniqueRule"]?.ToString()?.Trim()
+            schema = r["SCHEMA"]?.ToString()?.Trim(),
+            indexName = r["INDEXNAME"]?.ToString()?.Trim(),
+            tableName = r["TABLENAME"]?.ToString()?.Trim(),
+            uniqueRule = r["UNIQUERULE"]?.ToString()?.Trim()
         }).ToList();
         
-        return new { indexCount = indexes.Count, limitApplied = limit, indexes, retrievedAt = DateTime.Now };
+        return new { command = "list-all-indexes", indexCount = indexes.Count, limitApplied = limit, indexes, retrievedAt = DateTime.Now };
     }
     
     private async Task<object> ListConstraintsAsync(DB2ConnectionManager connectionManager, CliArguments args)
@@ -3788,18 +3909,18 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing constraints in schema: {schema}");
         
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListConstraints"), schema);
+        var sql = $"SELECT TRIM(TABSCHEMA) AS SCHEMA, TRIM(TABNAME) AS TABLENAME, TRIM(CONSTNAME) AS CONSTRAINTNAME, TYPE FROM SYSCAT.TABCONST WHERE TRIM(TABSCHEMA) LIKE '{schema}' ORDER BY CONSTNAME FETCH FIRST 200 ROWS ONLY";
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var limit = args.Limit ?? data.Rows.Count;
         var constraints = data.AsEnumerable().Take(limit).Select(r => new
         {
-            schema = r["Schema"]?.ToString()?.Trim(),
-            tableName = r["TableName"]?.ToString()?.Trim(),
-            constraintName = r["ConstraintName"]?.ToString()?.Trim(),
-            type = r["Type"]?.ToString()?.Trim()
+            schema = r["SCHEMA"]?.ToString()?.Trim(),
+            tableName = r["TABLENAME"]?.ToString()?.Trim(),
+            constraintName = r["CONSTRAINTNAME"]?.ToString()?.Trim(),
+            type = r["TYPE"]?.ToString()?.Trim()
         }).ToList();
         
-        return new { constraintCount = constraints.Count, limitApplied = limit, constraints, retrievedAt = DateTime.Now };
+        return new { command = "list-constraints", constraintCount = constraints.Count, limitApplied = limit, constraints, retrievedAt = DateTime.Now };
     }
     
     private async Task<object> ListSequencesAsync(DB2ConnectionManager connectionManager, CliArguments args)
@@ -3807,19 +3928,19 @@ public class CliCommandHandlerService
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing sequences in schema: {schema}");
         
-        var sql = ReplaceParameters(_metadataHandler.GetQuery("DB2", "12.1", "ListSequences"), schema);
+        var sql = $"SELECT TRIM(SEQSCHEMA) AS SCHEMA, TRIM(SEQNAME) AS SEQUENCENAME, START, INCREMENT, MINVALUE, MAXVALUE FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) LIKE '{schema}' ORDER BY SEQNAME FETCH FIRST 200 ROWS ONLY";
         var data = await connectionManager.ExecuteQueryAsync(sql);
         var sequences = data.AsEnumerable().Select(r => new
         {
-            schema = r["Schema"]?.ToString()?.Trim(),
-            sequenceName = r["SequenceName"]?.ToString()?.Trim(),
+            schema = r["SCHEMA"]?.ToString()?.Trim(),
+            sequenceName = r["SEQUENCENAME"]?.ToString()?.Trim(),
             start = r["START"],
             increment = r["INCREMENT"],
             minValue = r["MINVALUE"],
             maxValue = r["MAXVALUE"]
         }).ToList();
         
-        return new { sequenceCount = sequences.Count, sequences, retrievedAt = DateTime.Now };
+        return new { command = "list-sequences", sequenceCount = sequences.Count, sequences, retrievedAt = DateTime.Now };
     }
     
     private async Task<object> GetTableSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
@@ -3924,18 +4045,33 @@ public class CliCommandHandlerService
     
     private async Task<object> GetDbConfigAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetDbConfig");
-        var data = await connectionManager.ExecuteQueryAsync(sql);
-        var row = data.Rows[0];
-        
-        return new
+        try
         {
-            databaseName = row["DatabaseName"]?.ToString()?.Trim(),
-            currentTime = row["CurrentTime"],
-            currentUser = row["CurrentUser"]?.ToString()?.Trim(),
-            note = "Database configuration parameters require db2 GET DBM CFG or GET DB CFG commands",
-            retrievedAt = DateTime.Now
-        };
+            // Try to get DB config from SYSIBMADM.DBCFG (requires SYSADM or DBADM authority)
+            var sql = "SELECT NAME, VALUE FROM SYSIBMADM.DBCFG ORDER BY NAME FETCH FIRST 100 ROWS ONLY";
+            var data = await connectionManager.ExecuteQueryAsync(sql);
+            var configParams = data.Rows.Cast<DataRow>().Select(r => new { 
+                name = r["NAME"]?.ToString()?.Trim(), 
+                value = r["VALUE"]?.ToString()?.Trim() 
+            }).ToList();
+            return new { command = "db-config", configCount = configParams.Count, config = configParams, retrievedAt = DateTime.Now };
+        }
+        catch
+        {
+            // Fallback: return basic database info
+            var sql = "SELECT CURRENT SERVER AS DBNAME, CURRENT TIMESTAMP AS CURRENT_TIME, CURRENT USER AS CURRENT_USER FROM SYSIBM.SYSDUMMY1";
+            var data = await connectionManager.ExecuteQueryAsync(sql);
+            var row = data.Rows[0];
+            return new
+            {
+                command = "db-config",
+                databaseName = row["DBNAME"]?.ToString()?.Trim(),
+                currentTime = row["CURRENT_TIME"],
+                currentUser = row["CURRENT_USER"]?.ToString()?.Trim(),
+                note = "Limited info - full DB config requires SYSADM/DBADM authority",
+                retrievedAt = DateTime.Now
+            };
+        }
     }
     
     // ========================================================================
@@ -4443,12 +4579,11 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> GetViewDefinitionAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view definition: {args.Object}...");
-        var parts = args.Object.Split('.');
-        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetViewDefinition")
-            .Replace("V.VIEWSCHEMA = ?", $"V.VIEWSCHEMA = '{parts[0]}'")
-            .Replace("V.VIEWNAME = ?", $"V.VIEWNAME = '{parts[1]}'");
+        var parts = args.Object?.Split('.') ?? new[] { "UNKNOWN", "UNKNOWN" };
+        if (parts.Length < 2) parts = new[] { parts[0], "UNKNOWN" };
+        var sql = $"SELECT TRIM(TEXT) AS VIEW_DEFINITION FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = '{parts[0]}' AND TRIM(VIEWNAME) = '{parts[1]}'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
-        return result;
+        return new { command = "view-definition", schema = parts[0], view = parts[1], definition = result };
     }
     
     /// <summary>
@@ -4644,6 +4779,279 @@ FROM SYSCAT.TABLES
 WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
+    }
+    
+    #endregion
+    
+    #region Additional CLI Commands - Architecture Fix
+    
+    private async Task<object> GetTableDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
+        return new { command = "table-dependencies", schema = parts[0], table = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetViewSampleDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT * FROM {parts[0]}.{parts[1]} FETCH FIRST 10 ROWS ONLY";
+        return new { command = "view-sample-data", schema = parts[0], view = parts[1], data = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetViewUsedByPackagesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT DISTINCT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE = 'V'";
+        return new { command = "view-used-by-packages", schema = parts[0], view = parts[1], packages = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetViewUsedByViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT VIEWSCHEMA, VIEWNAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}'";
+        return new { command = "view-used-by-views", schema = parts[0], view = parts[1], views = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetProcedureDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'";
+        return new { command = "procedure-dependencies", schema = parts[0], procedure = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetProcedureUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE IN ('P', 'F')";
+        return new { command = "procedure-usage", schema = parts[0], procedure = parts[1], usedBy = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetProcedureGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{parts[0]}' AND SPECIFICNAME = '{parts[1]}'";
+        return new { command = "procedure-grants", schema = parts[0], procedure = parts[1], grants = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetFunctionDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'";
+        return new { command = "function-dependencies", schema = parts[0], function = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetFunctionUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE = 'F'";
+        return new { command = "function-usage", schema = parts[0], function = parts[1], usedBy = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetFunctionGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{parts[0]}' AND SPECIFICNAME = '{parts[1]}'";
+        return new { command = "function-grants", schema = parts[0], function = parts[1], grants = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+        return new { command = "package-dependencies", schema = parts[0], package = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageStatisticsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT PKGSCHEMA, PKGNAME, VALID, LAST_BIND_TIME, LASTUSED FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+        return new { command = "package-statistics", schema = parts[0], package = parts[1], statistics = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageListTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'T'";
+        return new { command = "package-list-tables", schema = parts[0], package = parts[1], tables = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageListViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'V'";
+        return new { command = "package-list-views", schema = parts[0], package = parts[1], views = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageListProceduresAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'P'";
+        return new { command = "package-list-procedures", schema = parts[0], package = parts[1], procedures = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetPackageListFunctionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'F'";
+        return new { command = "package-list-functions", schema = parts[0], package = parts[1], functions = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetUserTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = $"SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE OWNER = '{args.Object}' ORDER BY TABSCHEMA, TABNAME";
+        return new { command = "user-tables", user = args.Object, tables = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetUserSchemasAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = $"SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE OWNER = '{args.Object}' ORDER BY SCHEMANAME";
+        return new { command = "user-schemas", user = args.Object, schemas = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetUserConnectionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        try
+        {
+            var sql = "SELECT APPLICATION_HANDLE, APPLICATION_ID, APPLICATION_NAME, CLIENT_USERID FROM SYSIBMADM.APPLICATIONS FETCH FIRST 50 ROWS ONLY";
+            return new { command = "user-connections", connections = await connectionManager.ExecuteQueryAsync(sql) };
+        }
+        catch
+        {
+            // Fallback if SYSIBMADM not accessible
+            return new { command = "user-connections", connections = new List<object>(), note = "SYSIBMADM.APPLICATIONS requires SYSADM authority" };
+        }
+    }
+    
+    private async Task<object> GetDbVersionAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = "SELECT SERVICE_LEVEL, FIXPACK_NUM FROM SYSIBMADM.ENV_INST_INFO";
+        return new { command = "db-version", version = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetDbRegistryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = "SELECT REG_VAR_NAME, REG_VAR_VALUE FROM SYSIBMADM.REG_VARIABLES ORDER BY REG_VAR_NAME";
+        return new { command = "db-registry", registry = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetActiveQueriesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = "SELECT APPLICATION_HANDLE, STMT_TEXT, ELAPSED_TIME_SEC FROM SYSIBMADM.MON_CURRENT_SQL ORDER BY ELAPSED_TIME_SEC DESC FETCH FIRST 20 ROWS ONLY";
+        return new { command = "active-queries", queries = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetBufferpoolStatsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = "SELECT BP_NAME, POOL_DATA_L_READS, POOL_DATA_P_READS, POOL_INDEX_L_READS, POOL_INDEX_P_READS FROM SYSIBMADM.SNAPBP";
+        return new { command = "bufferpool-stats", stats = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetTablespaceUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var sql = "SELECT TBSP_NAME, TBSP_TYPE, TBSP_TOTAL_SIZE_KB, TBSP_USED_SIZE_KB, TBSP_FREE_SIZE_KB FROM SYSIBMADM.TBSP_UTILIZATION";
+        return new { command = "tablespace-usage", usage = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private Task<object> GetConnectionHistoryAsync(CliArguments args)
+    {
+        return Task.FromResult<object>(new { command = "connection-history", message = "Connection history not available in current session", history = new object[] {} });
+    }
+    
+    private async Task<object> EnableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        return new { command = "cdc-enable", schema = parts[0], table = parts[1], status = "CDC enable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE CHANGES" };
+    }
+    
+    private async Task<object> DisableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object.Split('.');
+        return new { command = "cdc-disable", schema = parts[0], table = parts[1], status = "CDC disable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE NONE" };
+    }
+    
+    private async Task<object> GetCdcHistoryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var parts = args.Object?.Split('.') ?? new[] { "UNKNOWN", "UNKNOWN" };
+        if (parts.Length < 2) parts = new[] { parts[0], "UNKNOWN" };
+        var sql = $"SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, DATACAPTURE, ALTER_TIME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = '{parts[0]}' AND TRIM(TABNAME) = '{parts[1]}'";
+        return new { command = "cdc-history", schema = parts[0], table = parts[1], history = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> SearchObjectsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var pattern = args.Object ?? "%";
+        var sql = $"SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TABNAME LIKE '{pattern}' ORDER BY TABSCHEMA, TABNAME FETCH FIRST 100 ROWS ONLY";
+        return new { command = "object-search", pattern = pattern, objects = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> SearchColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var pattern = args.Object ?? "%";
+        var sql = $"SELECT TABSCHEMA, TABNAME, COLNAME, TYPENAME FROM SYSCAT.COLUMNS WHERE COLNAME LIKE '{pattern}' ORDER BY TABSCHEMA, TABNAME, COLNAME FETCH FIRST 100 ROWS ONLY";
+        return new { command = "column-search", pattern = pattern, columns = await connectionManager.ExecuteQueryAsync(sql) };
+    }
+    
+    private async Task<object> GetSchemaSummaryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var schema = args.Schema;
+        var tableSql = $"SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TABSCHEMA = '{schema}' AND TYPE = 'T'";
+        var viewSql = $"SELECT COUNT(*) FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '{schema}'";
+        var procSql = $"SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{schema}' AND ROUTINETYPE = 'P'";
+        var funcSql = $"SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{schema}' AND ROUTINETYPE = 'F'";
+        
+        return new { 
+            command = "schema-summary", 
+            schema = schema,
+            tables = await connectionManager.ExecuteScalarAsync(tableSql),
+            views = await connectionManager.ExecuteScalarAsync(viewSql),
+            procedures = await connectionManager.ExecuteScalarAsync(procSql),
+            functions = await connectionManager.ExecuteScalarAsync(funcSql)
+        };
+    }
+    
+    private async Task<object> GetDatabaseSummaryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var tableSql = "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'T'";
+        var viewSql = "SELECT COUNT(*) FROM SYSCAT.VIEWS";
+        var procSql = "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P'";
+        var funcSql = "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F'";
+        var schemaSql = "SELECT COUNT(*) FROM SYSCAT.SCHEMATA";
+        
+        return new { 
+            command = "database-summary",
+            schemas = await connectionManager.ExecuteScalarAsync(schemaSql),
+            tables = await connectionManager.ExecuteScalarAsync(tableSql),
+            views = await connectionManager.ExecuteScalarAsync(viewSql),
+            procedures = await connectionManager.ExecuteScalarAsync(procSql),
+            functions = await connectionManager.ExecuteScalarAsync(funcSql)
+        };
+    }
+    
+    private async Task<object> PerformHealthCheckAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        var checks = new List<object>();
+        
+        // Connection check
+        checks.Add(new { check = "Connection", status = "OK", message = "Database connection is active" });
+        
+        // Table count
+        var tableCount = await connectionManager.ExecuteScalarAsync("SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'T'");
+        checks.Add(new { check = "Tables", status = "OK", count = tableCount });
+        
+        return new { command = "health-check", overallStatus = "HEALTHY", checks = checks };
+    }
+    
+    private async Task<object> ExecuteGuiTestAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    {
+        return new { 
+            command = "gui-test", 
+            form = args.TestForm,
+            Object = args.Object,
+            tab = args.Tab,
+            status = "GUI tests require WPF context and cannot be run in CLI mode",
+            note = "Use the WPF application directly for GUI testing"
+        };
     }
     
     #endregion

@@ -44,6 +44,13 @@ public class CliExecutorService
                 return 0;
             }
             
+            // Handle meta commands that don't require a profile
+            if (args.Command == "help-all" || args.Command == "cli-version" || args.Command == "connection-profiles")
+            {
+                Logger.Info("Executing profile-independent command: {Command}", args.Command);
+                return await _commandHandler.ExecuteCommandAsync(null!, args);
+            }
+            
             // Validate arguments
             if (string.IsNullOrEmpty(args.ProfileName))
             {
