@@ -592,5 +592,5 @@
   ],
   "usage": "WindowsDb2Editor.exe -Profile \u003Cprofile\u003E -Command \u003Ccommand\u003E -Outfile \u003Coutput.json\u003E [options]",
   "note": "All commands export structured JSON for automated testing",
-  "retrievedAt": "2025-12-15T15:20:21.7002245+01:00"
+  "retrievedAt": "2025-12-16T15:00:32.9087627+01:00"
 }

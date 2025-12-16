@@ -1,10 +1,10 @@
 {
   "command": "ai-query",
-  "prompt": "\u0027Show",
-  "generatedSql": "-- AI-Generated SQL (placeholder)\n-- Natural language: \u0027Show\nSELECT * FROM SYSCAT.TABLES WHERE TABSCHEMA = \u0027SCHEMA\u0027 FETCH FIRST 10 ROWS ONLY;",
+  "prompt": "Show",
+  "generatedSql": "-- AI-Generated SQL (placeholder)\n-- Natural language: Show\nSELECT * FROM SYSCAT.TABLES WHERE TABSCHEMA = \u0027SCHEMA\u0027 FETCH FIRST 10 ROWS ONLY;",
   "confidence": 0.85,
   "aiProvider": "Not configured (placeholder)",
   "schema": "ALL",
   "note": "AI provider not configured - this is a placeholder response. Configure AI provider in settings to enable this feature.",
-  "timestamp": "2025-12-15T15:22:40.1658811+01:00"
+  "timestamp": "2025-12-16T15:02:47.831565+01:00"
 }

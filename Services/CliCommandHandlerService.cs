@@ -4060,17 +4060,17 @@ public class CliCommandHandlerService
         {
             // Fallback: return basic database info
             var sql = "SELECT CURRENT SERVER AS DBNAME, CURRENT TIMESTAMP AS CURRENT_TIME, CURRENT USER AS CURRENT_USER FROM SYSIBM.SYSDUMMY1";
-            var data = await connectionManager.ExecuteQueryAsync(sql);
-            var row = data.Rows[0];
-            return new
-            {
+        var data = await connectionManager.ExecuteQueryAsync(sql);
+        var row = data.Rows[0];
+        return new
+        {
                 command = "db-config",
                 databaseName = row["DBNAME"]?.ToString()?.Trim(),
                 currentTime = row["CURRENT_TIME"],
                 currentUser = row["CURRENT_USER"]?.ToString()?.Trim(),
                 note = "Limited info - full DB config requires SYSADM/DBADM authority",
-                retrievedAt = DateTime.Now
-            };
+            retrievedAt = DateTime.Now
+        };
         }
     }
     

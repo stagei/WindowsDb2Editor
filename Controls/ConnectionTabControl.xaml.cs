@@ -685,20 +685,20 @@ public partial class ConnectionTabControl : UserControl
                 if (suggestions.Count == 0)
                 {
                     Logger.Debug("No suggestions found");
-                    return;
-                }
-                
-                _completionWindow = new CompletionWindow(SqlEditor.TextArea);
+                return;
+            }
+            
+            _completionWindow = new CompletionWindow(SqlEditor.TextArea);
                 _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
-                
+            
                 foreach (var suggestion in suggestions)
-                {
+            {
                     _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(suggestion));
-                }
-                
-                _completionWindow.Closed += (s, args) => _completionWindow = null;
-                _completionWindow.Show();
-                
+            }
+            
+            _completionWindow.Closed += (s, args) => _completionWindow = null;
+            _completionWindow.Show();
+            
                 Logger.Debug("Fallback IntelliSense shown with {Count} suggestions", suggestions.Count);
                 return;
             }
