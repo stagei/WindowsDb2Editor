@@ -351,31 +351,30 @@ public partial class ConnectionTabControl : UserControl
             if (e.Data.GetData("DatabaseObject") is DatabaseObject obj)
             {
                 Logger.Debug("Dropped database object: {Name}", obj.FullName);
-                
-                // Generate appropriate SQL based on object type
-                string sql = obj.Type switch
-                {
-                    ObjectType.Tables or ObjectType.Views => $"SELECT * FROM {obj.FullName};",
-                    ObjectType.Procedures => $"CALL {obj.FullName}();",
-                    ObjectType.Functions => $"VALUES {obj.FullName}();",
-                    _ => obj.FullName
-                };
-                
-                // Insert at cursor position
-                var caretOffset = SqlEditor.CaretOffset;
-                SqlEditor.Document.Insert(caretOffset, sql + "\n");
-                SqlEditor.CaretOffset = caretOffset + sql.Length + 1;
-                
-                ObjectBrowserStatusText.Text = $"Inserted: {sql}";
+
+                // Requirement: drag/drop should insert the object name at the current caret position.
+                InsertTextAtCursor(obj.FullName);
+                ObjectBrowserStatusText.Text = $"Inserted: {obj.FullName}";
+            }
+            else if (e.Data.GetData("PackageInfo") is PackageInfo pkg)
+            {
+                var fullName = $"{pkg.PackageSchema}.{pkg.PackageName}";
+                Logger.Debug("Dropped package: {Name}", fullName);
+                InsertTextAtCursor(fullName);
+                ObjectBrowserStatusText.Text = $"Inserted: {fullName}";
+            }
+            else if (e.Data.GetData("TablespaceInfo") is TablespaceInfo ts)
+            {
+                Logger.Debug("Dropped tablespace: {Name}", ts.TablespaceName);
+                InsertTextAtCursor(ts.TablespaceName);
+                ObjectBrowserStatusText.Text = $"Inserted: {ts.TablespaceName}";
             }
             else if (e.Data.GetDataPresent(DataFormats.Text))
             {
                 var text = e.Data.GetData(DataFormats.Text) as string;
                 if (!string.IsNullOrEmpty(text))
                 {
-                    var caretOffset = SqlEditor.CaretOffset;
-                    SqlEditor.Document.Insert(caretOffset, text);
-                    SqlEditor.CaretOffset = caretOffset + text.Length;
+                    InsertTextAtCursor(text);
                 }
             }
         }
@@ -1061,6 +1060,8 @@ public partial class ConnectionTabControl : UserControl
                             ToolTip = $"Tablespace: {ts.TablespaceName}\nType: {ts.TablespaceType}\nPage Size: {ts.PageSize} bytes\nOwner: {ts.Owner}"
                         };
                         node.PreviewMouseLeftButtonDown += TablespaceNode_Click;
+                        node.MouseDoubleClick += TablespaceNode_DoubleClick;
+                        node.MouseMove += TablespaceNode_MouseMove;
                         categoryNode.Items.Add(node);
                     }
                 }
@@ -1078,6 +1079,11 @@ public partial class ConnectionTabControl : UserControl
                                 Header = $"{alias.Icon} {alias.FullName} → {alias.TableSpace}",
                                 Tag = alias
                             };
+                            // Behave like other database objects (single click inserts name, double click opens properties)
+                            node.PreviewMouseLeftButtonDown += ObjectNode_Click;
+                            node.MouseDoubleClick += ObjectNode_DoubleClick;
+                            node.ContextMenu = CreateObjectContextMenu(alias);
+                            node.MouseMove += ObjectNode_MouseMove;
                             categoryNode.Items.Add(node);
                         }
                     }
@@ -1095,6 +1101,7 @@ public partial class ConnectionTabControl : UserControl
                         };
                         node.MouseDoubleClick += PackageNode_DoubleClick;
                         node.PreviewMouseLeftButtonDown += PackageNode_Click;
+                        node.MouseMove += PackageNode_MouseMove;
                         categoryNode.Items.Add(node);
                     }
                 }
@@ -1772,9 +1779,51 @@ public partial class ConnectionTabControl : UserControl
     {
         if (sender is TreeViewItem tsNode && tsNode.Tag is TablespaceInfo tablespace)
         {
-            Logger.Debug($"Tablespace clicked: {tablespace.TablespaceName}");
+            if (e.ClickCount == 1)
+            {
+                Logger.Debug("Tablespace clicked: {Tablespace} - inserting at cursor", tablespace.TablespaceName);
+                InsertTextAtCursor(tablespace.TablespaceName);
+            }
+            e.Handled = true;
+        }
+    }
+
+    private void TablespaceNode_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TreeViewItem tsNode && tsNode.Tag is TablespaceInfo tablespace)
+        {
+            Logger.Debug("Tablespace double-clicked: {Tablespace} - opening properties", tablespace.TablespaceName);
             ShowTablespaceDetails(tablespace);
             e.Handled = true;
+        }
+    }
+
+    private void TablespaceNode_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && sender is TreeViewItem item && item.Tag is TablespaceInfo ts)
+        {
+            Logger.Debug("Initiating drag operation for tablespace: {Name}", ts.TablespaceName);
+
+            var dragData = new DataObject();
+            dragData.SetText(ts.TablespaceName);
+            dragData.SetData("TablespaceInfo", ts);
+
+            DragDrop.DoDragDrop(item, dragData, DragDropEffects.Copy);
+        }
+    }
+
+    private void PackageNode_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && sender is TreeViewItem item && item.Tag is PackageInfo pkg)
+        {
+            var fullName = $"{pkg.PackageSchema}.{pkg.PackageName}";
+            Logger.Debug("Initiating drag operation for package: {Name}", fullName);
+
+            var dragData = new DataObject();
+            dragData.SetText(fullName);
+            dragData.SetData("PackageInfo", pkg);
+
+            DragDrop.DoDragDrop(item, dragData, DragDropEffects.Copy);
         }
     }
     
@@ -1818,22 +1867,14 @@ public partial class ConnectionTabControl : UserControl
     {
         try
         {
-            var message = $"Tablespace: {tablespace.TablespaceName}\n" +
-                         $"Type: {tablespace.TablespaceType}\n" +
-                         $"Data Type: {tablespace.DataType}\n" +
-                         $"Page Size: {tablespace.PageSize} bytes\n" +
-                         $"Owner: {tablespace.Owner}\n";
-            
-            if (tablespace.CreateTime.HasValue)
-                message += $"Created: {tablespace.CreateTime:yyyy-MM-dd HH:mm:ss}\n";
-            
-            if (!string.IsNullOrEmpty(tablespace.Remarks))
-                message += $"\nRemarks: {tablespace.Remarks}";
-            
-            MessageBox.Show(message.TrimEnd(), $"Tablespace Details - {tablespace.TablespaceName}", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            
-            Logger.Info("Showed tablespace details for: {Tablespace}", tablespace.TablespaceName);
+            Logger.Info("Showing details for tablespace: {Tablespace}", tablespace.TablespaceName);
+
+            var dialog = new Dialogs.TablespaceDetailsDialog(tablespace)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            dialog.ShowDialog();
         }
         catch (Exception ex)
         {
@@ -2142,10 +2183,51 @@ public partial class ConnectionTabControl : UserControl
     
     private void DatabaseTreeView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (DatabaseTreeView.SelectedItem is TreeViewItem item && item.Tag is string fullName)
+        if (DatabaseTreeView.SelectedItem is not TreeViewItem item || item.Tag == null)
+            return;
+
+        // Requirement: double-click on any leaf item should open the relevant property dialog
+        if (item.Tag is DatabaseObject obj)
         {
-            // Generate SELECT statement
-            SqlEditor.AppendText($"SELECT * FROM {fullName} FETCH FIRST 100 ROWS ONLY;\n");
+            ShowObjectDetails(obj);
+            e.Handled = true;
+            return;
+        }
+
+        if (item.Tag is PackageInfo pkg)
+        {
+            ShowPackageDetails(pkg);
+            e.Handled = true;
+            return;
+        }
+
+        if (item.Tag is TablespaceInfo ts)
+        {
+            ShowTablespaceDetails(ts);
+            e.Handled = true;
+            return;
+        }
+
+        if (item.Tag is SecurityPrincipal principal)
+        {
+            ShowSecurityPrincipalDetails(principal);
+            e.Handled = true;
+            return;
+        }
+
+        // Legacy: some nodes store full name as string
+        if (item.Tag is string fullName)
+        {
+            if (fullName.Contains('.'))
+            {
+                ViewTableDetails(fullName);
+            }
+            else
+            {
+                InsertTextAtCursor(fullName);
+            }
+
+            e.Handled = true;
         }
     }
     

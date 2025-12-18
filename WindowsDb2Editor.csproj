@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 
   <PropertyGroup>
@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+
+    <!-- EXE icon -->
+    <ApplicationIcon>Resources\dEdge.ico</ApplicationIcon>
     
     <!-- Assembly Information -->
     <AssemblyName>WindowsDb2Editor</AssemblyName>
@@ -67,6 +70,7 @@
     <None Update="Resources\MermaidDesigner.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Resource Include="Resources\dEdge.ico" />
     <None Update="ConfigFiles\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

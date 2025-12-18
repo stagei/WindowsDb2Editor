@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
@@ -28,7 +30,8 @@ public partial class ConnectionDialog : Window
         {
             var providers = App.MetadataHandler.GetSupportedProviders();
             ProviderComboBox.ItemsSource = providers;
-            ProviderComboBox.DisplayMemberPath = "ProviderName";
+            // Model property is DisplayName (from supported_providers.json "display_name")
+            ProviderComboBox.DisplayMemberPath = "DisplayName";
             ProviderComboBox.SelectedValuePath = "ProviderCode";
             
             if (providers.Count > 0)
@@ -44,17 +47,56 @@ public partial class ConnectionDialog : Window
         {
             // Update version dropdown
             VersionComboBox.ItemsSource = provider.SupportedVersions;
-            VersionComboBox.DisplayMemberPath = "VersionName";
-            VersionComboBox.SelectedValuePath = "VersionCode";
             
             if (provider.SupportedVersions.Count > 0)
             {
-                VersionComboBox.SelectedIndex = 0; // Select first version by default
+                // Select numerically highest version (e.g. 12.1 > 11.5)
+                var best = provider.SupportedVersions
+                    .OrderByDescending(v => v, StringComparer.OrdinalIgnoreCase) // stable fallback
+                    .OrderByDescending(v => ParseVersionForSort(v))
+                    .FirstOrDefault();
+
+                VersionComboBox.SelectedItem = best ?? provider.SupportedVersions[0];
             }
             
             // Update default port
             PortTextBox.Text = provider.DefaultPort.ToString();
         }
+    }
+
+    private static Version ParseVersionForSort(string versionText)
+    {
+        // Normalize "12.1" -> Version(12,1), "11" -> Version(11,0)
+        // If it's not a numeric dotted version (e.g. "19c"), return 0.0 so it sorts last.
+        if (string.IsNullOrWhiteSpace(versionText))
+        {
+            return new Version(0, 0);
+        }
+
+        // Keep only digits and dots; stop at first non [0-9.]
+        var cleaned = new string(versionText
+            .TakeWhile(c => char.IsDigit(c) || c == '.')
+            .ToArray());
+
+        if (string.IsNullOrWhiteSpace(cleaned))
+        {
+            return new Version(0, 0);
+        }
+
+        // Ensure at least major.minor
+        if (!cleaned.Contains('.'))
+        {
+            cleaned = $"{cleaned}.0";
+        }
+
+        // System.Version supports up to 4 components; trim extra parts if present.
+        var parts = cleaned.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length > 4)
+        {
+            cleaned = string.Join('.', parts.Take(4));
+        }
+
+        return Version.TryParse(cleaned, out var v) ? v : new Version(0, 0);
     }
     
     /// <summary>

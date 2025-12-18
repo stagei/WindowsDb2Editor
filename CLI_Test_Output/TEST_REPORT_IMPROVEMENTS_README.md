@@ -213,3 +213,4 @@ bin\Debug\net10.0-windows\WindowsDb2Editor.exe -command connection-test -profile
 *Generated: December 16, 2025*
 *Script: _comprehensive_cli_test_all_119.ps1*
 
+
