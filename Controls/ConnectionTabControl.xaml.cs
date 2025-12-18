@@ -790,7 +790,7 @@ public partial class ConnectionTabControl : UserControl
         Logger.Debug("Connection expectation: {Expected}ms (HasHistory: {HasHistory}, Total: {Total})", 
             expectation.ExpectedTimeMs, expectation.HasHistory, expectation.TotalConnections);
 
-        // Create and show connection progress dialog
+        // Create connection progress dialog on UI thread
         var progressDialog = new ConnectionProgressDialog(
             _connection.GetDisplayName(), 
             expectation.ExpectedTimeMs,
@@ -800,6 +800,7 @@ public partial class ConnectionTabControl : UserControl
         };
 
         bool connectionSuccessful = false;
+        int connectionTimeMs = 0;
         
         // Start connection in background task
         var connectionTask = Task.Run(async () =>
@@ -815,12 +816,16 @@ public partial class ConnectionTabControl : UserControl
                 progressDialog.UpdateStatus("Connection established successfully!");
                 progressDialog.UpdateDetail("Loading database objects...");
                 
+                // Close dialog on success
+                progressDialog.CloseWithSuccess();
+                
                 return true;
             }
             catch (OperationCanceledException)
             {
                 Logger.Warn("Connection cancelled by user");
                 progressDialog.UpdateStatus("Connection aborted by user");
+                progressDialog.CloseWithFailure();
                 return false;
             }
             catch (Exception ex)
@@ -829,16 +834,15 @@ public partial class ConnectionTabControl : UserControl
                 progressDialog.UpdateStatus("Connection failed");
                 progressDialog.UpdateDetail(ex.Message);
                 await Task.Delay(2000); // Show error for 2 seconds
+                progressDialog.CloseWithFailure();
                 return false;
             }
         });
 
-        // Show dialog and wait for connection or abort
-        var showDialogTask = Task.Run(() => progressDialog.ShowDialog());
+        // Show dialog synchronously on UI thread (blocks until closed)
+        var dialogResult = progressDialog.ShowDialog();
         
-        // Wait for either connection to complete or dialog to close
-        await Task.WhenAny(connectionTask, showDialogTask);
-        
+        // Wait for connection task to complete
         try
         {
             connectionSuccessful = await connectionTask;
@@ -849,21 +853,12 @@ public partial class ConnectionTabControl : UserControl
         }
 
         // Record connection time if successful
-        int connectionTimeMs = progressDialog.ElapsedTimeMs;
-        if (connectionSuccessful)
+        connectionTimeMs = progressDialog.ElapsedTimeMs;
+        if (connectionSuccessful)   
         {
             Logger.Info("Connection successful in {Time}ms", connectionTimeMs);
             _ = statsService.RecordConnectionTimeAsync(_connection.Server, connectionTimeMs);
         }
-
-        // Close dialog if still open
-        progressDialog.Dispatcher.Invoke(() =>
-        {
-            if (progressDialog.IsVisible)
-            {
-                progressDialog.Close();
-            }
-        });
 
         if (connectionSuccessful)
         {

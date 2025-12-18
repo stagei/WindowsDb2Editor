@@ -320,7 +320,7 @@ public class GuiTestingService
         // Use a TaskCompletionSource to properly await the UI thread operation
         var tcs = new TaskCompletionSource<bool>();
         
-        Application.Current.Dispatcher.InvokeAsync(async () =>
+        var dispatcherOp = Application.Current.Dispatcher.InvokeAsync(async () =>
         {
             try
             {
@@ -340,7 +340,12 @@ public class GuiTestingService
                 // If specific action requested, perform it
                 if (!string.IsNullOrEmpty(tabName))
                 {
-                    await PerformMermaidAction(dialog, tabName, result);
+                    var safeResult = result ?? new Dictionary<string, object>
+                    {
+                        { "formName", "MermaidDesignerWindow" },
+                        { "error", "Extraction returned null result" }
+                    };
+                    await PerformMermaidAction(dialog, tabName, safeResult);
                 }
                 
                 Logger.Debug("Data extracted from Mermaid Designer");
@@ -357,6 +362,9 @@ public class GuiTestingService
                 tcs.SetException(ex);
             }
         });
+
+        // Await dispatcher operation to avoid fire-and-forget warning (CS4014)
+        await dispatcherOp.Task.Unwrap();
         
         // Wait for the UI operation to complete
         await tcs.Task;

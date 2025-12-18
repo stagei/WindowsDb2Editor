@@ -95,7 +95,7 @@ public class IntellisenseService
     /// <summary>
     /// Get intellisense suggestions based on partial input
     /// </summary>
-    public List<IntellisenseSuggestion> GetSuggestions(string partialText, string category = null)
+    public List<IntellisenseSuggestion> GetSuggestions(string partialText, string? category = null)
     {
         if (string.IsNullOrWhiteSpace(partialText))
         {

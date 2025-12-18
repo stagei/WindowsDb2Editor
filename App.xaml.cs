@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
@@ -190,7 +190,7 @@ public partial class App : Application
             // Execute form testing
             var result = await guiTestingService.TestFormAsync(
                 connectionManager,
-                cliArgs.TestForm,
+                cliArgs.TestForm ?? throw new InvalidOperationException("TestForm not provided"),
                 cliArgs.Object,
                 cliArgs.Tab);
             

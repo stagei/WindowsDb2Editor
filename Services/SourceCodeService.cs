@@ -33,11 +33,12 @@ public class SourceCodeObject
 public class SourceCodeService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly MetadataHandler? _metadataHandler;
+    private readonly MetadataHandler _metadataHandler;
     
     public SourceCodeService(MetadataHandler? metadataHandler = null)
     {
-        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+        // Ensure we always have a metadata handler (avoid nullable dereference warnings)
+        _metadataHandler = metadataHandler ?? App.MetadataHandler ?? new MetadataHandler();
     }
     
     /// <summary>

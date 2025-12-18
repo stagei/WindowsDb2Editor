@@ -22,11 +22,14 @@ public class CliCommandHandlerService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly SqlMermaidIntegrationService? _mermaidService;
-    private readonly MetadataHandler _metadataHandler;
+    private readonly MetadataHandler _metadataHandler = new MetadataHandler();
     
     public CliCommandHandlerService(MetadataHandler? metadataHandler = null, SqlMermaidIntegrationService? mermaidService = null)
     {
-        _metadataHandler = metadataHandler ?? new MetadataHandler();
+        if (metadataHandler != null)
+        {
+            _metadataHandler = metadataHandler;
+        }
         _mermaidService = mermaidService ?? new SqlMermaidIntegrationService();
         Logger.Debug("CliCommandHandlerService initialized (MetadataHandler: {HasMetadata}, Mermaid: {HasMermaid})", 
             _metadataHandler != null, _mermaidService != null);
@@ -661,7 +664,6 @@ public class CliCommandHandlerService
         
         // Get view dependencies if requested
         List<object>? dependsOn = null;
-        List<object>? usedBy = null;
         
         if (args.IncludeDependencies)
         {
@@ -675,9 +677,9 @@ public class CliCommandHandlerService
             var depData = await connectionManager.ExecuteQueryAsync(depSql);
             dependsOn = depData.AsEnumerable().Select(r => new object[]
             {
-                r["BSCHEMA"]?.ToString()?.Trim(),
-                r["BNAME"]?.ToString()?.Trim(),
-                r["BTYPE"]?.ToString()?.Trim()
+                r["BSCHEMA"]?.ToString()?.Trim() ?? string.Empty,
+                r["BNAME"]?.ToString()?.Trim() ?? string.Empty,
+                r["BTYPE"]?.ToString()?.Trim() ?? string.Empty
             }).ToList<object>();
         }
         
@@ -4447,6 +4449,22 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     }
     
     #region Missing CLI Method Implementations
+
+    private static (string Schema, string Name) ParseSchemaAndName(string? fullName, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            throw new ArgumentException($"{parameterName} parameter required (format: SCHEMA.NAME)");
+        }
+
+        var parts = fullName.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length != 2)
+        {
+            throw new ArgumentException($"{parameterName} must be in format: SCHEMA.NAME");
+        }
+
+        return (parts[0], parts[1]);
+    }
     
     /// <summary>
     /// CLI: ai-explain-view - AI explanation of view purpose
@@ -4454,13 +4472,10 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> ExplainViewWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing view: {args.Object}...");
-        var parts = args.Object.Split('.');
-        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo_Full");
-        var sql = sqlTemplate.Replace("?", $"'{parts[0]}'").Replace("?", $"'{parts[1]}'"); // Replace first ? then second ?
-        // Better approach: use string.Format or sequential replacement
-        sql = _metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo_Full")
-            .Replace("TRIM(VIEWSCHEMA) = ?", $"TRIM(VIEWSCHEMA) = '{parts[0]}'")
-            .Replace("TRIM(VIEWNAME) = ?", $"TRIM(VIEWNAME) = '{parts[1]}'");
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetViewInfo_Full")
+            .Replace("TRIM(VIEWSCHEMA) = ?", $"TRIM(VIEWSCHEMA) = '{schema}'")
+            .Replace("TRIM(VIEWNAME) = ?", $"TRIM(VIEWNAME) = '{viewName}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-explain-view", view = args.Object, explanation = "AI analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4471,10 +4486,10 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> AnalyzeProcedureWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing procedure: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetProcedureDefinition")
-            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{parts[0]}'")
-            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{parts[1]}'");
+            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{schema}'")
+            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{procName}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-procedure", procedure = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4485,10 +4500,10 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> AnalyzeFunctionWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing function: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetFunctionDefinition")
-            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{parts[0]}'")
-            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{parts[1]}'");
+            .Replace("TRIM(R.ROUTINESCHEMA) = ?", $"TRIM(R.ROUTINESCHEMA) = '{schema}'")
+            .Replace("TRIM(R.ROUTINENAME) = ?", $"TRIM(R.ROUTINENAME) = '{funcName}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-function", function = args.Object, analysis = "AI code analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4499,10 +4514,10 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> AnalyzePackageWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing package: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetPackageInfo_Full")
-            .Replace("TRIM(PKGSCHEMA) = ?", $"TRIM(PKGSCHEMA) = '{parts[0]}'")
-            .Replace("TRIM(PKGNAME) = ?", $"TRIM(PKGNAME) = '{parts[1]}'");
+            .Replace("TRIM(PKGSCHEMA) = ?", $"TRIM(PKGSCHEMA) = '{schema}'")
+            .Replace("TRIM(PKGNAME) = ?", $"TRIM(PKGNAME) = '{pkgName}'");
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return new { command = "ai-analyze-package", package = args.Object, analysis = "AI package analysis placeholder", timestamp = DateTime.Now };
     }
@@ -4592,11 +4607,11 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     private async Task<object> GetViewColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view columns: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT COLNAME, COLNO, TYPENAME, LENGTH, SCALE, NULLS, REMARKS
 FROM SYSCAT.COLUMNS
-WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'
+WHERE TABSCHEMA = '{schema}' AND TABNAME = '{viewName}'
 ORDER BY COLNO";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
@@ -4608,11 +4623,11 @@ ORDER BY COLNO";
     private async Task<object> GetViewDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view dependencies: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT BTYPE AS DEPENDENCY_TYPE, BSCHEMA, BNAME
 FROM SYSCAT.TABDEP
-WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
+WHERE TABSCHEMA = '{schema}' AND TABNAME = '{viewName}'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4623,8 +4638,8 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
     private async Task<object> GetProcedureSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching procedure source: {args.Object}...");
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'P'";
+        var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{procName}' AND ROUTINETYPE = 'P'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4635,11 +4650,11 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
     private async Task<object> GetProcedureParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching procedure parameters: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT PARMNAME, TYPENAME, LENGTH, SCALE, ROWTYPE, ORDINAL
 FROM SYSCAT.ROUTINEPARMS
-WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'
+WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{procName}'
 ORDER BY ORDINAL";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
@@ -4651,8 +4666,8 @@ ORDER BY ORDINAL";
     private async Task<object> GetFunctionSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching function source: {args.Object}...");
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}' AND ROUTINETYPE = 'F'";
+        var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{funcName}' AND ROUTINETYPE = 'F'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4663,11 +4678,11 @@ ORDER BY ORDINAL";
     private async Task<object> GetFunctionParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching function parameters: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT PARMNAME, TYPENAME, LENGTH, SCALE, ROWTYPE, ORDINAL
 FROM SYSCAT.ROUTINEPARMS
-WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'
+WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{funcName}'
 ORDER BY ORDINAL";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
@@ -4679,11 +4694,11 @@ ORDER BY ORDINAL";
     private async Task<object> GetPackagePropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching package properties: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT PKGSCHEMA, PKGNAME, BOUNDBY, VALID, UNIQUE_ID, ISOLATION, SQLWARN, OWNER, CREATE_TIME
 FROM SYSCAT.PACKAGES
-WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
+WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4694,11 +4709,11 @@ WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
     private async Task<object> GetPackageStatementsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching package statements: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT STMTNO, SECTNO, SEQNO, TEXT
 FROM SYSCAT.STATEMENTS
-WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'
+WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'
 ORDER BY STMTNO, SEQNO";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
@@ -4710,12 +4725,12 @@ ORDER BY STMTNO, SEQNO";
     private async Task<object> GetTableRelationshipsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching table relationships: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT CONSTNAME, TABSCHEMA, TABNAME, REFTABSCHEMA, REFTABNAME
 FROM SYSCAT.REFERENCES
-WHERE (TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}')
-   OR (REFTABSCHEMA = '{parts[0]}' AND REFTABNAME = '{parts[1]}')";
+WHERE (TABSCHEMA = '{schema}' AND TABNAME = '{tableName}')
+   OR (REFTABSCHEMA = '{schema}' AND REFTABNAME = '{tableName}')";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4751,7 +4766,7 @@ WHERE GRANTEE = '{args.Object}'";
     private async Task<object> GetUserPrivilegesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching user privileges: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var parts = (args.Object ?? string.Empty).Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length < 2)
         {
             return new { error = "Format: USERNAME.SCHEMA.TABLE or just USERNAME for all privileges" };
@@ -4771,12 +4786,12 @@ WHERE GRANTEE = '{username}'";
     private async Task<object> GetObjectMetadataAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching object metadata: {args.Object}...");
-        var parts = args.Object.Split('.');
+        var (schema, objectName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $@"
 SELECT TABSCHEMA, TABNAME, TYPE, STATUS, COLCOUNT, NPAGES, FPAGES, CARD, 
        STATS_TIME, CREATE_TIME, ALTER_TIME, INVALIDATE_TIME, OWNER
 FROM SYSCAT.TABLES
-WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
+WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         var result = await connectionManager.ExecuteQueryAsync(sql);
         return result;
     }
@@ -4787,114 +4802,114 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
     
     private async Task<object> GetTableDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
-        return new { command = "table-dependencies", schema = parts[0], table = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
+        return new { command = "table-dependencies", schema, table = tableName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetViewSampleDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT * FROM {parts[0]}.{parts[1]} FETCH FIRST 10 ROWS ONLY";
-        return new { command = "view-sample-data", schema = parts[0], view = parts[1], data = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT * FROM {schema}.{viewName} FETCH FIRST 10 ROWS ONLY";
+        return new { command = "view-sample-data", schema, view = viewName, data = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetViewUsedByPackagesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT DISTINCT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE = 'V'";
-        return new { command = "view-used-by-packages", schema = parts[0], view = parts[1], packages = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT DISTINCT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{viewName}' AND BTYPE = 'V'";
+        return new { command = "view-used-by-packages", schema, view = viewName, packages = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetViewUsedByViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT VIEWSCHEMA, VIEWNAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}'";
-        return new { command = "view-used-by-views", schema = parts[0], view = parts[1], views = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT VIEWSCHEMA, VIEWNAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{viewName}'";
+        return new { command = "view-used-by-views", schema, view = viewName, views = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetProcedureDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'";
-        return new { command = "procedure-dependencies", schema = parts[0], procedure = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{procName}'";
+        return new { command = "procedure-dependencies", schema, procedure = procName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetProcedureUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE IN ('P', 'F')";
-        return new { command = "procedure-usage", schema = parts[0], procedure = parts[1], usedBy = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{procName}' AND BTYPE IN ('P', 'F')";
+        return new { command = "procedure-usage", schema, procedure = procName, usedBy = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetProcedureGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{parts[0]}' AND SPECIFICNAME = '{parts[1]}'";
-        return new { command = "procedure-grants", schema = parts[0], procedure = parts[1], grants = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, specificName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{schema}' AND SPECIFICNAME = '{specificName}'";
+        return new { command = "procedure-grants", schema, procedure = specificName, grants = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetFunctionDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{parts[0]}' AND ROUTINENAME = '{parts[1]}'";
-        return new { command = "function-dependencies", schema = parts[0], function = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{funcName}'";
+        return new { command = "function-dependencies", schema, function = funcName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetFunctionUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{parts[0]}' AND BNAME = '{parts[1]}' AND BTYPE = 'F'";
-        return new { command = "function-usage", schema = parts[0], function = parts[1], usedBy = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{funcName}' AND BTYPE = 'F'";
+        return new { command = "function-usage", schema, function = funcName, usedBy = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetFunctionGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{parts[0]}' AND SPECIFICNAME = '{parts[1]}'";
-        return new { command = "function-grants", schema = parts[0], function = parts[1], grants = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, specificName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{schema}' AND SPECIFICNAME = '{specificName}'";
+        return new { command = "function-grants", schema, function = specificName, grants = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
-        return new { command = "package-dependencies", schema = parts[0], package = parts[1], dependencies = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
+        return new { command = "package-dependencies", schema, package = pkgName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageStatisticsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT PKGSCHEMA, PKGNAME, VALID, LAST_BIND_TIME, LASTUSED FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}'";
-        return new { command = "package-statistics", schema = parts[0], package = parts[1], statistics = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT PKGSCHEMA, PKGNAME, VALID, LAST_BIND_TIME, LASTUSED FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
+        return new { command = "package-statistics", schema, package = pkgName, statistics = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageListTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'T'";
-        return new { command = "package-list-tables", schema = parts[0], package = parts[1], tables = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'T'";
+        return new { command = "package-list-tables", schema, package = pkgName, tables = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageListViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'V'";
-        return new { command = "package-list-views", schema = parts[0], package = parts[1], views = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'V'";
+        return new { command = "package-list-views", schema, package = pkgName, views = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageListProceduresAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'P'";
-        return new { command = "package-list-procedures", schema = parts[0], package = parts[1], procedures = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'P'";
+        return new { command = "package-list-procedures", schema, package = pkgName, procedures = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetPackageListFunctionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{parts[0]}' AND PKGNAME = '{parts[1]}' AND BTYPE = 'F'";
-        return new { command = "package-list-functions", schema = parts[0], package = parts[1], functions = await connectionManager.ExecuteQueryAsync(sql) };
+        var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'F'";
+        return new { command = "package-list-functions", schema, package = pkgName, functions = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
     private async Task<object> GetUserTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
@@ -4960,14 +4975,14 @@ WHERE TABSCHEMA = '{parts[0]}' AND TABNAME = '{parts[1]}'";
     
     private async Task<object> EnableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        return new { command = "cdc-enable", schema = parts[0], table = parts[1], status = "CDC enable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE CHANGES" };
+        var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        return new { command = "cdc-enable", schema, table = tableName, status = "CDC enable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE CHANGES" };
     }
     
     private async Task<object> DisableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
     {
-        var parts = args.Object.Split('.');
-        return new { command = "cdc-disable", schema = parts[0], table = parts[1], status = "CDC disable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE NONE" };
+        var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
+        return new { command = "cdc-disable", schema, table = tableName, status = "CDC disable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE NONE" };
     }
     
     private async Task<object> GetCdcHistoryAsync(DB2ConnectionManager connectionManager, CliArguments args)
