@@ -192,7 +192,7 @@ public partial class App : Application
             
             // Create connection manager
             Logger.Debug("Creating connection manager");
-            var connectionManager = new DB2ConnectionManager(connection);
+            var connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
             await connectionManager.OpenAsync();
             
             Logger.Info("Connection opened successfully");
@@ -226,7 +226,7 @@ public partial class App : Application
             }
             
             // Close connection
-            connectionManager.Close();
+            await connectionManager.CloseAsync();
             
             Logger.Info("GUI testing completed successfully");
             return 0;

@@ -10,19 +10,35 @@ namespace WindowsDb2Editor.Data;
 /// <summary>
 /// Manager for DB2 database connections
 /// Uses Net.IBM.Data.Db2 package for real DB2 connectivity
+/// Implements IConnectionManager for database-agnostic usage
 /// </summary>
-public class DB2ConnectionManager : IDisposable
+public class DB2ConnectionManager : IConnectionManager
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly Models.DB2Connection _connectionInfo;
+    private readonly DatabaseConnection _connectionInfo;
     private DB2Conn? _db2Connection;
     private bool _disposed;
 
-    public DB2ConnectionManager(Models.DB2Connection connectionInfo)
+    /// <summary>
+    /// Gets the connection information used to create this manager (database-agnostic interface)
+    /// </summary>
+    public IConnectionInfo ConnectionInfo => _connectionInfo;
+    
+    /// <summary>
+    /// Gets the connection information as DatabaseConnection (for backward compatibility)
+    /// </summary>
+    public DatabaseConnection Connection => _connectionInfo;
+
+    public DB2ConnectionManager(DatabaseConnection connectionInfo)
     {
         Logger.Debug("DB2ConnectionManager initializing with real DB2 driver");
         _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
         Logger.Debug($"Connection: {_connectionInfo.GetConnectionString(maskPassword: true)}");
+    }
+    
+    // Backward compatibility constructor
+    public DB2ConnectionManager(Models.DB2Connection connectionInfo) : this((DatabaseConnection)connectionInfo)
+    {
     }
 
     /// <summary>
@@ -135,10 +151,15 @@ public class DB2ConnectionManager : IDisposable
     /// </summary>
     public async Task<DataTable> ExecuteQueryAsync(string sql, int? maxRows = null, int offset = 0, bool handleDecimalErrors = true)
     {
+        // Auto-reconnect if connection is lost
         if (_db2Connection == null || _db2Connection.State != ConnectionState.Open)
         {
-            Logger.Warn("Attempting to execute query without connection");
-            throw new InvalidOperationException("Connection is not open");
+            Logger.Warn("Connection not open, attempting auto-reconnect");
+            if (!await EnsureConnectedAsync())
+            {
+                throw new InvalidOperationException("Connection is not open and reconnection failed");
+            }
+            Logger.Info("Auto-reconnection successful");
         }
 
         Logger.Info("Executing SQL query");
@@ -343,10 +364,15 @@ public class DB2ConnectionManager : IDisposable
     /// </summary>
     public async Task<int> ExecuteNonQueryAsync(string sql)
     {
+        // Auto-reconnect if connection is lost
         if (_db2Connection == null || _db2Connection.State != ConnectionState.Open)
         {
-            Logger.Warn("Attempting to execute command without connection");
-            throw new InvalidOperationException("Connection is not open");
+            Logger.Warn("Connection not open, attempting auto-reconnect for command");
+            if (!await EnsureConnectedAsync())
+            {
+                throw new InvalidOperationException("Connection is not open and reconnection failed");
+            }
+            Logger.Info("Auto-reconnection successful");
         }
 
         Logger.Info("Executing SQL command");
@@ -404,6 +430,49 @@ public class DB2ConnectionManager : IDisposable
         {
             Logger.Error(ex, "Error closing connection");
         }
+    }
+    
+    /// <summary>
+    /// Close database connection (async version for interface)
+    /// </summary>
+    public Task CloseAsync()
+    {
+        Close();
+        return Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Begin a new transaction
+    /// </summary>
+    public async Task BeginTransactionAsync()
+    {
+        Logger.Info("Beginning transaction");
+        
+        if (_connectionInfo.AutoCommit)
+        {
+            Logger.Warn("BeginTransaction called but auto-commit is enabled");
+            throw new InvalidOperationException("Cannot begin transaction when auto-commit is enabled.");
+        }
+        
+        if (_db2Connection?.State != ConnectionState.Open)
+        {
+            Logger.Warn("Cannot begin transaction - connection is not open");
+            throw new InvalidOperationException("Connection is not open");
+        }
+        
+        // DB2 implicitly starts a transaction, but we can be explicit
+        await Task.CompletedTask;
+        Logger.Info("Transaction started (implicit in DB2)");
+    }
+    
+    /// <summary>
+    /// Cancel any running query
+    /// </summary>
+    public void CancelQuery()
+    {
+        Logger.Info("Cancelling query");
+        // DB2 doesn't have a direct cancel method on connection
+        // Commands should be cancelled individually
     }
     
     /// <summary>
@@ -602,6 +671,70 @@ public class DB2ConnectionManager : IDisposable
     public bool IsConnected => _db2Connection != null && _db2Connection.State == ConnectionState.Open;
 
     /// <summary>
+    /// Reconnect to the database if connection is lost
+    /// </summary>
+    public async Task<bool> ReconnectAsync()
+    {
+        Logger.Info("Attempting to reconnect to database");
+        
+        try
+        {
+            // Close existing connection if any
+            if (_db2Connection != null)
+            {
+                try
+                {
+                    _db2Connection.Close();
+                    _db2Connection.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Debug(ex, "Error closing existing connection during reconnect");
+                }
+                _db2Connection = null;
+            }
+            
+            // Open new connection
+            await OpenAsync();
+            
+            Logger.Info("Reconnection successful");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Reconnection failed");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Ensure connection is active, reconnecting if necessary
+    /// </summary>
+    /// <returns>True if connected (or reconnected), false if reconnection failed</returns>
+    public async Task<bool> EnsureConnectedAsync()
+    {
+        if (IsConnected)
+        {
+            // Verify connection is still alive with a simple query
+            try
+            {
+                using var cmd = _db2Connection!.CreateCommand();
+                cmd.CommandText = "SELECT 1 FROM SYSIBM.SYSDUMMY1";
+                cmd.CommandTimeout = 5; // Short timeout for health check
+                await cmd.ExecuteScalarAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Connection appears dead, attempting reconnection");
+            }
+        }
+        
+        // Connection is not open or failed health check, try to reconnect
+        return await ReconnectAsync();
+    }
+
+    /// <summary>
     /// Create a DB2Command for custom query execution
     /// </summary>
     public DB2Command CreateCommand(string sql)
@@ -622,10 +755,15 @@ public class DB2ConnectionManager : IDisposable
     /// </summary>
     public async Task<object?> ExecuteScalarAsync(string sql)
     {
+        // Auto-reconnect if connection is lost
         if (_db2Connection == null || _db2Connection.State != ConnectionState.Open)
         {
-            Logger.Warn("Attempting to execute scalar without connection");
-            throw new InvalidOperationException("Connection is not open");
+            Logger.Warn("Connection not open, attempting auto-reconnect for scalar query");
+            if (!await EnsureConnectedAsync())
+            {
+                throw new InvalidOperationException("Connection is not open and reconnection failed");
+            }
+            Logger.Info("Auto-reconnection successful");
         }
 
         Logger.Info("Executing scalar query");

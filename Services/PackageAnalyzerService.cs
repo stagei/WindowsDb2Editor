@@ -41,7 +41,7 @@ public class PackageAnalyzerService
     /// Get all packages in a schema
     /// </summary>
     public async Task<List<PackageAnalysisInfo>> GetPackagesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema)
     {
         Logger.Info("Getting packages for schema: {Schema}", schema);
@@ -81,7 +81,7 @@ public class PackageAnalyzerService
     /// Get SQL statements within a package
     /// </summary>
     public async Task<List<string>> GetPackageStatementsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string packageName)
     {

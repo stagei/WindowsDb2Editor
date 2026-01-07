@@ -38,7 +38,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Execute CLI command and return exit code
     /// </summary>
-    public async Task<int> ExecuteCommandAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    public async Task<int> ExecuteCommandAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Info("Executing CLI command: {Command} for Object: {Object}", args.Command, args.Object);
         
@@ -56,6 +56,10 @@ public class CliCommandHandlerService
         
         try
         {
+            // Cast to DB2ConnectionManager for DB2-specific CLI commands
+            if (connectionManager is not DB2ConnectionManager db2Conn)
+                throw new InvalidOperationException("CliCommandHandlerService currently only supports DB2 connections");
+            
             object? result = args.Command switch
             {
                 // Meta commands (no connection required - handle first)
@@ -66,224 +70,224 @@ public class CliCommandHandlerService
                 "connection-history" => await GetConnectionHistoryAsync(args),
                 
                 // Table Properties (multiple aliases)
-                "table-props" or "table-properties" => await GetTablePropertiesAsync(connectionManager, args),
-                "trigger-info" => await GetTriggerInfoAsync(connectionManager, args),
-                "trigger-usage" => await GetTriggerUsageAsync(connectionManager, args),
+                "table-props" or "table-properties" => await GetTablePropertiesAsync(db2Conn, args),
+                "trigger-info" => await GetTriggerInfoAsync(db2Conn, args),
+                "trigger-usage" => await GetTriggerUsageAsync(db2Conn, args),
                 
                 // View Properties (multiple aliases)
-                "view-info" or "view-properties" => await GetViewInfoAsync(connectionManager, args),
+                "view-info" or "view-properties" => await GetViewInfoAsync(db2Conn, args),
                 
                 // Procedure Properties (multiple aliases)
-                "procedure-info" or "procedure-properties" => await GetProcedureInfoAsync(connectionManager, args),
+                "procedure-info" or "procedure-properties" => await GetProcedureInfoAsync(db2Conn, args),
                 
                 // Function Properties (multiple aliases)
-                "function-info" or "function-properties" => await GetFunctionInfoAsync(connectionManager, args),
+                "function-info" or "function-properties" => await GetFunctionInfoAsync(db2Conn, args),
                 
                 // Monitoring commands (multiple aliases)
-                "lock-monitor" or "db-locks" => await GetLockMonitorAsync(connectionManager, args),
-                "active-sessions" or "db-sessions" => await GetActiveSessionsAsync(connectionManager, args),
-                "database-load" or "db-load" => await GetDatabaseLoadAsync(connectionManager, args),
-                "table-stats" or "table-statistics" => await GetTableStatsAsync(connectionManager, args),
-                "dependencies" => await GetDependenciesAsync(connectionManager, args),
-                "cdc-info" or "cdc-status" => await GetCdcInfoAsync(connectionManager, args),
-                "list-tables" => await ListTablesAsync(connectionManager, args),
-                "list-views" => await ListViewsAsync(connectionManager, args),
-                "list-procedures" => await ListProceduresAsync(connectionManager, args),
-                "list-triggers" => await ListTriggersAsync(connectionManager, args),
-                "list-functions" => await ListFunctionsAsync(connectionManager, args),
+                "lock-monitor" or "db-locks" => await GetLockMonitorAsync(db2Conn, args),
+                "active-sessions" or "db-sessions" => await GetActiveSessionsAsync(db2Conn, args),
+                "database-load" or "db-load" => await GetDatabaseLoadAsync(db2Conn, args),
+                "table-stats" or "table-statistics" => await GetTableStatsAsync(db2Conn, args),
+                "dependencies" => await GetDependenciesAsync(db2Conn, args),
+                "cdc-info" or "cdc-status" => await GetCdcInfoAsync(db2Conn, args),
+                "list-tables" => await ListTablesAsync(db2Conn, args),
+                "list-views" => await ListViewsAsync(db2Conn, args),
+                "list-procedures" => await ListProceduresAsync(db2Conn, args),
+                "list-triggers" => await ListTriggersAsync(db2Conn, args),
+                "list-functions" => await ListFunctionsAsync(db2Conn, args),
                 
                 // TableDetailsDialog - Complete table information (with aliases)
-                "table-columns" => await GetTableColumnsAsync(connectionManager, args),
-                "table-foreign-keys" or "table-foreignkeys" => await GetTableForeignKeysAsync(connectionManager, args),
-                "table-indexes" => await GetTableIndexesAsync(connectionManager, args),
-                "table-statistics-full" => await GetTableStatisticsFullAsync(connectionManager, args),
-                "table-ddl" => await GetTableDdlAsync(connectionManager, args),
-                "table-incoming-fks" or "table-incoming-fk" => await GetTableIncomingFKsAsync(connectionManager, args),
-                "table-referencing-packages" or "table-used-by-packages" => await GetTableReferencingPackagesAsync(connectionManager, args),
-                "table-referencing-views" or "table-used-by-views" => await GetTableReferencingViewsAsync(connectionManager, args),
-                "table-referencing-routines" or "table-used-by-routines" => await GetTableReferencingRoutinesAsync(connectionManager, args),
+                "table-columns" => await GetTableColumnsAsync(db2Conn, args),
+                "table-foreign-keys" or "table-foreignkeys" => await GetTableForeignKeysAsync(db2Conn, args),
+                "table-indexes" => await GetTableIndexesAsync(db2Conn, args),
+                "table-statistics-full" => await GetTableStatisticsFullAsync(db2Conn, args),
+                "table-ddl" => await GetTableDdlAsync(db2Conn, args),
+                "table-incoming-fks" or "table-incoming-fk" => await GetTableIncomingFKsAsync(db2Conn, args),
+                "table-referencing-packages" or "table-used-by-packages" => await GetTableReferencingPackagesAsync(db2Conn, args),
+                "table-referencing-views" or "table-used-by-views" => await GetTableReferencingViewsAsync(db2Conn, args),
+                "table-referencing-routines" or "table-used-by-routines" => await GetTableReferencingRoutinesAsync(db2Conn, args),
                 
                 // Table Dependencies
-                "table-dependencies" => await GetTableDependenciesAsync(connectionManager, args),
+                "table-dependencies" => await GetTableDependenciesAsync(db2Conn, args),
                 
                 // Source Code Browser commands (3 commands)
-                "list-all-source" => await ListAllSourceAsync(connectionManager, args),
-                "source-code-full" => await GetSourceCodeFullAsync(connectionManager, args),
-                "source-search" => await SearchSourceCodeAsync(connectionManager, args),
+                "list-all-source" => await ListAllSourceAsync(db2Conn, args),
+                "source-code-full" => await GetSourceCodeFullAsync(db2Conn, args),
+                "source-search" => await SearchSourceCodeAsync(db2Conn, args),
                 
                 // Package Analyzer commands (3 commands)
-                "list-packages" => await ListPackagesAsync(connectionManager, args),
-                "package-analysis" => await AnalyzePackageAsync(connectionManager, args),
-                "package-details" => await GetPackageDetailsAsync(connectionManager, args),
+                "list-packages" => await ListPackagesAsync(db2Conn, args),
+                "package-analysis" => await AnalyzePackageAsync(db2Conn, args),
+                "package-details" => await GetPackageDetailsAsync(db2Conn, args),
                 
                 // Comment Manager commands (3 commands)
-                "list-comments" => await ListCommentsAsync(connectionManager, args),
-                "object-comment" => await GetObjectCommentAsync(connectionManager, args),
-                "missing-comments" => await FindMissingCommentsAsync(connectionManager, args),
+                "list-comments" => await ListCommentsAsync(db2Conn, args),
+                "object-comment" => await GetObjectCommentAsync(db2Conn, args),
+                "missing-comments" => await FindMissingCommentsAsync(db2Conn, args),
                 
                 // Statistics Manager commands (3 commands)
-                "statistics-overview" => await GetStatisticsOverviewAsync(connectionManager, args),
-                "statistics-recommendations" => await GetStatisticsRecommendationsAsync(connectionManager, args),
-                "index-statistics" => await GetIndexStatisticsAsync(connectionManager, args),
+                "statistics-overview" => await GetStatisticsOverviewAsync(db2Conn, args),
+                "statistics-recommendations" => await GetStatisticsRecommendationsAsync(db2Conn, args),
+                "index-statistics" => await GetIndexStatisticsAsync(db2Conn, args),
                 
                 // Unused Objects commands (4 commands)
-                "unused-tables" => await FindUnusedTablesAsync(connectionManager, args),
-                "unused-indexes" => await FindUnusedIndexesAsync(connectionManager, args),
-                "unused-views" => await FindUnusedViewsAsync(connectionManager, args),
-                "unused-routines" => await FindUnusedRoutinesAsync(connectionManager, args),
+                "unused-tables" => await FindUnusedTablesAsync(db2Conn, args),
+                "unused-indexes" => await FindUnusedIndexesAsync(db2Conn, args),
+                "unused-views" => await FindUnusedViewsAsync(db2Conn, args),
+                "unused-routines" => await FindUnusedRoutinesAsync(db2Conn, args),
                 
                 // Mermaid ERD commands (5 commands - using SqlMermaidErdTools)
-                "mermaid-erd" => await GenerateMermaidErdAsync(connectionManager, args),
+                "mermaid-erd" => await GenerateMermaidErdAsync(db2Conn, args),
                 "mermaid-from-sql" => await ConvertSqlToMermaidAsync(args),
                 "sql-from-mermaid" => await ConvertMermaidToSqlAsync(args),
                 "mermaid-diff" => await GenerateMermaidDiffDdlAsync(args),
                 "sql-translate" => await TranslateSqlDialectAsync(args),
                 
                 // Metadata commands (2 commands - query-history already at top)
-                "schema-metadata" => await GetSchemaMetadataAsync(connectionManager, args),
-                "database-metadata" => await GetDatabaseMetadataAsync(connectionManager, args),
+                "schema-metadata" => await GetSchemaMetadataAsync(db2Conn, args),
+                "database-metadata" => await GetDatabaseMetadataAsync(db2Conn, args),
                 
                 // AI Assistant commands (10 commands)
-                "ai-query" => await GenerateAiQueryAsync(connectionManager, args),
-                "ai-explain-table" => await ExplainTableWithAiAsync(connectionManager, args),
-                "ai-explain-view" => await ExplainViewWithAiAsync(connectionManager, args),
-                "ai-analyze-procedure" => await AnalyzeProcedureWithAiAsync(connectionManager, args),
-                "ai-analyze-function" => await AnalyzeFunctionWithAiAsync(connectionManager, args),
-                "ai-analyze-package" => await AnalyzePackageWithAiAsync(connectionManager, args),
-                "ai-deep-analysis" => await PerformDeepAnalysisAsync(connectionManager, args),
-                "db-compare" => await CompareDatabasesAsync(connectionManager, args),
-                "db-compare-source-only" => await CompareSourceOnlyAsync(connectionManager, args),
-                "db-compare-target-only" => await CompareTargetOnlyAsync(connectionManager, args),
-                "db-compare-different" => await CompareDifferentAsync(connectionManager, args),
-                "db-compare-ddl" => await CompareDdlAsync(connectionManager, args),
+                "ai-query" => await GenerateAiQueryAsync(db2Conn, args),
+                "ai-explain-table" => await ExplainTableWithAiAsync(db2Conn, args),
+                "ai-explain-view" => await ExplainViewWithAiAsync(db2Conn, args),
+                "ai-analyze-procedure" => await AnalyzeProcedureWithAiAsync(db2Conn, args),
+                "ai-analyze-function" => await AnalyzeFunctionWithAiAsync(db2Conn, args),
+                "ai-analyze-package" => await AnalyzePackageWithAiAsync(db2Conn, args),
+                "ai-deep-analysis" => await PerformDeepAnalysisAsync(db2Conn, args),
+                "db-compare" => await CompareDatabasesAsync(db2Conn, args),
+                "db-compare-source-only" => await CompareSourceOnlyAsync(db2Conn, args),
+                "db-compare-target-only" => await CompareTargetOnlyAsync(db2Conn, args),
+                "db-compare-different" => await CompareDifferentAsync(db2Conn, args),
+                "db-compare-ddl" => await CompareDdlAsync(db2Conn, args),
                 
                 // View Detail commands (with additional commands)
-                "view-definition" => await GetViewDefinitionAsync(connectionManager, args),
-                "view-columns" => await GetViewColumnsAsync(connectionManager, args),
-                "view-dependencies" => await GetViewDependenciesAsync(connectionManager, args),
-                "view-sample-data" => await GetViewSampleDataAsync(connectionManager, args),
-                "view-used-by-packages" => await GetViewUsedByPackagesAsync(connectionManager, args),
-                "view-used-by-views" => await GetViewUsedByViewsAsync(connectionManager, args),
+                "view-definition" => await GetViewDefinitionAsync(db2Conn, args),
+                "view-columns" => await GetViewColumnsAsync(db2Conn, args),
+                "view-dependencies" => await GetViewDependenciesAsync(db2Conn, args),
+                "view-sample-data" => await GetViewSampleDataAsync(db2Conn, args),
+                "view-used-by-packages" => await GetViewUsedByPackagesAsync(db2Conn, args),
+                "view-used-by-views" => await GetViewUsedByViewsAsync(db2Conn, args),
                 
                 // Procedure Detail commands (with additional commands)
-                "procedure-source" => await GetProcedureSourceAsync(connectionManager, args),
-                "procedure-parameters" => await GetProcedureParametersAsync(connectionManager, args),
-                "procedure-dependencies" => await GetProcedureDependenciesAsync(connectionManager, args),
-                "procedure-usage" => await GetProcedureUsageAsync(connectionManager, args),
-                "procedure-grants" => await GetProcedureGrantsAsync(connectionManager, args),
+                "procedure-source" => await GetProcedureSourceAsync(db2Conn, args),
+                "procedure-parameters" => await GetProcedureParametersAsync(db2Conn, args),
+                "procedure-dependencies" => await GetProcedureDependenciesAsync(db2Conn, args),
+                "procedure-usage" => await GetProcedureUsageAsync(db2Conn, args),
+                "procedure-grants" => await GetProcedureGrantsAsync(db2Conn, args),
                 
                 // Function Detail commands (with additional commands)
-                "function-source" => await GetFunctionSourceAsync(connectionManager, args),
-                "function-parameters" => await GetFunctionParametersAsync(connectionManager, args),
-                "function-dependencies" => await GetFunctionDependenciesAsync(connectionManager, args),
-                "function-usage" => await GetFunctionUsageAsync(connectionManager, args),
-                "function-grants" => await GetFunctionGrantsAsync(connectionManager, args),
+                "function-source" => await GetFunctionSourceAsync(db2Conn, args),
+                "function-parameters" => await GetFunctionParametersAsync(db2Conn, args),
+                "function-dependencies" => await GetFunctionDependenciesAsync(db2Conn, args),
+                "function-usage" => await GetFunctionUsageAsync(db2Conn, args),
+                "function-grants" => await GetFunctionGrantsAsync(db2Conn, args),
                 
                 // Package Detail commands (with additional commands)
-                "package-properties" => await GetPackagePropertiesAsync(connectionManager, args),
-                "package-statements" => await GetPackageStatementsAsync(connectionManager, args),
-                "package-dependencies" => await GetPackageDependenciesAsync(connectionManager, args),
-                "package-statistics" => await GetPackageStatisticsAsync(connectionManager, args),
-                "package-list-tables" => await GetPackageListTablesAsync(connectionManager, args),
-                "package-list-views" => await GetPackageListViewsAsync(connectionManager, args),
-                "package-list-procedures" => await GetPackageListProceduresAsync(connectionManager, args),
-                "package-list-functions" => await GetPackageListFunctionsAsync(connectionManager, args),
+                "package-properties" => await GetPackagePropertiesAsync(db2Conn, args),
+                "package-statements" => await GetPackageStatementsAsync(db2Conn, args),
+                "package-dependencies" => await GetPackageDependenciesAsync(db2Conn, args),
+                "package-statistics" => await GetPackageStatisticsAsync(db2Conn, args),
+                "package-list-tables" => await GetPackageListTablesAsync(db2Conn, args),
+                "package-list-views" => await GetPackageListViewsAsync(db2Conn, args),
+                "package-list-procedures" => await GetPackageListProceduresAsync(db2Conn, args),
+                "package-list-functions" => await GetPackageListFunctionsAsync(db2Conn, args),
                 
                 // Table Analysis commands (2 commands)
-                "table-relationships" => await GetTableRelationshipsAsync(connectionManager, args),
-                "table-sample-data" => await GetTableSampleDataAsync(connectionManager, args),
+                "table-relationships" => await GetTableRelationshipsAsync(db2Conn, args),
+                "table-sample-data" => await GetTableSampleDataAsync(db2Conn, args),
                 
                 // User Management commands (with additional commands)
-                "user-properties" => await GetUserPropertiesAsync(connectionManager, args),
-                "user-privileges" => await GetUserPrivilegesAsync(connectionManager, args),
-                "user-tables" => await GetUserTablesAsync(connectionManager, args),
-                "user-schemas" => await GetUserSchemasAsync(connectionManager, args),
-                "user-connections" => await GetUserConnectionsAsync(connectionManager, args),
+                "user-properties" => await GetUserPropertiesAsync(db2Conn, args),
+                "user-privileges" => await GetUserPrivilegesAsync(db2Conn, args),
+                "user-tables" => await GetUserTablesAsync(db2Conn, args),
+                "user-schemas" => await GetUserSchemasAsync(db2Conn, args),
+                "user-connections" => await GetUserConnectionsAsync(db2Conn, args),
                 
                 // Generic Object commands (1 command)
-                "object-metadata" => await GetObjectMetadataAsync(connectionManager, args),
+                "object-metadata" => await GetObjectMetadataAsync(db2Conn, args),
                 
                 // Advanced Monitoring commands (8 commands)
-                "database-load-full" => await GetDatabaseLoadFullAsync(connectionManager, args),
-                "table-activity" => await GetTableActivityAsync(connectionManager, args),
-                "top-active-tables" => await GetTopActiveTablesAsync(connectionManager, args),
-                "lock-monitor-full" => await GetLockMonitorFullAsync(connectionManager, args),
-                "lock-chains" => await GetLockChainsAsync(connectionManager, args),
-                "active-sessions-full" => await GetActiveSessionsFullAsync(connectionManager, args),
-                "session-details" => await GetSessionDetailsAsync(connectionManager, args),
-                "long-running-sessions" => await GetLongRunningSessionsAsync(connectionManager, args),
+                "database-load-full" => await GetDatabaseLoadFullAsync(db2Conn, args),
+                "table-activity" => await GetTableActivityAsync(db2Conn, args),
+                "top-active-tables" => await GetTopActiveTablesAsync(db2Conn, args),
+                "lock-monitor-full" => await GetLockMonitorFullAsync(db2Conn, args),
+                "lock-chains" => await GetLockChainsAsync(db2Conn, args),
+                "active-sessions-full" => await GetActiveSessionsFullAsync(db2Conn, args),
+                "session-details" => await GetSessionDetailsAsync(db2Conn, args),
+                "long-running-sessions" => await GetLongRunningSessionsAsync(db2Conn, args),
                 
                 // Dependency commands (3 commands)
-                "dependency-graph" => await GetDependencyGraphAsync(connectionManager, args),
-                "dependency-impact" => await GetDependencyImpactAsync(connectionManager, args),
-                "dependency-chain" => await GetDependencyChainAsync(connectionManager, args),
+                "dependency-graph" => await GetDependencyGraphAsync(db2Conn, args),
+                "dependency-impact" => await GetDependencyImpactAsync(db2Conn, args),
+                "dependency-chain" => await GetDependencyChainAsync(db2Conn, args),
                 
                 // Migration commands (3 commands)
-                "migration-plan" => await GenerateMigrationPlanAsync(connectionManager, args),
-                "migration-ddl" => await GenerateMigrationDdlAsync(connectionManager, args),
-                "migration-data-script" => await GenerateMigrationDataScriptAsync(connectionManager, args),
+                "migration-plan" => await GenerateMigrationPlanAsync(db2Conn, args),
+                "migration-ddl" => await GenerateMigrationDdlAsync(db2Conn, args),
+                "migration-data-script" => await GenerateMigrationDataScriptAsync(db2Conn, args),
                 
                 // Export commands (3 commands)
-                "export-table-data" => await ExportTableDataAsync(connectionManager, args),
-                "export-query-results" => await ExportQueryResultsAsync(connectionManager, args),
-                "export-schema-ddl" => await ExportSchemaDdlAsync(connectionManager, args),
+                "export-table-data" => await ExportTableDataAsync(db2Conn, args),
+                "export-query-results" => await ExportQueryResultsAsync(db2Conn, args),
+                "export-schema-ddl" => await ExportSchemaDdlAsync(db2Conn, args),
                 
                 // SQL Tools commands (2 commands)
                 "sql-validate" => await ValidateSqlAsync(args),
                 "sql-format" => await FormatSqlAsync(args),
                 
                 // Schema Diff commands (2 commands)
-                "schema-compare" => await CompareSchemas(connectionManager, args),
-                "schema-diff-ddl" => await GenerateSchemaDiffDdlAsync(connectionManager, args),
+                "schema-compare" => await CompareSchemas(db2Conn, args),
+                "schema-diff-ddl" => await GenerateSchemaDiffDdlAsync(db2Conn, args),
                 
                 // User/Privileges Enhanced (2 commands)
-                "user-info-enhanced" => await GetUserInfoEnhancedAsync(connectionManager, args),
-                "user-privileges-full" => await GetUserPrivilegesFullAsync(connectionManager, args),
+                "user-info-enhanced" => await GetUserInfoEnhancedAsync(db2Conn, args),
+                "user-privileges-full" => await GetUserPrivilegesFullAsync(db2Conn, args),
                 
                 // CDC Enhanced (3 commands)
-                "cdc-status-full" => await GetCdcStatusFullAsync(connectionManager, args),
-                "cdc-configuration" => await GetCdcConfigurationAsync(connectionManager, args),
-                "cdc-changes" => await GetCdcChangesAsync(connectionManager, args),
+                "cdc-status-full" => await GetCdcStatusFullAsync(db2Conn, args),
+                "cdc-configuration" => await GetCdcConfigurationAsync(db2Conn, args),
+                "cdc-changes" => await GetCdcChangesAsync(db2Conn, args),
                 
                 // Connection Stats (2 commands)
                 "connection-stats" => await GetConnectionStatsAsync(args),
                 "connection-test" => await TestConnectionAsync(args),
                 
                 // Additional utility commands (with aliases)
-                "list-schemas" => await ListSchemasAsync(connectionManager, args),
-                "list-tablespaces" => await ListTablespacesAsync(connectionManager, args),
-                "list-indexes-all" or "list-all-indexes" => await ListAllIndexesAsync(connectionManager, args),
-                "list-constraints" => await ListConstraintsAsync(connectionManager, args),
-                "list-sequences" => await ListSequencesAsync(connectionManager, args),
-                "table-size" => await GetTableSizeAsync(connectionManager, args),
-                "schema-size" => await GetSchemaSizeAsync(connectionManager, args),
-                "database-size" or "db-size" => await GetDatabaseSizeAsync(connectionManager, args),
-                "table-grants" => await GetTableGrantsAsync(connectionManager, args),
-                "db-config" or "db-parameters" => await GetDbConfigAsync(connectionManager, args),
+                "list-schemas" => await ListSchemasAsync(db2Conn, args),
+                "list-tablespaces" => await ListTablespacesAsync(db2Conn, args),
+                "list-indexes-all" or "list-all-indexes" => await ListAllIndexesAsync(db2Conn, args),
+                "list-constraints" => await ListConstraintsAsync(db2Conn, args),
+                "list-sequences" => await ListSequencesAsync(db2Conn, args),
+                "table-size" => await GetTableSizeAsync(db2Conn, args),
+                "schema-size" => await GetSchemaSizeAsync(db2Conn, args),
+                "database-size" or "db-size" => await GetDatabaseSizeAsync(db2Conn, args),
+                "table-grants" => await GetTableGrantsAsync(db2Conn, args),
+                "db-config" or "db-parameters" => await GetDbConfigAsync(db2Conn, args),
                 
                 // Additional monitoring commands
-                "db-version" => await GetDbVersionAsync(connectionManager, args),
-                "db-registry" => await GetDbRegistryAsync(connectionManager, args),
-                "active-queries" => await GetActiveQueriesAsync(connectionManager, args),
-                "bufferpool-stats" => await GetBufferpoolStatsAsync(connectionManager, args),
-                "tablespace-usage" => await GetTablespaceUsageAsync(connectionManager, args),
+                "db-version" => await GetDbVersionAsync(db2Conn, args),
+                "db-registry" => await GetDbRegistryAsync(db2Conn, args),
+                "active-queries" => await GetActiveQueriesAsync(db2Conn, args),
+                "bufferpool-stats" => await GetBufferpoolStatsAsync(db2Conn, args),
+                "tablespace-usage" => await GetTablespaceUsageAsync(db2Conn, args),
                 
                 // CDC Enhanced commands
-                "cdc-enable" => await EnableCdcAsync(connectionManager, args),
-                "cdc-disable" => await DisableCdcAsync(connectionManager, args),
-                "cdc-history" => await GetCdcHistoryAsync(connectionManager, args),
+                "cdc-enable" => await EnableCdcAsync(db2Conn, args),
+                "cdc-disable" => await DisableCdcAsync(db2Conn, args),
+                "cdc-history" => await GetCdcHistoryAsync(db2Conn, args),
                 
                 // Search commands
-                "object-search" => await SearchObjectsAsync(connectionManager, args),
-                "column-search" => await SearchColumnsAsync(connectionManager, args),
+                "object-search" => await SearchObjectsAsync(db2Conn, args),
+                "column-search" => await SearchColumnsAsync(db2Conn, args),
                 
                 // Summary commands
-                "schema-summary" => await GetSchemaSummaryAsync(connectionManager, args),
-                "database-summary" => await GetDatabaseSummaryAsync(connectionManager, args),
-                "health-check" => await PerformHealthCheckAsync(connectionManager, args),
+                "schema-summary" => await GetSchemaSummaryAsync(db2Conn, args),
+                "database-summary" => await GetDatabaseSummaryAsync(db2Conn, args),
+                "health-check" => await PerformHealthCheckAsync(db2Conn, args),
                 
                 // GUI Test command
-                "gui-test" => await ExecuteGuiTestAsync(connectionManager, args),
+                "gui-test" => await ExecuteGuiTestAsync(db2Conn, args),
                 
                 _ => throw new ArgumentException($"Unknown command: {args.Command}")
             };

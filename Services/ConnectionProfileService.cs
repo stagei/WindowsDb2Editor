@@ -36,7 +36,7 @@ public class ConnectionProfileService
     /// <summary>
     /// Get connection profile by name
     /// </summary>
-    public DB2Connection? GetProfile(string profileName)
+    public DatabaseConnection? GetProfile(string profileName)
     {
         Logger.Debug("Loading profile: {ProfileName}", profileName);
         
@@ -49,7 +49,7 @@ public class ConnectionProfileService
         try
         {
             var json = File.ReadAllText(_profilesFile);
-            var profiles = JsonSerializer.Deserialize<List<DB2Connection>>(json);
+            var profiles = JsonSerializer.Deserialize<List<DatabaseConnection>>(json);
             
             var profile = profiles?.FirstOrDefault(p => 
                 p.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase));
@@ -75,7 +75,7 @@ public class ConnectionProfileService
     /// <summary>
     /// Save connection profile
     /// </summary>
-    public void SaveProfile(DB2Connection profile)
+    public void SaveProfile(DatabaseConnection profile)
     {
         Logger.Info("Saving profile: {ProfileName}", profile.Name);
         
@@ -109,18 +109,18 @@ public class ConnectionProfileService
     /// <summary>
     /// Load all connection profiles
     /// </summary>
-    public List<DB2Connection> LoadAllProfiles()
+    public List<DatabaseConnection> LoadAllProfiles()
     {
         if (!File.Exists(_profilesFile))
         {
             Logger.Debug("No profiles file found, returning empty list");
-            return new List<DB2Connection>();
+            return new List<DatabaseConnection>();
         }
             
         try
         {
             var json = File.ReadAllText(_profilesFile);
-            var profiles = JsonSerializer.Deserialize<List<DB2Connection>>(json) ?? new List<DB2Connection>();
+            var profiles = JsonSerializer.Deserialize<List<DatabaseConnection>>(json) ?? new List<DatabaseConnection>();
             
             Logger.Debug("Loaded {Count} profiles", profiles.Count);
             return profiles;
@@ -128,7 +128,7 @@ public class ConnectionProfileService
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to load profiles");
-            return new List<DB2Connection>();
+            return new List<DatabaseConnection>();
         }
     }
     

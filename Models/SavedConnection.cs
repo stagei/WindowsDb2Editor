@@ -41,18 +41,41 @@ namespace WindowsDb2Editor.Models
         public DateTime LastUsed { get; set; } = DateTime.Now;
 
         /// <summary>
-        /// Convert to DB2Connection with decrypted password
+        /// Convert to DatabaseConnection with decrypted password
         /// </summary>
-        public DB2Connection ToDb2Connection(string decryptedPassword)
+        public DatabaseConnection ToDatabaseConnection(string decryptedPassword)
         {
-            return new DB2Connection
+            return new DatabaseConnection
             {
                 Name = this.Name,
                 Server = this.Server,
                 Port = this.Port,
                 Database = this.Database,
                 Username = this.Username,
-                Password = decryptedPassword
+                Password = decryptedPassword,
+                ProviderType = this.Provider?.ToLowerInvariant() ?? "db2"
+            };
+        }
+        
+        /// <summary>
+        /// Convert to DB2Connection with decrypted password (backward compatibility)
+        /// </summary>
+        [Obsolete("Use ToDatabaseConnection instead")]
+        public DB2Connection ToDb2Connection(string decryptedPassword)
+        {
+            var dbConn = ToDatabaseConnection(decryptedPassword);
+            return new DB2Connection
+            {
+                Name = dbConn.Name,
+                Server = dbConn.Server,
+                Port = dbConn.Port,
+                Database = dbConn.Database,
+                Username = dbConn.Username,
+                Password = dbConn.Password,
+                SavePassword = dbConn.SavePassword,
+                IsReadOnly = dbConn.IsReadOnly,
+                AutoCommit = dbConn.AutoCommit,
+                ProviderType = dbConn.ProviderType
             };
         }
     }

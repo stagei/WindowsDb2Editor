@@ -50,7 +50,7 @@ public class TableRelationshipService
     /// Get tables that have foreign keys pointing to this table
     /// </summary>
     public async Task<List<IncomingForeignKey>> GetIncomingForeignKeysAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -160,7 +160,7 @@ public class TableRelationshipService
     /// Get procedures and functions that reference this table
     /// </summary>
     public async Task<List<ReferencingObject>> GetReferencingRoutinesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

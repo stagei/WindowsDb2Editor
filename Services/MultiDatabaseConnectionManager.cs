@@ -15,19 +15,28 @@ public class MultiDatabaseConnectionManager : IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    private readonly Dictionary<string, DB2ConnectionManager> _connections = new();
+    private readonly Dictionary<string, IConnectionManager> _connections = new();
     private bool _disposed = false;
     
     /// <summary>
     /// Add a connection with an alias.
     /// </summary>
-    public async Task<bool> AddConnectionAsync(string alias, DB2Connection connectionInfo)
+    public async Task<bool> AddConnectionAsync(string alias, DatabaseConnection connectionInfo)
     {
         Logger.Debug("Adding connection: {Alias}", alias);
         
         try
         {
-            var connectionManager = new DB2ConnectionManager(connectionInfo);
+            // Create connection manager based on provider type
+            IConnectionManager connectionManager = connectionInfo.ProviderType?.ToUpperInvariant() switch
+            {
+                "POSTGRESQL" or "POSTGRES" => throw new NotImplementedException("PostgreSQL connection manager not yet implemented"),
+                "SQLSERVER" or "MSSQL" => throw new NotImplementedException("SQL Server connection manager not yet implemented"),
+                "ORACLE" => throw new NotImplementedException("Oracle connection manager not yet implemented"),
+                "MYSQL" => throw new NotImplementedException("MySQL connection manager not yet implemented"),
+                _ => new DB2ConnectionManager(connectionInfo) // Default to DB2
+            };
+            
             await connectionManager.OpenAsync();
             
             _connections[alias] = connectionManager;
@@ -44,7 +53,7 @@ public class MultiDatabaseConnectionManager : IDisposable
     /// <summary>
     /// Add an already-established connection.
     /// </summary>
-    public void AddExistingConnection(string alias, DB2ConnectionManager connectionManager)
+    public void AddExistingConnection(string alias, IConnectionManager connectionManager)
     {
         Logger.Debug("Adding existing connection: {Alias}", alias);
         _connections[alias] = connectionManager;
@@ -54,7 +63,7 @@ public class MultiDatabaseConnectionManager : IDisposable
     /// <summary>
     /// Get a connection by alias.
     /// </summary>
-    public DB2ConnectionManager? GetConnection(string alias)
+    public IConnectionManager? GetConnection(string alias)
     {
         return _connections.TryGetValue(alias, out var connection) ? connection : null;
     }

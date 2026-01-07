@@ -15,11 +15,11 @@ namespace WindowsDb2Editor.Controls;
 public partial class PackageDetailsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler? _metadataHandler;
     private readonly PackageInfo _package;
 
-    public PackageDetailsPanel(DB2ConnectionManager connectionManager, PackageInfo package)
+    public PackageDetailsPanel(IConnectionManager connectionManager, PackageInfo package)
     {
         InitializeComponent();
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));

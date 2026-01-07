@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using NLog;
+using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services.Interfaces;
 
@@ -366,13 +367,13 @@ public class MetadataHandler : IMetadataProvider
     
     private string _currentProvider = "DB2";
     private string _currentVersion = "12.1";
-    private Data.DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
-    public void SetConnectionManager(Data.DB2ConnectionManager connectionManager)
+    public void SetConnectionManager(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
-        _currentProvider = "DB2";
-        _currentVersion = "12.1";
+        _currentProvider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+        _currentVersion = "12.1"; // TODO: Get version from connection or detect it
     }
     
     public string GetStatement(string statementName)
@@ -457,7 +458,8 @@ public class MetadataHandler : IMetadataProvider
             }
         }
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("MetadataHandler.CreateCommand requires DB2ConnectionManager");
+        using var command = db2Conn.CreateCommand(sql);
         return await command.ExecuteScalarAsync();
     }
     

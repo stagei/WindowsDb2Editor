@@ -28,7 +28,7 @@ public class GuiTestingService
     /// Open a dialog, extract its data, and return as dictionary
     /// </summary>
     public async Task<Dictionary<string, object>> TestFormAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string formName,
         string objectName,
         string? tabName = null)
@@ -61,7 +61,7 @@ public class GuiTestingService
     }
     
     private async Task<Dictionary<string, object>> TestTableDetailsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string objectName,
         string? tabName)
     {
@@ -255,7 +255,7 @@ public class GuiTestingService
     }
     
     private async Task<Dictionary<string, object>> TestObjectDetailsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string objectName,
         string? tabName)
     {
@@ -270,7 +270,7 @@ public class GuiTestingService
     }
     
     private async Task<Dictionary<string, object>> TestPackageDetailsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string objectName,
         string? tabName)
     {
@@ -285,7 +285,7 @@ public class GuiTestingService
     }
     
     private async Task<Dictionary<string, object>> TestUserDetailsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string objectName,
         string? tabName)
     {
@@ -305,7 +305,7 @@ public class GuiTestingService
     /// TabName can be: "generate-from-db", "show-diff", "generate-alter", "export-sql"
     /// </summary>
     private async Task<Dictionary<string, object>> TestMermaidDesignerAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string objectName,
         string? tabName)
     {

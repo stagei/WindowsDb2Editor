@@ -12,8 +12,8 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class ObjectDetailsDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
-    private readonly Models.DB2Connection _connection;
+    private readonly IConnectionManager _connectionManager;
+    private readonly DatabaseConnection _connection;
     private readonly DatabaseObject _object;
     
     // Public accessors for GUI testing - allows GuiTestingService to extract form data
@@ -24,7 +24,7 @@ public partial class ObjectDetailsDialog : Window
     public System.Windows.Controls.TextBlock ObjectNameTextPublic => ObjectNameText;
     public System.Windows.Controls.TextBlock ObjectTypeTextPublic => ObjectTypeText;
 
-    public ObjectDetailsDialog(DB2ConnectionManager connectionManager, DatabaseObject databaseObject, Models.DB2Connection connection)
+    public ObjectDetailsDialog(IConnectionManager connectionManager, DatabaseObject databaseObject, DatabaseConnection connection)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
@@ -235,7 +235,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.VIEWS 
                 WHERE VIEWSCHEMA = ? AND VIEWNAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -263,7 +264,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.ROUTINES 
                 WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -307,7 +309,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.INDEXES 
                 WHERE INDSCHEMA = ? AND INDNAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -345,7 +348,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.TRIGGERS 
                 WHERE TRIGSCHEMA = ? AND TRIGNAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -386,7 +390,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.SEQUENCES 
                 WHERE SEQSCHEMA = ? AND SEQNAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -429,7 +434,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.TABLES 
                 WHERE TABSCHEMA = ? AND TABNAME = ? AND TYPE = 'A'";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             
@@ -463,7 +469,8 @@ public partial class ObjectDetailsDialog : Window
                 FROM SYSCAT.DATATYPES 
                 WHERE TYPESCHEMA = ? AND TYPENAME = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@schema", _object.SchemaName));
             command.Parameters.Add(new DB2Parameter("@name", _object.Name));
             

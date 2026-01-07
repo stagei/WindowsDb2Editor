@@ -13,13 +13,13 @@ namespace WindowsDb2Editor.Controls;
 public partial class RoutineDetailsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler? _metadataHandler;
     private readonly string _schema;
     private readonly string _routineName;
     private readonly string _routineType; // "P" for procedure, "F" for function
 
-    public RoutineDetailsPanel(DB2ConnectionManager connectionManager, string schema, string routineName, string routineType = "P")
+    public RoutineDetailsPanel(IConnectionManager connectionManager, string schema, string routineName, string routineType = "P")
     {
         InitializeComponent();
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));

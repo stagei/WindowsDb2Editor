@@ -16,7 +16,7 @@ public partial class SourceCodeBrowserPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly SourceCodeService _sourceService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private List<SourceCodeObject> _currentObjects = new();
     
     public SourceCodeBrowserPanel()
@@ -25,7 +25,7 @@ public partial class SourceCodeBrowserPanel : UserControl
         _sourceService = new SourceCodeService();
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         await LoadSchemasAsync();

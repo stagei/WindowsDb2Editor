@@ -106,11 +106,11 @@ namespace WindowsDb2Editor.Services
         /// <summary>
         /// Save a connection with encrypted password
         /// </summary>
-        public void SaveConnection(DB2Connection connection)
+        public void SaveConnection(DatabaseConnection connection)
         {
             Logger.Info("Saving connection: {Name}", connection.Name);
-            Logger.Debug("Connection details - Server: {Server}, Database: {Database}, User: {User}", 
-                connection.Server, connection.Database, connection.Username);
+            Logger.Debug("Connection details - Server: {Server}, Database: {Database}, User: {User}, Provider: {Provider}", 
+                connection.Server, connection.Database, connection.Username, connection.ProviderType);
 
             try
             {
@@ -129,7 +129,9 @@ namespace WindowsDb2Editor.Services
                     Database = connection.Database,
                     Username = connection.Username,
                     EncryptedPassword = encryptedPassword,
-                    LastUsed = DateTime.Now
+                    LastUsed = DateTime.Now,
+                    Provider = connection.ProviderType?.ToUpperInvariant() ?? "DB2",
+                    Version = "12.1" // TODO: Store version from connection
                 };
                 
                 // Remove existing connection with same name
@@ -180,7 +182,7 @@ namespace WindowsDb2Editor.Services
         /// <summary>
         /// Get a connection by name with decrypted password
         /// </summary>
-        public DB2Connection? GetConnection(string connectionName)
+        public DatabaseConnection? GetConnection(string connectionName)
         {
             Logger.Debug("Retrieving connection: {Name}", connectionName);
             
@@ -202,7 +204,7 @@ namespace WindowsDb2Editor.Services
                 UpdateLastUsed(connectionName);
                 
                 Logger.Info("Connection retrieved successfully: {Name}", connectionName);
-                return savedConnection.ToDb2Connection(decryptedPassword);
+                return savedConnection.ToDatabaseConnection(decryptedPassword);
             }
             catch (Exception ex)
             {

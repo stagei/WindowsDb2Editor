@@ -34,7 +34,7 @@ public class DependencyAnalyzerService
     /// Get dependencies for a table (both incoming and outgoing)
     /// </summary>
     public async Task<List<DependencyNode>> GetTableDependenciesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

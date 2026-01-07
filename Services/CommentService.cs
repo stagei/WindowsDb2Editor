@@ -44,7 +44,7 @@ public class CommentService
     /// Get table comments
     /// </summary>
     public async Task<List<ObjectComment>> GetTableCommentsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string? schemaFilter = null)
     {
         Logger.Info("Getting table comments - Schema: {Schema}", schemaFilter ?? "*");
@@ -88,7 +88,7 @@ public class CommentService
     /// Get column comments
     /// </summary>
     public async Task<List<ObjectComment>> GetColumnCommentsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

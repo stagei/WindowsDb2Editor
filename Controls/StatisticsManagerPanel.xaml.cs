@@ -18,7 +18,7 @@ public partial class StatisticsManagerPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly StatisticsService _statisticsService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
     public StatisticsManagerPanel()
     {
@@ -36,7 +36,7 @@ public partial class StatisticsManagerPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         Logger.Info("Initializing Statistics Manager");
         _connectionManager = connectionManager;

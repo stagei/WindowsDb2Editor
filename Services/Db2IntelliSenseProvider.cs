@@ -141,7 +141,7 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         };
     }
     
-    public async Task LoadLiveSchemaMetadataAsync(DB2ConnectionManager connection)
+    public async Task LoadLiveSchemaMetadataAsync(IConnectionManager connection)
     {
         Logger.Debug("Loading live schema metadata from database");
         
@@ -149,7 +149,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         {
             // Load table names from SYSCAT.TABLES
             var tablesSql = "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' FETCH FIRST 500 ROWS ONLY";
-            using (var tableCmd = connection.CreateCommand(tablesSql))
+            // Cast to DB2ConnectionManager for DB2-specific CreateCommand (this provider is DB2-specific)
+            if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
+            using (var tableCmd = db2Conn.CreateCommand(tablesSql))
             {
                 using var tableAdapter = new DB2DataAdapter((DB2Command)tableCmd);
                 var tablesTable = new System.Data.DataTable();
@@ -167,7 +169,8 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             
             // Load view names from SYSCAT.TABLES
             var viewsSql = "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'V' FETCH FIRST 500 ROWS ONLY";
-            using (var viewCmd = connection.CreateCommand(viewsSql))
+            if (connection is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
+            using (var viewCmd = db2Conn2.CreateCommand(viewsSql))
             {
                 using var viewAdapter = new DB2DataAdapter((DB2Command)viewCmd);
                 var viewsTable = new System.Data.DataTable();
@@ -185,7 +188,8 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             
             // Load procedure names from SYSCAT.ROUTINES
             var proceduresSql = "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P' FETCH FIRST 500 ROWS ONLY";
-            using (var procCmd = connection.CreateCommand(proceduresSql))
+            if (connection is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
+            using (var procCmd = db2Conn3.CreateCommand(proceduresSql))
             {
                 using var procAdapter = new DB2DataAdapter((DB2Command)procCmd);
                 var procTable = new System.Data.DataTable();
@@ -203,7 +207,8 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             
             // Load function names from SYSCAT.ROUTINES
             var functionsSql = "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F' FETCH FIRST 500 ROWS ONLY";
-            using (var funcCmd = connection.CreateCommand(functionsSql))
+            if (connection is not DB2ConnectionManager db2Conn4) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
+            using (var funcCmd = db2Conn4.CreateCommand(functionsSql))
             {
                 using var funcAdapter = new DB2DataAdapter((DB2Command)funcCmd);
                 var funcTable = new System.Data.DataTable();

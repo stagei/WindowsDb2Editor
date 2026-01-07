@@ -18,7 +18,7 @@ public partial class ActiveSessionsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly SessionMonitorService _sessionService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
     public ActiveSessionsPanel()
     {
@@ -38,7 +38,7 @@ public partial class ActiveSessionsPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         UserComboBox.Items.Add("*");

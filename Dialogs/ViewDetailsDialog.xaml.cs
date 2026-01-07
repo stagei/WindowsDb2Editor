@@ -8,12 +8,12 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class ViewDetailsDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler? _metadataHandler;
     private readonly string _schema;
     private readonly string _viewName;
 
-    public ViewDetailsDialog(DB2ConnectionManager connectionManager, string schema, string viewName)
+    public ViewDetailsDialog(IConnectionManager connectionManager, string schema, string viewName)
     {
         InitializeComponent();
         _connectionManager = connectionManager;

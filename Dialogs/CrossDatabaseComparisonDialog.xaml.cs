@@ -24,9 +24,9 @@ public partial class CrossDatabaseComparisonDialog : Window
     private readonly ConnectionProfileService _profileService;
     private readonly MetadataHandler _metadataHandler;
     
-    private DB2ConnectionManager? _sourceConnection;
-    private DB2ConnectionManager? _targetConnection;
-    private List<DB2Connection> _profiles = new();
+    private IConnectionManager? _sourceConnection;
+    private IConnectionManager? _targetConnection;
+    private List<DatabaseConnection> _profiles = new();
 
     public CrossDatabaseComparisonDialog()
     {
@@ -116,7 +116,7 @@ public partial class CrossDatabaseComparisonDialog : Window
             Logger.Info("Connecting to {Profile} for {Side} comparison", profileName, isSource ? "source" : "target");
             
             // Create connection
-            var connectionManager = new DB2ConnectionManager(profile);
+            var connectionManager = ConnectionManagerFactory.CreateConnectionManager(profile);
             await connectionManager.OpenAsync();
             
             if (isSource)
@@ -131,7 +131,9 @@ public partial class CrossDatabaseComparisonDialog : Window
             }
             
             // Load schemas
-            var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
+            var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1"; // TODO: Get from connection
+            var sql = _metadataHandler.GetQuery(provider, version, "GetSchemasStatement");
             var result = await connectionManager.ExecuteQueryAsync(sql);
             
             var schemas = new List<string>();
@@ -220,9 +222,11 @@ public partial class CrossDatabaseComparisonDialog : Window
                 sourceProfile, sourceSchema, targetProfile, targetSchema);
 
             // Get tables from both databases
-            var sourceTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+            var provider = _sourceConnection?.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1"; // TODO: Get from connection
+            var sourceTablesQuery = _metadataHandler.GetQuery(provider, version, "GetTablesForSchema")
                 .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{sourceSchema}'");
-            var targetTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+            var targetTablesQuery = _metadataHandler.GetQuery(provider, version, "GetTablesForSchema")
                 .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{targetSchema}'");
 
             var sourceTables = await _sourceConnection.ExecuteQueryAsync(sourceTablesQuery);

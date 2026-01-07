@@ -19,10 +19,10 @@ namespace WindowsDb2Editor.Services.AI;
 public class DeepAnalysisService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly IMetadataProvider _metadataProvider;
     
-    public DeepAnalysisService(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
+    public DeepAnalysisService(IConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
         _metadataProvider = metadataProvider;

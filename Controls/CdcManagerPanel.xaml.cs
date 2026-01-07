@@ -18,7 +18,7 @@ public partial class CdcManagerPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DataCaptureService _cdcService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
     public CdcManagerPanel()
     {
@@ -35,7 +35,7 @@ public partial class CdcManagerPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         SchemaComboBox.Items.Add("*");

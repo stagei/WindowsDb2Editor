@@ -45,7 +45,7 @@ public class SourceCodeService
     /// Get all procedures in a schema
     /// </summary>
     public async Task<List<SourceCodeObject>> GetProceduresAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema)
     {
         Logger.Info("Getting procedures for schema: {Schema}", schema);
@@ -72,7 +72,7 @@ public class SourceCodeService
     /// Get all functions in a schema
     /// </summary>
     public async Task<List<SourceCodeObject>> GetFunctionsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema)
     {
         Logger.Info("Getting functions for schema: {Schema}", schema);
@@ -99,7 +99,7 @@ public class SourceCodeService
     /// Get all views in a schema
     /// </summary>
     public async Task<List<SourceCodeObject>> GetViewsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema)
     {
         Logger.Info("Getting views for schema: {Schema}", schema);
@@ -126,7 +126,7 @@ public class SourceCodeService
     /// Get all triggers for a table
     /// </summary>
     public async Task<List<SourceCodeObject>> GetTriggersAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

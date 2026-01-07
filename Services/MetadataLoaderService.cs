@@ -70,7 +70,7 @@ public class MetadataLoaderService
     /// <summary>
     /// Get all schemas
     /// </summary>
-    public async Task<List<string>> GetAllSchemasAsync(DB2ConnectionManager connectionManager)
+    public async Task<List<string>> GetAllSchemasAsync(IConnectionManager connectionManager)
     {
         Logger.Debug("Getting all schemas");
         
@@ -105,17 +105,19 @@ public class MetadataLoaderService
     /// Get all tables for a schema
     /// </summary>
     public async Task<List<TableMetadata>> GetTablesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema)
     {
         Logger.Info("Getting tables for schema: {Schema}", schema);
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema");
+            var provider = GetProviderFromConnection(connectionManager);
+            var version = GetVersionFromConnection(connectionManager);
+            var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetTablesForSchema");
             var sql = sqlTemplate.Replace("?", $"'{schema}'");
             
-            Logger.Debug("Using query: SERVICE_GetTablesForSchema");
+            Logger.Debug("Using query: SERVICE_GetTablesForSchema (Provider: {Provider}, Version: {Version})", provider, version);
             var result = await connectionManager.ExecuteQueryAsync(sql);
             var tables = new List<TableMetadata>();
             
@@ -144,7 +146,7 @@ public class MetadataLoaderService
     /// Get table metadata with columns and indexes
     /// </summary>
     public async Task<TableMetadata?> GetTableDetailsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -160,7 +162,9 @@ public class MetadataLoaderService
             };
             
             // Get columns
-            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetColumnMetadataForTable");
+            var provider = GetProviderFromConnection(connectionManager);
+            var version = GetVersionFromConnection(connectionManager);
+            var columnsSqlTemplate = _metadataHandler.GetQuery(provider, version, "GetColumnMetadataForTable");
             var columnsSql = columnsSqlTemplate.Replace("?", $"'{schema}'").Replace("?", $"'{tableName}'");
             
             Logger.Debug("Using query: SERVICE_GetColumnMetadataForTable");
@@ -188,6 +192,40 @@ public class MetadataLoaderService
             Logger.Error(ex, "Failed to get table details for {Schema}.{Table}", schema, tableName);
             return null;
         }
+    }
+    
+    /// <summary>
+    /// Get provider type from connection (defaults to "DB2" for backward compatibility)
+    /// </summary>
+    private string GetProviderFromConnection(IConnectionManager connectionManager)
+    {
+        var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+        return provider switch
+        {
+            "POSTGRESQL" or "POSTGRES" => "POSTGRESQL",
+            "SQLSERVER" or "MSSQL" => "SQLSERVER",
+            "ORACLE" => "ORACLE",
+            "MYSQL" => "MYSQL",
+            _ => "DB2" // Default to DB2
+        };
+    }
+    
+    /// <summary>
+    /// Get version from connection (defaults to "12.1" for DB2, can be enhanced with version detection)
+    /// </summary>
+    private string GetVersionFromConnection(IConnectionManager connectionManager)
+    {
+        // TODO: Implement version detection from connection
+        // For now, default to 12.1 for DB2, or provider-specific defaults
+        var provider = GetProviderFromConnection(connectionManager);
+        return provider switch
+        {
+            "POSTGRESQL" => "15",
+            "SQLSERVER" => "2022",
+            "ORACLE" => "21",
+            "MYSQL" => "8.0",
+            _ => "12.1" // DB2 default
+        };
     }
 }
 

@@ -15,10 +15,10 @@ namespace WindowsDb2Editor.Services;
 public class DdlGeneratorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler? _metadataHandler;
 
-    public DdlGeneratorService(DB2ConnectionManager connectionManager, MetadataHandler? metadataHandler = null)
+    public DdlGeneratorService(IConnectionManager connectionManager, MetadataHandler? metadataHandler = null)
     {
         _connectionManager = connectionManager;
         _metadataHandler = metadataHandler ?? App.MetadataHandler;
@@ -66,7 +66,8 @@ public class DdlGeneratorService
             WHERE TABSCHEMA = ? AND TABNAME = ?
             ORDER BY COLNO";
         
-        using var colCommand = _connectionManager.CreateCommand(columnsSql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var colCommand = db2Conn.CreateCommand(columnsSql);
         colCommand.Parameters.Add(new DB2Parameter("@schema", schema));
         colCommand.Parameters.Add(new DB2Parameter("@table", tableName));
         
@@ -112,7 +113,8 @@ public class DdlGeneratorService
             FROM SYSCAT.TABCONST
             WHERE TABSCHEMA = ? AND TABNAME = ? AND TYPE = 'P'";
         
-        using var pkCommand = _connectionManager.CreateCommand(pkSql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var pkCommand = db2Conn2.CreateCommand(pkSql);
         pkCommand.Parameters.Add(new DB2Parameter("@schema", schema));
         pkCommand.Parameters.Add(new DB2Parameter("@table", tableName));
         
@@ -154,7 +156,8 @@ public class DdlGeneratorService
             FROM SYSCAT.VIEWS
             WHERE VIEWSCHEMA = ? AND VIEWNAME = ?";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@view", viewName));
         
@@ -189,7 +192,8 @@ public class DdlGeneratorService
             FROM SYSCAT.INDEXES
             WHERE INDSCHEMA = ? AND INDNAME = ?";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@index", indexName));
         
@@ -238,7 +242,8 @@ public class DdlGeneratorService
             FROM SYSCAT.SEQUENCES
             WHERE SEQSCHEMA = ? AND SEQNAME = ?";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@seq", seqName));
         
@@ -288,7 +293,8 @@ public class DdlGeneratorService
             FROM SYSCAT.TABLES
             WHERE TABSCHEMA = ? AND TABNAME = ? AND TYPE = 'A'";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@synonym", synonymName));
         
@@ -327,7 +333,8 @@ public class DdlGeneratorService
             FROM SYSCAT.TRIGGERS
             WHERE TRIGSCHEMA = ? AND TRIGNAME = ?";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@trigger", triggerName));
         
@@ -360,7 +367,8 @@ public class DdlGeneratorService
             FROM SYSCAT.ROUTINES
             WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'P'";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@proc", procName));
         
@@ -393,7 +401,8 @@ public class DdlGeneratorService
             FROM SYSCAT.ROUTINES
             WHERE ROUTINESCHEMA = ? AND ROUTINENAME = ? AND ROUTINETYPE = 'F'";
         
-        using var command = _connectionManager.CreateCommand(sql);
+        if (_connectionManager is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("DdlGeneratorService requires DB2ConnectionManager");
+        using var command = db2Conn3.CreateCommand(sql);
         command.Parameters.Add(new DB2Parameter("@schema", schema));
         command.Parameters.Add(new DB2Parameter("@func", funcName));
         

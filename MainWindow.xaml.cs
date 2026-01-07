@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using NLog;
 using WindowsDb2Editor.Controls;
+using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Dialogs;
 using WindowsDb2Editor.Services;
 
@@ -147,7 +148,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddConnectionTab(Models.DB2Connection connection)
+    private void AddConnectionTab(Models.DatabaseConnection connection)
     {
         Logger.Debug($"Adding connection tab: {connection.GetDisplayName()}");
 
@@ -187,6 +188,7 @@ public partial class MainWindow : Window
     
     /// <summary>
     /// Create a new tab with SQL content (used for DDL generation)
+    /// Uses the currently active connection tab
     /// </summary>
     public void CreateNewTabWithSql(string sqlContent, string tabName)
     {
@@ -198,24 +200,7 @@ public partial class MainWindow : Window
             if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
                 selectedTab.Content is Controls.ConnectionTabControl activeTab)
             {
-                var connection = activeTab.Connection;
-                
-                // Create a new tab with the same connection
-                var newTabControl = new Controls.ConnectionTabControl(connection);
-                
-                var newTabItem = new TabItem
-                {
-                    Header = CreateTabHeader($"{tabName} - {connection.GetDisplayName()}"),
-                    Content = newTabControl
-                };
-
-                ConnectionTabs.Items.Add(newTabItem);
-                ConnectionTabs.SelectedItem = newTabItem;
-                
-                // Set the SQL content
-                newTabControl.SetSqlEditorText(sqlContent);
-                
-                Logger.Info("New tab created successfully with SQL content");
+                CreateNewTabWithSql(sqlContent, tabName, activeTab.Connection);
             }
             else
             {
@@ -233,9 +218,60 @@ public partial class MainWindow : Window
     }
     
     /// <summary>
+    /// Create a new tab with SQL content using a specific connection (database-agnostic interface)
+    /// </summary>
+    public void CreateNewTabWithSql(string sqlContent, string tabName, Models.IConnectionInfo connectionInfo)
+    {
+        // Cast to DatabaseConnection for now (ConnectionTabControl still requires concrete type)
+        // This will be updated when ConnectionTabControl is made database-agnostic
+        if (connectionInfo is not Models.DatabaseConnection connection)
+        {
+            Logger.Error("Connection info is not a DatabaseConnection");
+            MessageBox.Show("Unsupported connection type.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        
+        Logger.Info("Creating new tab with SQL content: {TabName} for connection {Connection}", tabName, connection.GetDisplayName());
+        
+        try
+        {
+            // Create a new tab with the specified connection
+            var newTabControl = new Controls.ConnectionTabControl(connection);
+            
+            var newTabItem = new TabItem
+            {
+                Header = CreateTabHeader($"{tabName} - {connection.GetDisplayName()}"),
+                Content = newTabControl
+            };
+
+            ConnectionTabs.Items.Add(newTabItem);
+            ConnectionTabs.SelectedItem = newTabItem;
+            
+            // Set the SQL content
+            newTabControl.SetSqlEditorText(sqlContent);
+            
+            Logger.Info("New tab created successfully with SQL content");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create new tab with SQL");
+            MessageBox.Show($"Failed to create new tab: {ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create a new tab with SQL content using a specific connection (backward compatibility)
+    /// </summary>
+    public void CreateNewTabWithSql(string sqlContent, string tabName, Models.DatabaseConnection connection)
+    {
+        CreateNewTabWithSql(sqlContent, tabName, (Models.IConnectionInfo)connection);
+    }
+    
+    /// <summary>
     /// Create a new tab with table details content (same content as TableDetailsDialog)
     /// </summary>
-    public void CreateTabWithTableDetails(Data.DB2ConnectionManager connectionManager, string fullTableName, string displayName)
+    public void CreateTabWithTableDetails(IConnectionManager connectionManager, string fullTableName, string displayName)
     {
         Logger.Info("Creating tab with table details: {Table}", fullTableName);
         
@@ -280,7 +316,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Create a new tab with view details content
     /// </summary>
-    public void CreateTabWithViewDetails(Data.DB2ConnectionManager connectionManager, string schema, string viewName)
+    public void CreateTabWithViewDetails(IConnectionManager connectionManager, string schema, string viewName)
     {
         Logger.Info("Creating tab with view details: {Schema}.{View}", schema, viewName);
         
@@ -318,7 +354,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Create a new tab with routine (procedure/function) details content
     /// </summary>
-    public void CreateTabWithRoutineDetails(Data.DB2ConnectionManager connectionManager, string schema, string routineName, string routineType)
+    public void CreateTabWithRoutineDetails(IConnectionManager connectionManager, string schema, string routineName, string routineType)
     {
         Logger.Info("Creating tab with routine details: {Schema}.{Routine} ({Type})", schema, routineName, routineType);
         
@@ -358,7 +394,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Create a new tab with package details content
     /// </summary>
-    public void CreateTabWithPackageDetails(Data.DB2ConnectionManager connectionManager, Models.PackageInfo package)
+    public void CreateTabWithPackageDetails(IConnectionManager connectionManager, Models.PackageInfo package)
     {
         Logger.Info("Creating tab with package details: {Schema}.{Package}", package.PackageSchema, package.PackageName);
         
@@ -1141,7 +1177,7 @@ public partial class MainWindow : Window
     }
 
     // WelcomePanel Event Handlers
-    private void WelcomePanel_ConnectionRequested(object? sender, Models.DB2Connection connection)
+    private void WelcomePanel_ConnectionRequested(object? sender, Models.DatabaseConnection connection)
     {
         Logger.Info("Connection requested from welcome panel: {ConnectionName}", connection.Name);
         AddConnectionTab(connection);
@@ -1512,7 +1548,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void RecentConnection_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DatabaseConnection connection)
         {
             return;
         }
@@ -1537,7 +1573,7 @@ public partial class MainWindow : Window
     
     private void RecentConnectionEdit_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DatabaseConnection connection)
             return;
         
         Logger.Info("Editing recent connection: {Name}", connection.Name);
@@ -1567,12 +1603,12 @@ public partial class MainWindow : Window
     
     private void RecentConnectionCopy_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DatabaseConnection connection)
             return;
         
         Logger.Info("Duplicating recent connection: {Name}", connection.Name);
         
-        var copy = new Models.DB2Connection
+        var copy = new Models.DatabaseConnection
         {
             Name = $"{connection.Name} (Copy)",
             Server = connection.Server,
@@ -1604,7 +1640,7 @@ public partial class MainWindow : Window
     
     private async void RecentConnectionTest_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DatabaseConnection connection)
             return;
         
         Logger.Info("Testing recent connection: {Name}", connection.Name);
@@ -1644,7 +1680,7 @@ public partial class MainWindow : Window
     
     private void RecentConnectionDelete_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DB2Connection connection)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not Models.DatabaseConnection connection)
             return;
         
         Logger.Info("Deleting recent connection: {Name}", connection.Name);
@@ -1712,7 +1748,7 @@ public partial class MainWindow : Window
     /// Auto-connect to a profile and open a details dialog for any object type
     /// Used for automated testing and debugging
     /// </summary>
-    public async Task AutoConnectAndOpenAsync(Models.DB2Connection connection, string elementName, string? objectType = null, string? tabName = null)
+    public async Task AutoConnectAndOpenAsync(Models.DatabaseConnection connection, string elementName, string? objectType = null, string? tabName = null)
     {
         Logger.Info("Auto-connecting to {Profile} and opening {Type}: {Element}, Tab: {Tab}", connection.Name, objectType ?? "table", elementName, tabName ?? "default");
         

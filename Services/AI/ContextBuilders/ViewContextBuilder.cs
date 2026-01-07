@@ -13,10 +13,10 @@ namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 public class ViewContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly IMetadataProvider _metadataProvider;
     
-    public ViewContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider)
+    public ViewContextBuilder(IConnectionManager connectionManager, IMetadataProvider metadataProvider)
     {
         _connectionManager = connectionManager;
         _metadataProvider = metadataProvider;

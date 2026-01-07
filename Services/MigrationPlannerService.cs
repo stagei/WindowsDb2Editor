@@ -33,7 +33,7 @@ public class MigrationPlannerService
     /// Identify tables for migration based on usage
     /// </summary>
     public async Task<List<MigrationCandidate>> IdentifyMigrationCandidatesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         int activeThresholdYears = 3)
     {
@@ -93,7 +93,7 @@ public class MigrationPlannerService
     /// Generate migration script
     /// </summary>
     public async Task<string> GenerateMigrationScriptAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<MigrationCandidate> candidates)
     {
         Logger.Info("Generating migration script for {Count} tables", candidates.Count);

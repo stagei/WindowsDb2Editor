@@ -21,7 +21,7 @@ public class LockMonitorService
     /// Get current database locks
     /// </summary>
     public async Task<List<LockInfo>> GetCurrentLocksAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         LockMonitorFilter filter)
     {
         Logger.Info("Getting current locks - Schema: {Schema}, Table: {Table}",

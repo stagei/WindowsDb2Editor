@@ -8,10 +8,10 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class DeepAnalysisDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly List<string> _targetObjects;
 
-    public DeepAnalysisDialog(DB2ConnectionManager connectionManager, List<string> targetObjects)
+    public DeepAnalysisDialog(IConnectionManager connectionManager, List<string> targetObjects)
     {
         InitializeComponent();
         _connectionManager = connectionManager;

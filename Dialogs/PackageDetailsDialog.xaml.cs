@@ -16,7 +16,7 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class PackageDetailsDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly PackageInfo _package;
     private readonly List<PackageStatement> _statements = new();
 
@@ -29,7 +29,7 @@ public partial class PackageDetailsDialog : Window
     public System.Windows.Controls.TextBlock PackageInfoTextPublic => PackageInfoText;
     public System.Windows.Controls.TextBlock StatementCountTextPublic => StatementCountText;
 
-    public PackageDetailsDialog(DB2ConnectionManager connectionManager, PackageInfo package)
+    public PackageDetailsDialog(IConnectionManager connectionManager, PackageInfo package)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
@@ -120,7 +120,8 @@ public partial class PackageDetailsDialog : Window
                     WHERE TRIM(S.PKGSCHEMA) = ? AND TRIM(S.PKGNAME) = ?
                     ORDER BY S.STMTNO, S.SECTNO, S.SEQNO";
 
-            using var command = _connectionManager.CreateCommand(sql);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageDetailsDialog requires DB2ConnectionManager");
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@pkgschema", _package.PackageSchema));
             command.Parameters.Add(new DB2Parameter("@pkgname", _package.PackageName));
 
@@ -259,9 +260,10 @@ public partial class PackageDetailsDialog : Window
             ProceduresCalledCount.Text = "⏳ Analyzing dependencies...";
             FunctionsCalledCount.Text = "⏳ Analyzing dependencies...";
             
+            if (_connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("PackageDetailsDialog requires DB2ConnectionManager");
             var analyzer = new PackageDependencyAnalyzer();
             var dependencies = await analyzer.AnalyzeDependenciesAsync(
-                _connectionManager,
+                db2Conn2,
                 _package.PackageSchema,
                 _package.PackageName);
             

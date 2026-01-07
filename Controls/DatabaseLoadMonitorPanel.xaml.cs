@@ -19,7 +19,7 @@ public partial class DatabaseLoadMonitorPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DatabaseLoadMonitorService _loadMonitorService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private DispatcherTimer? _autoRefreshTimer;
     private bool _isAutoRefreshEnabled;
     
@@ -42,7 +42,7 @@ public partial class DatabaseLoadMonitorPanel : UserControl
     /// <summary>
     /// Initialize with connection manager
     /// </summary>
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         Logger.Info("Initializing Database Load Monitor");
         _connectionManager = connectionManager;

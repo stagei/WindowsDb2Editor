@@ -19,7 +19,7 @@ public partial class LockMonitorPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly LockMonitorService _lockMonitorService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private DispatcherTimer? _autoRefreshTimer;
     private bool _isAutoRefreshEnabled;
     
@@ -39,7 +39,7 @@ public partial class LockMonitorPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         Logger.Info("Initializing Lock Monitor");
         _connectionManager = connectionManager;

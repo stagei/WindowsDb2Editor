@@ -48,7 +48,8 @@ public class DatabaseComparisonService
             
             try
             {
-                var tableDef = await FetchTableDefinitionAsync(connection, schema, tableName);
+                if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("DatabaseComparisonService requires DB2ConnectionManager");
+                var tableDef = await FetchTableDefinitionAsync(db2Conn, schema, tableName);
                 result.TableDefinitions[alias] = tableDef;
                 Logger.Debug("Fetched table definition from {Alias}: {ColumnCount} columns",
                            alias, tableDef.Columns.Count);

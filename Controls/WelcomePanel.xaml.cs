@@ -18,7 +18,7 @@ public partial class WelcomePanel : UserControl
     private readonly ConnectionHistoryService _historyService;
     
     // Event to notify parent window of connection requests
-    public event EventHandler<DB2Connection>? ConnectionRequested;
+    public event EventHandler<DatabaseConnection>? ConnectionRequested;
     public event EventHandler? NewConnectionRequested;
     public event EventHandler? ManageConnectionsRequested;
     
@@ -55,7 +55,7 @@ public partial class WelcomePanel : UserControl
                     {
                         return new RecentConnectionViewModel
                         {
-                            Connection = connection,
+                            Connection = (DB2Connection)connection,
                             History = history,
                             ProfileName = history.ProfileName,
                             LastUsedDisplay = history.LastUsedDisplay,
@@ -160,7 +160,7 @@ public partial class WelcomePanel : UserControl
             var dialog = new ConnectionDialog();
             
             // Create a copy with modified name
-            var copy = new DB2Connection
+            var copy = new DatabaseConnection
             {
                 Name = $"{vm.Connection.Name} (Copy)",
                 Server = vm.Connection.Server,

@@ -15,14 +15,14 @@ public partial class SchemaTableSelectionDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler _metadataHandler;
     private readonly string _defaultSchema;
     private readonly Dictionary<string, List<string>> _schemaTableDict = new();
     
     public List<string> SelectedTables { get; private set; } = new();
     
-    public SchemaTableSelectionDialog(DB2ConnectionManager connectionManager, string defaultSchema)
+    public SchemaTableSelectionDialog(IConnectionManager connectionManager, string defaultSchema)
     {
         InitializeComponent();
         
@@ -59,7 +59,9 @@ public partial class SchemaTableSelectionDialog : Window
     
     private async Task LoadSchemasAndTablesAsync()
     {
-        var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetAllSelectableTables");
+        var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+        var version = "12.1"; // TODO: Get from connection
+        var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetAllSelectableTables");
         var sql = sqlTemplate.Replace("?", $"'{_defaultSchema}'");
         
         Logger.Debug("Using query: GUI_GetAllSelectableTables for schema: {Schema}", _defaultSchema);

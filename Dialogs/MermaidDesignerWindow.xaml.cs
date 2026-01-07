@@ -17,7 +17,7 @@ public partial class MermaidDesignerWindow : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MermaidDiagramGeneratorService _generatorService;
     private readonly SchemaDiffAnalyzerService _diffAnalyzer;
     private readonly DiffBasedDdlGeneratorService _ddlGenerator;
@@ -32,7 +32,7 @@ public partial class MermaidDesignerWindow : Window
     public List<string>? LastSelectedTables => _lastSelectedTables;
     public string TargetSchema => _targetSchema;
     
-    public MermaidDesignerWindow(DB2ConnectionManager connectionManager, string targetSchema)
+    public MermaidDesignerWindow(IConnectionManager connectionManager, string targetSchema)
     {
         InitializeComponent();
         

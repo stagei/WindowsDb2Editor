@@ -21,11 +21,11 @@ public class SqlMermaidIntegrationService
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     /// <summary>
-    /// Generates SQL DDL CREATE TABLE statements from DB2 table metadata.
+    /// Generates SQL DDL CREATE TABLE statements from database table metadata.
     /// This DDL can then be converted to Mermaid using ToMermaid() or translated to other dialects.
     /// </summary>
     public async Task<string> GenerateDdlFromDb2TablesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<string> selectedTables)
     {
         Logger.Info("Generating SQL DDL for {Count} tables", selectedTables.Count);
@@ -57,7 +57,7 @@ public class SqlMermaidIntegrationService
     /// Generates CREATE TABLE DDL for a single DB2 table.
     /// </summary>
     private async Task<string> GenerateTableDdlAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -120,8 +120,9 @@ public class SqlMermaidIntegrationService
             
             ddl.AppendLine(");");
             
-            // Get foreign keys
-            var fkDdl = await GenerateForeignKeyDdlAsync(connectionManager, schema, tableName);
+            // Get foreign keys (DB2-specific)
+            if (connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("SqlMermaidIntegrationService.GenerateForeignKeyDdlAsync requires DB2ConnectionManager");
+            var fkDdl = await GenerateForeignKeyDdlAsync(db2Conn, schema, tableName);
             if (!string.IsNullOrEmpty(fkDdl))
             {
                 ddl.AppendLine();
@@ -129,7 +130,9 @@ public class SqlMermaidIntegrationService
             }
             
             // Get indexes
-            var indexDdl = await GenerateIndexDdlAsync(connectionManager, schema, tableName);
+            // Get indexes (DB2-specific for now)
+            if (connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("SqlMermaidIntegrationService.GenerateIndexDdlAsync requires DB2ConnectionManager");
+            var indexDdl = await GenerateIndexDdlAsync(db2Conn2, schema, tableName);
             if (!string.IsNullOrEmpty(indexDdl))
             {
                 ddl.AppendLine();
@@ -360,7 +363,7 @@ public class SqlMermaidIntegrationService
     /// This is the primary method for generating Mermaid diagrams from live DB2 databases.
     /// </summary>
     public async Task<string> GenerateMermaidFromDb2TablesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<string> selectedTables)
     {
         Logger.Info("Complete workflow: DB2 → DDL → Mermaid for {Count} tables", selectedTables.Count);

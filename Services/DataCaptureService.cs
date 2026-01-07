@@ -21,7 +21,7 @@ public class DataCaptureService
     /// Get data capture information for tables
     /// </summary>
     public async Task<List<DataCaptureInfo>> GetDataCaptureInfoAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         CdcMonitorFilter filter)
     {
         Logger.Info("Getting data capture info - Schema: {Schema}", filter.SchemaFilter);
@@ -186,7 +186,7 @@ public class DataCaptureService
     /// Enable CDC for a table
     /// </summary>
     public async Task EnableCdcAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -212,7 +212,7 @@ public class DataCaptureService
     /// Disable CDC for a table
     /// </summary>
     public async Task DisableCdcAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

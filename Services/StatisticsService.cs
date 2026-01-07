@@ -28,7 +28,7 @@ public class StatisticsService
     /// Get table statistics information
     /// </summary>
     public async Task<List<TableStatistics>> GetTableStatisticsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         StatisticsFilter filter)
     {
         Logger.Info("Getting table statistics - Schema: {Schema}", filter.SchemaFilter);
@@ -178,7 +178,7 @@ public class StatisticsService
     /// Execute RUNSTATS for a table
     /// </summary>
     public async Task ExecuteRunstatsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName,
         bool withDistribution = true,

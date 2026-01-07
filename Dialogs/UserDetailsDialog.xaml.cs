@@ -12,7 +12,7 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class UserDetailsDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly SecurityPrincipal _principal;
     
     // Public accessors for GUI testing - allows GuiTestingService to extract form data
@@ -22,7 +22,7 @@ public partial class UserDetailsDialog : Window
     public System.Windows.Controls.TextBlock PrincipalNameTextPublic => PrincipalNameText;
     public System.Windows.Controls.TextBlock PrincipalTypeTextPublic => PrincipalTypeText;
 
-    public UserDetailsDialog(DB2ConnectionManager connectionManager, SecurityPrincipal principal)
+    public UserDetailsDialog(IConnectionManager connectionManager, SecurityPrincipal principal)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
@@ -146,7 +146,8 @@ public partial class UserDetailsDialog : Window
                 FROM SYSCAT.DBAUTH 
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
             command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
             
@@ -223,7 +224,8 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY TABSCHEMA, TABNAME";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
             command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
             
@@ -260,7 +262,8 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY SCHEMANAME";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
             command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
             
@@ -297,7 +300,8 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY SCHEMA, SPECIFICNAME";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
             command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
             
@@ -326,7 +330,8 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ?
                 ORDER BY ROLENAME";
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
             
             var dataTable = new DataTable();
@@ -367,7 +372,8 @@ public partial class UserDetailsDialog : Window
                     ORDER BY GRANTEE";
             }
             
-            using var command = _connectionManager.CreateCommand(sql);
+            var db2Conn = GetDb2Connection();
+            using var command = db2Conn.CreateCommand(sql);
             command.Parameters.Add(new DB2Parameter("@principal", _principal.Name));
             
             var dataTable = new DataTable();
@@ -386,6 +392,13 @@ public partial class UserDetailsDialog : Window
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+    
+    private DB2ConnectionManager GetDb2Connection()
+    {
+        if (_connectionManager is not DB2ConnectionManager db2Conn)
+            throw new InvalidOperationException("UserDetailsDialog requires DB2ConnectionManager");
+        return db2Conn;
     }
 }
 

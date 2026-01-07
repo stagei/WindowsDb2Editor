@@ -17,7 +17,7 @@ public partial class UnusedObjectsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly UnusedObjectDetectorService _unusedService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
     public UnusedObjectsPanel()
     {
@@ -34,7 +34,7 @@ public partial class UnusedObjectsPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         await RefreshDataAsync();

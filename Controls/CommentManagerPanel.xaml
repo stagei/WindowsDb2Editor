@@ -16,7 +16,8 @@
             <Button x:Name="RefreshButton" Content="🔄 Refresh" Click="RefreshButton_Click" Padding="10,5" Margin="20,0,0,0"/>
         </StackPanel>
         
-        <DataGrid Grid.Row="1" x:Name="CommentsDataGrid" AutoGenerateColumns="False" SelectionMode="Extended">
+        <DataGrid Grid.Row="1" x:Name="CommentsDataGrid" AutoGenerateColumns="False" SelectionMode="Extended"
+                  MouseRightButtonUp="CommentsDataGrid_MouseRightButtonUp">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Type" Binding="{Binding ObjectType}" Width="80" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="100" IsReadOnly="True"/>
@@ -24,6 +25,13 @@
                 <DataGridTextColumn Header="Column" Binding="{Binding ColumnName}" Width="120" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Comment" Binding="{Binding Comment}" Width="*"/>
             </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu x:Name="GridContextMenu">
+                    <MenuItem Header="📝 Add Column Comment" x:Name="AddColumnCommentMenuItem">
+                        <!-- Populated dynamically with column names -->
+                    </MenuItem>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
         </DataGrid>
         
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">

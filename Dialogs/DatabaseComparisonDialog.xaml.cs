@@ -12,11 +12,11 @@ namespace WindowsDb2Editor.Dialogs;
 public partial class DatabaseComparisonDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly DatabaseComparisonService _comparisonService;
     private readonly MetadataHandler _metadataHandler;
 
-    public DatabaseComparisonDialog(DB2ConnectionManager connectionManager)
+    public DatabaseComparisonDialog(IConnectionManager connectionManager)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
@@ -31,7 +31,9 @@ public partial class DatabaseComparisonDialog : Window
         try
         {
             Logger.Debug("Loading schemas for comparison dialog");
-            var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
+            var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1"; // TODO: Get from connection
+            var sql = _metadataHandler.GetQuery(provider, version, "GetSchemasStatement");
             var result = await _connectionManager.ExecuteQueryAsync(sql);
 
             var schemas = new List<string>();
@@ -72,9 +74,11 @@ public partial class DatabaseComparisonDialog : Window
             Logger.Info("Comparing schemas: {Source} vs {Target}", sourceSchema, targetSchema);
 
             // Step 1: Get all tables in both schemas using MetadataHandler
-            var sourceTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+            var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1"; // TODO: Get from connection
+            var sourceTablesQuery = _metadataHandler.GetQuery(provider, version, "GetTablesForSchema")
                 .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{sourceSchema}'");
-            var targetTablesQuery = _metadataHandler.GetQuery("DB2", "12.1", "GetTablesForSchema")
+            var targetTablesQuery = _metadataHandler.GetQuery(provider, version, "GetTablesForSchema")
                 .Replace("TRIM(TABSCHEMA) = ?", $"TRIM(TABSCHEMA) = '{targetSchema}'");
             
             var sourceTables = await _connectionManager.ExecuteQueryAsync(sourceTablesQuery);

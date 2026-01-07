@@ -21,7 +21,7 @@ public class PackageDependencyAnalyzer
     /// Analyze dependencies for a specific package.
     /// </summary>
     public async Task<PackageDependencies> AnalyzeDependenciesAsync(
-        DB2ConnectionManager connection,
+        IConnectionManager connection,
         string schema,
         string packageName)
     {
@@ -36,7 +36,8 @@ public class PackageDependencyAnalyzer
         try
         {
             // Fetch all SQL statements from SYSCAT.STATEMENTS
-            var statements = await FetchPackageStatementsAsync(connection, schema, packageName);
+            if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageDependencyAnalyzer requires DB2ConnectionManager");
+            var statements = await FetchPackageStatementsAsync(db2Conn, schema, packageName);
             Logger.Debug("Fetched {Count} statements for analysis", statements.Count);
             
             // Parse each statement to extract dependencies
@@ -52,8 +53,8 @@ public class PackageDependencyAnalyzer
                 }
             }
             
-            // Verify objects exist in database
-            await VerifyDependenciesAsync(connection, dependencies);
+            // Verify objects exist in database (DB2-specific)
+            await VerifyDependenciesAsync(db2Conn, dependencies);
             
             Logger.Info("Package {Schema}.{Package} has {TableCount} tables, {ViewCount} views, " +
                        "{ProcCount} procedures, {FuncCount} functions used",

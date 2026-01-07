@@ -21,7 +21,7 @@ public class SessionMonitorService
     /// Get active database sessions
     /// </summary>
     public async Task<List<SessionInfo>> GetActiveSessionsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         SessionMonitorFilter filter)
     {
         Logger.Info("Getting active sessions - User: {User}, Application: {App}",

@@ -12,7 +12,7 @@ public partial class ConnectionDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly ConnectionStorageService _storageService;
-    public DB2Connection? Connection { get; private set; }
+    public DatabaseConnection? Connection { get; private set; }
 
     public ConnectionDialog()
     {
@@ -102,7 +102,7 @@ public partial class ConnectionDialog : Window
     /// <summary>
     /// Constructor for editing existing connection
     /// </summary>
-    public ConnectionDialog(DB2Connection connection) : this()
+    public ConnectionDialog(DatabaseConnection connection) : this()
     {
         LoadConnection(connection);
     }
@@ -110,7 +110,7 @@ public partial class ConnectionDialog : Window
     /// <summary>
     /// Load an existing connection into the dialog fields
     /// </summary>
-    public void LoadConnection(DB2Connection connection)
+    public void LoadConnection(DatabaseConnection connection)
     {
         Logger.Debug("Loading connection into dialog: {Name}", connection.Name);
         
@@ -122,6 +122,18 @@ public partial class ConnectionDialog : Window
         PasswordBox.Password = connection.Password;
         ReadOnlyCheckBox.IsChecked = connection.IsReadOnly;
         AutoCommitCheckBox.IsChecked = connection.AutoCommit;
+        
+        // Set provider selection if available
+        if (App.MetadataHandler != null && !string.IsNullOrEmpty(connection.ProviderType))
+        {
+            var providers = App.MetadataHandler.GetSupportedProviders();
+            var matchingProvider = providers.FirstOrDefault(p => 
+                p.ProviderCode.Equals(connection.ProviderType, StringComparison.OrdinalIgnoreCase));
+            if (matchingProvider != null)
+            {
+                ProviderComboBox.SelectedItem = matchingProvider;
+            }
+        }
     }
 
     private async void TestConnection_Click(object sender, RoutedEventArgs e)
@@ -139,7 +151,8 @@ public partial class ConnectionDialog : Window
 
         try
         {
-            using var manager = new DB2ConnectionManager(connection);
+            // Create connection manager based on provider type
+            using var manager = ConnectionManagerFactory.CreateConnectionManager(connection);
             var success = await manager.TestConnectionAsync();
 
             if (success)
@@ -201,14 +214,19 @@ public partial class ConnectionDialog : Window
         Close();
     }
 
-    private DB2Connection? GetConnectionFromInputs()
+    private DatabaseConnection? GetConnectionFromInputs()
     {
         if (!int.TryParse(PortTextBox.Text, out var port))
         {
-            port = 50000;
+            // Get default port for selected provider
+            var selectedProvider = ProviderComboBox.SelectedItem as Models.Provider;
+            port = selectedProvider?.DefaultPort ?? DatabaseConnection.GetDefaultPort("db2");
         }
 
-        return new DB2Connection
+        // Get provider type from selected provider
+        var providerType = (ProviderComboBox.SelectedItem as Models.Provider)?.ProviderCode?.ToLowerInvariant() ?? "db2";
+
+        return new DatabaseConnection
         {
             Name = NameTextBox.Text.Trim(),
             Server = ServerTextBox.Text.Trim(),
@@ -218,7 +236,8 @@ public partial class ConnectionDialog : Window
             Password = PasswordBox.Password,
             SavePassword = !string.IsNullOrEmpty(PasswordBox.Password),
             IsReadOnly = ReadOnlyCheckBox.IsChecked ?? false,  // Feature #2
-            AutoCommit = AutoCommitCheckBox.IsChecked ?? true  // Feature #2
+            AutoCommit = AutoCommitCheckBox.IsChecked ?? true,  // Feature #2
+            ProviderType = providerType
         };
     }
     

@@ -22,7 +22,7 @@ public partial class ConnectionTabControl : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DB2ConnectionManager _connectionManager;
-    private readonly DB2Connection _connection;
+    private readonly DatabaseConnection _connection;
     private readonly SqlFormatterService _formatterService;
     private readonly QueryHistoryService _queryHistoryService;
     private readonly ExportService _exportService;
@@ -49,11 +49,11 @@ public partial class ConnectionTabControl : UserControl
     public DB2ConnectionManager ConnectionManager => _connectionManager;
     
     /// <summary>
-    /// Public property to access the connection information
+    /// Public property to access the connection information (database-agnostic)
     /// </summary>
-    public DB2Connection Connection => _connection;
+    public DatabaseConnection Connection => _connection;
 
-    public ConnectionTabControl(DB2Connection connection)
+    public ConnectionTabControl(DatabaseConnection connection)
     {
         InitializeComponent();
         Logger.Debug($"ConnectionTabControl initializing for {connection.GetDisplayName()}");
@@ -65,7 +65,10 @@ public partial class ConnectionTabControl : UserControl
         _exportService = new ExportService();
         _preferencesService = new PreferencesService();
         _safetyValidator = new SqlSafetyValidatorService();
-        _intellisenseService = new IntellisenseService("DB2", "12.1");
+        // Get provider from connection (default to DB2 for backward compatibility)
+        var provider = connection.ProviderType?.ToUpperInvariant() ?? "DB2";
+        var version = "12.1"; // TODO: Detect version from connection
+        _intellisenseService = new IntellisenseService(provider, version);
 
         InitializeSqlEditor();
         RegisterKeyboardShortcuts();
@@ -736,13 +739,19 @@ public partial class ConnectionTabControl : UserControl
             Logger.Debug("Initializing new IntelliSense system");
             
             _newIntelliSenseManager = new IntelliSenseManager();
-            _newIntelliSenseManager.RegisterProvider("DB2", new Db2IntelliSenseProvider());
             
-            // Detect DB2 version (default to 12.1 for now)
-            var dbVersion = "12.1";
+            // Get provider from connection (default to DB2 for backward compatibility)
+            var provider = _connection.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var dbVersion = "12.1"; // TODO: Detect version from connection
+            
+            // Register provider-specific IntelliSense (for now only DB2 is implemented)
+            if (provider == "DB2")
+            {
+                _newIntelliSenseManager.RegisterProvider("DB2", new Db2IntelliSenseProvider());
+            }
             
             // Initialize provider with metadata
-            await _newIntelliSenseManager.SetActiveProviderAsync("DB2", dbVersion, _connectionManager);
+            await _newIntelliSenseManager.SetActiveProviderAsync(provider, dbVersion, _connectionManager);
             
             Logger.Info("IntelliSense system initialized successfully");
         }
@@ -1028,8 +1037,16 @@ public partial class ConnectionTabControl : UserControl
                 try
                 {
                     Logger.Info("Starting background metadata collection");
-                    var metadataService = new DB2MetadataService();
-                    await metadataService.CollectMetadataAsync(_connectionManager, _connection.Name ?? _connection.GetDisplayName());
+                    // DB2MetadataService is DB2-specific, so cast if needed
+                    if (_connectionManager is DB2ConnectionManager db2Conn)
+                    {
+                        var metadataService = new DB2MetadataService();
+                        await metadataService.CollectMetadataAsync(db2Conn, _connection.Name ?? _connection.GetDisplayName());
+                    }
+                    else
+                    {
+                        Logger.Warn("Metadata collection currently only supports DB2 connections");
+                    }
                     Logger.Info("Background metadata collection completed");
                 }
                 catch (Exception ex)
@@ -2893,7 +2910,8 @@ public partial class ConnectionTabControl : UserControl
                     sb.AppendLine($"-- Owner: {package.Owner}");
                     sb.AppendLine();
                     
-                    using var cmd = _connectionManager.CreateCommand(stmtSql);
+                    if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ConnectionTabControl requires DB2ConnectionManager");
+                    using var cmd = db2Conn.CreateCommand(stmtSql);
                     using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {

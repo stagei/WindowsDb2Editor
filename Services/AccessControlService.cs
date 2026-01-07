@@ -26,7 +26,7 @@ public class AccessControlService
     /// Determine user's access level by querying SYSCAT.DBAUTH
     /// </summary>
     public async Task<UserPermissions> DetermineAccessLevelAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string fullUsername)
     {
         Logger.Info("Determining access level for user: {User}", fullUsername);
@@ -43,7 +43,9 @@ public class AccessControlService
             {
                 try
                 {
-                    var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetUserAccessLevel");
+                    var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+                    var version = "12.1"; // TODO: Get from connection
+                    var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetUserAccessLevel");
                     sql = sqlTemplate.Replace("?", $"'{username}'"); // Replace parameter placeholder
                     Logger.Debug("Using SQL from MetadataHandler: GetUserAccessLevel (parameter replaced)");
                 }

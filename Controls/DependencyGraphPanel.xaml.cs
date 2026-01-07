@@ -18,7 +18,7 @@ public partial class DependencyGraphPanel : UserControl
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly DependencyAnalyzerService _depService;
     private readonly MetadataLoaderService _metadataService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private List<DependencyNode> _dependencies = new();
     
     public DependencyGraphPanel()
@@ -38,7 +38,7 @@ public partial class DependencyGraphPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         try

@@ -40,7 +40,7 @@ public class IntelliSenseManager
     /// <summary>
     /// Sets the active provider based on connection info.
     /// </summary>
-    public async Task SetActiveProviderAsync(string providerName, string version, DB2ConnectionManager? connection)
+    public async Task SetActiveProviderAsync(string providerName, string version, IConnectionManager? connection)
     {
         Logger.Debug("Setting active provider: {Provider} {Version}", providerName, version);
         
@@ -84,7 +84,7 @@ public class IntelliSenseManager
     /// <summary>
     /// Gets completions for the current text and caret position.
     /// </summary>
-    public List<ICompletionData> GetCompletions(string text, int caretPosition, DB2ConnectionManager? connection)
+    public List<ICompletionData> GetCompletions(string text, int caretPosition, IConnectionManager? connection)
     {
         if (_activeProvider == null)
         {
@@ -98,7 +98,7 @@ public class IntelliSenseManager
         {
             Text = text,
             CaretPosition = caretPosition,
-            Connection = connection
+            Connection = connection as DB2ConnectionManager // IntelliSense currently only supports DB2
         };
         
         try
@@ -144,7 +144,7 @@ public class CompletionContext
 public interface IIntelliSenseProvider
 {
     Task LoadMetadataAsync(string keywordsFile, string statementsFile, string metadataFile);
-    Task LoadLiveSchemaMetadataAsync(DB2ConnectionManager connection);
+    Task LoadLiveSchemaMetadataAsync(IConnectionManager connection);
     List<ICompletionData> GetCompletions(CompletionContext context);
     Task<FunctionSignature?> GetSignatureHintAsync(string functionName);
 }

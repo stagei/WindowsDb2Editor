@@ -44,7 +44,7 @@ public class UnusedObjectDetectorService
     /// Find unused tables
     /// </summary>
     public async Task<List<UnusedObjectInfo>> FindUnusedTablesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         int unusedThresholdDays = 365)
     {
         Logger.Info("Finding unused tables - Threshold: {Days} days", unusedThresholdDays);
@@ -81,7 +81,7 @@ public class UnusedObjectDetectorService
     /// Find unused packages
     /// </summary>
     public async Task<List<UnusedObjectInfo>> FindUnusedPackagesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         int unusedThresholdDays = 365)
     {
         Logger.Info("Finding unused packages - Threshold: {Days} days", unusedThresholdDays);

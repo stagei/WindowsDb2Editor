@@ -83,7 +83,7 @@ public class CliExecutorService
                 
                 // Create connection manager for command execution
                 Console.WriteLine($"Connecting to {profile.Name} @ {profile.Server}:{profile.Port}");
-                using var connectionManager = new DB2ConnectionManager(profile);
+                using var connectionManager = ConnectionManagerFactory.CreateConnectionManager(profile);
                 
                 // Open connection
                 await connectionManager.OpenAsync();
@@ -121,13 +121,13 @@ public class CliExecutorService
     /// <summary>
     /// Execute query and export results
     /// </summary>
-    private async Task<int> ExecuteQueryAndExportAsync(DB2Connection profile, string sql, string outFile, string format)
+    private async Task<int> ExecuteQueryAndExportAsync(DatabaseConnection profile, string sql, string outFile, string format)
     {
         try
         {
             // Connect to database
             Console.WriteLine($"Connecting to {profile.Database} @ {profile.Server}:{profile.Port}");
-            using var connectionManager = new DB2ConnectionManager(profile);
+            using var connectionManager = ConnectionManagerFactory.CreateConnectionManager(profile);
             await connectionManager.OpenAsync();
             
             Console.WriteLine("Connected successfully");
@@ -158,20 +158,25 @@ public class CliExecutorService
     /// <summary>
     /// Collect metadata for profile
     /// </summary>
-    private async Task<int> CollectMetadataAsync(DB2Connection profile)
+    private async Task<int> CollectMetadataAsync(DatabaseConnection profile)
     {
         try
         {
             Console.WriteLine($"Connecting to {profile.Database} @ {profile.Server}:{profile.Port}");
-            using var connectionManager = new DB2ConnectionManager(profile);
+            using var connectionManager = ConnectionManagerFactory.CreateConnectionManager(profile);
             await connectionManager.OpenAsync();
             
             Console.WriteLine("Connected successfully");
             Console.WriteLine("Collecting metadata...");
             
-            // Feature #5: Metadata collection
+            // Feature #5: Metadata collection (DB2-specific for now)
+            if (connectionManager is not DB2ConnectionManager db2Manager)
+            {
+                Console.Error.WriteLine("ERROR: Metadata collection currently only supports DB2");
+                return 1;
+            }
             var metadataService = new DB2MetadataService();
-            await metadataService.CollectMetadataAsync(connectionManager, profile.Name);
+            await metadataService.CollectMetadataAsync(db2Manager, profile.Name);
             
             Console.WriteLine("Metadata collection completed successfully");
             Logger.Info("Metadata collected for profile: {Profile}", profile.Name);

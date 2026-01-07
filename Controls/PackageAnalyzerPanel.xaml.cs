@@ -18,7 +18,7 @@ public partial class PackageAnalyzerPanel : UserControl
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly PackageAnalyzerService _packageService;
     private readonly MetadataLoaderService _metadataService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private List<PackageAnalysisInfo> _packages = new();
     
     public PackageAnalyzerPanel()
@@ -28,7 +28,7 @@ public partial class PackageAnalyzerPanel : UserControl
         _metadataService = new MetadataLoaderService();
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         try

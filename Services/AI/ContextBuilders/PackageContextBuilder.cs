@@ -14,11 +14,11 @@ namespace WindowsDb2Editor.Services.AI.ContextBuilders;
 public class PackageContextBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly IMetadataProvider _metadataProvider;
     private readonly PackageDependencyAnalyzer _dependencyAnalyzer;
     
-    public PackageContextBuilder(DB2ConnectionManager connectionManager, IMetadataProvider metadataProvider, PackageDependencyAnalyzer dependencyAnalyzer)
+    public PackageContextBuilder(IConnectionManager connectionManager, IMetadataProvider metadataProvider, PackageDependencyAnalyzer dependencyAnalyzer)
     {
         _connectionManager = connectionManager;
         _metadataProvider = metadataProvider;
@@ -159,8 +159,9 @@ ORDER BY STMTNO";
         
         try
         {
-            // Use the public API to analyze package dependencies
-            var deps = await _dependencyAnalyzer.AnalyzeDependenciesAsync(_connectionManager, schema, packageName);
+            // Use the public API to analyze package dependencies (DB2-specific)
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageContextBuilder requires DB2ConnectionManager");
+            var deps = await _dependencyAnalyzer.AnalyzeDependenciesAsync(db2Conn, schema, packageName);
             
             foreach (var table in deps.TablesUsed)
             {

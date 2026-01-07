@@ -18,7 +18,7 @@ public partial class MigrationAssistantPanel : UserControl
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly MigrationPlannerService _migrationService;
     private readonly MetadataLoaderService _metadataService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     
     public MigrationAssistantPanel()
     {
@@ -36,7 +36,7 @@ public partial class MigrationAssistantPanel : UserControl
         }
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         try

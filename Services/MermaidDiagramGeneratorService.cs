@@ -27,10 +27,10 @@ public class MermaidDiagramGeneratorService
     
     /// <summary>
     /// REFACTORED: Now uses SqlMermaidErdTools for superior Mermaid generation.
-    /// Process: DB2 metadata → SQL DDL → SqlMermaidErdTools.ToMermaid() → Mermaid ERD
+    /// Process: Database metadata → SQL DDL → SqlMermaidErdTools.ToMermaid() → Mermaid ERD
     /// </summary>
     public async Task<string> GenerateMermaidDiagramAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<string> selectedTables)
     {
         Logger.Info("Generating Mermaid diagram for {Count} tables using SqlMermaidErdTools", selectedTables.Count);
@@ -49,8 +49,10 @@ public class MermaidDiagramGeneratorService
         {
             Logger.Error(ex, "Failed to generate Mermaid via SqlMermaidErdTools, falling back to legacy method");
             
-            // Fallback to legacy method if SqlMermaidErdTools fails
-            return await GenerateMermaidDiagramLegacyAsync(connectionManager, selectedTables);
+            // Fallback to legacy method if SqlMermaidErdTools fails (DB2-specific)
+            if (connectionManager is not DB2ConnectionManager db2Conn)
+                throw new InvalidOperationException("MermaidDiagramGeneratorService requires DB2ConnectionManager");
+            return await GenerateMermaidDiagramLegacyAsync(db2Conn, selectedTables);
         }
     }
     

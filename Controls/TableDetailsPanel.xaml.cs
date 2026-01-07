@@ -14,14 +14,14 @@ namespace WindowsDb2Editor.Controls;
 public partial class TableDetailsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly TableRelationshipService _relationshipService;
     private readonly MetadataHandler _metadataHandler;
     private readonly string _fullTableName;
     private readonly string _schema;
     private readonly string _tableName;
 
-    public TableDetailsPanel(DB2ConnectionManager connectionManager, string fullTableName)
+    public TableDetailsPanel(IConnectionManager connectionManager, string fullTableName)
     {
         InitializeComponent();
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
@@ -132,7 +132,9 @@ public partial class TableDetailsPanel : UserControl
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableColumns_Display");
+            var provider = GetProviderFromConnection();
+            var version = GetVersionFromConnection();
+            var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetTableColumns_Display");
             var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
@@ -184,7 +186,9 @@ public partial class TableDetailsPanel : UserControl
         
         try
         {
-            var sqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableIndexes_Aggregated");
+            var provider = GetProviderFromConnection();
+            var version = GetVersionFromConnection();
+            var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetTableIndexes_Aggregated");
             var sql = ReplacePlaceholders(sqlTemplate, _schema, _tableName);
             
             var dataTable = await _connectionManager.ExecuteQueryAsync(sql);
@@ -258,7 +262,9 @@ public partial class TableDetailsPanel : UserControl
         try
         {
             // Get columns for DDL
-            var columnsSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableDdlColumns");
+            var provider = GetProviderFromConnection();
+            var version = GetVersionFromConnection();
+            var columnsSqlTemplate = _metadataHandler.GetQuery(provider, version, "GetTableDdlColumns");
             var columnsSql = ReplacePlaceholders(columnsSqlTemplate, _schema, _tableName);
             
             var columnsTable = await _connectionManager.ExecuteQueryAsync(columnsSql);
@@ -381,7 +387,8 @@ public partial class TableDetailsPanel : UserControl
     {
         try
         {
-            var packages = await _relationshipService.GetReferencingPackagesAsync(_connectionManager, _schema, _tableName);
+            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("TableDetailsPanel requires DB2ConnectionManager");
+            var packages = await _relationshipService.GetReferencingPackagesAsync(db2Conn, _schema, _tableName);
             Dispatcher.Invoke(() => PackagesGrid.ItemsSource = packages);
             Logger.Info("Loaded {Count} referencing packages", packages.Count);
         }
@@ -395,7 +402,8 @@ public partial class TableDetailsPanel : UserControl
     {
         try
         {
-            var views = await _relationshipService.GetReferencingViewsAsync(_connectionManager, _schema, _tableName);
+            if (_connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("TableDetailsPanel requires DB2ConnectionManager");
+            var views = await _relationshipService.GetReferencingViewsAsync(db2Conn2, _schema, _tableName);
             Dispatcher.Invoke(() => ViewsGrid.ItemsSource = views);
             Logger.Info("Loaded {Count} referencing views", views.Count);
         }
@@ -434,5 +442,39 @@ public partial class TableDetailsPanel : UserControl
             }
         }
         return result;
+    }
+    
+    /// <summary>
+    /// Get provider type from connection (defaults to "DB2" for backward compatibility)
+    /// </summary>
+    private string GetProviderFromConnection()
+    {
+        var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+        return provider switch
+        {
+            "POSTGRESQL" or "POSTGRES" => "POSTGRESQL",
+            "SQLSERVER" or "MSSQL" => "SQLSERVER",
+            "ORACLE" => "ORACLE",
+            "MYSQL" => "MYSQL",
+            _ => "DB2" // Default to DB2
+        };
+    }
+    
+    /// <summary>
+    /// Get version from connection (defaults to "12.1" for DB2, can be enhanced with version detection)
+    /// </summary>
+    private string GetVersionFromConnection()
+    {
+        // TODO: Implement version detection from connection
+        // For now, default to 12.1 for DB2, or provider-specific defaults
+        var provider = GetProviderFromConnection();
+        return provider switch
+        {
+            "POSTGRESQL" => "15",
+            "SQLSERVER" => "2022",
+            "ORACLE" => "21",
+            "MYSQL" => "8.0",
+            _ => "12.1" // DB2 default
+        };
     }
 }

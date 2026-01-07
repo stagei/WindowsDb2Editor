@@ -13,12 +13,12 @@ namespace WindowsDb2Editor.Controls;
 public partial class ViewDetailsPanel : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly MetadataHandler? _metadataHandler;
     private readonly string _schema;
     private readonly string _viewName;
 
-    public ViewDetailsPanel(DB2ConnectionManager connectionManager, string schema, string viewName)
+    public ViewDetailsPanel(IConnectionManager connectionManager, string schema, string viewName)
     {
         InitializeComponent();
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));

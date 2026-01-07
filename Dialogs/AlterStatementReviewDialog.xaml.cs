@@ -17,7 +17,7 @@ public partial class AlterStatementReviewDialog : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     private readonly List<AlterStatementItem> _statements = new();
-    private readonly DB2ConnectionManager? _connectionManager;
+    private readonly IConnectionManager? _connectionManager;
     private readonly bool _allowExecution;
     
     public bool StatementsExecuted { get; private set; }
@@ -39,7 +39,7 @@ public partial class AlterStatementReviewDialog : Window
     /// <summary>
     /// Constructor for review and execute mode
     /// </summary>
-    public AlterStatementReviewDialog(List<string> alterStatements, DB2ConnectionManager connectionManager)
+    public AlterStatementReviewDialog(List<string> alterStatements, IConnectionManager connectionManager)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
