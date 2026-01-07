@@ -65,7 +65,6 @@ public class SessionMonitorService
         sql.AppendLine("    CLIENT_NNAME,");
         sql.AppendLine("    APPL_NAME,");
         sql.AppendLine("    APPL_ID,");
-        sql.AppendLine("    AGENT_STATE_LAST_UPDATE_TIME,");
         sql.AppendLine("    APPL_STATUS");
         sql.AppendLine("FROM SYSIBMADM.SNAPAPPL_INFO");
         sql.AppendLine("WHERE 1=1");
@@ -106,9 +105,9 @@ public class SessionMonitorService
                     ClientName = row["CLIENT_NNAME"]?.ToString() ?? string.Empty,
                     ApplicationName = row["APPL_NAME"]?.ToString() ?? string.Empty,
                     ApplicationId = row["APPL_ID"]?.ToString() ?? string.Empty,
-                    ConnectTime = row["AGENT_STATE_LAST_UPDATE_TIME"] == DBNull.Value 
-                        ? null 
-                        : Convert.ToDateTime(row["AGENT_STATE_LAST_UPDATE_TIME"]),
+                    // Note: AGENT_STATE_LAST_UPDATE_TIME is not available in SYSIBMADM.SNAPAPPL_INFO for all DB2 versions
+                    // ConnectTime will be null, and DurationText will show "N/A"
+                    ConnectTime = null,
                     Status = row["APPL_STATUS"]?.ToString() ?? string.Empty
                 };
                 

@@ -107,8 +107,7 @@
                             <Style TargetType="TreeViewItem">
                                 <Setter Property="IsExpanded" Value="False"/>
                                 <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                                <Setter Property="FontSize" Value="11"/>
-                                <Setter Property="Padding" Value="4,2"/>
+                                <Setter Property="Padding" Value="2,1"/>
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Foreground" Value="{DynamicResource SystemControlHighlightAltBaseHighBrush}"/>

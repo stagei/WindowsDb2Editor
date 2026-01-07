@@ -1,8 +1,0 @@
-{
-  "sourceSchema": "ASK",
-  "targetSchema": "INL",
-  "ddlGenerated": false,
-  "note": "Schema diff DDL generation requires detailed object comparison and ALTER statement generation",
-  "recommendation": "Use GUI Schema Diff Analyzer or db2look utility with compare options",
-  "retrievedAt": "2025-12-13T11:29:45.7499041+01:00"
-}

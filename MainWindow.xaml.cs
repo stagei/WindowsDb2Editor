@@ -67,6 +67,11 @@ public partial class MainWindow : Window
         closeTabCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control));
         CommandBindings.Add(new CommandBinding(closeTabCommand, (s, e) => CloseTab_Click(s, null!)));
 
+        // Ctrl+F4 - Close Current Tab (alternate shortcut)
+        var closeTabAltCommand = new RoutedCommand();
+        closeTabAltCommand.InputGestures.Add(new KeyGesture(Key.F4, ModifierKeys.Control));
+        CommandBindings.Add(new CommandBinding(closeTabAltCommand, (s, e) => CloseTab_Click(s, null!)));
+
         // Ctrl+D - Toggle Dark Mode
         var toggleDarkModeCommand = new RoutedCommand();
         toggleDarkModeCommand.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control));
@@ -86,6 +91,35 @@ public partial class MainWindow : Window
         var historyCommand = new RoutedCommand();
         historyCommand.InputGestures.Add(new KeyGesture(Key.H, ModifierKeys.Control));
         CommandBindings.Add(new CommandBinding(historyCommand, (s, e) => QueryHistory_Click(s, null!)));
+
+        // Ctrl+Plus - Increase font size
+        var increaseFontCommand = new RoutedCommand();
+        increaseFontCommand.InputGestures.Add(new KeyGesture(Key.OemPlus, ModifierKeys.Control));
+        increaseFontCommand.InputGestures.Add(new KeyGesture(Key.Add, ModifierKeys.Control));
+        CommandBindings.Add(new CommandBinding(increaseFontCommand, (s, e) => IncreaseFontSize()));
+
+        // Ctrl+Minus - Decrease font size
+        var decreaseFontCommand = new RoutedCommand();
+        decreaseFontCommand.InputGestures.Add(new KeyGesture(Key.OemMinus, ModifierKeys.Control));
+        decreaseFontCommand.InputGestures.Add(new KeyGesture(Key.Subtract, ModifierKeys.Control));
+        CommandBindings.Add(new CommandBinding(decreaseFontCommand, (s, e) => DecreaseFontSize()));
+
+        // Ctrl+Shift+Plus - Increase TreeView spacing
+        var increaseSpacingCommand = new RoutedCommand();
+        increaseSpacingCommand.InputGestures.Add(new KeyGesture(Key.OemPlus, ModifierKeys.Control | ModifierKeys.Shift));
+        increaseSpacingCommand.InputGestures.Add(new KeyGesture(Key.Add, ModifierKeys.Control | ModifierKeys.Shift));
+        CommandBindings.Add(new CommandBinding(increaseSpacingCommand, (s, e) => IncreaseTreeViewSpacing()));
+
+        // Ctrl+Shift+Minus - Decrease TreeView spacing
+        var decreaseSpacingCommand = new RoutedCommand();
+        decreaseSpacingCommand.InputGestures.Add(new KeyGesture(Key.OemMinus, ModifierKeys.Control | ModifierKeys.Shift));
+        decreaseSpacingCommand.InputGestures.Add(new KeyGesture(Key.Subtract, ModifierKeys.Control | ModifierKeys.Shift));
+        CommandBindings.Add(new CommandBinding(decreaseSpacingCommand, (s, e) => DecreaseTreeViewSpacing()));
+
+        // Ctrl+Shift+Q - Show SQL Query History
+        var sqlHistoryCommand = new RoutedCommand();
+        sqlHistoryCommand.InputGestures.Add(new KeyGesture(Key.Q, ModifierKeys.Control | ModifierKeys.Shift));
+        CommandBindings.Add(new CommandBinding(sqlHistoryCommand, (s, e) => ShowSqlQueryHistory()));
 
         Logger.Debug("Keyboard shortcuts registered");
     }
@@ -199,6 +233,167 @@ public partial class MainWindow : Window
     }
     
     /// <summary>
+    /// Create a new tab with table details content (same content as TableDetailsDialog)
+    /// </summary>
+    public void CreateTabWithTableDetails(Data.DB2ConnectionManager connectionManager, string fullTableName, string displayName)
+    {
+        Logger.Info("Creating tab with table details: {Table}", fullTableName);
+        
+        try
+        {
+            // Get the currently active tab's connection
+            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            {
+                var connection = activeTab.Connection;
+                
+                // Create a TableDetailsPanel as the tab content
+                var detailsPanel = new Controls.TableDetailsPanel(connectionManager, fullTableName);
+                
+                var newTabItem = new TabItem
+                {
+                    Header = CreateTabHeader($"📋 {displayName} - {connection.GetDisplayName()}"),
+                    Content = detailsPanel,
+                    Tag = new { Type = "TableDetails", TableName = fullTableName }
+                };
+
+                ConnectionTabs.Items.Add(newTabItem);
+                ConnectionTabs.SelectedItem = newTabItem;
+                
+                Logger.Info("New tab created with table details content");
+            }
+            else
+            {
+                Logger.Warn("No active connection tab found");
+                MessageBox.Show("No active connection found.", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create tab with table details");
+            MessageBox.Show($"Failed to create tab: {ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create a new tab with view details content
+    /// </summary>
+    public void CreateTabWithViewDetails(Data.DB2ConnectionManager connectionManager, string schema, string viewName)
+    {
+        Logger.Info("Creating tab with view details: {Schema}.{View}", schema, viewName);
+        
+        try
+        {
+            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            {
+                var connection = activeTab.Connection;
+                var detailsPanel = new Controls.ViewDetailsPanel(connectionManager, schema, viewName);
+                
+                var newTabItem = new TabItem
+                {
+                    Header = CreateTabHeader($"👁️ {viewName?.Trim()} - {connection.GetDisplayName()}"),
+                    Content = detailsPanel,
+                    Tag = new { Type = "ViewDetails", Schema = schema, ViewName = viewName }
+                };
+
+                ConnectionTabs.Items.Add(newTabItem);
+                ConnectionTabs.SelectedItem = newTabItem;
+                Logger.Info("New tab created with view details content");
+            }
+            else
+            {
+                MessageBox.Show("No active connection found.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create tab with view details");
+            MessageBox.Show($"Failed to create tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create a new tab with routine (procedure/function) details content
+    /// </summary>
+    public void CreateTabWithRoutineDetails(Data.DB2ConnectionManager connectionManager, string schema, string routineName, string routineType)
+    {
+        Logger.Info("Creating tab with routine details: {Schema}.{Routine} ({Type})", schema, routineName, routineType);
+        
+        try
+        {
+            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            {
+                var connection = activeTab.Connection;
+                var detailsPanel = new Controls.RoutineDetailsPanel(connectionManager, schema, routineName, routineType);
+                
+                var icon = routineType == "F" ? "🔧" : "⚙️";
+                var typeLabel = routineType == "F" ? "Func" : "Proc";
+                var newTabItem = new TabItem
+                {
+                    Header = CreateTabHeader($"{icon} {routineName?.Trim()} - {connection.GetDisplayName()}"),
+                    Content = detailsPanel,
+                    Tag = new { Type = "RoutineDetails", Schema = schema, RoutineName = routineName, RoutineType = routineType }
+                };
+
+                ConnectionTabs.Items.Add(newTabItem);
+                ConnectionTabs.SelectedItem = newTabItem;
+                Logger.Info("New tab created with routine details content");
+            }
+            else
+            {
+                MessageBox.Show("No active connection found.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create tab with routine details");
+            MessageBox.Show($"Failed to create tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Create a new tab with package details content
+    /// </summary>
+    public void CreateTabWithPackageDetails(Data.DB2ConnectionManager connectionManager, Models.PackageInfo package)
+    {
+        Logger.Info("Creating tab with package details: {Schema}.{Package}", package.PackageSchema, package.PackageName);
+        
+        try
+        {
+            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
+                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            {
+                var connection = activeTab.Connection;
+                var detailsPanel = new Controls.PackageDetailsPanel(connectionManager, package);
+                
+                var newTabItem = new TabItem
+                {
+                    Header = CreateTabHeader($"📦 {package.PackageName?.Trim()} - {connection.GetDisplayName()}"),
+                    Content = detailsPanel,
+                    Tag = new { Type = "PackageDetails", Package = package }
+                };
+
+                ConnectionTabs.Items.Add(newTabItem);
+                ConnectionTabs.SelectedItem = newTabItem;
+                Logger.Info("New tab created with package details content");
+            }
+            else
+            {
+                MessageBox.Show("No active connection found.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to create tab with package details");
+            MessageBox.Show($"Failed to create tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
     /// Update menu visibility based on user's access level - RBAC
     /// </summary>
     private void UpdateMenuVisibilityForAccessLevel(Models.UserPermissions? permissions)
@@ -264,8 +459,208 @@ public partial class MainWindow : Window
 
         stackPanel.Children.Add(textBlock);
         stackPanel.Children.Add(closeButton);
+        
+        // Add context menu for undock/close options
+        var contextMenu = new ContextMenu();
+        
+        var undockItem = new MenuItem { Header = "🪟 Undock to Floating Window" };
+        undockItem.Click += (s, e) =>
+        {
+            var menuItem = s as MenuItem;
+            var menu = menuItem?.Parent as ContextMenu;
+            var panel = menu?.PlacementTarget as StackPanel;
+            var tabItem = panel?.Parent as TabItem;
+            if (tabItem != null)
+            {
+                UndockTab(tabItem, title);
+            }
+        };
+        contextMenu.Items.Add(undockItem);
+        
+        contextMenu.Items.Add(new Separator());
+        
+        var closeItem = new MenuItem { Header = "❌ Close Tab" };
+        closeItem.Click += (s, e) =>
+        {
+            var menuItem = s as MenuItem;
+            var menu = menuItem?.Parent as ContextMenu;
+            var panel = menu?.PlacementTarget as StackPanel;
+            var tabItem = panel?.Parent as TabItem;
+            if (tabItem != null)
+            {
+                CloseTab(tabItem);
+            }
+        };
+        contextMenu.Items.Add(closeItem);
+        
+        stackPanel.ContextMenu = contextMenu;
 
         return stackPanel;
+    }
+    
+    /// <summary>
+    /// Undock a tab to a floating window
+    /// </summary>
+    private void UndockTab(TabItem tabItem, string title)
+    {
+        Logger.Info("Undocking tab: {Title}", title);
+        
+        try
+        {
+            var content = tabItem.Content;
+            if (content == null)
+            {
+                Logger.Warn("Tab has no content to undock");
+                return;
+            }
+            
+            // Remove content from tab (content can only have one parent)
+            tabItem.Content = null;
+            
+            // Create floating window
+            var floatingWindow = new Window
+            {
+                Title = title,
+                Width = 1200,
+                Height = 800,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Content = content
+            };
+            
+            // Apply ModernWPF theme
+            Services.ThemedWindowHelper.ApplyTheme(floatingWindow);
+            
+            // Store reference to original tab info for potential re-docking
+            floatingWindow.Tag = new FloatingWindowInfo { OriginalTitle = title, TabItem = tabItem };
+            
+            // Add context menu with re-dock option
+            var dockButton = new Button
+            {
+                Content = "📌 Dock Back",
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 5, 5, 0),
+                Padding = new Thickness(10, 5, 10, 5)
+            };
+            
+            dockButton.Click += (s, e) =>
+            {
+                RedockWindow(floatingWindow);
+            };
+            
+            // Wrap content in a grid to add dock button
+            if (content is UIElement uiContent)
+            {
+                var grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                
+                // Dock button bar
+                var buttonBar = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Background = (System.Windows.Media.Brush)FindResource("SystemControlBackgroundAltHighBrush")
+                };
+                buttonBar.Children.Add(dockButton);
+                Grid.SetRow(buttonBar, 0);
+                grid.Children.Add(buttonBar);
+                
+                // Main content
+                Grid.SetRow(uiContent, 1);
+                grid.Children.Add(uiContent);
+                
+                floatingWindow.Content = grid;
+            }
+            
+            // Remove the original tab
+            ConnectionTabs.Items.Remove(tabItem);
+            UpdateWelcomePanelVisibility();
+            
+            // Handle window close - cleanup
+            floatingWindow.Closed += (s, e) =>
+            {
+                // If window was closed without re-docking, content is lost
+                // That's expected behavior for "close window"
+                Logger.Info("Floating window closed: {Title}", title);
+            };
+            
+            floatingWindow.Show();
+            Logger.Info("Tab undocked to floating window: {Title}", title);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to undock tab");
+            MessageBox.Show($"Failed to undock tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Re-dock a floating window back to a tab
+    /// </summary>
+    private void RedockWindow(Window floatingWindow)
+    {
+        Logger.Info("Re-docking window: {Title}", floatingWindow.Title);
+        
+        try
+        {
+            var info = floatingWindow.Tag as FloatingWindowInfo;
+            var title = info?.OriginalTitle ?? floatingWindow.Title;
+            
+            // Extract the main content from the grid wrapper
+            UIElement? content = null;
+            if (floatingWindow.Content is Grid grid && grid.Children.Count >= 2)
+            {
+                content = grid.Children[1] as UIElement;
+                if (content != null)
+                {
+                    grid.Children.Remove(content);
+                }
+            }
+            else
+            {
+                content = floatingWindow.Content as UIElement;
+            }
+            
+            if (content == null)
+            {
+                Logger.Warn("No content to re-dock");
+                return;
+            }
+            
+            // Clear window content
+            floatingWindow.Content = null;
+            
+            // Create new tab with the content
+            var newTabItem = new TabItem
+            {
+                Header = CreateTabHeader(title),
+                Content = content
+            };
+            
+            ConnectionTabs.Items.Add(newTabItem);
+            ConnectionTabs.SelectedItem = newTabItem;
+            UpdateWelcomePanelVisibility();
+            
+            // Close the floating window
+            floatingWindow.Close();
+            
+            Logger.Info("Window re-docked as tab: {Title}", title);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to re-dock window");
+            MessageBox.Show($"Failed to re-dock: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Info stored in floating window's Tag for re-docking
+    /// </summary>
+    private class FloatingWindowInfo
+    {
+        public string OriginalTitle { get; set; } = "";
+        public TabItem? TabItem { get; set; }
     }
 
     private void CloseTab_Click(object sender, RoutedEventArgs e)
@@ -351,10 +746,101 @@ public partial class MainWindow : Window
         Logger.Debug($"Switched to previous tab: {prevIndex}");
     }
 
+    /// <summary>
+    /// Increase font size (Ctrl+Plus) - applies to entire application
+    /// </summary>
+    private void IncreaseFontSize()
+    {
+        App.PreferencesService?.IncreaseFontSize();
+        
+        // Apply to entire application
+        if (App.PreferencesService != null)
+        {
+            GlobalFontService.ApplyAllPreferences(App.PreferencesService.Preferences);
+        }
+        
+        RefreshAllConnectionTabs();
+        Logger.Info("All font sizes increased - UI: {Size}", App.PreferencesService?.Preferences.UIFontSize);
+    }
+
+    /// <summary>
+    /// Decrease font size (Ctrl+Minus) - applies to entire application
+    /// </summary>
+    private void DecreaseFontSize()
+    {
+        App.PreferencesService?.DecreaseFontSize();
+        
+        // Apply to entire application
+        if (App.PreferencesService != null)
+        {
+            GlobalFontService.ApplyAllPreferences(App.PreferencesService.Preferences);
+        }
+        
+        RefreshAllConnectionTabs();
+        Logger.Info("All font sizes decreased - UI: {Size}", App.PreferencesService?.Preferences.UIFontSize);
+    }
+
+    /// <summary>
+    /// Increase TreeView spacing (Ctrl+Shift+Plus)
+    /// </summary>
+    private void IncreaseTreeViewSpacing()
+    {
+        App.PreferencesService?.IncreaseTreeViewSpacing();
+        RefreshAllConnectionTabs();
+        Logger.Info("TreeView spacing increased to {Spacing}", App.PreferencesService?.Preferences.TreeViewItemSpacing);
+    }
+
+    /// <summary>
+    /// Decrease TreeView spacing (Ctrl+Shift+Minus)
+    /// </summary>
+    private void DecreaseTreeViewSpacing()
+    {
+        App.PreferencesService?.DecreaseTreeViewSpacing();
+        RefreshAllConnectionTabs();
+        Logger.Info("TreeView spacing decreased to {Spacing}", App.PreferencesService?.Preferences.TreeViewItemSpacing);
+    }
+
+    /// <summary>
+    /// Show SQL Query History dialog (Ctrl+Shift+Q)
+    /// </summary>
+    private void ShowSqlQueryHistory()
+    {
+        Logger.Info("Opening SQL Query History dialog");
+        var dialog = new SqlQueryHistoryDialog { Owner = this };
+        dialog.ShowDialog();
+    }
+
+    /// <summary>
+    /// Refresh all connection tabs to apply new preferences
+    /// </summary>
+    private void RefreshAllConnectionTabs()
+    {
+        foreach (TabItem tab in ConnectionTabs.Items)
+        {
+            if (tab.Content is ConnectionTabControl connectionTab)
+            {
+                connectionTab.ApplyGridPreferences();
+            }
+        }
+    }
+
     private void ToggleDarkMode_Click(object sender, RoutedEventArgs e)
     {
         _themeService.ToggleTheme();
         _themeService.SaveThemePreference();
+        
+        // Apply theme-appropriate colors to editor and grids
+        _themeService.ApplyThemeColorsToPreferences();
+        
+        // Refresh all open connection tabs to apply new colors
+        RefreshAllConnectionTabs();
+        
+        // Apply global font size (which also refreshes grids)
+        if (App.PreferencesService != null)
+        {
+            GlobalFontService.ApplyAllPreferences(App.PreferencesService.Preferences);
+        }
+        
         UpdateThemeMenuText();
 
         Logger.Info($"Theme switched to: {_themeService.GetThemeName()}");
@@ -388,34 +874,34 @@ public partial class MainWindow : Window
                        "Query History", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    private async void LockMonitor_Click(object sender, RoutedEventArgs e)
+    private void LockMonitor_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<LockMonitorPanel>("Lock Monitor", 1400, 700);
+        OpenPanelAsTab<LockMonitorPanel>("Lock Monitor", "🔒");
     }
     
-    private async void StatisticsManager_Click(object sender, RoutedEventArgs e)
+    private void StatisticsManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<StatisticsManagerPanel>("Statistics Manager", 1200, 700);
+        OpenPanelAsTab<StatisticsManagerPanel>("Statistics Manager", "📊");
     }
     
-    private async void ActiveSessions_Click(object sender, RoutedEventArgs e)
+    private void ActiveSessions_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<ActiveSessionsPanel>("Active Sessions", 1300, 650);
+        OpenPanelAsTab<ActiveSessionsPanel>("Active Sessions", "👥");
     }
     
-    private async void CdcManager_Click(object sender, RoutedEventArgs e)
+    private void CdcManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<CdcManagerPanel>("CDC Manager", 1100, 600);
+        OpenPanelAsTab<CdcManagerPanel>("CDC Manager", "🔄");
     }
     
-    private async void UnusedObjects_Click(object sender, RoutedEventArgs e)
+    private void UnusedObjects_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<UnusedObjectsPanel>("Unused Objects", 1100, 650);
+        OpenPanelAsTab<UnusedObjectsPanel>("Unused Objects", "🗑️");
     }
     
-    private async void SourceBrowser_Click(object sender, RoutedEventArgs e)
+    private void SourceBrowser_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<SourceCodeBrowserPanel>("Source Code Browser", 1200, 700);
+        OpenPanelAsTab<SourceCodeBrowserPanel>("Source Code Browser", "📄");
     }
     
     // DDL Generator is now accessed via context menu on individual objects in the Object Browser
@@ -433,24 +919,24 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
     }
     
-    private async void CommentManager_Click(object sender, RoutedEventArgs e)
+    private void CommentManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<CommentManagerPanel>("Comment Manager", 1100, 650);
+        OpenPanelAsTab<CommentManagerPanel>("Comment Manager", "💬");
     }
     
-    private async void PackageAnalyzer_Click(object sender, RoutedEventArgs e)
+    private void PackageAnalyzer_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<PackageAnalyzerPanel>("Package Analyzer", 1100, 650);
+        OpenPanelAsTab<PackageAnalyzerPanel>("Package Analyzer", "📦");
     }
     
-    private async void DependencyAnalyzer_Click(object sender, RoutedEventArgs e)
+    private void DependencyAnalyzer_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<DependencyGraphPanel>("Dependency Analyzer", 1200, 700);
+        OpenPanelAsTab<DependencyGraphPanel>("Dependency Analyzer", "🔗");
     }
     
-    private async void MigrationAssistant_Click(object sender, RoutedEventArgs e)
+    private void MigrationAssistant_Click(object sender, RoutedEventArgs e)
     {
-        OpenMonitorPanel<MigrationAssistantPanel>("Migration Assistant", 1200, 700);
+        OpenPanelAsTab<MigrationAssistantPanel>("Migration Assistant", "🚀");
     }
     
     private void MermaidDesigner_Click(object sender, RoutedEventArgs e)
@@ -518,6 +1004,11 @@ public partial class MainWindow : Window
                 Owner = this
             };
             
+            // Apply ModernWPF theme-aware styling
+            ModernWpf.Controls.Primitives.WindowHelper.SetUseModernWindowStyle(window, true);
+            window.SetResourceReference(Window.BackgroundProperty, "SystemControlBackgroundAltHighBrush");
+            window.SetResourceReference(Window.ForegroundProperty, "SystemControlForegroundBaseHighBrush");
+            
             var panel = new T();
             window.Content = panel;
             
@@ -541,7 +1032,7 @@ public partial class MainWindow : Window
                 }
             };
             
-            window.ShowDialog();
+            window.Show(); // Non-modal so user can still interact with main window
         }
         catch (Exception ex)
         {
@@ -551,78 +1042,84 @@ public partial class MainWindow : Window
         }
     }
     
-    private async void DatabaseLoadMonitor_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Open a tool panel as a docked tab in the main window
+    /// </summary>
+    private void OpenPanelAsTab<T>(string title, string icon) where T : UserControl, new()
     {
-        Logger.Info("Opening Database Load Monitor");
+        Logger.Info("Opening {Panel} as tab", title);
         
-        // Get active connection tab
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab)
+        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
         {
             MessageBox.Show("No active database connection.\n\nPlease connect to a database first.",
-                "Database Load Monitor", MessageBoxButton.OK, MessageBoxImage.Information);
+                title, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         
-        if (selectedTab.Content is not ConnectionTabControl activeTab)
-        {
-            Logger.Warn("Selected tab is not a ConnectionTabControl");
-            return;
-        }
-        
-        // Check if connection is active
         if (activeTab.ConnectionManager == null)
         {
-            MessageBox.Show("Connection is not active.\n\nPlease establish a connection first.",
-                "Database Load Monitor", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Connection is not active.", title, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         
         try
         {
-            var connectionName = GetTabHeaderText(selectedTab);
+            var connection = activeTab.Connection;
+            var panel = new T();
             
-            var loadMonitorWindow = new Window
+            var newTabItem = new TabItem
             {
-                Title = $"Database Load Monitor - {connectionName}",
-                Width = 1200,
-                Height = 700,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Owner = this
+                Header = CreateTabHeader($"{icon} {title} - {connection.GetDisplayName()}"),
+                Content = panel,
+                Tag = new { Type = "ToolPanel", ToolName = title }
             };
+
+            ConnectionTabs.Items.Add(newTabItem);
+            ConnectionTabs.SelectedItem = newTabItem;
             
-            var loadMonitorPanel = new DatabaseLoadMonitorPanel();
-            loadMonitorWindow.Content = loadMonitorPanel;
-            
-            loadMonitorWindow.Loaded += async (s, args) =>
+            // Initialize the panel asynchronously
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    await loadMonitorPanel.InitializeAsync(activeTab.ConnectionManager);
+                    await Dispatcher.InvokeAsync(async () =>
+                    {
+                        var initMethod = panel.GetType().GetMethod("InitializeAsync");
+                        if (initMethod != null)
+                        {
+                            var task = initMethod.Invoke(panel, new object[] { activeTab.ConnectionManager }) as Task;
+                            if (task != null) await task;
+                        }
+                    });
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "Failed to initialize Database Load Monitor");
-                    MessageBox.Show($"Failed to initialize load monitor:\n\n{ex.Message}",
-                        "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    loadMonitorWindow.Close();
+                    Logger.Error(ex, "Failed to initialize {Panel}", title);
+                    Dispatcher.Invoke(() => MessageBox.Show($"Failed to initialize:\n\n{ex.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error));
                 }
-            };
+            });
             
-            loadMonitorWindow.ShowDialog();
+            Logger.Info("New tab created with {Panel}", title);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to open Database Load Monitor");
-            MessageBox.Show($"Failed to open load monitor:\n\n{ex.Message}",
+            Logger.Error(ex, "Failed to open {Panel} as tab", title);
+            MessageBox.Show($"Failed to open:\n\n{ex.Message}",
                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+    
+    private void DatabaseLoadMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        OpenPanelAsTab<DatabaseLoadMonitorPanel>("Database Load Monitor", "📈");
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
         Logger.Info("Settings dialog requested");
 
-        var settingsDialog = new Dialogs.SettingsDialog(_preferencesService)
+        var settingsDialog = new Dialogs.NewSettingsDialog(_preferencesService)
         {
             Owner = this
         };
@@ -630,8 +1127,9 @@ public partial class MainWindow : Window
         if (settingsDialog.ShowDialog() == true)
         {
             Logger.Info("Settings saved successfully");
-            MessageBox.Show("Some settings changes may require restarting the application to take effect.", 
-                "Settings Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            // Refresh all connection tabs with new preferences
+            RefreshAllConnectionTabs();
         }
     }
 
@@ -799,7 +1297,7 @@ public partial class MainWindow : Window
 ║ FILE OPERATIONS                                                  ║
 ╟──────────────────────────────────────────────────────────────────╢
 ║ Ctrl+N         New Connection                                    ║
-║ Ctrl+W         Close Current Tab                                 ║
+║ Ctrl+W/F4      Close Current Tab                                 ║
 ║ Ctrl+O         Open SQL Script                                   ║
 ║ Ctrl+S         Save SQL Script                                   ║
 ║ Alt+F4         Exit Application                                  ║
@@ -825,6 +1323,7 @@ public partial class MainWindow : Window
 ╟──────────────────────────────────────────────────────────────────╢
 ║ Ctrl+D         Toggle Dark/Light Theme                           ║
 ║ Ctrl+Shift+C   Database Comparison                               ║
+║ Ctrl+Shift+Q   Show SQL Query History                            ║
 ╚══════════════════════════════════════════════════════════════════╝";
         
         MessageBox.Show(shortcuts, "Keyboard Shortcuts", MessageBoxButton.OK, MessageBoxImage.Information);

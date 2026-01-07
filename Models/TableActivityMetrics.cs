@@ -9,6 +9,7 @@ public class TableActivityMetrics
 {
     public string TabSchema { get; set; } = string.Empty;
     public string TabName { get; set; } = string.Empty;
+    public string Tablespace { get; set; } = string.Empty;
     public long TotalRowsRead { get; set; }
     public long TotalRowsInserted { get; set; }
     public long TotalRowsUpdated { get; set; }

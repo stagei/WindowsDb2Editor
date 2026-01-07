@@ -240,6 +240,8 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="📌 Dock as Tab" Width="120" Height="32" Margin="0,0,10,0" 
+                    Click="DockAsTab_Click" ToolTip="Dock this dialog as a new tab in the main window"/>
             <Button Content="🔍 Query Top 1000 Rows" Width="160" Height="32" Margin="0,0,10,0" 
                     Click="QueryTable_Click" FontWeight="SemiBold"/>
             <Button Content="Close" Width="100" Height="32" IsCancel="True" Click="Close_Click"/>

@@ -1,7 +1,0 @@
-{
-  "lockChainsDetected": false,
-  "status": "Feature requires advanced monitoring tables",
-  "note": "Lock chain detection requires SYSIBMADM.MON_LOCKWAITS view (needs DBA privileges in DB2 12.1)",
-  "recommendation": "Use db2pd command or GUI Lock Monitor for real-time lock analysis",
-  "retrievedAt": "2025-12-13T11:26:53.5260867+01:00"
-}

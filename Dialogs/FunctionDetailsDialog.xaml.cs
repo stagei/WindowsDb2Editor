@@ -1,6 +1,7 @@
 using NLog;
 using System.Windows;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -21,7 +22,15 @@ public partial class FunctionDetailsDialog : Window
         FunctionNameText.Text = functionName;
         FunctionInfoText.Text = $"{schema}.{functionName}";
 
-        Loaded += async (s, e) => await LoadFunctionDetailsAsync();
+        Loaded += async (s, e) => 
+        {
+            // Apply grid preferences to all grids in this dialog
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+            await LoadFunctionDetailsAsync();
+        };
     }
 
     private async Task LoadFunctionDetailsAsync()
@@ -63,6 +72,25 @@ public partial class FunctionDetailsDialog : Window
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+    
+    private void DockAsTab_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Docking FunctionDetailsDialog as tab: {Schema}.{Function}", _schema, _functionName);
+        
+        try
+        {
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.CreateTabWithRoutineDetails(_connectionManager, _schema, _functionName, "F");
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to dock as tab");
+            MessageBox.Show($"Failed to dock as tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
 

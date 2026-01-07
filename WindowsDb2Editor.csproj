@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-
+    
     <!-- EXE icon -->
     <ApplicationIcon>Resources\dEdge.ico</ApplicationIcon>
     
@@ -51,6 +51,11 @@
     <PackageReference Include="NLog.Schema" Version="6.0.6" />
     <PackageReference Include="PoorMansTSQLFormatter" Version="1.4.3.1" />
     <PackageReference Include="SqlMermaidErdTools" Version="0.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
   </ItemGroup>
 
   <ItemGroup>

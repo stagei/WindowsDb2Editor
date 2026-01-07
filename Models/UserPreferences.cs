@@ -66,6 +66,90 @@ namespace WindowsDb2Editor.Models
         /// </summary>
         [JsonPropertyName("logLevel")]
         public string LogLevel { get; set; } = "Info";
+
+        /// <summary>
+        /// Grid background color (hex format, e.g., "#2D2D2D" for dark, "#FFFFFF" for light)
+        /// </summary>
+        [JsonPropertyName("gridBackgroundColor")]
+        public string GridBackgroundColor { get; set; } = "#2D2D2D";
+
+        /// <summary>
+        /// Grid foreground (text) color (hex format, e.g., "#E0E0E0" for dark, "#000000" for light)
+        /// </summary>
+        [JsonPropertyName("gridForegroundColor")]
+        public string GridForegroundColor { get; set; } = "#E0E0E0";
+
+        /// <summary>
+        /// Grid selected row background color (hex format, e.g., "#0078D4")
+        /// </summary>
+        [JsonPropertyName("gridSelectedBackgroundColor")]
+        public string GridSelectedBackgroundColor { get; set; } = "#0078D4";
+
+        /// <summary>
+        /// Grid selected row foreground (text) color (hex format, e.g., "#FFFFFF")
+        /// </summary>
+        [JsonPropertyName("gridSelectedForegroundColor")]
+        public string GridSelectedForegroundColor { get; set; } = "#FFFFFF";
+
+        /// <summary>
+        /// Grid font size (default: 12)
+        /// </summary>
+        [JsonPropertyName("gridFontSize")]
+        public int GridFontSize { get; set; } = 12;
+
+        /// <summary>
+        /// Grid font family name (default: "Segoe UI")
+        /// </summary>
+        [JsonPropertyName("gridFontFamily")]
+        public string GridFontFamily { get; set; } = "Segoe UI";
+
+        /// <summary>
+        /// Grid cell height in pixels (default: 25)
+        /// </summary>
+        [JsonPropertyName("gridCellHeight")]
+        public int GridCellHeight { get; set; } = 25;
+
+        /// <summary>
+        /// TreeView item vertical spacing in pixels (default: 2)
+        /// </summary>
+        [JsonPropertyName("treeViewItemSpacing")]
+        public int TreeViewItemSpacing { get; set; } = 2;
+
+        /// <summary>
+        /// TreeView horizontal indent per level in pixels (default: 19)
+        /// </summary>
+        [JsonPropertyName("treeViewIndent")]
+        public int TreeViewIndent { get; set; } = 19;
+
+        /// <summary>
+        /// Global UI font size for all controls (default: 12)
+        /// </summary>
+        [JsonPropertyName("uiFontSize")]
+        public int UIFontSize { get; set; } = 12;
+
+        /// <summary>
+        /// SQL Editor background color (hex format, dark mode default: "#1E1E1E")
+        /// </summary>
+        [JsonPropertyName("editorBackgroundColor")]
+        public string EditorBackgroundColor { get; set; } = "#1E1E1E";
+
+        /// <summary>
+        /// SQL Editor foreground/text color (hex format, dark mode default: "#D4D4D4")
+        /// </summary>
+        [JsonPropertyName("editorForegroundColor")]
+        public string EditorForegroundColor { get; set; } = "#D4D4D4";
+
+        /// <summary>
+        /// SQL Editor line number color (hex format)
+        /// </summary>
+        [JsonPropertyName("editorLineNumberColor")]
+        public string EditorLineNumberColor { get; set; } = "#858585";
+
+        /// <summary>
+        /// SQL Editor current line highlight color (hex format)
+        /// </summary>
+        [JsonPropertyName("editorCurrentLineColor")]
+        public string EditorCurrentLineColor { get; set; } = "#2D2D30";
     }
 }
 

@@ -14,6 +14,7 @@ public partial class App : Application
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     public static MetadataHandler? MetadataHandler { get; private set; }
+    public static PreferencesService? PreferencesService { get; private set; }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -32,6 +33,11 @@ public partial class App : Application
             Logger.Debug("Initializing MetadataHandler");
             MetadataHandler = new MetadataHandler();
             Logger.Info("MetadataHandler initialized successfully");
+            
+            // Initialize PreferencesService
+            Logger.Debug("Initializing PreferencesService");
+            PreferencesService = new PreferencesService();
+            Logger.Info("PreferencesService initialized successfully");
             
             // Initialize theme before GUI mode
             Logger.Debug("Initializing application theme");
@@ -98,6 +104,13 @@ public partial class App : Application
             // Create and show main window
             var mainWindow = new MainWindow();
             mainWindow.Show();
+            
+            // Apply global font size from preferences
+            if (PreferencesService != null)
+            {
+                GlobalFontService.ApplyGlobalFontSize(PreferencesService.Preferences.UIFontSize);
+                Logger.Debug("Global font size applied: {Size}", PreferencesService.Preferences.UIFontSize);
+            }
             
             Logger.Info("Application startup completed successfully");
         }

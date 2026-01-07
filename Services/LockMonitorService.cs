@@ -165,7 +165,7 @@ public class LockMonitorService
             script.AppendLine($"-- User: {firstLock.PrimaryAuthId}");
             script.AppendLine($"-- Application: {firstLock.ApplicationName}");
             script.AppendLine($"-- Client: {firstLock.ClientName}");
-            script.AppendLine($"-- Locks: {string.Join(", ", agentLocks.Select(l => $"{l.TabSchema}.{l.TabName}"))}");
+            script.AppendLine($"-- Locks: {string.Join(", ", agentLocks.Select(l => $"{l.TabSchema?.Trim()}.{l.TabName?.Trim()}"))}");
             script.AppendLine($"FORCE APPLICATION ({agentId});");
             script.AppendLine();
         }

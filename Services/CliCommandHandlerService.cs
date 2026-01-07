@@ -3097,7 +3097,8 @@ public class CliCommandHandlerService
             applicationName = row["APPL_NAME"]?.ToString()?.Trim(),
             authId = row["AUTHID"]?.ToString()?.Trim(),
             clientName = row["CLIENT_NNAME"]?.ToString()?.Trim(),
-            lastUpdate = row["AGENT_STATE_LAST_UPDATE_TIME"],
+            // Note: AGENT_STATE_LAST_UPDATE_TIME is not available in SYSIBMADM.SNAPAPPL_INFO for all DB2 versions
+            lastUpdate = (DateTime?)null,
             numAgents = row["NUM_ASSOC_AGENTS"],
             processId = row["COORD_AGENT_PID"]
         }).ToList();

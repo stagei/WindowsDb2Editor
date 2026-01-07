@@ -10,7 +10,9 @@
         MaxHeight="900"
         MinWidth="700"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="CanResize">
+        ResizeMode="CanResize"
+        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -435,6 +437,181 @@
                                        Margin="10,0,0,0"
                                        FontWeight="SemiBold"/>
                         </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Grids Tab -->
+            <TabItem Header="📊 Grids">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Data Grid Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+                        <TextBlock Text="These settings apply to all DataGrid controls throughout the application" 
+                                   FontSize="11" 
+                                   Foreground="Gray" 
+                                   Margin="0,0,0,20"/>
+
+                        <!-- Grid Background Color -->
+                        <TextBlock Text="Grid Background Color:" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="GridBackgroundColorTextBox" 
+                                     Width="150" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Text="#FFFFFF"/>
+                            <Button x:Name="GridBackgroundColorPickerButton" 
+                                    Content="🎨 Pick Color" 
+                                    Margin="10,0,0,0"
+                                    Padding="10,5"
+                                    Click="GridBackgroundColorPickerButton_Click"/>
+                            <TextBlock Text="(Hex format: #FFFFFF)" 
+                                       FontSize="11" 
+                                       Foreground="Gray" 
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Grid Foreground Color -->
+                        <TextBlock Text="Grid Foreground (Text) Color:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="GridForegroundColorTextBox" 
+                                     Width="150" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Text="#000000"/>
+                            <Button x:Name="GridForegroundColorPickerButton" 
+                                    Content="🎨 Pick Color" 
+                                    Margin="10,0,0,0"
+                                    Padding="10,5"
+                                    Click="GridForegroundColorPickerButton_Click"/>
+                            <TextBlock Text="(Hex format: #000000)" 
+                                       FontSize="11" 
+                                       Foreground="Gray" 
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Grid Selected Background Color -->
+                        <TextBlock Text="Grid Selected Row Background Color:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="GridSelectedBackgroundColorTextBox" 
+                                     Width="150" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Text="#0078D4"/>
+                            <Button x:Name="GridSelectedBackgroundColorPickerButton" 
+                                    Content="🎨 Pick Color" 
+                                    Margin="10,0,0,0"
+                                    Padding="10,5"
+                                    Click="GridSelectedBackgroundColorPickerButton_Click"/>
+                            <TextBlock Text="(Hex format: #0078D4)" 
+                                       FontSize="11" 
+                                       Foreground="Gray" 
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Grid Selected Foreground Color -->
+                        <TextBlock Text="Grid Selected Row Foreground (Text) Color:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="GridSelectedForegroundColorTextBox" 
+                                     Width="150" 
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Text="#FFFFFF"/>
+                            <Button x:Name="GridSelectedForegroundColorPickerButton" 
+                                    Content="🎨 Pick Color" 
+                                    Margin="10,0,0,0"
+                                    Padding="10,5"
+                                    Click="GridSelectedForegroundColorPickerButton_Click"/>
+                            <TextBlock Text="(Hex format: #FFFFFF)" 
+                                       FontSize="11" 
+                                       Foreground="Gray" 
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Grid Font Size -->
+                        <TextBlock Text="Grid Font Size:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="GridFontSizeSlider" 
+                                    Width="200" 
+                                    Minimum="8" 
+                                    Maximum="24" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="12"/>
+                            <TextBlock x:Name="GridFontSizeText" 
+                                       Text="12" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Grid Font Family -->
+                        <TextBlock Text="Grid Font Family:" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <ComboBox x:Name="GridFontFamilyComboBox" Width="200" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Segoe UI" Tag="Segoe UI" IsSelected="True"/>
+                            <ComboBoxItem Content="Arial" Tag="Arial"/>
+                            <ComboBoxItem Content="Calibri" Tag="Calibri"/>
+                            <ComboBoxItem Content="Consolas" Tag="Consolas"/>
+                            <ComboBoxItem Content="Courier New" Tag="Courier New"/>
+                            <ComboBoxItem Content="Tahoma" Tag="Tahoma"/>
+                            <ComboBoxItem Content="Verdana" Tag="Verdana"/>
+                        </ComboBox>
+
+                        <!-- Grid Cell Height -->
+                        <TextBlock Text="Grid Cell Height (pixels):" FontWeight="SemiBold" Margin="0,20,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="GridCellHeightSlider" 
+                                    Width="200" 
+                                    Minimum="20" 
+                                    Maximum="50" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="25"/>
+                            <TextBlock x:Name="GridCellHeightText" 
+                                       Text="25" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- TreeView Settings Section -->
+                        <TextBlock Text="🌳 Object Browser (TreeView)" FontWeight="Bold" FontSize="14" Margin="0,30,0,15"/>
+                        
+                        <!-- TreeView Item Spacing -->
+                        <TextBlock Text="Item Vertical Spacing (pixels):" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Slider x:Name="TreeViewSpacingSlider" 
+                                    Width="200" 
+                                    Minimum="0" 
+                                    Maximum="10" 
+                                    TickFrequency="1" 
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    Value="2"/>
+                            <TextBlock x:Name="TreeViewSpacingText" 
+                                       Text="2" 
+                                       Width="30" 
+                                       VerticalAlignment="Center" 
+                                       Margin="10,0,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="Tip: Use Ctrl+Shift++ and Ctrl+Shift+- to adjust spacing quickly" 
+                                   FontSize="11" 
+                                   FontStyle="Italic"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   Margin="0,5,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

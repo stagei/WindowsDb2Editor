@@ -285,8 +285,10 @@
             </TabItem>
         </TabControl>
 
-        <!-- Close Button -->
+        <!-- Buttons -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="📌 Dock as Tab" Width="120" Height="36" Margin="0,0,10,0" 
+                    Click="DockAsTab_Click" ToolTip="Open statements in a new editor tab"/>
             <Button Content="Close" Width="100" Height="36" IsCancel="True" Click="Close_Click"/>
         </StackPanel>
     </Grid>

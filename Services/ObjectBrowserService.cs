@@ -19,11 +19,301 @@ public class ObjectBrowserService
     private readonly MetadataHandler? _metadataHandler;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
+    // Cache for preloaded data
+    private readonly Dictionary<string, List<DatabaseObject>> _tablesCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _viewsCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _proceduresCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _functionsCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _indexesCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _triggersCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _sequencesCache = new();
+    private readonly Dictionary<string, List<DatabaseObject>> _synonymsCache = new();
+    private List<SchemaNode>? _schemasCache;
+    private List<PackageInfo>? _packagesCache;
+    private List<TablespaceInfo>? _tablespacesCache;
+    private List<SecurityPrincipal>? _securityPrincipalsCache;
+    private bool _isPreloaded = false;
+    private readonly object _cacheLock = new();
+    
+    /// <summary>
+    /// Event raised when preload progress changes
+    /// </summary>
+    public event EventHandler<string>? PreloadProgressChanged;
+    
+    /// <summary>
+    /// Indicates if data has been preloaded
+    /// </summary>
+    public bool IsPreloaded => _isPreloaded;
+    
     public ObjectBrowserService(DB2ConnectionManager connectionManager, MetadataHandler? metadataHandler = null)
     {
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         _metadataHandler = metadataHandler ?? App.MetadataHandler; // Fallback to global instance
         Logger.Debug("ObjectBrowserService initialized with MetadataHandler: {HasMetadata}", _metadataHandler != null);
+    }
+    
+    /// <summary>
+    /// Preload all object browser data in background for faster navigation
+    /// </summary>
+    public async Task PreloadAllDataAsync()
+    {
+        if (_isPreloaded)
+        {
+            Logger.Debug("Data already preloaded, skipping");
+            return;
+        }
+        
+        Logger.Info("Starting background preload of all object browser data");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            // Get all schemas first
+            PreloadProgressChanged?.Invoke(this, "Loading schemas...");
+            var schemas = await GetAllSchemasAsync();
+            lock (_cacheLock) { _schemasCache = schemas; }
+            Logger.Debug("Preloaded {Count} schemas", schemas.Count);
+            
+            // Load packages
+            PreloadProgressChanged?.Invoke(this, "Loading packages...");
+            var packages = await GetPackagesAsync();
+            lock (_cacheLock) { _packagesCache = packages; }
+            Logger.Debug("Preloaded {Count} packages", packages.Count);
+            
+            // Load tablespaces
+            PreloadProgressChanged?.Invoke(this, "Loading tablespaces...");
+            var tablespaces = await GetTablespacesAsync();
+            lock (_cacheLock) { _tablespacesCache = tablespaces; }
+            Logger.Debug("Preloaded {Count} tablespaces", tablespaces.Count);
+            
+            // Load security principals (roles, groups, users)
+            PreloadProgressChanged?.Invoke(this, "Loading security...");
+            try
+            {
+                var roles = await GetRolesAsync();
+                var groups = await GetGroupsAsync();
+                var users = await GetUsersAsync();
+                var principals = new List<SecurityPrincipal>();
+                principals.AddRange(roles);
+                principals.AddRange(groups);
+                principals.AddRange(users);
+                lock (_cacheLock) { _securityPrincipalsCache = principals; }
+                Logger.Debug("Preloaded {Count} security principals", principals.Count);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to preload security principals (may require SECADM)");
+            }
+            
+            // Preload objects for non-system schemas (limit to first 20 schemas for performance)
+            var userSchemas = schemas.Where(s => s.Type != "SYSTEM").Take(20).ToList();
+            int schemaIndex = 0;
+            
+            foreach (var schema in userSchemas)
+            {
+                schemaIndex++;
+                PreloadProgressChanged?.Invoke(this, $"Loading schema {schemaIndex}/{userSchemas.Count}: {schema.SchemaName}...");
+                
+                try
+                {
+                    // Load tables
+                    var tables = await GetTablesAsync(schema.SchemaName);
+                    lock (_cacheLock) { _tablesCache[schema.SchemaName] = tables; }
+                    
+                    // Load views
+                    var views = await GetViewsAsync(schema.SchemaName);
+                    lock (_cacheLock) { _viewsCache[schema.SchemaName] = views; }
+                    
+                    // Load procedures
+                    var procedures = await GetProceduresAsync(schema.SchemaName);
+                    lock (_cacheLock) { _proceduresCache[schema.SchemaName] = procedures; }
+                    
+                    // Load functions
+                    var functions = await GetFunctionsAsync(schema.SchemaName);
+                    lock (_cacheLock) { _functionsCache[schema.SchemaName] = functions; }
+                    
+                    // Load sequences
+                    var sequences = await GetSequencesAsync(schema.SchemaName);
+                    lock (_cacheLock) { _sequencesCache[schema.SchemaName] = sequences; }
+                    
+                    // Load triggers
+                    var triggers = await GetTriggersAsync(schema.SchemaName);
+                    lock (_cacheLock) { _triggersCache[schema.SchemaName] = triggers; }
+                    
+                    Logger.Debug("Preloaded schema {Schema}: {Tables} tables, {Views} views, {Procs} procedures", 
+                        schema.SchemaName, tables.Count, views.Count, procedures.Count);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to preload data for schema {Schema}", schema.SchemaName);
+                }
+            }
+            
+            _isPreloaded = true;
+            stopwatch.Stop();
+            Logger.Info("Background preload completed in {Elapsed}ms - {SchemaCount} schemas processed", 
+                stopwatch.ElapsedMilliseconds, userSchemas.Count);
+            PreloadProgressChanged?.Invoke(this, $"Preload complete ({stopwatch.ElapsedMilliseconds}ms)");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Background preload failed");
+            PreloadProgressChanged?.Invoke(this, "Preload failed");
+        }
+    }
+    
+    /// <summary>
+    /// Get tables from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetTablesCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_tablesCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Tables cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var tables = await GetTablesAsync(schemaName);
+        lock (_cacheLock) { _tablesCache[schemaName] = tables; }
+        return tables;
+    }
+    
+    /// <summary>
+    /// Get views from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetViewsCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_viewsCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Views cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var views = await GetViewsAsync(schemaName);
+        lock (_cacheLock) { _viewsCache[schemaName] = views; }
+        return views;
+    }
+    
+    /// <summary>
+    /// Get procedures from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetProceduresCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_proceduresCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Procedures cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var procedures = await GetProceduresAsync(schemaName);
+        lock (_cacheLock) { _proceduresCache[schemaName] = procedures; }
+        return procedures;
+    }
+    
+    /// <summary>
+    /// Get functions from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetFunctionsCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_functionsCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Functions cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var functions = await GetFunctionsAsync(schemaName);
+        lock (_cacheLock) { _functionsCache[schemaName] = functions; }
+        return functions;
+    }
+    
+    /// <summary>
+    /// Get sequences from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetSequencesCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_sequencesCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Sequences cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var sequences = await GetSequencesAsync(schemaName);
+        lock (_cacheLock) { _sequencesCache[schemaName] = sequences; }
+        return sequences;
+    }
+    
+    /// <summary>
+    /// Get triggers from cache if available, otherwise fetch from database
+    /// </summary>
+    public async Task<List<DatabaseObject>> GetTriggersCachedAsync(string schemaName)
+    {
+        lock (_cacheLock)
+        {
+            if (_triggersCache.TryGetValue(schemaName, out var cached))
+            {
+                Logger.Debug("Triggers cache hit for schema: {Schema}", schemaName);
+                return cached;
+            }
+        }
+        
+        var triggers = await GetTriggersAsync(schemaName);
+        lock (_cacheLock) { _triggersCache[schemaName] = triggers; }
+        return triggers;
+    }
+    
+    /// <summary>
+    /// Get packages from cache if available
+    /// </summary>
+    public List<PackageInfo>? GetPackagesCached()
+    {
+        lock (_cacheLock) { return _packagesCache; }
+    }
+    
+    /// <summary>
+    /// Get tablespaces from cache if available
+    /// </summary>
+    public List<TablespaceInfo>? GetTablespacesCached()
+    {
+        lock (_cacheLock) { return _tablespacesCache; }
+    }
+    
+    /// <summary>
+    /// Clear all cached data
+    /// </summary>
+    public void ClearCache()
+    {
+        lock (_cacheLock)
+        {
+            _tablesCache.Clear();
+            _viewsCache.Clear();
+            _proceduresCache.Clear();
+            _functionsCache.Clear();
+            _indexesCache.Clear();
+            _triggersCache.Clear();
+            _sequencesCache.Clear();
+            _synonymsCache.Clear();
+            _schemasCache = null;
+            _packagesCache = null;
+            _tablespacesCache = null;
+            _securityPrincipalsCache = null;
+            _isPreloaded = false;
+        }
+        Logger.Info("Object browser cache cleared");
     }
     
     #region Access Level Management

@@ -80,8 +80,12 @@
             </TabItem>
         </TabControl>
 
-        <!-- Close Button -->
-        <Button Grid.Row="2" Content="Close" Width="100" HorizontalAlignment="Right" Margin="0,10,0,0" Click="Close_Click"/>
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="📌 Dock as Tab" Width="120" Height="32" Margin="0,0,10,0" 
+                    Click="DockAsTab_Click" ToolTip="Dock this dialog as a new tab in the main window"/>
+            <Button Content="Close" Width="100" Height="32" Click="Close_Click"/>
+        </StackPanel>
     </Grid>
 </Window>
 

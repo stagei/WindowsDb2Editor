@@ -1,7 +1,0 @@
-{
-  "sourceSchema": "ASK",
-  "scriptGenerated": false,
-  "note": "Data migration requires EXPORT command or INSERT statements - large data volumes need db2move or db2look utilities",
-  "recommendation": "Use db2move or db2look command-line utilities for data migration, or GUI Migration Assistant",
-  "retrievedAt": "2025-12-13T11:29:35.5825328+01:00"
-}

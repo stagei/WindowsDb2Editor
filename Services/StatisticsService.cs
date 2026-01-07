@@ -147,11 +147,14 @@ public class StatisticsService
         
         foreach (var table in tables)
         {
-            script.AppendLine($"-- Update statistics for {table.TabSchema}.{table.TabName}");
+            var schema = table.TabSchema?.Trim() ?? "";
+            var tableName = table.TabName?.Trim() ?? "";
+            
+            script.AppendLine($"-- Update statistics for {schema}.{tableName}");
             script.AppendLine($"-- Last update: {table.StatsTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "NEVER"}");
             script.AppendLine($"-- Days since update: {table.DaysSinceUpdate?.ToString() ?? "N/A"}");
             
-            script.Append($"CALL SYSPROC.ADMIN_CMD('RUNSTATS ON TABLE {table.TabSchema}.{table.TabName}");
+            script.Append($"CALL SYSPROC.ADMIN_CMD('RUNSTATS ON TABLE {schema}.{tableName}");
             
             if (withDistribution)
             {

@@ -24,7 +24,7 @@ public class SourceCodeObject
     public string? Language { get; set; }
     
     public bool HasSource => !string.IsNullOrWhiteSpace(SourceCode);
-    public string DisplayName => $"{Schema}.{Name}";
+    public string DisplayName => $"{Schema?.Trim()}.{Name?.Trim()}";
 }
 
 /// <summary>
@@ -202,7 +202,9 @@ public class SourceCodeService
         {
             try
             {
-                var fileName = $"{obj.Schema}.{obj.Name}.{obj.ObjectType}.sql";
+                var schema = obj.Schema?.Trim() ?? "";
+                var name = obj.Name?.Trim() ?? "";
+                var fileName = $"{schema}.{name}.{obj.ObjectType}.sql";
                 var filePath = Path.Combine(outputDirectory, fileName);
                 
                 await File.WriteAllTextAsync(filePath, obj.SourceCode ?? string.Empty);
@@ -210,7 +212,7 @@ public class SourceCodeService
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex, "Failed to export {Schema}.{Name}", obj.Schema, obj.Name);
+                Logger.Warn(ex, "Failed to export {Schema}.{Name}", obj.Schema?.Trim(), obj.Name?.Trim());
             }
         }
         

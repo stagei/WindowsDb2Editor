@@ -1,9 +1,0 @@
-{
-  "sqlLength": 29,
-  "isSafe": true,
-  "severity": "SAFE",
-  "issueCount": 0,
-  "issues": [],
-  "recommendation": "SQL appears safe to execute",
-  "retrievedAt": "2025-12-13T11:29:41.3937692+01:00"
-}

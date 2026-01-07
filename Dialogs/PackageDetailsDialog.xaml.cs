@@ -48,6 +48,15 @@ public partial class PackageDetailsDialog : Window
             AddToEditorButton.IsEnabled = hasSelection;
         };
 
+        // Apply grid preferences to all grids in this dialog
+        this.Loaded += (s, e) =>
+        {
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+        };
+
         LoadPackageDetails();
         _ = LoadStatementsAsync();
         _ = LoadDependenciesAsync();
@@ -334,6 +343,25 @@ public partial class PackageDetailsDialog : Window
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+    
+    private void DockAsTab_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Docking PackageDetailsDialog as tab: {Schema}.{Package}", _package.PackageSchema, _package.PackageName);
+        
+        try
+        {
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.CreateTabWithPackageDetails(_connectionManager, _package);
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to dock as tab");
+            MessageBox.Show($"Failed to dock as tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
     
     private void ExportAiContext_Click(object sender, RoutedEventArgs e)

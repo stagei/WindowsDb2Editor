@@ -1,9 +1,0 @@
-{
-  "sessionId": "CURRENT",
-  "sessionUser": "FKGEISTA",
-  "databaseName": "INLTST",
-  "currentSchema": "FKGEISTA",
-  "sessionTime": "2025-12-13T11:26:56.383",
-  "note": "Detailed session monitoring requires admin views (SYSIBMADM.APPLICATIONS) with appropriate privileges",
-  "retrievedAt": "2025-12-13T11:26:56.3624727+01:00"
-}

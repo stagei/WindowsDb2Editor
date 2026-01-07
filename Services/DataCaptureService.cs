@@ -141,9 +141,12 @@ public class DataCaptureService
         
         foreach (var table in tables.Where(t => !t.IsCdcEnabled))
         {
-            script.AppendLine($"-- Enable CDC for {table.TabSchema}.{table.TabName}");
+            var schema = table.TabSchema?.Trim() ?? "";
+            var tableName = table.TabName?.Trim() ?? "";
+            
+            script.AppendLine($"-- Enable CDC for {schema}.{tableName}");
             script.AppendLine($"-- Current status: {table.CdcStatus}");
-            script.AppendLine($"ALTER TABLE {table.TabSchema}.{table.TabName} DATA CAPTURE CHANGES;");
+            script.AppendLine($"ALTER TABLE {schema}.{tableName} DATA CAPTURE CHANGES;");
             script.AppendLine();
         }
         
@@ -166,9 +169,12 @@ public class DataCaptureService
         
         foreach (var table in tables.Where(t => t.IsCdcEnabled))
         {
-            script.AppendLine($"-- Disable CDC for {table.TabSchema}.{table.TabName}");
+            var schema = table.TabSchema?.Trim() ?? "";
+            var tableName = table.TabName?.Trim() ?? "";
+            
+            script.AppendLine($"-- Disable CDC for {schema}.{tableName}");
             script.AppendLine($"-- Current status: {table.CdcStatus}");
-            script.AppendLine($"ALTER TABLE {table.TabSchema}.{table.TabName} DATA CAPTURE NONE;");
+            script.AppendLine($"ALTER TABLE {schema}.{tableName} DATA CAPTURE NONE;");
             script.AppendLine();
         }
         

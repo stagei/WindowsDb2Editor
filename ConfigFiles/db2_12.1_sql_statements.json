@@ -283,6 +283,167 @@
       "returns": "Trigger definition SQL",
       "source": "Property Dialogs"
     },
+    "GetViewColumns_Display": {
+      "sql": "SELECT TRIM(COLNAME) AS ColumnName, TRIM(TYPENAME) AS DataType, CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO",
+      "description": "Get columns for a view with display-friendly formatting. Returns column name, data type, and nullable status.",
+      "parameters": ["TABSCHEMA", "TABNAME"],
+      "returns": "View columns for display",
+      "source": "ViewDetailsPanel"
+    },
+    "GetViewDependencies": {
+      "sql": "SELECT DISTINCT TRIM(BSCHEMA) || '.' || TRIM(BNAME) AS DEPENDENCY FROM SYSCAT.VIEWDEP WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ?",
+      "description": "Get objects that a view depends on (tables, views, etc.).",
+      "parameters": ["VIEWSCHEMA", "VIEWNAME"],
+      "returns": "List of view dependencies",
+      "source": "ViewDetailsPanel"
+    },
+    "GetRoutineSource": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = ?",
+      "description": "Get source code for a procedure or function. ROUTINETYPE: P=Procedure, F=Function.",
+      "parameters": ["ROUTINESCHEMA", "ROUTINENAME", "ROUTINETYPE"],
+      "returns": "Routine source code",
+      "source": "RoutineDetailsPanel"
+    },
+    "GetRoutineParameters_Display": {
+      "sql": "SELECT TRIM(PARMNAME) AS PARMNAME, TRIM(TYPENAME) AS TYPENAME, CASE WHEN PARM_MODE = 'IN' THEN 'IN' WHEN PARM_MODE = 'OUT' THEN 'OUT' WHEN PARM_MODE = 'INOUT' THEN 'INOUT' ELSE TRIM(PARM_MODE) END AS PARM_MODE, LENGTH FROM SYSCAT.ROUTINEPARMS WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? ORDER BY ORDINAL",
+      "description": "Get parameters for a routine with display-friendly formatting.",
+      "parameters": ["ROUTINESCHEMA", "ROUTINENAME"],
+      "returns": "Routine parameters for display",
+      "source": "RoutineDetailsPanel"
+    },
+    "GetRoutineProperties": {
+      "sql": "SELECT TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT, TRIM(OWNER) AS OWNER, CREATE_TIME, VALID, TRIM(REMARKS) AS REMARKS FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = ?",
+      "description": "Get routine properties including language, parameter count, owner, creation time, validity, and remarks.",
+      "parameters": ["ROUTINESCHEMA", "ROUTINENAME", "ROUTINETYPE"],
+      "returns": "Routine properties",
+      "source": "RoutineDetailsPanel"
+    },
+    "GetPackageValid": {
+      "sql": "SELECT VALID FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?",
+      "description": "Check if a package is valid. Returns Y or N.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package validity status",
+      "source": "PackageDetailsPanel"
+    },
+    "GetPackageStatements_Preview": {
+      "sql": "SELECT STMTNO, SECTNO, SUBSTR(TRIM(TEXT), 1, 200) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO",
+      "description": "Get package statements with truncated text for preview display.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package statements preview",
+      "source": "PackageDetailsPanel"
+    },
+    "GetPackageDependencies": {
+      "sql": "SELECT TRIM(BTYPE) AS BTYPE, TRIM(BSCHEMA) AS BSCHEMA, TRIM(BNAME) AS BNAME FROM SYSCAT.PACKAGEDEP WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY BTYPE, BSCHEMA, BNAME",
+      "description": "Get objects that a package depends on.",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package dependencies",
+      "source": "PackageDetailsPanel"
+    },
+    "GetPackageStatementFull": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? AND STMTNO = ?",
+      "description": "Get full text of a specific package statement by statement number.",
+      "parameters": ["PKGSCHEMA", "PKGNAME", "STMTNO"],
+      "returns": "Full statement text",
+      "source": "PackageDetailsPanel"
+    },
+    "GetTablesForSchemaSimple": {
+      "sql": "SELECT TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'T' ORDER BY TABNAME",
+      "description": "Get table names only for a schema (for autocomplete/lists).",
+      "parameters": ["TABSCHEMA"],
+      "returns": "List of table names",
+      "source": "DB2ConnectionManager:GetTablesAsync"
+    },
+    "GetAllTablesSimple": {
+      "sql": "SELECT TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all table names with schema prefix (for autocomplete/lists).",
+      "parameters": [],
+      "returns": "List of schema.table names",
+      "source": "DB2ConnectionManager:GetTablesAsync"
+    },
+    "GetSchemasSimple": {
+      "sql": "SELECT TRIM(SCHEMANAME) FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME",
+      "description": "Get schema names only (for autocomplete/lists).",
+      "parameters": [],
+      "returns": "List of schema names",
+      "source": "DB2ConnectionManager:GetSchemasAsync"
+    },
+    "GetViewsForSchemaSimple": {
+      "sql": "SELECT TRIM(VIEWNAME) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? ORDER BY VIEWNAME",
+      "description": "Get view names only for a schema (for autocomplete/lists).",
+      "parameters": ["VIEWSCHEMA"],
+      "returns": "List of view names",
+      "source": "DB2ConnectionManager:GetViewsAsync"
+    },
+    "GetAllViewsSimple": {
+      "sql": "SELECT TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME",
+      "description": "Get all view names with schema prefix (for autocomplete/lists).",
+      "parameters": [],
+      "returns": "List of schema.view names",
+      "source": "DB2ConnectionManager:GetViewsAsync"
+    },
+    "GetProceduresForSchemaSimple": {
+      "sql": "SELECT TRIM(PROCNAME) FROM SYSCAT.PROCEDURES WHERE TRIM(PROCSCHEMA) = ? ORDER BY PROCNAME",
+      "description": "Get procedure names only for a schema (for autocomplete/lists).",
+      "parameters": ["PROCSCHEMA"],
+      "returns": "List of procedure names",
+      "source": "DB2ConnectionManager:GetProceduresAsync"
+    },
+    "GetAllProceduresSimple": {
+      "sql": "SELECT TRIM(PROCSCHEMA) || '.' || TRIM(PROCNAME) FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME",
+      "description": "Get all procedure names with schema prefix (for autocomplete/lists).",
+      "parameters": [],
+      "returns": "List of schema.procedure names",
+      "source": "DB2ConnectionManager:GetProceduresAsync"
+    },
+    "GetViewText": {
+      "sql": "SELECT TRIM(TEXT) FROM SYSCAT.VIEWS WHERE TRIM(VIEWNAME) = ?",
+      "description": "Get view definition text by view name only.",
+      "parameters": ["VIEWNAME"],
+      "returns": "View SQL text",
+      "source": "DB2ConnectionManager:GetViewDefinitionAsync"
+    },
+    "GetTriggerSource": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ? AND TRIM(TRIGNAME) = ?",
+      "description": "Get trigger source code.",
+      "parameters": ["TRIGSCHEMA", "TRIGNAME"],
+      "returns": "Trigger source code",
+      "source": "ConnectionTabControl"
+    },
+    "GetPackageStatementsWithText": {
+      "sql": "SELECT STMTNO, TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO FETCH FIRST 50 ROWS ONLY",
+      "description": "Get package statements with full text (limited to 50).",
+      "parameters": ["PKGSCHEMA", "PKGNAME"],
+      "returns": "Package statements",
+      "source": "ConnectionTabControl"
+    },
+    "GetTablesInTablespace": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TYPE, CARD AS ROW_COUNT FROM SYSCAT.TABLES WHERE TBSPACE = ? ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get tables in a specific tablespace.",
+      "parameters": ["TBSPACE"],
+      "returns": "Tables in tablespace",
+      "source": "ConnectionTabControl"
+    },
+    "GetSequenceInfo": {
+      "sql": "SELECT TRIM(SEQSCHEMA) AS SEQSCHEMA, TRIM(SEQNAME) AS SEQNAME, START, INCREMENT, MINVALUE, MAXVALUE, CYCLE, CACHE FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? AND TRIM(SEQNAME) = ?",
+      "description": "Get sequence properties.",
+      "parameters": ["SEQSCHEMA", "SEQNAME"],
+      "returns": "Sequence info",
+      "source": "ConnectionTabControl"
+    },
+    "GetIndexInfo": {
+      "sql": "SELECT TRIM(INDSCHEMA) AS INDSCHEMA, TRIM(INDNAME) AS INDNAME, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, UNIQUERULE, INDEXTYPE FROM SYSCAT.INDEXES WHERE TRIM(INDSCHEMA) = ? AND TRIM(INDNAME) = ?",
+      "description": "Get index properties.",
+      "parameters": ["INDSCHEMA", "INDNAME"],
+      "returns": "Index info",
+      "source": "ConnectionTabControl"
+    },
+    "GetIndexColumns": {
+      "sql": "SELECT TRIM(COLNAME) AS COLNAME, COLSEQ, COLORDER FROM SYSCAT.INDEXCOLUSE WHERE TRIM(INDSCHEMA) = ? AND TRIM(INDNAME) = ? ORDER BY COLSEQ",
+      "description": "Get columns in an index.",
+      "parameters": ["INDSCHEMA", "INDNAME"],
+      "returns": "Index columns",
+      "source": "ConnectionTabControl"
+    },
     "GetPackageSqlStatements": {
       "sql": "SELECT TRIM(z.PKGSCHEMA) AS PKGSCHEMA, TRIM(z.PKGNAME) AS PKGNAME, z.LASTUSED, TRIM(x.TEXT) AS TEXT FROM SYSCAT.STATEMENTS x JOIN SYSCAT.PACKAGES z ON x.PKGSCHEMA = z.PKGSCHEMA AND x.PKGNAME = z.PKGNAME WHERE TRIM(z.PKGSCHEMA) = ? AND TRIM(z.PKGNAME) = ? AND z.LASTUSED > CURRENT DATE - 3 YEARS",
       "description": "Get SQL statements from a package. PROVEN PATTERN from Db2CreateDBQA_NonRelated.sql (Line 680-693). Returns all SQL statements from recently used packages (last 3 years). TRIM() applied to CHAR columns.",
@@ -851,8 +1012,8 @@
       "source": "CliCommandHandlerService:GetTableIncomingFKsAsync"
     },
     "GetActiveSessions_Full": {
-      "sql": "SELECT AGENT_ID, APPL_NAME, AUTHID, CLIENT_NNAME, AGENT_STATE_LAST_UPDATE_TIME, NUM_ASSOC_AGENTS, COORD_AGENT_PID FROM SYSIBMADM.SNAPAPPL_INFO ORDER BY AGENT_STATE_LAST_UPDATE_TIME DESC",
-      "description": "Get all active sessions with full details from DB2 monitoring views. Used by CLI command 'active-sessions-full'.",
+      "sql": "SELECT AGENT_ID, APPL_NAME, AUTHID, CLIENT_NNAME, NUM_ASSOC_AGENTS, COORD_AGENT_PID FROM SYSIBMADM.SNAPAPPL_INFO ORDER BY AGENT_ID DESC",
+      "description": "Get all active sessions with full details from DB2 monitoring views. Note: AGENT_STATE_LAST_UPDATE_TIME is not available in all DB2 versions. Used by CLI command 'active-sessions-full'.",
       "parameters": [],
       "returns": "List of active sessions with detailed metrics",
       "source": "CliCommandHandlerService:GetActiveSessionsFullAsync"
@@ -898,6 +1059,20 @@
       "parameters": ["TABSCHEMA_PATTERN"],
       "returns": "Table load metrics with row operation counts",
       "source": "CliCommandHandlerService:GetDatabaseLoadAsync"
+    },
+    "GetDatabaseLoadMonitor": {
+      "sql": "SELECT t.tabschema, t.tabname, COALESCE(TRIM(s.tbspace), '') AS tablespace, SUM(t.rows_read) AS total_rows_read, SUM(t.rows_inserted) AS total_rows_inserted, SUM(t.rows_updated) AS total_rows_updated, SUM(t.rows_deleted) AS total_rows_deleted FROM TABLE(MON_GET_TABLE('{0}', '{1}', -2)) AS t LEFT JOIN SYSCAT.TABLES s ON t.tabschema = s.tabschema AND t.tabname = s.tabname {2} GROUP BY t.tabschema, t.tabname, s.tbspace ORDER BY total_rows_read DESC",
+      "description": "Get database load metrics with tablespace info for the Database Load Monitor panel. Uses MON_GET_TABLE monitoring function joined with SYSCAT.TABLES to include tablespace. Placeholders: {0}=schema filter (empty for all), {1}=table filter (empty for all), {2}=WHERE clause for system schema exclusion.",
+      "parameters": ["SCHEMA_FILTER", "TABLE_FILTER", "WHERE_CLAUSE"],
+      "returns": "Table activity metrics with tablespace, grouped by table",
+      "source": "DatabaseLoadMonitorService:BuildActivityQuery"
+    },
+    "GetDatabaseLoadMonitor_SystemSchemaExclusion": {
+      "sql": "WHERE t.tabschema NOT IN ('SYSCAT', 'SYSIBM', 'SYSIBMADM', 'SYSPROC', 'SYSSTAT', 'SYSTOOLS', 'SYSPUBLIC', 'SYSFUN', 'NULLID')",
+      "description": "WHERE clause fragment for excluding system schemas from the Database Load Monitor. Used with GetDatabaseLoadMonitor statement.",
+      "parameters": [],
+      "returns": "SQL WHERE clause fragment",
+      "source": "DatabaseLoadMonitorService"
     },
     "GetTableStatistics": {
       "sql": "SELECT TABSCHEMA, TABNAME, CARD, NPAGES, FPAGES, STATS_TIME FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') ORDER BY TABSCHEMA, TABNAME",

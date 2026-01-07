@@ -16,6 +16,15 @@ namespace WindowsDb2Editor.Services;
 public class DatabaseLoadMonitorService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    /// <summary>
+    /// Initializes the DatabaseLoadMonitorService
+    /// </summary>
+    public DatabaseLoadMonitorService()
+    {
+        _metadataHandler = App.MetadataHandler;
+    }
     
     /// <summary>
     /// Get current database load metrics with optional filtering
@@ -53,7 +62,8 @@ public class DatabaseLoadMonitorService
     }
     
     /// <summary>
-    /// Build the MON_GET_TABLE query with filters
+    /// Build the MON_GET_TABLE query with filters - includes tablespace info
+    /// Uses query from db2_12.1_sql_statements.json if available
     /// </summary>
     private string BuildActivityQuery(LoadMonitorFilter filter)
     {
@@ -63,31 +73,53 @@ public class DatabaseLoadMonitorService
         Logger.Debug("Building query - Schema filter: '{Schema}', Table filter: '{Table}'",
             schemaFilter, tableFilter);
         
-        var sql = new StringBuilder();
-        sql.AppendLine("SELECT");
-        sql.AppendLine("    tabschema,");
-        sql.AppendLine("    tabname,");
-        sql.AppendLine("    SUM(rows_read) as total_rows_read,");
-        sql.AppendLine("    SUM(rows_inserted) as total_rows_inserted,");
-        sql.AppendLine("    SUM(rows_updated) as total_rows_updated,");
-        sql.AppendLine("    SUM(rows_deleted) as total_rows_deleted");
-        sql.AppendLine($"FROM TABLE(MON_GET_TABLE('{schemaFilter}', '{tableFilter}', -2)) AS t");
+        // Try to get query from JSON config
+        var sqlTemplate = _metadataHandler?.GetStatement("GetDatabaseLoadMonitor");
+        
+        if (!string.IsNullOrEmpty(sqlTemplate))
+        {
+            // Build WHERE clause for system schema exclusion
+            var whereClause = "";
+            if (filter.ExcludeSystemSchemas)
+            {
+                whereClause = _metadataHandler?.GetStatement("GetDatabaseLoadMonitor_SystemSchemaExclusion") ?? "";
+            }
+            
+            // Format the template with placeholders: {0}=schema, {1}=table, {2}=where clause
+            var sql = string.Format(sqlTemplate, schemaFilter, tableFilter, whereClause);
+            Logger.Debug("Using query from JSON config");
+            return sql;
+        }
+        
+        // Fallback to hardcoded query if config not available
+        Logger.Warn("MetadataHandler not available, using fallback query");
+        var sqlBuilder = new StringBuilder();
+        sqlBuilder.AppendLine("SELECT");
+        sqlBuilder.AppendLine("    t.tabschema,");
+        sqlBuilder.AppendLine("    t.tabname,");
+        sqlBuilder.AppendLine("    COALESCE(TRIM(s.tbspace), '') AS tablespace,");
+        sqlBuilder.AppendLine("    SUM(t.rows_read) as total_rows_read,");
+        sqlBuilder.AppendLine("    SUM(t.rows_inserted) as total_rows_inserted,");
+        sqlBuilder.AppendLine("    SUM(t.rows_updated) as total_rows_updated,");
+        sqlBuilder.AppendLine("    SUM(t.rows_deleted) as total_rows_deleted");
+        sqlBuilder.AppendLine($"FROM TABLE(MON_GET_TABLE('{schemaFilter}', '{tableFilter}', -2)) AS t");
+        sqlBuilder.AppendLine("LEFT JOIN SYSCAT.TABLES s ON t.tabschema = s.tabschema AND t.tabname = s.tabname");
         
         // Add WHERE clause for system schema exclusion
         if (filter.ExcludeSystemSchemas)
         {
-            sql.AppendLine("WHERE tabschema NOT IN (");
+            sqlBuilder.AppendLine("WHERE t.tabschema NOT IN (");
             var systemSchemas = LoadMonitorFilter.SystemSchemas
                 .Select(s => $"    '{s}'")
                 .ToList();
-            sql.AppendLine(string.Join(",\n", systemSchemas));
-            sql.AppendLine(")");
+            sqlBuilder.AppendLine(string.Join(",\n", systemSchemas));
+            sqlBuilder.AppendLine(")");
         }
         
-        sql.AppendLine("GROUP BY tabschema, tabname");
-        sql.AppendLine("ORDER BY total_rows_read DESC");
+        sqlBuilder.AppendLine("GROUP BY t.tabschema, t.tabname, s.tbspace");
+        sqlBuilder.AppendLine("ORDER BY total_rows_read DESC");
         
-        return sql.ToString();
+        return sqlBuilder.ToString();
     }
     
     /// <summary>
@@ -103,8 +135,9 @@ public class DatabaseLoadMonitorService
             {
                 var metric = new TableActivityMetrics
                 {
-                    TabSchema = row["TABSCHEMA"]?.ToString() ?? string.Empty,
-                    TabName = row["TABNAME"]?.ToString() ?? string.Empty,
+                    TabSchema = row["TABSCHEMA"]?.ToString()?.Trim() ?? string.Empty,
+                    TabName = row["TABNAME"]?.ToString()?.Trim() ?? string.Empty,
+                    Tablespace = row["TABLESPACE"]?.ToString()?.Trim() ?? string.Empty,
                     TotalRowsRead = ConvertToLong(row["TOTAL_ROWS_READ"]),
                     TotalRowsInserted = ConvertToLong(row["TOTAL_ROWS_INSERTED"]),
                     TotalRowsUpdated = ConvertToLong(row["TOTAL_ROWS_UPDATED"]),
@@ -113,8 +146,8 @@ public class DatabaseLoadMonitorService
                 
                 metrics.Add(metric);
                 
-                Logger.Debug("Metric: {Schema}.{Table} - Reads: {Reads}, Inserts: {Inserts}, Updates: {Updates}, Deletes: {Deletes}",
-                    metric.TabSchema, metric.TabName, metric.TotalRowsRead, metric.TotalRowsInserted,
+                Logger.Debug("Metric: {Schema}.{Table} ({Tablespace}) - Reads: {Reads}, Inserts: {Inserts}, Updates: {Updates}, Deletes: {Deletes}",
+                    metric.TabSchema, metric.TabName, metric.Tablespace, metric.TotalRowsRead, metric.TotalRowsInserted,
                     metric.TotalRowsUpdated, metric.TotalRowsDeleted);
             }
             catch (Exception ex)

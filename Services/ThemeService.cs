@@ -92,18 +92,18 @@ public class ThemeService
         
         if (actualTheme.HasValue)
         {
-            ThemeManager.Current.ApplicationTheme = actualTheme.Value;
+            ModernWpf.ThemeManager.Current.ApplicationTheme = actualTheme.Value;
             Logger.Info("✓ Theme applied successfully: {Theme} → {Actual}", theme, actualTheme.Value);
         }
         else
         {
             // Fallback to system default (null means use system)
-            ThemeManager.Current.ApplicationTheme = null;
+            ModernWpf.ThemeManager.Current.ApplicationTheme = null;
             Logger.Info("✓ Applied system default theme (null)");
         }
         
         // Verify what theme was actually applied
-        var currentTheme = ThemeManager.Current.ActualApplicationTheme;
+        var currentTheme = ModernWpf.ThemeManager.Current.ActualApplicationTheme;
         Logger.Debug("ThemeManager.ActualApplicationTheme: {CurrentTheme}", currentTheme);
     }
 
@@ -167,6 +167,47 @@ public class ThemeService
 
         // For System theme, check actual applied theme
         return GetSystemTheme() == ApplicationTheme.Dark;
+    }
+
+    /// <summary>
+    /// Apply theme-appropriate colors to user preferences (editor and grid)
+    /// </summary>
+    public void ApplyThemeColorsToPreferences()
+    {
+        var prefs = App.PreferencesService?.Preferences;
+        if (prefs == null) return;
+
+        bool isDark = IsEffectiveDarkTheme();
+        Logger.Info("Applying {Theme} theme colors to preferences", isDark ? "dark" : "light");
+
+        if (isDark)
+        {
+            // Dark theme colors
+            prefs.EditorBackgroundColor = "#1E1E1E";
+            prefs.EditorForegroundColor = "#D4D4D4";
+            prefs.EditorLineNumberColor = "#858585";
+            prefs.EditorCurrentLineColor = "#2D2D30";
+            prefs.GridBackgroundColor = "#2D2D2D";
+            prefs.GridForegroundColor = "#E0E0E0";
+            prefs.GridSelectedBackgroundColor = "#0078D4";
+            prefs.GridSelectedForegroundColor = "#FFFFFF";
+        }
+        else
+        {
+            // Light theme colors
+            prefs.EditorBackgroundColor = "#FFFFFF";
+            prefs.EditorForegroundColor = "#000000";
+            prefs.EditorLineNumberColor = "#2B91AF";
+            prefs.EditorCurrentLineColor = "#E8F2FF";
+            prefs.GridBackgroundColor = "#FFFFFF";
+            prefs.GridForegroundColor = "#000000";
+            prefs.GridSelectedBackgroundColor = "#0078D4";
+            prefs.GridSelectedForegroundColor = "#FFFFFF";
+        }
+
+        // Save preferences
+        App.PreferencesService?.SavePreferences();
+        Logger.Debug("Theme colors applied and saved");
     }
 
     /// <summary>

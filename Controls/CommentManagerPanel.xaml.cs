@@ -25,6 +25,15 @@ public partial class CommentManagerPanel : UserControl
         InitializeComponent();
         _commentService = new CommentService();
         _metadataService = new MetadataLoaderService();
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(CommentsDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -75,7 +84,7 @@ public partial class CommentManagerPanel : UserControl
         if (comments == null) return;
         
         var script = _commentService.GenerateCommentScript(comments);
-        var window = new Window { Title = "COMMENT ON Script", Width = 700, Height = 500, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) } };
+        var window = Services.ThemedWindowHelper.CreateScriptWindow("COMMENT ON Script", script, 700, 500, Window.GetWindow(this));
         window.ShowDialog();
     }
     

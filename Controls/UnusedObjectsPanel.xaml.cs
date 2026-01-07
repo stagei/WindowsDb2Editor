@@ -23,6 +23,15 @@ public partial class UnusedObjectsPanel : UserControl
     {
         InitializeComponent();
         _unusedService = new UnusedObjectDetectorService();
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(UnusedObjectsDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -65,7 +74,7 @@ public partial class UnusedObjectsPanel : UserControl
         var objects = UnusedObjectsDataGrid.ItemsSource as List<UnusedObjectInfo>;
         if (objects == null || objects.Count == 0) return;
         var script = _unusedService.GenerateDropScript(objects);
-        var window = new Window { Title = "DROP Script - REVIEW CAREFULLY!", Width = 700, Height = 500, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) } };
+        var window = Services.ThemedWindowHelper.CreateScriptWindow("DROP Script - REVIEW CAREFULLY!", script, 700, 500, Window.GetWindow(this));
         window.ShowDialog();
     }
     

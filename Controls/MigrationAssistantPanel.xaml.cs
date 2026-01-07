@@ -25,6 +25,15 @@ public partial class MigrationAssistantPanel : UserControl
         InitializeComponent();
         _migrationService = new MigrationPlannerService();
         _metadataService = new MetadataLoaderService();
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(CandidatesDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -74,7 +83,7 @@ public partial class MigrationAssistantPanel : UserControl
         try
         {
             var script = await _migrationService.GenerateMigrationScriptAsync(_connectionManager, candidates);
-            var window = new Window { Title = "Migration Plan", Width = 700, Height = 500, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) } };
+            var window = Services.ThemedWindowHelper.CreateScriptWindow("Migration Plan", script, 700, 500, Window.GetWindow(this));
             window.ShowDialog();
         }
         catch (Exception ex)

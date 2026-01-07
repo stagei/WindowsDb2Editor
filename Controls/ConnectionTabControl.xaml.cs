@@ -73,6 +73,7 @@ public partial class ConnectionTabControl : UserControl
         RegisterObjectBrowserKeyboardShortcuts();
         RegisterDragDropHandlers();
         InitializeObjectBrowserAutoGrow();
+        ApplyGridPreferences();
         _ = ConnectToDatabase();
         
         Logger.Debug($"Pagination enabled with max rows: {_preferencesService.Preferences.MaxRowsPerQuery}");
@@ -80,6 +81,144 @@ public partial class ConnectionTabControl : UserControl
     
     private ObjectBrowserSettings? _objectBrowserSettings;
     private DateTime _lastAutoGrowUpdate = DateTime.MinValue;
+    
+    /// <summary>
+    /// Apply grid preferences from user settings to Results Grid and Object Browser
+    /// </summary>
+    public void ApplyGridPreferences()
+    {
+        if (_preferencesService != null)
+        {
+            // Reload preferences to get latest values
+            _preferencesService.Reload();
+            
+            // Apply to results grid
+            GridStyleHelper.ApplyGridStyle(ResultsGrid, _preferencesService.Preferences);
+            
+            // Apply to object browser TreeView
+            DatabaseTreeView.FontSize = GetTreeViewFontSize();
+            DatabaseTreeView.FontFamily = GetTreeViewFontFamily();
+            
+            // Apply spacing to all existing TreeViewItems
+            ApplyTreeViewSpacingToAll(DatabaseTreeView);
+            
+            // Apply editor theme
+            ApplyEditorTheme();
+            
+            Logger.Debug("Grid preferences applied - FontSize: {0}, Spacing: {1}", 
+                GetTreeViewFontSize(), GetTreeViewItemSpacing());
+        }
+    }
+
+    /// <summary>
+    /// Apply editor theme colors from preferences
+    /// </summary>
+    private void ApplyEditorTheme()
+    {
+        try
+        {
+            var prefs = _preferencesService?.Preferences;
+            if (prefs == null) return;
+
+            // Convert hex colors to brushes
+            var bgColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(prefs.EditorBackgroundColor);
+            var fgColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(prefs.EditorForegroundColor);
+            var lineNumColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(prefs.EditorLineNumberColor);
+            var currentLineColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(prefs.EditorCurrentLineColor);
+
+            // Apply background and foreground
+            SqlEditor.Background = new System.Windows.Media.SolidColorBrush(bgColor);
+            SqlEditor.Foreground = new System.Windows.Media.SolidColorBrush(fgColor);
+
+            // Apply line number color
+            SqlEditor.LineNumbersForeground = new System.Windows.Media.SolidColorBrush(lineNumColor);
+
+            // Apply current line highlight
+            SqlEditor.TextArea.TextView.CurrentLineBackground = new System.Windows.Media.SolidColorBrush(currentLineColor);
+            SqlEditor.TextArea.TextView.CurrentLineBorder = new System.Windows.Media.Pen(
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 255, 255, 255)), 1);
+
+            // Apply font settings
+            SqlEditor.FontFamily = new System.Windows.Media.FontFamily(prefs.FontFamily);
+            SqlEditor.FontSize = prefs.FontSize;
+
+            Logger.Debug("Editor theme applied - Background: {0}, Foreground: {1}", 
+                prefs.EditorBackgroundColor, prefs.EditorForegroundColor);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to apply editor theme");
+        }
+    }
+    
+    #region Object Browser Font Helpers
+    
+    /// <summary>
+    /// Get configured font size for object browser from preferences (default 12)
+    /// </summary>
+    private double GetTreeViewFontSize()
+    {
+        return _preferencesService?.Preferences.GridFontSize > 0 
+            ? _preferencesService.Preferences.GridFontSize 
+            : 12;
+    }
+    
+    /// <summary>
+    /// Get configured font family for object browser from preferences (default Segoe UI)
+    /// </summary>
+    private System.Windows.Media.FontFamily GetTreeViewFontFamily()
+    {
+        var fontName = !string.IsNullOrWhiteSpace(_preferencesService?.Preferences.GridFontFamily) 
+            ? _preferencesService.Preferences.GridFontFamily 
+            : "Segoe UI";
+        return new System.Windows.Media.FontFamily(fontName);
+    }
+    
+    /// <summary>
+    /// Get configured TreeView item vertical spacing from preferences (default 2)
+    /// </summary>
+    private int GetTreeViewItemSpacing()
+    {
+        return _preferencesService?.Preferences.TreeViewItemSpacing ?? 2;
+    }
+    
+    /// <summary>
+    /// Apply font and spacing settings to a TreeViewItem
+    /// </summary>
+    private void ApplyTreeViewItemFont(TreeViewItem item)
+    {
+        item.FontSize = GetTreeViewFontSize();
+        item.FontFamily = GetTreeViewFontFamily();
+        var spacing = GetTreeViewItemSpacing();
+        item.Margin = new Thickness(0, spacing / 2.0, 0, spacing / 2.0);
+    }
+    
+    /// <summary>
+    /// Apply TreeView spacing to all items recursively
+    /// </summary>
+    private void ApplyTreeViewSpacingToAll(ItemsControl parent)
+    {
+        var spacing = GetTreeViewItemSpacing();
+        var fontSize = GetTreeViewFontSize();
+        var fontFamily = GetTreeViewFontFamily();
+        
+        foreach (var item in parent.Items)
+        {
+            if (item is TreeViewItem tvi)
+            {
+                tvi.FontSize = fontSize;
+                tvi.FontFamily = fontFamily;
+                tvi.Margin = new Thickness(0, spacing / 2.0, 0, spacing / 2.0);
+                
+                if (tvi.Items.Count > 0)
+                {
+                    ApplyTreeViewSpacingToAll(tvi);
+                }
+            }
+        }
+    }
+    
+    #endregion
     
     /// <summary>
     /// Initialize auto-grow width for object browser
@@ -517,6 +656,9 @@ public partial class ConnectionTabControl : UserControl
             SqlEditor.Options.ShowTabs = true;
             SqlEditor.Options.ShowSpaces = false;
 
+            // Apply editor theme colors
+            ApplyEditorTheme();
+
             // Set initial SQL
             SqlEditor.Text = "-- Enter your SQL query here\nSELECT * FROM YOUR_TABLE;";
 
@@ -889,11 +1031,38 @@ public partial class ConnectionTabControl : UserControl
                     var metadataService = new DB2MetadataService();
                     await metadataService.CollectMetadataAsync(_connectionManager, _connection.Name ?? _connection.GetDisplayName());
                     Logger.Info("Background metadata collection completed");
-        }
-        catch (Exception ex)
-        {
+                }
+                catch (Exception ex)
+                {
                     Logger.Error(ex, "Background metadata collection failed");
                     // Don't show error to user - non-critical background task
+                }
+            });
+            
+            // Feature: Background preload of all object browser data for faster navigation
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Subscribe to progress updates
+                    _objectBrowserService.PreloadProgressChanged += (s, msg) =>
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            ObjectBrowserStatusText.Text = msg;
+                        });
+                    };
+                    
+                    await _objectBrowserService.PreloadAllDataAsync();
+                    
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        ObjectBrowserStatusText.Text = "Ready (data preloaded)";
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Background object browser preload failed");
                 }
             });
         }
@@ -969,6 +1138,7 @@ public partial class ConnectionTabControl : UserControl
                     Header = $"{category.Icon} {category.Name} ({category.Count})",
                     Tag = category
                 };
+                ApplyTreeViewItemFont(categoryNode);
 
                 // Add placeholder for lazy loading
                 if (category.IsLazyLoad && category.Count > 0)
@@ -1035,6 +1205,7 @@ public partial class ConnectionTabControl : UserControl
                             Tag = schemaNode,
                             ToolTip = $"Schema: {schemaNode.SchemaName}\nType: {schemaType}"
                         };
+                        ApplyTreeViewItemFont(node);
 
                         // Add placeholder for lazy loading
                         node.Items.Add("Loading...");
@@ -1054,8 +1225,10 @@ public partial class ConnectionTabControl : UserControl
                             Tag = ts,
                             ToolTip = $"Tablespace: {ts.TablespaceName}\nType: {ts.TablespaceType}\nPage Size: {ts.PageSize} bytes\nOwner: {ts.Owner}"
                         };
+                        ApplyTreeViewItemFont(node);
                         node.PreviewMouseLeftButtonDown += TablespaceNode_Click;
                         node.MouseDoubleClick += TablespaceNode_DoubleClick;
+                        node.ContextMenu = CreateTablespaceContextMenu(ts);
                         node.MouseMove += TablespaceNode_MouseMove;
                         categoryNode.Items.Add(node);
                     }
@@ -1074,6 +1247,7 @@ public partial class ConnectionTabControl : UserControl
                                 Header = $"{alias.Icon} {alias.FullName} → {alias.TableSpace}",
                                 Tag = alias
                             };
+                            ApplyTreeViewItemFont(node);
                             // Behave like other database objects (single click inserts name, double click opens properties)
                             node.PreviewMouseLeftButtonDown += ObjectNode_Click;
                             node.MouseDoubleClick += ObjectNode_DoubleClick;
@@ -1094,8 +1268,10 @@ public partial class ConnectionTabControl : UserControl
                             Header = $"{ObjectBrowserIcons.Package} {pkg.PackageSchema}.{pkg.PackageName}",
                             Tag = pkg
                         };
+                        ApplyTreeViewItemFont(node);
                         node.MouseDoubleClick += PackageNode_DoubleClick;
                         node.PreviewMouseLeftButtonDown += PackageNode_Click;
+                        node.ContextMenu = CreatePackageContextMenu(pkg);
                         node.MouseMove += PackageNode_MouseMove;
                         categoryNode.Items.Add(node);
                     }
@@ -1114,6 +1290,7 @@ public partial class ConnectionTabControl : UserControl
                                 Header = $"{type.Icon} {type.FullName}",
                                 Tag = type
                             };
+                            ApplyTreeViewItemFont(node);
                             categoryNode.Items.Add(node);
                         }
                     }
@@ -1122,16 +1299,19 @@ public partial class ConnectionTabControl : UserControl
                 {
                     // Security category: Roles, Groups, Users
                     var rolesNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Roles} Roles", Tag = "Roles" };
+                    ApplyTreeViewItemFont(rolesNode);
                     rolesNode.Items.Add("Loading...");
                     rolesNode.Expanded += SecuritySubCategoryNode_Expanded;
                     categoryNode.Items.Add(rolesNode);
                     
                     var groupsNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Groups} Groups", Tag = "Groups" };
+                    ApplyTreeViewItemFont(groupsNode);
                     groupsNode.Items.Add("Loading...");
                     groupsNode.Expanded += SecuritySubCategoryNode_Expanded;
                     categoryNode.Items.Add(groupsNode);
                     
                     var usersNode = new TreeViewItem { Header = $"{ObjectBrowserIcons.Users} Users", Tag = "Users" };
+                    ApplyTreeViewItemFont(usersNode);
                     usersNode.Items.Add("Loading...");
                     usersNode.Expanded += SecuritySubCategoryNode_Expanded;
                     categoryNode.Items.Add(usersNode);
@@ -1191,6 +1371,7 @@ public partial class ConnectionTabControl : UserControl
                         Header = $"{icon} {typeName} ({count})",
                         Tag = new { Schema = schemaNode.SchemaName, ObjectType = objectType }
                     };
+                    ApplyTreeViewItemFont(typeNode);
 
                     // Add placeholder for lazy loading
                     typeNode.Items.Add("Loading...");
@@ -1248,18 +1429,19 @@ public partial class ConnectionTabControl : UserControl
 
             try
             {
+                // Use cached methods for faster expansion (data preloaded in background)
                 List<DatabaseObject> objects = objectType switch
                 {
-                    ObjectType.Tables => await _objectBrowserService.GetTablesAsync(schema),
-                    ObjectType.Views => await _objectBrowserService.GetViewsAsync(schema),
-                    ObjectType.Procedures => await _objectBrowserService.GetProceduresAsync(schema),
-                    ObjectType.Functions => await _objectBrowserService.GetFunctionsAsync(schema),
-                    ObjectType.Indexes => await _objectBrowserService.GetIndexesAsync(schema),
-                    ObjectType.Triggers => await _objectBrowserService.GetTriggersAsync(schema),
-                    ObjectType.Sequences => await _objectBrowserService.GetSequencesAsync(schema),
-                    ObjectType.Synonyms => await _objectBrowserService.GetSynonymsAsync(schema),
-                    ObjectType.Types => await _objectBrowserService.GetTypesAsync(schema),
-                    ObjectType.Packages => await _objectBrowserService.GetPackagesForSchemaAsync(schema),
+                    ObjectType.Tables => await _objectBrowserService.GetTablesCachedAsync(schema),
+                    ObjectType.Views => await _objectBrowserService.GetViewsCachedAsync(schema),
+                    ObjectType.Procedures => await _objectBrowserService.GetProceduresCachedAsync(schema),
+                    ObjectType.Functions => await _objectBrowserService.GetFunctionsCachedAsync(schema),
+                    ObjectType.Indexes => await _objectBrowserService.GetIndexesAsync(schema), // No cache yet
+                    ObjectType.Triggers => await _objectBrowserService.GetTriggersCachedAsync(schema),
+                    ObjectType.Sequences => await _objectBrowserService.GetSequencesCachedAsync(schema),
+                    ObjectType.Synonyms => await _objectBrowserService.GetSynonymsAsync(schema), // No cache yet
+                    ObjectType.Types => await _objectBrowserService.GetTypesAsync(schema), // No cache yet
+                    ObjectType.Packages => await _objectBrowserService.GetPackagesForSchemaAsync(schema), // No cache yet
                     _ => new List<DatabaseObject>()
                 };
 
@@ -1272,6 +1454,7 @@ public partial class ConnectionTabControl : UserControl
                         ToolTip = CreateObjectTooltip(obj),
                         AllowDrop = false
                     };
+                    ApplyTreeViewItemFont(objectNode);
 
                     objectNode.MouseDoubleClick += ObjectNode_DoubleClick;
                     objectNode.PreviewMouseLeftButtonDown += ObjectNode_Click;
@@ -1329,6 +1512,7 @@ public partial class ConnectionTabControl : UserControl
                         Header = $"{principal.Icon} {principal.Name}",
                         Tag = principal
                     };
+                    ApplyTreeViewItemFont(node);
                     
                     // Add placeholder for privilege categories
                     node.Items.Add("Loading...");
@@ -1392,6 +1576,7 @@ public partial class ConnectionTabControl : UserControl
                         Header = $"{icon} {name} ({kvp.Value})",
                         Tag = new { Principal = principal, Category = kvp.Key }
                     };
+                    ApplyTreeViewItemFont(privilegeNode);
                     
                     principalNode.Items.Add(privilegeNode);
                 }
@@ -1565,20 +1750,13 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Handle single-click on object node - insert name at cursor position
+    /// Handle single-click on object node - select node only (no text insertion)
     /// </summary>
     private void ObjectNode_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is TreeViewItem objectNode && objectNode.Tag is DatabaseObject obj)
-        {
-            // Only handle single clicks, not double clicks or expansion/collapse
-            if (e.ClickCount == 1)
-            {
-                Logger.Debug($"Object clicked: {obj.FullName} - inserting at cursor");
-                InsertTextAtCursor(obj.FullName);
-                e.Handled = true;
-            }
-        }
+        // Single click just selects the node - no text insertion
+        // Double-click opens properties dialog
+        // Use context menu "Copy Name" or drag-drop to insert text
     }
     
     /// <summary>
@@ -1624,19 +1802,13 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Handle single-click on package node - insert name at cursor position
+    /// Handle single-click on package node - select node only (no text insertion)
     /// </summary>
     private void PackageNode_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is TreeViewItem packageNode && packageNode.Tag is PackageInfo package)
-        {
-            if (e.ClickCount == 1)
-            {
-                Logger.Debug($"Package clicked: {package.PackageSchema}.{package.PackageName} - inserting at cursor");
-                InsertTextAtCursor($"{package.PackageSchema}.{package.PackageName}");
-                e.Handled = true;
-            }
-        }
+        // Single click just selects the node - no text insertion
+        // Double-click opens properties dialog
+        // Use context menu "Copy Name" or drag-drop to insert text
     }
     
     /// <summary>
@@ -1768,19 +1940,13 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Handle click on tablespace node
+    /// Handle click on tablespace node - select node only (no text insertion)
     /// </summary>
     private void TablespaceNode_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is TreeViewItem tsNode && tsNode.Tag is TablespaceInfo tablespace)
-        {
-            if (e.ClickCount == 1)
-            {
-                Logger.Debug("Tablespace clicked: {Tablespace} - inserting at cursor", tablespace.TablespaceName);
-                InsertTextAtCursor(tablespace.TablespaceName);
-            }
-            e.Handled = true;
-        }
+        // Single click just selects the node - no text insertion
+        // Double-click opens properties dialog
+        // Use context menu "Copy Name" or drag-drop to insert text
     }
 
     private void TablespaceNode_DoubleClick(object sender, MouseButtonEventArgs e)
@@ -1890,6 +2056,11 @@ public partial class ConnectionTabControl : UserControl
         var propsItem = new MenuItem { Header = "⚙️ Properties..." };
         propsItem.Click += (s, e) => ShowObjectDetails(obj);
         contextMenu.Items.Add(propsItem);
+        
+        // Open as New Tab - opens object in a new editor tab
+        var openTabItem = new MenuItem { Header = "📌 Open as New Tab" };
+        openTabItem.Click += async (s, e) => await OpenObjectAsNewTabAsync(obj);
+        contextMenu.Items.Add(openTabItem);
         
         contextMenu.Items.Add(new Separator());
 
@@ -2045,6 +2216,96 @@ public partial class ConnectionTabControl : UserControl
             Logger.Error(ex, "Failed to generate DROP DDL for {Name}", obj.FullName);
             MessageBox.Show($"Failed to generate DROP DDL:\n\n{ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Open a database object in a new editor tab with appropriate content
+    /// </summary>
+    private async Task OpenObjectAsNewTabAsync(DatabaseObject obj)
+    {
+        try
+        {
+            Logger.Info("Opening {Type} as new tab: {Name}", obj.Type, obj.FullName);
+            
+            var mainWindow = Window.GetWindow(this) as MainWindow;
+            if (mainWindow == null)
+            {
+                MessageBox.Show("Could not access main window.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            string content;
+            string tabTitle;
+            
+            switch (obj.Type)
+            {
+                case ObjectType.Tables:
+                    // For tables, create a SELECT query
+                    content = $"-- Table: {obj.FullName}\n-- Created: {obj.CreatedAt:yyyy-MM-dd}\n-- Owner: {obj.Owner}\n\nSELECT * FROM {obj.FullName} FETCH FIRST 1000 ROWS ONLY;";
+                    tabTitle = $"Table: {obj.Name?.Trim()}";
+                    break;
+                    
+                case ObjectType.Views:
+                    // For views, get the view definition
+                    var viewDef = await _connectionManager.GetViewDefinitionAsync(obj.Name);
+                    content = !string.IsNullOrEmpty(viewDef) 
+                        ? $"-- View: {obj.FullName}\n\n{viewDef}" 
+                        : $"-- View: {obj.FullName}\n\nSELECT * FROM {obj.FullName} FETCH FIRST 1000 ROWS ONLY;";
+                    tabTitle = $"View: {obj.Name?.Trim()}";
+                    break;
+                    
+                case ObjectType.Procedures:
+                case ObjectType.Functions:
+                    // For routines, get the source code
+                    var routineSql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{obj.SchemaName?.Trim()}' AND ROUTINENAME = '{obj.Name?.Trim()}'";
+                    var routineResult = await _connectionManager.ExecuteScalarAsync(routineSql);
+                    var sourceCode = routineResult?.ToString();
+                    content = !string.IsNullOrEmpty(sourceCode) 
+                        ? $"-- {(obj.Type == ObjectType.Procedures ? "Procedure" : "Function")}: {obj.FullName}\n\n{sourceCode}"
+                        : $"-- {(obj.Type == ObjectType.Procedures ? "Procedure" : "Function")}: {obj.FullName}\n-- Source code not available";
+                    tabTitle = $"{(obj.Type == ObjectType.Procedures ? "Proc" : "Func")}: {obj.Name?.Trim()}";
+                    break;
+                    
+                case ObjectType.Triggers:
+                    // For triggers, get the trigger definition
+                    var triggerSql = $"SELECT TEXT FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA = '{obj.SchemaName?.Trim()}' AND TRIGNAME = '{obj.Name?.Trim()}'";
+                    var triggerResult = await _connectionManager.ExecuteScalarAsync(triggerSql);
+                    var triggerCode = triggerResult?.ToString();
+                    content = !string.IsNullOrEmpty(triggerCode) 
+                        ? $"-- Trigger: {obj.FullName}\n\n{triggerCode}"
+                        : $"-- Trigger: {obj.FullName}\n-- Source code not available";
+                    tabTitle = $"Trigger: {obj.Name?.Trim()}";
+                    break;
+                    
+                case ObjectType.Sequences:
+                    // For sequences, show sequence info and usage
+                    content = $"-- Sequence: {obj.FullName}\n\n-- Get current value (without increment):\nSELECT PREVIOUS VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Get next value:\nSELECT NEXT VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Sequence properties:\nSELECT * FROM SYSCAT.SEQUENCES WHERE SEQSCHEMA = '{obj.SchemaName?.Trim()}' AND SEQNAME = '{obj.Name?.Trim()}';";
+                    tabTitle = $"Seq: {obj.Name?.Trim()}";
+                    break;
+                    
+                case ObjectType.Indexes:
+                    // For indexes, show index definition
+                    content = $"-- Index: {obj.FullName}\n\n-- Index details:\nSELECT * FROM SYSCAT.INDEXES WHERE INDSCHEMA = '{obj.SchemaName?.Trim()}' AND INDNAME = '{obj.Name?.Trim()}';\n\n-- Index columns:\nSELECT * FROM SYSCAT.INDEXCOLUSE WHERE INDSCHEMA = '{obj.SchemaName?.Trim()}' AND INDNAME = '{obj.Name?.Trim()}' ORDER BY COLSEQ;";
+                    tabTitle = $"Index: {obj.Name?.Trim()}";
+                    break;
+                    
+                default:
+                    // For other types, generate DDL
+                    var ddlService = new DdlGeneratorService(_connectionManager);
+                    var (createDdl, _) = await ddlService.GenerateDdlAsync(obj);
+                    content = createDdl;
+                    tabTitle = $"{obj.Type}: {obj.Name?.Trim()}";
+                    break;
+            }
+            
+            mainWindow.CreateNewTabWithSql(content, tabTitle);
+            Logger.Info("Opened {Type} as new tab: {Title}", obj.Type, tabTitle);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open {Type} as new tab: {Name}", obj.Type, obj.FullName);
+            MessageBox.Show($"Failed to open as new tab:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -2402,6 +2663,24 @@ public partial class ConnectionTabControl : UserControl
         };
         detailsMenuItem.Click += (s, e) => ViewTableDetails(fullTableName);
         contextMenu.Items.Add(detailsMenuItem);
+        
+        // Open as New Tab
+        var openTabMenuItem = new MenuItem
+        {
+            Header = "📌 Open as New Tab"
+        };
+        openTabMenuItem.Click += (s, e) =>
+        {
+            var parts = fullTableName.Split('.');
+            var schema = parts.Length > 1 ? parts[0].Trim() : "";
+            var tableName = parts.Length > 1 ? parts[1].Trim() : parts[0].Trim();
+            var sql = $"-- Table: {schema.Trim()}.{tableName.Trim()}\n\nSELECT * FROM {schema.Trim()}.{tableName.Trim()} FETCH FIRST 1000 ROWS ONLY;";
+            if (Window.GetWindow(this) is MainWindow mainWindow)
+            {
+                mainWindow.CreateNewTabWithSql(sql, $"Table: {tableName}");
+            }
+        };
+        contextMenu.Items.Add(openTabMenuItem);
 
         contextMenu.Items.Add(new Separator());
 
@@ -2483,6 +2762,100 @@ public partial class ConnectionTabControl : UserControl
         refreshMenuItem.Click += (s, e) => RefreshTable(fullTableName);
         contextMenu.Items.Add(refreshMenuItem);
 
+        return contextMenu;
+    }
+    
+    /// <summary>
+    /// Create context menu for package nodes
+    /// </summary>
+    private ContextMenu CreatePackageContextMenu(PackageInfo package)
+    {
+        var contextMenu = new ContextMenu();
+        
+        // Properties
+        var propsItem = new MenuItem { Header = "⚙️ Properties...", FontWeight = FontWeights.Bold };
+        propsItem.Click += (s, e) => ShowPackageDetails(package);
+        contextMenu.Items.Add(propsItem);
+        
+        // Open as New Tab
+        var openTabItem = new MenuItem { Header = "📌 Open as New Tab" };
+        openTabItem.Click += async (s, e) =>
+        {
+            try
+            {
+                if (Window.GetWindow(this) is MainWindow mainWindow)
+                {
+                    // Get package statements
+                    var stmtSql = $"SELECT STMTNO, TEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = '{package.PackageSchema?.Trim()}' AND PKGNAME = '{package.PackageName?.Trim()}' ORDER BY STMTNO FETCH FIRST 50 ROWS ONLY";
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine($"-- Package: {package.PackageSchema?.Trim()}.{package.PackageName?.Trim()}");
+                    sb.AppendLine($"-- Created: {package.CreateTime:yyyy-MM-dd HH:mm:ss}");
+                    sb.AppendLine($"-- Owner: {package.Owner}");
+                    sb.AppendLine();
+                    
+                    using var cmd = _connectionManager.CreateCommand(stmtSql);
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var stmtNo = reader.GetInt32(0);
+                        var text = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                        sb.AppendLine($"-- Statement {stmtNo}:");
+                        sb.AppendLine(text);
+                        sb.AppendLine();
+                    }
+                    
+                    mainWindow.CreateNewTabWithSql(sb.ToString(), $"Package: {package.PackageName?.Trim()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open package as new tab");
+                MessageBox.Show($"Failed to open package as tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        };
+        contextMenu.Items.Add(openTabItem);
+        
+        contextMenu.Items.Add(new Separator());
+        
+        // Copy Name
+        var copyItem = new MenuItem { Header = "📋 Copy Full Name" };
+        copyItem.Click += (s, e) => Clipboard.SetText($"{package.PackageSchema?.Trim()}.{package.PackageName?.Trim()}");
+        contextMenu.Items.Add(copyItem);
+        
+        return contextMenu;
+    }
+    
+    /// <summary>
+    /// Create context menu for tablespace nodes
+    /// </summary>
+    private ContextMenu CreateTablespaceContextMenu(TablespaceInfo tablespace)
+    {
+        var contextMenu = new ContextMenu();
+        
+        // Properties
+        var propsItem = new MenuItem { Header = "⚙️ Properties...", FontWeight = FontWeights.Bold };
+        propsItem.Click += (s, e) => ShowTablespaceDetails(tablespace);
+        contextMenu.Items.Add(propsItem);
+        
+        // Open as New Tab
+        var openTabItem = new MenuItem { Header = "📌 Open as New Tab" };
+        openTabItem.Click += (s, e) =>
+        {
+            if (Window.GetWindow(this) is MainWindow mainWindow)
+            {
+                var sql = $"-- Tablespace: {tablespace.TablespaceName}\n-- Type: {tablespace.TablespaceType}\n-- Page Size: {tablespace.PageSize} bytes\n-- Owner: {tablespace.Owner}\n\n-- Tables in this tablespace:\nSELECT TABSCHEMA, TABNAME, TYPE, CARD AS ROW_COUNT\nFROM SYSCAT.TABLES\nWHERE TBSPACE = '{tablespace.TablespaceName}'\nORDER BY TABSCHEMA, TABNAME;";
+                mainWindow.CreateNewTabWithSql(sql, $"Tablespace: {tablespace.TablespaceName}");
+            }
+        };
+        contextMenu.Items.Add(openTabItem);
+        
+        contextMenu.Items.Add(new Separator());
+        
+        // Copy Name
+        var copyItem = new MenuItem { Header = "📋 Copy Name" };
+        copyItem.Click += (s, e) => Clipboard.SetText(tablespace.TablespaceName);
+        contextMenu.Items.Add(copyItem);
+        
         return contextMenu;
     }
 

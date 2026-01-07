@@ -1,7 +1,0 @@
-{
-  "inputLength": 46,
-  "formattedSql": "SELECT *\nFROM ASK.VASK_KUNDER\nWHERE KUNDE_ID=1",
-  "formattedLength": 46,
-  "note": "Basic formatting applied - use SqlFormatterService for advanced formatting",
-  "retrievedAt": "2025-12-13T11:29:42.8418433+01:00"
-}

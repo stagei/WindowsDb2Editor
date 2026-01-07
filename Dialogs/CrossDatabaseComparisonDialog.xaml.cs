@@ -34,7 +34,15 @@ public partial class CrossDatabaseComparisonDialog : Window
         _profileService = new ConnectionProfileService();
         _metadataHandler = new MetadataHandler();
 
-        Loaded += async (s, e) => await LoadConnectionProfilesAsync();
+        Loaded += async (s, e) => 
+        {
+            // Apply grid preferences to all grids in this dialog
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+            await LoadConnectionProfilesAsync();
+        };
     }
 
     private async Task LoadConnectionProfilesAsync()

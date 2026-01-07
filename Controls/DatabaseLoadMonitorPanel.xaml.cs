@@ -28,6 +28,15 @@ public partial class DatabaseLoadMonitorPanel : UserControl
         InitializeComponent();
         _loadMonitorService = new DatabaseLoadMonitorService();
         Logger.Debug("DatabaseLoadMonitorPanel initialized");
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(ActivityDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     /// <summary>
@@ -280,12 +289,12 @@ public partial class DatabaseLoadMonitorPanel : UserControl
         var csv = new StringBuilder();
         
         // Header
-        csv.AppendLine("Schema,Table,Rows Read,Rows Inserted,Rows Updated,Rows Deleted,Total Activity,Read %,Write %,Activity Level");
+        csv.AppendLine("Schema,Table,Tablespace,Rows Read,Rows Inserted,Rows Updated,Rows Deleted,Total Activity,Read %,Write %,Activity Level");
         
         // Data rows
         foreach (var metric in metrics)
         {
-            csv.AppendLine($"{metric.TabSchema},{metric.TabName}," +
+            csv.AppendLine($"{metric.TabSchema},{metric.TabName},{metric.Tablespace}," +
                           $"{metric.TotalRowsRead},{metric.TotalRowsInserted}," +
                           $"{metric.TotalRowsUpdated},{metric.TotalRowsDeleted}," +
                           $"{metric.TotalActivity},{metric.ReadPercentage:F1}," +

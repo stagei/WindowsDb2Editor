@@ -1,6 +1,0 @@
-{
-  "profileName": "FKKTOTST",
-  "testResult": "Not implemented in CLI mode",
-  "note": "Connection testing requires creating actual DB connection",
-  "retrievedAt": "2025-12-13T11:33:48.2769462+01:00"
-}

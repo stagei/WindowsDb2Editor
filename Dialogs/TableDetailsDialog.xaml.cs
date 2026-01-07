@@ -62,6 +62,15 @@ public partial class TableDetailsDialog : Window
         TableNameText.Text = _tableName;
         TableInfoText.Text = $"Schema: {_schema} • Full Name: {_fullTableName}";
         
+        // Apply grid preferences to all grids in this dialog
+        this.Loaded += (s, e) =>
+        {
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+        };
+        
         _ = LoadTableDetailsAsync();
     }
     
@@ -435,6 +444,34 @@ public partial class TableDetailsDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+    
+    private void DockAsTab_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Docking TableDetailsDialog as tab: {Table}", _fullTableName);
+        
+        try
+        {
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                // Create a new tab with the same table details content
+                mainWindow.CreateTabWithTableDetails(_connectionManager, _fullTableName, _tableName);
+                
+                // Close this dialog
+                Close();
+            }
+            else
+            {
+                MessageBox.Show("Could not access main window to dock the tab.", 
+                    "Dock Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to dock as tab");
+            MessageBox.Show($"Failed to dock as tab: {ex.Message}", 
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
     
     private void ExportAiContext_Click(object sender, RoutedEventArgs e)

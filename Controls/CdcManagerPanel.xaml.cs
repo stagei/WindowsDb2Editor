@@ -24,6 +24,15 @@ public partial class CdcManagerPanel : UserControl
     {
         InitializeComponent();
         _cdcService = new DataCaptureService();
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(CdcDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -76,7 +85,7 @@ public partial class CdcManagerPanel : UserControl
     
     private void ShowScriptDialog(string title, string script)
     {
-        var window = new Window { Title = title, Width = 600, Height = 400, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) } };
+        var window = Services.ThemedWindowHelper.CreateScriptWindow(title, script, 600, 400, Window.GetWindow(this));
         window.ShowDialog();
     }
     

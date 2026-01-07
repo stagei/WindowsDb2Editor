@@ -1,6 +1,7 @@
 using NLog;
 using System.Windows;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -18,7 +19,15 @@ public partial class DeepAnalysisDialog : Window
 
         TargetInfoText.Text = $"Analyzing: {string.Join(", ", targetObjects)}";
 
-        Loaded += async (s, e) => await LoadAnalysisAsync();
+        Loaded += async (s, e) => 
+        {
+            // Apply grid preferences to all grids in this dialog
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+            await LoadAnalysisAsync();
+        };
     }
 
     private async Task LoadAnalysisAsync()

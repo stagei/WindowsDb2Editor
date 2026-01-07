@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+using WindowsDb2Editor.Services;
 using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Dialogs;
@@ -36,6 +37,15 @@ public partial class ObjectDetailsDialog : Window
         ObjectTypeText.Text = $"{databaseObject.Icon} {databaseObject.Type} • Schema: {databaseObject.SchemaName}";
         
         Title = $"{databaseObject.Type} Details - {databaseObject.Name}";
+        
+        // Apply grid preferences to all grids in this dialog
+        this.Loaded += (s, e) =>
+        {
+            if (App.PreferencesService != null)
+            {
+                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
+            }
+        };
         
         _ = LoadDetailsAsync();
     }

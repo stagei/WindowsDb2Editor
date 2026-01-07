@@ -1,8 +1,0 @@
-{
-  "currentUser": "FKGEISTA",
-  "currentTime": "2025-12-13T11:26:51.928",
-  "lockMonitoringAvailable": false,
-  "note": "Full lock monitoring requires SYSIBMADM.MON_LOCKWAITS or MON_GET_LOCKS() function (needs DBA privileges in DB2 12.1)",
-  "recommendation": "Use GUI Lock Monitor Panel for interactive lock monitoring",
-  "retrievedAt": "2025-12-13T11:26:51.9088091+01:00"
-}

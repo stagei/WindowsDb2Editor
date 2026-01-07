@@ -28,6 +28,15 @@ public partial class LockMonitorPanel : UserControl
         InitializeComponent();
         _lockMonitorService = new LockMonitorService();
         Logger.Debug("LockMonitorPanel initialized");
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(LocksDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)

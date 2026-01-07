@@ -221,17 +221,39 @@ public class DB2ConnectionManager : IDisposable
             var elapsed = (DateTime.Now - startTime).TotalMilliseconds;
             Logger.Info($"Query executed successfully in {elapsed}ms, {dataTable.Rows.Count} rows returned");
 
+            // Track query for history (Ctrl+Shift+Q feature)
+            SqlQueryHistoryService.Track(
+                sql, 
+                source: _connectionInfo?.GetDisplayName() ?? "Unknown",
+                durationMs: (long)elapsed,
+                rowsReturned: dataTable.Rows.Count,
+                success: true);
+
             return dataTable;
         }
         catch (DB2Exception db2Ex)
         {
             Logger.Error(db2Ex, "DB2 query execution failed - SQL State: {SqlState}, Error Code: {ErrorCode}", 
                 db2Ex.SqlState, db2Ex.ErrorCode);
+            
+            // Track failed query
+            SqlQueryHistoryService.Track(sql, 
+                source: _connectionInfo?.GetDisplayName() ?? "Unknown",
+                success: false, 
+                errorMessage: $"SQL State: {db2Ex.SqlState}, {db2Ex.Message}");
+            
             throw new Exception($"Query failed: {db2Ex.Message}", db2Ex);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Query execution failed");
+            
+            // Track failed query
+            SqlQueryHistoryService.Track(sql, 
+                source: _connectionInfo?.GetDisplayName() ?? "Unknown",
+                success: false, 
+                errorMessage: ex.Message);
+            
             throw new Exception($"Query failed: {ex.Message}", ex);
         }
     }
@@ -648,9 +670,18 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = schema != null
-                ? $"SELECT TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = '{schema}' AND TYPE = 'T' ORDER BY TABNAME"
-                : "SELECT TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME";
+            string sql;
+            if (schema != null)
+            {
+                var sqlTemplate = App.MetadataHandler?.GetStatement("GetTablesForSchemaSimple")
+                    ?? "SELECT TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'T' ORDER BY TABNAME";
+                sql = sqlTemplate.Replace("?", $"'{schema}'");
+            }
+            else
+            {
+                sql = App.MetadataHandler?.GetStatement("GetAllTablesSimple")
+                    ?? "SELECT TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME";
+            }
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -705,7 +736,8 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = "SELECT TRIM(SCHEMANAME) FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME";
+            var sql = App.MetadataHandler?.GetStatement("GetSchemasSimple")
+                ?? "SELECT TRIM(SCHEMANAME) FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME";
             var dataTable = await ExecuteQueryAsync(sql);
 
             foreach (DataRow row in dataTable.Rows)
@@ -757,9 +789,18 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = schema != null
-                ? $"SELECT TRIM(VIEWNAME) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = '{schema}' ORDER BY VIEWNAME"
-                : "SELECT TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME";
+            string sql;
+            if (schema != null)
+            {
+                var sqlTemplate = App.MetadataHandler?.GetStatement("GetViewsForSchemaSimple")
+                    ?? "SELECT TRIM(VIEWNAME) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? ORDER BY VIEWNAME";
+                sql = sqlTemplate.Replace("?", $"'{schema}'");
+            }
+            else
+            {
+                sql = App.MetadataHandler?.GetStatement("GetAllViewsSimple")
+                    ?? "SELECT TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME";
+            }
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -789,9 +830,18 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = schema != null
-                ? $"SELECT TRIM(PROCNAME) FROM SYSCAT.PROCEDURES WHERE TRIM(PROCSCHEMA) = '{schema}' ORDER BY PROCNAME"
-                : "SELECT TRIM(PROCSCHEMA) || '.' || TRIM(PROCNAME) FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME";
+            string sql;
+            if (schema != null)
+            {
+                var sqlTemplate = App.MetadataHandler?.GetStatement("GetProceduresForSchemaSimple")
+                    ?? "SELECT TRIM(PROCNAME) FROM SYSCAT.PROCEDURES WHERE TRIM(PROCSCHEMA) = ? ORDER BY PROCNAME";
+                sql = sqlTemplate.Replace("?", $"'{schema}'");
+            }
+            else
+            {
+                sql = App.MetadataHandler?.GetStatement("GetAllProceduresSimple")
+                    ?? "SELECT TRIM(PROCSCHEMA) || '.' || TRIM(PROCNAME) FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME";
+            }
 
             var dataTable = await ExecuteQueryAsync(sql);
 
@@ -819,7 +869,9 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = $"SELECT TRIM(TEXT) FROM SYSCAT.VIEWS WHERE TRIM(VIEWNAME) = '{viewName}'";
+            var sqlTemplate = App.MetadataHandler?.GetStatement("GetViewText")
+                ?? "SELECT TRIM(TEXT) FROM SYSCAT.VIEWS WHERE TRIM(VIEWNAME) = ?";
+            var sql = sqlTemplate.Replace("?", $"'{viewName}'");
             var result = await ExecuteScalarAsync(sql);
 
             var definition = result?.ToString() ?? string.Empty;

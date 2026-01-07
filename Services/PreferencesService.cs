@@ -100,6 +100,72 @@ namespace WindowsDb2Editor.Services
             Preferences.MaxRowsPerQuery = maxRows;
             SavePreferences();
         }
+        
+        /// <summary>
+        /// Reload preferences from file
+        /// </summary>
+        public void Reload()
+        {
+            LoadPreferences();
+        }
+        
+        /// <summary>
+        /// Increase all font sizes by 1 and save (UI, Grid, Editor)
+        /// </summary>
+        public void IncreaseFontSize()
+        {
+            if (Preferences.UIFontSize < 24)
+            {
+                Preferences.UIFontSize++;
+                Preferences.GridFontSize = Math.Min(36, Preferences.GridFontSize + 1);
+                Preferences.FontSize = Math.Min(36, Preferences.FontSize + 1);
+                SavePreferences();
+                Logger.Info("All font sizes increased - UI: {UI}, Grid: {Grid}, Editor: {Editor}", 
+                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize);
+            }
+        }
+        
+        /// <summary>
+        /// Decrease all font sizes by 1 and save (UI, Grid, Editor)
+        /// </summary>
+        public void DecreaseFontSize()
+        {
+            if (Preferences.UIFontSize > 8)
+            {
+                Preferences.UIFontSize--;
+                Preferences.GridFontSize = Math.Max(8, Preferences.GridFontSize - 1);
+                Preferences.FontSize = Math.Max(8, Preferences.FontSize - 1);
+                SavePreferences();
+                Logger.Info("All font sizes decreased - UI: {UI}, Grid: {Grid}, Editor: {Editor}", 
+                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize);
+            }
+        }
+        
+        /// <summary>
+        /// Increase TreeView item spacing by 1 and save
+        /// </summary>
+        public void IncreaseTreeViewSpacing()
+        {
+            if (Preferences.TreeViewItemSpacing < 20)
+            {
+                Preferences.TreeViewItemSpacing++;
+                SavePreferences();
+                Logger.Info("TreeView spacing increased to {Spacing}", Preferences.TreeViewItemSpacing);
+            }
+        }
+        
+        /// <summary>
+        /// Decrease TreeView item spacing by 1 and save
+        /// </summary>
+        public void DecreaseTreeViewSpacing()
+        {
+            if (Preferences.TreeViewItemSpacing > 0)
+            {
+                Preferences.TreeViewItemSpacing--;
+                SavePreferences();
+                Logger.Info("TreeView spacing decreased to {Spacing}", Preferences.TreeViewItemSpacing);
+            }
+        }
     }
 }
 

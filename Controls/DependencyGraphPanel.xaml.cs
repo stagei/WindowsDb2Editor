@@ -26,6 +26,16 @@ public partial class DependencyGraphPanel : UserControl
         InitializeComponent();
         _depService = new DependencyAnalyzerService();
         _metadataService = new MetadataLoaderService();
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(IncomingDataGrid, App.PreferencesService.Preferences);
+            GridStyleHelper.ApplyGridStyle(OutgoingDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -94,7 +104,7 @@ public partial class DependencyGraphPanel : UserControl
     {
         if (_dependencies.Count == 0) return;
         var script = _depService.GenerateDependencyOrderedDropScript(_dependencies);
-        var window = new Window { Title = "Dependency-Ordered DROP Script", Width = 700, Height = 500, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) } };
+        var window = Services.ThemedWindowHelper.CreateScriptWindow("Dependency-Ordered DROP Script", script, 700, 500, Window.GetWindow(this));
         window.ShowDialog();
     }
     

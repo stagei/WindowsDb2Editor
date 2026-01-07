@@ -62,6 +62,49 @@ All project markdown files are located in `MarkdownDoc/` including:
 - All implementation summaries and status reports
 - All feature specifications and guides
 
+### Documentation Token Economy (CRITICAL)
+
+**ABSOLUTE RULE**: Do NOT waste tokens on non-permanent/temporary documentation.
+
+**❌ FORBIDDEN - Non-Permanent Documents:**
+- Progress summaries (use brief shell output instead)
+- Interim status reports
+- "FIXES.md" files that just describe what was fixed (code comments are enough)
+- Duplicate documentation explaining what the code already shows
+- Verbose implementation logs
+- Step-by-step change descriptions
+
+**✅ ALLOWED - Permanent/Reference Documents:**
+- Architecture documentation (`THEME_MANAGEMENT_SYSTEM.md`)
+- User guides and tutorials
+- API reference documentation
+- Design specifications that inform future development
+- Troubleshooting guides
+- Migration guides
+
+**Token Saving Guidelines:**
+1. **Instead of creating "FIXES.md"** → Add comments in code explaining the fix
+2. **Instead of progress summaries** → Use brief shell Write-Host output
+3. **Instead of verbose change logs** → Use git commit messages
+4. **Instead of interim reports** → Report completion only
+5. **Only create .md files that will be referenced long-term**
+
+**Example of Token Waste:**
+```markdown
+# ❌ BAD: DARK_THEME_FIXES.md (170 lines)
+Lists what was changed, what files were modified, step-by-step fixes
+→ This should just be code comments and git commits
+```
+
+**Example of Good Documentation:**
+```markdown
+# ✅ GOOD: THEME_MANAGEMENT_SYSTEM.md
+Architecture overview, usage examples, how to extend
+→ This will be referenced by developers for months/years
+```
+
+**When in doubt:** Ask "Will this document be useful 3 months from now?" If no, don't create it.
+
 ## Logging Standards
 
 ### Always Use NLog (Never Serilog)

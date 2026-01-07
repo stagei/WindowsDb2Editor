@@ -1,7 +1,0 @@
-{
-  "databaseName": "INLTST",
-  "currentTime": "2025-12-13T11:34:03.973",
-  "currentUser": "FKGEISTA",
-  "note": "Database configuration parameters require db2 GET DBM CFG or GET DB CFG commands",
-  "retrievedAt": "2025-12-13T11:34:03.9472332+01:00"
-}

@@ -25,6 +25,15 @@ public partial class StatisticsManagerPanel : UserControl
         InitializeComponent();
         _statisticsService = new StatisticsService();
         Logger.Debug("StatisticsManagerPanel initialized");
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(StatisticsDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -97,14 +106,26 @@ public partial class StatisticsManagerPanel : UserControl
         }
         
         var script = _statisticsService.GenerateRunstatsScript(stats);
-        var window = new Window
+        
+        // Open script in a new editor tab
+        if (Application.Current.MainWindow is MainWindow mainWindow)
         {
-            Title = "RUNSTATS Script",
-            Width = 700,
-            Height = 500,
-            Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas"), Margin = new Thickness(10) }
-        };
-        window.ShowDialog();
+            mainWindow.CreateNewTabWithSql(script, "RUNSTATS Script");
+            
+            // Close the Statistics Manager dialog if it's in a separate window
+            var parentWindow = Window.GetWindow(this);
+            if (parentWindow != null && parentWindow != mainWindow)
+            {
+                parentWindow.Close();
+            }
+        }
+        else
+        {
+            // Fallback: copy to clipboard if main window not accessible
+            Clipboard.SetText(script);
+            MessageBox.Show($"RUNSTATS script for {stats.Count} table(s) copied to clipboard.",
+                "Generate RUNSTATS", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
     
     private async void ExportButton_Click(object sender, RoutedEventArgs e)

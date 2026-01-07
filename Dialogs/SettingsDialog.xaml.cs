@@ -21,12 +21,25 @@ namespace WindowsDb2Editor.Dialogs
 
             _preferencesService = preferencesService;
 
-            // Set up event handlers
+            // Load current preferences first (before adding event handlers to avoid null reference errors)
+            LoadCurrentSettings();
+            
+            // Set up event handlers AFTER loading settings
             FontSizeSlider.ValueChanged += FontSizeSlider_ValueChanged;
             TabSizeSlider.ValueChanged += TabSizeSlider_ValueChanged;
-
-            // Load current preferences
-            LoadCurrentSettings();
+            
+            // Only add grid event handlers if the controls exist
+            if (GridFontSizeSlider != null && GridCellHeightSlider != null)
+            {
+                GridFontSizeSlider.ValueChanged += GridFontSizeSlider_ValueChanged;
+                GridCellHeightSlider.ValueChanged += GridCellHeightSlider_ValueChanged;
+            }
+            
+            // TreeView spacing slider
+            if (TreeViewSpacingSlider != null)
+            {
+                TreeViewSpacingSlider.ValueChanged += TreeViewSpacingSlider_ValueChanged;
+            }
 
             // Display data folder path
             DataFolderPathText.Text = $"Location: {AppDataHelper.GetAppDataFolder()}";
@@ -56,6 +69,21 @@ namespace WindowsDb2Editor.Dialogs
                 // Logging settings
                 SetComboBoxValue(LogLevelComboBox, prefs.LogLevel);
 
+                // Grid settings
+                GridBackgroundColorTextBox.Text = prefs.GridBackgroundColor;
+                GridForegroundColorTextBox.Text = prefs.GridForegroundColor;
+                GridSelectedBackgroundColorTextBox.Text = prefs.GridSelectedBackgroundColor;
+                GridSelectedForegroundColorTextBox.Text = prefs.GridSelectedForegroundColor;
+                GridFontSizeSlider.Value = prefs.GridFontSize;
+                GridFontSizeText.Text = prefs.GridFontSize.ToString();
+                SetComboBoxValue(GridFontFamilyComboBox, prefs.GridFontFamily);
+                GridCellHeightSlider.Value = prefs.GridCellHeight;
+                GridCellHeightText.Text = prefs.GridCellHeight.ToString();
+                
+                // TreeView settings
+                TreeViewSpacingSlider.Value = prefs.TreeViewItemSpacing;
+                TreeViewSpacingText.Text = prefs.TreeViewItemSpacing.ToString();
+
                 Logger.Info("Settings loaded successfully");
             }
             catch (Exception ex)
@@ -83,6 +111,15 @@ namespace WindowsDb2Editor.Dialogs
             return (comboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
         }
 
+        private bool IsValidHexColor(string color)
+        {
+            if (string.IsNullOrWhiteSpace(color))
+                return false;
+
+            var cleanHex = color.TrimStart('#');
+            return cleanHex.Length == 6 && System.Text.RegularExpressions.Regex.IsMatch(cleanHex, "^[0-9A-Fa-f]{6}$");
+        }
+
         private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (FontSizeText != null)
@@ -96,6 +133,92 @@ namespace WindowsDb2Editor.Dialogs
             if (TabSizeText != null)
             {
                 TabSizeText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void GridFontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (GridFontSizeText != null)
+            {
+                GridFontSizeText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void GridCellHeightSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (GridCellHeightText != null)
+            {
+                GridCellHeightText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void TreeViewSpacingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TreeViewSpacingText != null)
+            {
+                TreeViewSpacingText.Text = ((int)e.NewValue).ToString();
+            }
+        }
+
+        private void GridBackgroundColorPickerButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowColorPicker(GridBackgroundColorTextBox);
+        }
+
+        private void GridForegroundColorPickerButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowColorPicker(GridForegroundColorTextBox);
+        }
+
+        private void GridSelectedBackgroundColorPickerButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowColorPicker(GridSelectedBackgroundColorTextBox);
+        }
+
+        private void GridSelectedForegroundColorPickerButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowColorPicker(GridSelectedForegroundColorTextBox);
+        }
+
+        private void ShowColorPicker(TextBox targetTextBox)
+        {
+            try
+            {
+                var colorDialog = new System.Windows.Forms.ColorDialog();
+                
+                // Try to parse current color from textbox
+                var currentColor = targetTextBox.Text;
+                if (!string.IsNullOrWhiteSpace(currentColor) && currentColor.StartsWith("#"))
+                {
+                    try
+                    {
+                        var cleanHex = currentColor.TrimStart('#');
+                        if (cleanHex.Length == 6)
+                        {
+                            var r = Convert.ToByte(cleanHex.Substring(0, 2), 16);
+                            var g = Convert.ToByte(cleanHex.Substring(2, 2), 16);
+                            var b = Convert.ToByte(cleanHex.Substring(4, 2), 16);
+                            colorDialog.Color = System.Drawing.Color.FromArgb(r, g, b);
+                        }
+                    }
+                    catch
+                    {
+                        // Use default if parsing fails
+                    }
+                }
+
+                if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    var color = colorDialog.Color;
+                    var hexColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                    targetTextBox.Text = hexColor;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error showing color picker");
+                MessageBox.Show($"Error opening color picker: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -178,6 +301,18 @@ namespace WindowsDb2Editor.Dialogs
                     // Logging settings
                     SetComboBoxValue(LogLevelComboBox, defaults.LogLevel);
 
+                    // Grid settings
+                    GridBackgroundColorTextBox.Text = defaults.GridBackgroundColor;
+                    GridForegroundColorTextBox.Text = defaults.GridForegroundColor;
+                    GridSelectedBackgroundColorTextBox.Text = defaults.GridSelectedBackgroundColor;
+                    GridSelectedForegroundColorTextBox.Text = defaults.GridSelectedForegroundColor;
+                    GridFontSizeSlider.Value = defaults.GridFontSize;
+                    GridCellHeightSlider.Value = defaults.GridCellHeight;
+                    SetComboBoxValue(GridFontFamilyComboBox, defaults.GridFontFamily);
+                    
+                    // TreeView settings
+                    TreeViewSpacingSlider.Value = defaults.TreeViewItemSpacing;
+
                     Logger.Info("Settings reset to defaults");
                     MessageBox.Show("Settings have been reset to defaults.", "Reset Complete", 
                         MessageBoxButton.OK, MessageBoxImage.Information);
@@ -214,6 +349,47 @@ namespace WindowsDb2Editor.Dialogs
                     return;
                 }
 
+                // Validate grid color inputs
+                if (!IsValidHexColor(GridBackgroundColorTextBox.Text))
+                {
+                    MessageBox.Show("Grid Background Color must be a valid hex color (e.g., #FFFFFF).", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    GridBackgroundColorTextBox.Focus();
+                    return;
+                }
+
+                if (!IsValidHexColor(GridForegroundColorTextBox.Text))
+                {
+                    MessageBox.Show("Grid Foreground Color must be a valid hex color (e.g., #000000).", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    GridForegroundColorTextBox.Focus();
+                    return;
+                }
+
+                if (!IsValidHexColor(GridSelectedBackgroundColorTextBox.Text))
+                {
+                    MessageBox.Show("Grid Selected Background Color must be a valid hex color (e.g., #0078D4).", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    GridSelectedBackgroundColorTextBox.Focus();
+                    return;
+                }
+
+                if (!IsValidHexColor(GridSelectedForegroundColorTextBox.Text))
+                {
+                    MessageBox.Show("Grid Selected Foreground Color must be a valid hex color (e.g., #FFFFFF).", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    GridSelectedForegroundColorTextBox.Focus();
+                    return;
+                }
+
+                // Validate grid cell height
+                if (GridCellHeightSlider.Value < 20 || GridCellHeightSlider.Value > 50)
+                {
+                    MessageBox.Show("Grid Cell Height must be between 20 and 50 pixels.", "Invalid Input", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 // Update preferences
                 _preferencesService.Preferences.DefaultTheme = GetComboBoxValue(ThemeComboBox);
                 _preferencesService.Preferences.FontFamily = GetComboBoxValue(FontFamilyComboBox);
@@ -225,8 +401,23 @@ namespace WindowsDb2Editor.Dialogs
                 _preferencesService.Preferences.AutoRefreshObjectsOnConnect = AutoRefreshObjectsCheckBox.IsChecked ?? true;
                 _preferencesService.Preferences.LogLevel = GetComboBoxValue(LogLevelComboBox);
 
+                // Grid settings
+                _preferencesService.Preferences.GridBackgroundColor = GridBackgroundColorTextBox.Text;
+                _preferencesService.Preferences.GridForegroundColor = GridForegroundColorTextBox.Text;
+                _preferencesService.Preferences.GridSelectedBackgroundColor = GridSelectedBackgroundColorTextBox.Text;
+                _preferencesService.Preferences.GridSelectedForegroundColor = GridSelectedForegroundColorTextBox.Text;
+                _preferencesService.Preferences.GridFontSize = (int)GridFontSizeSlider.Value;
+                _preferencesService.Preferences.GridFontFamily = GetComboBoxValue(GridFontFamilyComboBox);
+                _preferencesService.Preferences.GridCellHeight = (int)GridCellHeightSlider.Value;
+                
+                // TreeView settings
+                _preferencesService.Preferences.TreeViewItemSpacing = (int)TreeViewSpacingSlider.Value;
+
                 // Save to file
                 _preferencesService.SavePreferences();
+
+                // Refresh all existing grids with new preferences
+                GridStyleHelper.RefreshAllGrids(_preferencesService.Preferences);
 
                 Logger.Info("Settings saved successfully");
                 DialogResult = true;
@@ -311,6 +502,10 @@ namespace WindowsDb2Editor.Dialogs
         
         private void AiProvider_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            // Guard against event firing during XAML initialization
+            if (AutoDetectOllamaButton == null || OllamaStatusBorder == null || AvailableModelsExpander == null)
+                return;
+            
             var provider = GetComboBoxValue(AiProviderComboBox);
             
             // Show/hide auto-detect button based on provider

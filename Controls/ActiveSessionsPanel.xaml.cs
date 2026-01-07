@@ -25,6 +25,17 @@ public partial class ActiveSessionsPanel : UserControl
         InitializeComponent();
         _sessionService = new SessionMonitorService();
         Logger.Debug("ActiveSessionsPanel initialized");
+        
+        // Apply grid preferences
+        ApplyGridPreferences();
+    }
+    
+    private void ApplyGridPreferences()
+    {
+        if (App.PreferencesService != null)
+        {
+            GridStyleHelper.ApplyGridStyle(SessionsDataGrid, App.PreferencesService.Preferences);
+        }
     }
     
     public async Task InitializeAsync(DB2ConnectionManager connectionManager)
@@ -66,7 +77,7 @@ public partial class ActiveSessionsPanel : UserControl
         var sessions = SessionsDataGrid.SelectedItems.Cast<SessionInfo>().ToList();
         if (sessions.Count == 0) return;
         var script = _sessionService.GenerateForceApplicationScript(sessions);
-        var window = new Window { Title = "Force Application Script", Width = 600, Height = 400, Content = new TextBox { Text = script, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas") } };
+        var window = Services.ThemedWindowHelper.CreateScriptWindow("Force Application Script", script, 600, 400, Window.GetWindow(this));
         window.ShowDialog();
     }
     
