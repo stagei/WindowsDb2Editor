@@ -227,8 +227,8 @@ public partial class LockMonitorPanel : UserControl
         
         foreach (var lockInfo in locks)
         {
-            csv.AppendLine($"{lockInfo.TabSchema},{lockInfo.TabName},{lockInfo.LockMode}," +
-                          $"{lockInfo.LockModeDescription},{lockInfo.LockStatus},{lockInfo.PrimaryAuthId}," +
+            csv.AppendLine($"{lockInfo.SchemaName},{lockInfo.TableName},{lockInfo.LockMode}," +
+                          $"{lockInfo.LockModeDescription},{lockInfo.LockStatus},{lockInfo.AuthorizationId}," +
                           $"{lockInfo.ApplicationName},{lockInfo.ClientName},{lockInfo.AgentId},{lockInfo.LockSeverity}");
         }
         

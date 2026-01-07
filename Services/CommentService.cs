@@ -19,7 +19,18 @@ public class ObjectComment
     public string TableName { get; set; } = string.Empty;
     public string? ColumnName { get; set; }
     public string? Comment { get; set; }
+    
+    /// <summary>
+    /// Original comment value when loaded from database (used to track changes)
+    /// </summary>
+    public string? OriginalComment { get; set; }
+    
     public bool HasComment => !string.IsNullOrWhiteSpace(Comment);
+    
+    /// <summary>
+    /// Returns true if the comment has been modified from its original value
+    /// </summary>
+    public bool IsModified => !string.Equals(Comment ?? string.Empty, OriginalComment ?? string.Empty, StringComparison.Ordinal);
 }
 
 /// <summary>
@@ -121,13 +132,15 @@ public class CommentService
         {
             try
             {
+                var commentValue = row["COMMENT"] == DBNull.Value ? null : row["COMMENT"]?.ToString();
                 var comment = new ObjectComment
                 {
                     ObjectType = row["OBJECT_TYPE"]?.ToString() ?? string.Empty,
                     Schema = row["SCHEMA"]?.ToString() ?? string.Empty,
                     TableName = row["TABLE_NAME"]?.ToString() ?? string.Empty,
                     ColumnName = row["COLUMN_NAME"] == DBNull.Value ? null : row["COLUMN_NAME"]?.ToString(),
-                    Comment = row["COMMENT"] == DBNull.Value ? null : row["COMMENT"]?.ToString()
+                    Comment = commentValue,
+                    OriginalComment = commentValue  // Store original for change tracking
                 };
                 
                 comments.Add(comment);
@@ -142,18 +155,41 @@ public class CommentService
     }
     
     /// <summary>
-    /// Generate COMMENT ON statements
+    /// Generate COMMENT ON statements for all comments
     /// </summary>
     public string GenerateCommentScript(List<ObjectComment> comments)
     {
-        Logger.Info("Generating COMMENT script for {Count} objects", comments.Count);
+        return GenerateCommentScript(comments, changedOnly: false);
+    }
+    
+    /// <summary>
+    /// Generate COMMENT ON statements, optionally only for changed comments
+    /// </summary>
+    public string GenerateCommentScript(List<ObjectComment> comments, bool changedOnly)
+    {
+        var filteredComments = changedOnly 
+            ? comments.Where(c => c.IsModified).ToList()
+            : comments.Where(c => c.HasComment).ToList();
+            
+        Logger.Info("Generating COMMENT script for {Count} objects (changedOnly: {ChangedOnly})", 
+            filteredComments.Count, changedOnly);
         
         var script = new StringBuilder();
         script.AppendLine("-- Generated COMMENT Script");
         script.AppendLine($"-- Generated: {DateTime.Now}");
+        if (changedOnly)
+        {
+            script.AppendLine("-- Only modified comments are included");
+        }
         script.AppendLine();
         
-        foreach (var comment in comments.Where(c => c.HasComment))
+        if (filteredComments.Count == 0)
+        {
+            script.AppendLine("-- No " + (changedOnly ? "modified " : "") + "comments to export");
+            return script.ToString();
+        }
+        
+        foreach (var comment in filteredComments)
         {
             if (comment.ObjectType == "TABLE")
             {
@@ -168,7 +204,7 @@ public class CommentService
             script.AppendLine();
         }
         
-        Logger.Info("Generated COMMENT script for {Count} objects", comments.Count(c => c.HasComment));
+        Logger.Info("Generated COMMENT script for {Count} objects", filteredComments.Count);
         return script.ToString();
     }
     

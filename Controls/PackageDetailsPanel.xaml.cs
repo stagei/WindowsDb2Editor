@@ -44,6 +44,11 @@ public partial class PackageDetailsPanel : UserControl
     {
         try
         {
+            if (_metadataHandler == null)
+            {
+                throw new InvalidOperationException("MetadataHandler not initialized");
+            }
+            
             var pkgSchema = _package.PackageSchema?.Trim() ?? "";
             var pkgName = _package.PackageName?.Trim() ?? "";
             
@@ -58,9 +63,8 @@ public partial class PackageDetailsPanel : UserControl
                 CreatedValue.Text = _package.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-";
             });
 
-            // Check if package is valid - use abstracted query from JSON config
-            var validSqlTemplate = _metadataHandler?.GetStatement("GetPackageValid")
-                ?? "SELECT VALID FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?";
+            // Check if package is valid - use required statement from JSON config
+            var validSqlTemplate = _metadataHandler.GetRequiredStatement("GetPackageValid");
             var validSql = ReplacePlaceholders(validSqlTemplate, pkgSchema, pkgName);
             var validResult = await _connectionManager.ExecuteQueryAsync(validSql);
             if (validResult.Rows.Count > 0)
@@ -69,9 +73,8 @@ public partial class PackageDetailsPanel : UserControl
                 Dispatcher.Invoke(() => ValidValue.Text = valid == "Y" ? "Yes" : "No");
             }
 
-            // Load statements - use abstracted query from JSON config
-            var stmtSqlTemplate = _metadataHandler?.GetStatement("GetPackageStatements_Preview")
-                ?? "SELECT STMTNO, SECTNO, SUBSTR(TRIM(TEXT), 1, 200) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO";
+            // Load statements - use required statement from JSON config
+            var stmtSqlTemplate = _metadataHandler.GetRequiredStatement("GetPackageStatements_Preview");
             var stmtSql = ReplacePlaceholders(stmtSqlTemplate, pkgSchema, pkgName);
             var stmtResult = await _connectionManager.ExecuteQueryAsync(stmtSql);
             Dispatcher.Invoke(() =>
@@ -80,9 +83,8 @@ public partial class PackageDetailsPanel : UserControl
                 StatementCountText.Text = $"Statements: {stmtResult.Rows.Count}";
             });
 
-            // Load dependencies - use abstracted query from JSON config
-            var depSqlTemplate = _metadataHandler?.GetStatement("GetPackageDependencies")
-                ?? "SELECT TRIM(BTYPE) AS BTYPE, TRIM(BSCHEMA) AS BSCHEMA, TRIM(BNAME) AS BNAME FROM SYSCAT.PACKAGEDEP WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY BTYPE, BSCHEMA, BNAME";
+            // Load dependencies - use required statement from JSON config
+            var depSqlTemplate = _metadataHandler.GetRequiredStatement("GetPackageDependencies");
             var depSql = ReplacePlaceholders(depSqlTemplate, pkgSchema, pkgName);
             var depResult = await _connectionManager.ExecuteQueryAsync(depSql);
             Dispatcher.Invoke(() =>
@@ -108,11 +110,12 @@ public partial class PackageDetailsPanel : UserControl
             var pkgSchema = _package.PackageSchema?.Trim() ?? "";
             var pkgName = _package.PackageName?.Trim() ?? "";
             
+            if (_metadataHandler == null) return;
+            
             try
             {
-                // Get the full statement text - use abstracted query from JSON config
-                var fullSqlTemplate = _metadataHandler?.GetStatement("GetPackageStatementFull")
-                    ?? "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? AND STMTNO = ?";
+                // Get the full statement text - use required statement from JSON config
+                var fullSqlTemplate = _metadataHandler.GetRequiredStatement("GetPackageStatementFull");
                 var fullSql = ReplacePlaceholders(fullSqlTemplate, pkgSchema, pkgName, stmtNo ?? "0");
                 var result = await _connectionManager.ExecuteQueryAsync(fullSql);
                 if (result.Rows.Count > 0)
@@ -138,11 +141,12 @@ public partial class PackageDetailsPanel : UserControl
             var pkgSchema = _package.PackageSchema?.Trim() ?? "";
             var pkgName = _package.PackageName?.Trim() ?? "";
             
+            if (_metadataHandler == null) return;
+            
             try
             {
-                // Get the full statement text - use abstracted query from JSON config
-                var fullSqlTemplate = _metadataHandler?.GetStatement("GetPackageStatementFull")
-                    ?? "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? AND STMTNO = ?";
+                // Get the full statement text - use required statement from JSON config
+                var fullSqlTemplate = _metadataHandler.GetRequiredStatement("GetPackageStatementFull");
                 var fullSql = ReplacePlaceholders(fullSqlTemplate, pkgSchema, pkgName, stmtNo ?? "0");
                 var result = await _connectionManager.ExecuteQueryAsync(fullSql);
                 if (result.Rows.Count > 0)

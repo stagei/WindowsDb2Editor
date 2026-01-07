@@ -63,7 +63,7 @@ public class DatabaseLoadMonitorService
     
     /// <summary>
     /// Build the MON_GET_TABLE query with filters - includes tablespace info
-    /// Uses query from db2_12.1_sql_statements.json if available
+    /// Uses required statements from db2_12.1_sql_statements.json
     /// </summary>
     private string BuildActivityQuery(LoadMonitorFilter filter)
     {
@@ -73,53 +73,25 @@ public class DatabaseLoadMonitorService
         Logger.Debug("Building query - Schema filter: '{Schema}', Table filter: '{Table}'",
             schemaFilter, tableFilter);
         
-        // Try to get query from JSON config
-        var sqlTemplate = _metadataHandler?.GetStatement("GetDatabaseLoadMonitor");
-        
-        if (!string.IsNullOrEmpty(sqlTemplate))
+        // Get required statement from JSON config
+        if (_metadataHandler == null)
         {
-            // Build WHERE clause for system schema exclusion
-            var whereClause = "";
-            if (filter.ExcludeSystemSchemas)
-            {
-                whereClause = _metadataHandler?.GetStatement("GetDatabaseLoadMonitor_SystemSchemaExclusion") ?? "";
-            }
-            
-            // Format the template with placeholders: {0}=schema, {1}=table, {2}=where clause
-            var sql = string.Format(sqlTemplate, schemaFilter, tableFilter, whereClause);
-            Logger.Debug("Using query from JSON config");
-            return sql;
+            throw new InvalidOperationException("MetadataHandler not initialized");
         }
         
-        // Fallback to hardcoded query if config not available
-        Logger.Warn("MetadataHandler not available, using fallback query");
-        var sqlBuilder = new StringBuilder();
-        sqlBuilder.AppendLine("SELECT");
-        sqlBuilder.AppendLine("    t.tabschema,");
-        sqlBuilder.AppendLine("    t.tabname,");
-        sqlBuilder.AppendLine("    COALESCE(TRIM(s.tbspace), '') AS tablespace,");
-        sqlBuilder.AppendLine("    SUM(t.rows_read) as total_rows_read,");
-        sqlBuilder.AppendLine("    SUM(t.rows_inserted) as total_rows_inserted,");
-        sqlBuilder.AppendLine("    SUM(t.rows_updated) as total_rows_updated,");
-        sqlBuilder.AppendLine("    SUM(t.rows_deleted) as total_rows_deleted");
-        sqlBuilder.AppendLine($"FROM TABLE(MON_GET_TABLE('{schemaFilter}', '{tableFilter}', -2)) AS t");
-        sqlBuilder.AppendLine("LEFT JOIN SYSCAT.TABLES s ON t.tabschema = s.tabschema AND t.tabname = s.tabname");
+        var sqlTemplate = _metadataHandler.GetRequiredStatement("GetDatabaseLoadMonitor");
         
-        // Add WHERE clause for system schema exclusion
+        // Build WHERE clause for system schema exclusion
+        var whereClause = "";
         if (filter.ExcludeSystemSchemas)
         {
-            sqlBuilder.AppendLine("WHERE t.tabschema NOT IN (");
-            var systemSchemas = LoadMonitorFilter.SystemSchemas
-                .Select(s => $"    '{s}'")
-                .ToList();
-            sqlBuilder.AppendLine(string.Join(",\n", systemSchemas));
-            sqlBuilder.AppendLine(")");
+            whereClause = _metadataHandler.GetRequiredStatement("GetDatabaseLoadMonitor_SystemSchemaExclusion");
         }
         
-        sqlBuilder.AppendLine("GROUP BY t.tabschema, t.tabname, s.tbspace");
-        sqlBuilder.AppendLine("ORDER BY total_rows_read DESC");
-        
-        return sqlBuilder.ToString();
+        // Format the template with placeholders: {0}=schema, {1}=table, {2}=where clause
+        var sql = string.Format(sqlTemplate, schemaFilter, tableFilter, whereClause);
+        Logger.Debug("Using required statement from JSON config");
+        return sql;
     }
     
     /// <summary>
@@ -135,19 +107,19 @@ public class DatabaseLoadMonitorService
             {
                 var metric = new TableActivityMetrics
                 {
-                    TabSchema = row["TABSCHEMA"]?.ToString()?.Trim() ?? string.Empty,
-                    TabName = row["TABNAME"]?.ToString()?.Trim() ?? string.Empty,
-                    Tablespace = row["TABLESPACE"]?.ToString()?.Trim() ?? string.Empty,
-                    TotalRowsRead = ConvertToLong(row["TOTAL_ROWS_READ"]),
-                    TotalRowsInserted = ConvertToLong(row["TOTAL_ROWS_INSERTED"]),
-                    TotalRowsUpdated = ConvertToLong(row["TOTAL_ROWS_UPDATED"]),
-                    TotalRowsDeleted = ConvertToLong(row["TOTAL_ROWS_DELETED"])
+                    SchemaName = row["SchemaName"]?.ToString()?.Trim() ?? string.Empty,
+                    TableName = row["TableName"]?.ToString()?.Trim() ?? string.Empty,
+                    TablespaceName = row["TablespaceName"]?.ToString()?.Trim() ?? string.Empty,
+                    TotalRowsRead = ConvertToLong(row["TotalRowsRead"]),
+                    TotalRowsInserted = ConvertToLong(row["TotalRowsInserted"]),
+                    TotalRowsUpdated = ConvertToLong(row["TotalRowsUpdated"]),
+                    TotalRowsDeleted = ConvertToLong(row["TotalRowsDeleted"])
                 };
                 
                 metrics.Add(metric);
                 
                 Logger.Debug("Metric: {Schema}.{Table} ({Tablespace}) - Reads: {Reads}, Inserts: {Inserts}, Updates: {Updates}, Deletes: {Deletes}",
-                    metric.TabSchema, metric.TabName, metric.Tablespace, metric.TotalRowsRead, metric.TotalRowsInserted,
+                    metric.SchemaName, metric.TableName, metric.TablespaceName, metric.TotalRowsRead, metric.TotalRowsInserted,
                     metric.TotalRowsUpdated, metric.TotalRowsDeleted);
             }
             catch (Exception ex)
@@ -288,20 +260,20 @@ public class DatabaseLoadMonitorService
         {
             // Find matching table in previous snapshot
             var previous = previousSnapshot.Metrics.FirstOrDefault(p => 
-                p.TabSchema == current.TabSchema && p.TabName == current.TabName);
+                p.SchemaName == current.SchemaName && p.TableName == current.TableName);
             
             if (previous == null)
             {
                 // Table didn't exist in previous snapshot (newly created)
                 Logger.Debug("Table {Schema}.{Table} not found in previous snapshot (new table)",
-                    current.TabSchema, current.TabName);
+                    current.SchemaName, current.TableName);
                 continue;
             }
             
             var delta = new TableActivityDelta
             {
-                TabSchema = current.TabSchema,
-                TabName = current.TabName,
+                SchemaName = current.SchemaName,
+                TableName = current.TableName,
                 CurrentRowsRead = current.TotalRowsRead,
                 CurrentRowsInserted = current.TotalRowsInserted,
                 CurrentRowsUpdated = current.TotalRowsUpdated,
@@ -321,7 +293,7 @@ public class DatabaseLoadMonitorService
             deltas.Add(delta);
             
             Logger.Debug("Delta calculated for {Schema}.{Table} - Total: {Total}, Rate: {Rate}/s",
-                delta.TabSchema, delta.TabName, delta.TotalDeltaActivity, delta.DeltaActivityRate);
+                delta.SchemaName, delta.TableName, delta.TotalDeltaActivity, delta.DeltaActivityRate);
         }
         
         Logger.Info("Calculated {Count} deltas", deltas.Count);

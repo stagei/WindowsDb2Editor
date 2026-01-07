@@ -70,8 +70,8 @@
                   AlternatingRowBackground="{DynamicResource SystemControlBackgroundListLowBrush}"
                   CanUserSortColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Schema" Binding="{Binding TabSchema}" Width="120"/>
-                <DataGridTextColumn Header="Table" Binding="{Binding TabName}" Width="180"/>
+                <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="120"/>
+                <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="180"/>
                 <DataGridTextColumn Header="Lock Mode" Binding="{Binding LockMode}" Width="80"/>
                 <DataGridTextColumn Header="Mode Description" Binding="{Binding LockModeDescription}" Width="150"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding LockStatus}" Width="100">
@@ -89,7 +89,7 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="User" Binding="{Binding PrimaryAuthId}" Width="120"/>
+                <DataGridTextColumn Header="User" Binding="{Binding AuthorizationId}" Width="120"/>
                 <DataGridTextColumn Header="Application" Binding="{Binding ApplicationName}" Width="180"/>
                 <DataGridTextColumn Header="Client" Binding="{Binding ClientName}" Width="150"/>
                 <DataGridTextColumn Header="Agent ID" Binding="{Binding AgentId}" Width="80"/>

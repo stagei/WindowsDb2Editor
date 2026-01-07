@@ -139,7 +139,7 @@ public partial class StatisticsManagerPanel : UserControl
             var csv = new StringBuilder();
             csv.AppendLine("Schema,Table,Last Update,Days Old,Row Count,Tablespace,Status");
             foreach (var s in stats)
-                csv.AppendLine($"{s.TabSchema},{s.TabName},{s.StatsTime},{s.DaysSinceUpdate},{s.CardinalityEstimate},{s.TableSpace},{s.StatsStatus}");
+                csv.AppendLine($"{s.SchemaName},{s.TableName},{s.StatsTime},{s.DaysSinceUpdate},{s.CardinalityEstimate},{s.TablespaceName},{s.StatsStatus}");
             await File.WriteAllTextAsync(saveDialog.FileName, csv.ToString());
             MessageBox.Show("Exported successfully", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
         }

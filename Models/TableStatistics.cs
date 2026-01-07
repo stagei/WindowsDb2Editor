@@ -3,14 +3,15 @@ using System;
 namespace WindowsDb2Editor.Models;
 
 /// <summary>
-/// Represents table statistics information
+/// Represents table statistics information.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class TableStatistics
 {
-    public string TabSchema { get; set; } = string.Empty;
-    public string TabName { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
     public DateTime? StatsTime { get; set; }
-    public string TableSpace { get; set; } = string.Empty;
+    public string TablespaceName { get; set; } = string.Empty;
     public long? CardinalityEstimate { get; set; }
     
     /// <summary>

@@ -46,9 +46,13 @@ public partial class RoutineDetailsPanel : UserControl
     {
         try
         {
-            // Load source code - use abstracted query from JSON config
-            var srcSqlTemplate = _metadataHandler?.GetStatement("GetRoutineSource")
-                ?? "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = ?";
+            if (_metadataHandler == null)
+            {
+                throw new InvalidOperationException("MetadataHandler not initialized");
+            }
+            
+            // Load source code - use required statement from JSON config
+            var srcSqlTemplate = _metadataHandler.GetRequiredStatement("GetRoutineSource");
             var srcSql = ReplacePlaceholders(srcSqlTemplate, _schema, _routineName, _routineType);
             var srcResult = await _connectionManager.ExecuteQueryAsync(srcSql);
             if (srcResult.Rows.Count > 0)
@@ -63,16 +67,14 @@ public partial class RoutineDetailsPanel : UserControl
                 Dispatcher.Invoke(() => SourceCodeTextBox.Text = "-- Source code not available for this routine");
             }
 
-            // Load parameters - use abstracted query from JSON config
-            var paramSqlTemplate = _metadataHandler?.GetStatement("GetRoutineParameters_Display")
-                ?? "SELECT TRIM(PARMNAME) AS PARMNAME, TRIM(TYPENAME) AS TYPENAME, CASE WHEN PARM_MODE = 'IN' THEN 'IN' WHEN PARM_MODE = 'OUT' THEN 'OUT' WHEN PARM_MODE = 'INOUT' THEN 'INOUT' ELSE TRIM(PARM_MODE) END AS PARM_MODE, LENGTH FROM SYSCAT.ROUTINEPARMS WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? ORDER BY ORDINAL";
+            // Load parameters - use required statement from JSON config
+            var paramSqlTemplate = _metadataHandler.GetRequiredStatement("GetRoutineParameters_Display");
             var paramSql = ReplacePlaceholders(paramSqlTemplate, _schema, _routineName);
             var paramResult = await _connectionManager.ExecuteQueryAsync(paramSql);
             Dispatcher.Invoke(() => ParametersGrid.ItemsSource = paramResult.DefaultView);
 
-            // Load properties - use abstracted query from JSON config
-            var propSqlTemplate = _metadataHandler?.GetStatement("GetRoutineProperties")
-                ?? "SELECT TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT, TRIM(OWNER) AS OWNER, CREATE_TIME, VALID, TRIM(REMARKS) AS REMARKS FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = ?";
+            // Load properties - use required statement from JSON config
+            var propSqlTemplate = _metadataHandler.GetRequiredStatement("GetRoutineProperties");
             var propSql = ReplacePlaceholders(propSqlTemplate, _schema, _routineName, _routineType);
             var propResult = await _connectionManager.ExecuteQueryAsync(propSql);
             if (propResult.Rows.Count > 0)

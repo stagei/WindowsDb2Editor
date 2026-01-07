@@ -123,8 +123,9 @@ public class MetadataLoaderService
             {
                 tables.Add(new TableMetadata
                 {
-                    Schema = row["TABSCHEMA"]?.ToString() ?? string.Empty,
-                    Name = row["TABNAME"]?.ToString() ?? string.Empty,
+                    // Support both raw DB2 columns and agnostic aliases
+                    Schema = (row.Table.Columns.Contains("SchemaName") ? row["SchemaName"] : row["TABSCHEMA"])?.ToString() ?? string.Empty,
+                    Name = (row.Table.Columns.Contains("TableName") ? row["TableName"] : row["TABNAME"])?.ToString() ?? string.Empty,
                     Type = row["TYPE"]?.ToString() ?? string.Empty
                 });
             }

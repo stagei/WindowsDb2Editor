@@ -3,15 +3,16 @@ using System;
 namespace WindowsDb2Editor.Models;
 
 /// <summary>
-/// Represents database lock information
+/// Represents database lock information.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class LockInfo
 {
-    public string TabSchema { get; set; } = string.Empty;
-    public string TabName { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
     public string LockStatus { get; set; } = string.Empty;
     public string LockMode { get; set; } = string.Empty;
-    public string PrimaryAuthId { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
     public string ApplicationName { get; set; } = string.Empty;
     public int AgentId { get; set; }

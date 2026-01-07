@@ -40,12 +40,12 @@
         <DataGrid Grid.Row="1" x:Name="StatisticsDataGrid" AutoGenerateColumns="False"
                   IsReadOnly="True" SelectionMode="Extended" CanUserSortColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Schema" Binding="{Binding TabSchema}" Width="120"/>
-                <DataGridTextColumn Header="Table" Binding="{Binding TabName}" Width="180"/>
+                <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="120"/>
+                <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="180"/>
                 <DataGridTextColumn Header="Last Stats Update" Binding="{Binding StatsTime, StringFormat=yyyy-MM-dd HH:mm}" Width="150"/>
                 <DataGridTextColumn Header="Days Old" Binding="{Binding DaysSinceUpdate}" Width="80"/>
                 <DataGridTextColumn Header="Row Count" Binding="{Binding CardinalityEstimate, StringFormat=N0}" Width="120"/>
-                <DataGridTextColumn Header="Tablespace" Binding="{Binding TableSpace}" Width="120"/>
+                <DataGridTextColumn Header="Tablespace" Binding="{Binding TablespaceName}" Width="120"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding StatsStatus}" Width="100">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">

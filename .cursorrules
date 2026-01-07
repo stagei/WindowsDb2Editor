@@ -1302,3 +1302,40 @@ Send-Sms "+4797188358" "WindowsDb2Editor: 14:30 Progress 45% - 54/119 CLI tests 
 
 **All font sizes configurable in Settings Dialog** (must be implemented)
 
+---
+
+### Long Operation Completion SMS (MANDATORY)
+
+**RULE**: When completing any operation that took more than 10 minutes, send an SMS notification to the user.
+
+**Command**:
+```powershell
+Send-Sms "+4797188358" "WindowsDb2Editor: [TASK] completed successfully. [DETAILS]"
+```
+
+**When to send**:
+- After completing long refactoring operations (> 10 min)
+- After completing full test suite runs (> 10 min)
+- After completing database-wide operations (> 10 min)
+- After completing any user-requested multi-step task (> 10 min)
+- After completing migration or conversion operations (> 10 min)
+
+**Message Format**:
+```
+Send-Sms "+4797188358" "WindowsDb2Editor: [TaskName] complete. Build: [PASSED/FAILED]. Tests: [X/Y passed]. Duration: [Xm]."
+```
+
+**Examples**:
+```powershell
+# After refactoring
+Send-Sms "+4797188358" "WindowsDb2Editor: Database-agnostic column refactoring complete. Build: PASSED. All services updated."
+
+# After test run
+Send-Sms "+4797188358" "WindowsDb2Editor: CLI test suite complete. 113/113 tests passed. Duration: 15m."
+
+# After long implementation
+Send-Sms "+4797188358" "WindowsDb2Editor: SQL abstraction complete. 84 statements moved to JSON. Build: PASSED."
+```
+
+**IMPORTANT**: This rule is MANDATORY for any long-running operation to keep the user informed of completion status.
+

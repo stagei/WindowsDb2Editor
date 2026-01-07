@@ -514,8 +514,14 @@ public partial class MainWindow : Window
                 return;
             }
             
+            // Remove the tab from the TabControl first to fully disconnect it
+            ConnectionTabs.Items.Remove(tabItem);
+            
             // Remove content from tab (content can only have one parent)
             tabItem.Content = null;
+            
+            // Force a layout update to ensure the element is fully disconnected
+            tabItem.UpdateLayout();
             
             // Create floating window
             var floatingWindow = new Window
@@ -523,8 +529,7 @@ public partial class MainWindow : Window
                 Title = title,
                 Width = 1200,
                 Height = 800,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                Content = content
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
             };
             
             // Apply ModernWPF theme
@@ -572,9 +577,11 @@ public partial class MainWindow : Window
                 
                 floatingWindow.Content = grid;
             }
+            else
+            {
+                floatingWindow.Content = content;
+            }
             
-            // Remove the original tab
-            ConnectionTabs.Items.Remove(tabItem);
             UpdateWelcomePanelVisibility();
             
             // Handle window close - cleanup

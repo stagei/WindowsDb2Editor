@@ -99,7 +99,7 @@ public partial class CdcManagerPanel : UserControl
             var csv = new StringBuilder();
             csv.AppendLine("Schema,Table,DataCapture,Status,Tablespace");
             foreach (var c in cdcInfo)
-                csv.AppendLine($"{c.TabSchema},{c.TabName},{c.DataCapture},{c.CdcStatus},{c.TableSpace}");
+                csv.AppendLine($"{c.SchemaName},{c.TableName},{c.DataCapture},{c.CdcStatus},{c.TablespaceName}");
             await File.WriteAllTextAsync(saveDialog.FileName, csv.ToString());
         }
     }

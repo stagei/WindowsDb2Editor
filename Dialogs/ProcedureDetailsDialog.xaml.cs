@@ -39,9 +39,13 @@ public partial class ProcedureDetailsDialog : Window
     {
         try
         {
-            // Load source code - use abstracted query (SYSCAT.ROUTINES, not SYSCAT.PROCEDURES)
-            var sourceSqlTemplate = _metadataHandler?.GetStatement("GetRoutineSource")
-                ?? "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? AND ROUTINETYPE = ?";
+            if (_metadataHandler == null)
+            {
+                throw new InvalidOperationException("MetadataHandler not initialized");
+            }
+            
+            // Load source code - use required statement (SYSCAT.ROUTINES)
+            var sourceSqlTemplate = _metadataHandler.GetRequiredStatement("GetRoutineSource");
             var sourceSql = ReplacePlaceholders(sourceSqlTemplate, _schema, _procedureName, "P");
             var sourceResult = await _connectionManager.ExecuteQueryAsync(sourceSql);
             if (sourceResult.Rows.Count > 0)
@@ -49,9 +53,8 @@ public partial class ProcedureDetailsDialog : Window
                 SourceCodeTextBox.Text = sourceResult.Rows[0][0]?.ToString() ?? "Source code not available";
             }
 
-            // Load parameters - use abstracted query (SYSCAT.ROUTINEPARMS, not SYSCAT.PROCPARMS)
-            var paramSqlTemplate = _metadataHandler?.GetStatement("GetRoutineParameters_Display")
-                ?? "SELECT TRIM(PARMNAME) AS PARMNAME, TRIM(TYPENAME) AS TYPENAME, CASE WHEN PARM_MODE = 'IN' THEN 'IN' WHEN PARM_MODE = 'OUT' THEN 'OUT' WHEN PARM_MODE = 'INOUT' THEN 'INOUT' ELSE TRIM(PARM_MODE) END AS PARM_MODE, LENGTH FROM SYSCAT.ROUTINEPARMS WHERE TRIM(ROUTINESCHEMA) = ? AND TRIM(ROUTINENAME) = ? ORDER BY ORDINAL";
+            // Load parameters - use required statement (SYSCAT.ROUTINEPARMS)
+            var paramSqlTemplate = _metadataHandler.GetRequiredStatement("GetRoutineParameters_Display");
             var paramSql = ReplacePlaceholders(paramSqlTemplate, _schema, _procedureName);
             var paramResult = await _connectionManager.ExecuteQueryAsync(paramSql);
             ParametersGrid.ItemsSource = paramResult.DefaultView;

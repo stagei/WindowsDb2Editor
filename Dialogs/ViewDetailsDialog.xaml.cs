@@ -39,9 +39,13 @@ public partial class ViewDetailsDialog : Window
     {
         try
         {
-            // Load view definition - use abstracted query
-            var defSqlTemplate = _metadataHandler?.GetStatement("GetViewDefinition")
-                ?? "SELECT TRIM(TEXT) AS VIEW_DEFINITION FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ?";
+            if (_metadataHandler == null)
+            {
+                throw new InvalidOperationException("MetadataHandler not initialized");
+            }
+            
+            // Load view definition - use required statement
+            var defSqlTemplate = _metadataHandler.GetRequiredStatement("GetViewDefinition");
             var defSql = ReplacePlaceholders(defSqlTemplate, _schema, _viewName);
             var defResult = await _connectionManager.ExecuteQueryAsync(defSql);
             if (defResult.Rows.Count > 0)
@@ -49,16 +53,14 @@ public partial class ViewDetailsDialog : Window
                 DefinitionTextBox.Text = defResult.Rows[0][0]?.ToString() ?? "No definition found";
             }
 
-            // Load columns - use abstracted query
-            var colSqlTemplate = _metadataHandler?.GetStatement("GetViewColumns_Display")
-                ?? "SELECT TRIM(COLNAME) AS ColumnName, TRIM(TYPENAME) AS DataType, CASE WHEN NULLS = 'Y' THEN 'Yes' ELSE 'No' END AS Nullable FROM SYSCAT.COLUMNS WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY COLNO";
+            // Load columns - use required statement
+            var colSqlTemplate = _metadataHandler.GetRequiredStatement("GetViewColumns_Display");
             var colSql = ReplacePlaceholders(colSqlTemplate, _schema, _viewName);
             var colResult = await _connectionManager.ExecuteQueryAsync(colSql);
             ColumnsGrid.ItemsSource = colResult.DefaultView;
 
-            // Load dependencies - use abstracted query
-            var depSqlTemplate = _metadataHandler?.GetStatement("GetViewDependencies")
-                ?? "SELECT DISTINCT TRIM(BSCHEMA) || '.' || TRIM(BNAME) AS DEPENDENCY FROM SYSCAT.VIEWDEP WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ?";
+            // Load dependencies - use required statement
+            var depSqlTemplate = _metadataHandler.GetRequiredStatement("GetViewDependencies");
             var depSql = ReplacePlaceholders(depSqlTemplate, _schema, _viewName);
             var depResult = await _connectionManager.ExecuteQueryAsync(depSql);
             foreach (System.Data.DataRow row in depResult.Rows)

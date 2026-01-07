@@ -670,17 +670,17 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            
             string sql;
             if (schema != null)
             {
-                var sqlTemplate = App.MetadataHandler?.GetStatement("GetTablesForSchemaSimple")
-                    ?? "SELECT TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'T' ORDER BY TABNAME";
+                var sqlTemplate = metadataHandler.GetRequiredStatement("GetTablesForSchemaSimple");
                 sql = sqlTemplate.Replace("?", $"'{schema}'");
             }
             else
             {
-                sql = App.MetadataHandler?.GetStatement("GetAllTablesSimple")
-                    ?? "SELECT TRIM(TABSCHEMA) || '.' || TRIM(TABNAME) FROM SYSCAT.TABLES WHERE TYPE = 'T' ORDER BY TABSCHEMA, TABNAME";
+                sql = metadataHandler.GetRequiredStatement("GetAllTablesSimple");
             }
 
             var dataTable = await ExecuteQueryAsync(sql);
@@ -736,8 +736,8 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sql = App.MetadataHandler?.GetStatement("GetSchemasSimple")
-                ?? "SELECT TRIM(SCHEMANAME) FROM SYSCAT.SCHEMATA ORDER BY SCHEMANAME";
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            var sql = metadataHandler.GetRequiredStatement("GetSchemasSimple");
             var dataTable = await ExecuteQueryAsync(sql);
 
             foreach (DataRow row in dataTable.Rows)
@@ -789,17 +789,17 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            
             string sql;
             if (schema != null)
             {
-                var sqlTemplate = App.MetadataHandler?.GetStatement("GetViewsForSchemaSimple")
-                    ?? "SELECT TRIM(VIEWNAME) FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? ORDER BY VIEWNAME";
+                var sqlTemplate = metadataHandler.GetRequiredStatement("GetViewsForSchemaSimple");
                 sql = sqlTemplate.Replace("?", $"'{schema}'");
             }
             else
             {
-                sql = App.MetadataHandler?.GetStatement("GetAllViewsSimple")
-                    ?? "SELECT TRIM(VIEWSCHEMA) || '.' || TRIM(VIEWNAME) FROM SYSCAT.VIEWS ORDER BY VIEWSCHEMA, VIEWNAME";
+                sql = metadataHandler.GetRequiredStatement("GetAllViewsSimple");
             }
 
             var dataTable = await ExecuteQueryAsync(sql);
@@ -830,17 +830,17 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            
             string sql;
             if (schema != null)
             {
-                var sqlTemplate = App.MetadataHandler?.GetStatement("GetProceduresForSchemaSimple")
-                    ?? "SELECT TRIM(PROCNAME) FROM SYSCAT.PROCEDURES WHERE TRIM(PROCSCHEMA) = ? ORDER BY PROCNAME";
+                var sqlTemplate = metadataHandler.GetRequiredStatement("GetProceduresForSchemaSimple");
                 sql = sqlTemplate.Replace("?", $"'{schema}'");
             }
             else
             {
-                sql = App.MetadataHandler?.GetStatement("GetAllProceduresSimple")
-                    ?? "SELECT TRIM(PROCSCHEMA) || '.' || TRIM(PROCNAME) FROM SYSCAT.PROCEDURES ORDER BY PROCSCHEMA, PROCNAME";
+                sql = metadataHandler.GetRequiredStatement("GetAllProceduresSimple");
             }
 
             var dataTable = await ExecuteQueryAsync(sql);
@@ -869,8 +869,8 @@ public class DB2ConnectionManager : IDisposable
 
         try
         {
-            var sqlTemplate = App.MetadataHandler?.GetStatement("GetViewText")
-                ?? "SELECT TRIM(TEXT) FROM SYSCAT.VIEWS WHERE TRIM(VIEWNAME) = ?";
+            var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+            var sqlTemplate = metadataHandler.GetRequiredStatement("GetViewText");
             var sql = sqlTemplate.Replace("?", $"'{viewName}'");
             var result = await ExecuteScalarAsync(sql);
 

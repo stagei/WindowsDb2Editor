@@ -19,11 +19,11 @@
         
         <DataGrid Grid.Row="1" x:Name="CdcDataGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Schema" Binding="{Binding TabSchema}" Width="120"/>
-                <DataGridTextColumn Header="Table" Binding="{Binding TabName}" Width="200"/>
+                <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="120"/>
+                <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="200"/>
                 <DataGridTextColumn Header="Data Capture" Binding="{Binding DataCapture}" Width="100"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding CdcStatus}" Width="150"/>
-                <DataGridTextColumn Header="Tablespace" Binding="{Binding TableSpace}" Width="120"/>
+                <DataGridTextColumn Header="Tablespace" Binding="{Binding TablespaceName}" Width="120"/>
                 <DataGridTextColumn Header="" Binding="{Binding CdcIcon}" Width="40"/>
             </DataGrid.Columns>
         </DataGrid>

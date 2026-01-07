@@ -1061,8 +1061,8 @@
       "source": "CliCommandHandlerService:GetDatabaseLoadAsync"
     },
     "GetDatabaseLoadMonitor": {
-      "sql": "SELECT t.tabschema, t.tabname, COALESCE(TRIM(s.tbspace), '') AS tablespace, SUM(t.rows_read) AS total_rows_read, SUM(t.rows_inserted) AS total_rows_inserted, SUM(t.rows_updated) AS total_rows_updated, SUM(t.rows_deleted) AS total_rows_deleted FROM TABLE(MON_GET_TABLE('{0}', '{1}', -2)) AS t LEFT JOIN SYSCAT.TABLES s ON t.tabschema = s.tabschema AND t.tabname = s.tabname {2} GROUP BY t.tabschema, t.tabname, s.tbspace ORDER BY total_rows_read DESC",
-      "description": "Get database load metrics with tablespace info for the Database Load Monitor panel. Uses MON_GET_TABLE monitoring function joined with SYSCAT.TABLES to include tablespace. Placeholders: {0}=schema filter (empty for all), {1}=table filter (empty for all), {2}=WHERE clause for system schema exclusion.",
+      "sql": "SELECT t.tabschema AS SchemaName, t.tabname AS TableName, COALESCE(TRIM(s.tbspace), '') AS TablespaceName, SUM(t.rows_read) AS TotalRowsRead, SUM(t.rows_inserted) AS TotalRowsInserted, SUM(t.rows_updated) AS TotalRowsUpdated, SUM(t.rows_deleted) AS TotalRowsDeleted FROM TABLE(MON_GET_TABLE('{0}', '{1}', -2)) AS t LEFT JOIN SYSCAT.TABLES s ON t.tabschema = s.tabschema AND t.tabname = s.tabname {2} GROUP BY t.tabschema, t.tabname, s.tbspace ORDER BY TotalRowsRead DESC",
+      "description": "Get database load metrics with tablespace info for the Database Load Monitor panel. Uses MON_GET_TABLE monitoring function joined with SYSCAT.TABLES to include tablespace. Placeholders: {0}=schema filter (empty for all), {1}=table filter (empty for all), {2}=WHERE clause for system schema exclusion. Column aliases use database-agnostic PascalCase naming.",
       "parameters": ["SCHEMA_FILTER", "TABLE_FILTER", "WHERE_CLAUSE"],
       "returns": "Table activity metrics with tablespace, grouped by table",
       "source": "DatabaseLoadMonitorService:BuildActivityQuery"

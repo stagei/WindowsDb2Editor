@@ -121,9 +121,9 @@
                   AlternatingRowBackground="{DynamicResource SystemControlBackgroundListLowBrush}"
                   CanUserSortColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Schema" Binding="{Binding TabSchema}" Width="130"/>
-                <DataGridTextColumn Header="Table" Binding="{Binding TabName}" Width="180"/>
-                <DataGridTextColumn Header="Tablespace" Binding="{Binding Tablespace}" Width="130"/>
+                <DataGridTextColumn Header="Schema" Binding="{Binding SchemaName}" Width="130"/>
+                <DataGridTextColumn Header="Table" Binding="{Binding TableName}" Width="180"/>
+                <DataGridTextColumn Header="Tablespace" Binding="{Binding TablespaceName}" Width="130"/>
                 <DataGridTextColumn Header="Rows Read" Binding="{Binding TotalRowsRead, StringFormat=N0}" Width="120">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">

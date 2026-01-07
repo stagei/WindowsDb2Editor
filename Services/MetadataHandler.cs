@@ -385,6 +385,37 @@ public class MetadataHandler : IMetadataProvider
         return GetQuery(provider, version, statementName);
     }
     
+    /// <summary>
+    /// Get a required SQL statement. If the statement is missing, shows an error message
+    /// and terminates the application.
+    /// </summary>
+    /// <param name="statementName">The statement key to retrieve</param>
+    /// <returns>The SQL statement</returns>
+    public string GetRequiredStatement(string statementName)
+    {
+        try
+        {
+            return GetStatement(statementName);
+        }
+        catch (KeyNotFoundException)
+        {
+            var message = $"Required SQL statement '{statementName}' is missing from configuration file.\n\n" +
+                          $"Expected in: ConfigFiles/{_currentProvider.ToLower()}_{_currentVersion}_sql_statements.json\n\n" +
+                          $"The application will now exit. Please add the missing statement to the configuration file.";
+            
+            Logger.Fatal("Missing required SQL statement: {StatementName}", statementName);
+            
+            System.Windows.MessageBox.Show(
+                message,
+                "Configuration Error - Missing SQL Statement",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+            
+            System.Windows.Application.Current.Shutdown(1);
+            throw; // In case shutdown doesn't exit immediately
+        }
+    }
+    
     public async Task<DataTable> ExecuteMetadataQueryAsync(string statementName, Dictionary<string, object> parameters)
     {
         if (_connectionManager == null)

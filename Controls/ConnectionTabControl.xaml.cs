@@ -1088,6 +1088,13 @@ public partial class ConnectionTabControl : UserControl
     {
         Logger.Debug("Loading enhanced object browser with top-level categories");
         ObjectBrowserStatusText.Text = "Loading database objects...";
+        
+        // Show loading spinner on refresh button
+        var wasSpinnerStartedHere = !_spinnerTimer?.IsEnabled ?? true;
+        if (wasSpinnerStartedHere)
+        {
+            StartRefreshSpinner();
+        }
 
         try
         {
@@ -1169,6 +1176,11 @@ public partial class ConnectionTabControl : UserControl
             DatabaseTreeView.Items.Add(errorNode);
             
             StatusText.Text = "Failed to load database objects";
+        }
+        finally
+        {
+            // Stop the spinner if we started it
+            StopRefreshSpinner();
         }
     }
 
@@ -1445,22 +1457,55 @@ public partial class ConnectionTabControl : UserControl
                     _ => new List<DatabaseObject>()
                 };
 
-                foreach (var obj in objects)
+                // For large object counts, use optimized creation (defer context menu)
+                var count = objects.Count;
+                var batchSize = 100;
+                
+                for (int i = 0; i < count; i++)
                 {
+                    var obj = objects[i];
                     var objectNode = new TreeViewItem
                     {
                         Header = GetObjectNodeHeader(obj),
                         Tag = obj,
-                        ToolTip = CreateObjectTooltip(obj),
                         AllowDrop = false
                     };
                     ApplyTreeViewItemFont(objectNode);
 
                     objectNode.MouseDoubleClick += ObjectNode_DoubleClick;
                     objectNode.PreviewMouseLeftButtonDown += ObjectNode_Click;
-                    objectNode.ContextMenu = CreateObjectContextMenu(obj);
                     objectNode.MouseMove += ObjectNode_MouseMove;
+                    
+                    // Defer tooltip creation for performance (create on demand)
+                    objectNode.ToolTipOpening += (s, _) => {
+                        if (s is TreeViewItem node && node.ToolTip == null && node.Tag is DatabaseObject dbObj)
+                            node.ToolTip = CreateObjectTooltip(dbObj);
+                    };
+                    
+                    // Create placeholder context menu that populates on first open
+                    var placeholderMenu = new ContextMenu();
+                    var capturedObj = obj; // Capture for closure
+                    placeholderMenu.Opened += (menuSender, _) => {
+                        if (menuSender is ContextMenu menu && menu.Items.Count == 0)
+                        {
+                            var fullMenu = CreateObjectContextMenu(capturedObj);
+                            foreach (var item in fullMenu.Items.OfType<object>().ToList())
+                            {
+                                fullMenu.Items.Remove(item);
+                                menu.Items.Add(item);
+                            }
+                        }
+                    };
+                    objectNode.ContextMenu = placeholderMenu;
+                    
                     typeNode.Items.Add(objectNode);
+                    
+                    // Yield to UI thread every batch to keep UI responsive
+                    if (count > batchSize && i > 0 && i % batchSize == 0)
+                    {
+                        ObjectBrowserStatusText.Text = $"Loading {objectType}... {i}/{count}";
+                        await Task.Delay(1); // Allow UI to update
+                    }
                 }
 
                 if (typeNode.Items.Count == 0)
@@ -2101,7 +2146,11 @@ public partial class ConnectionTabControl : UserControl
                     }
                     else if (obj.Type == ObjectType.Procedures || obj.Type == ObjectType.Functions)
                     {
-                        var sql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{obj.SchemaName}' AND ROUTINENAME = '{obj.Name}'";
+                        // Use required statement from JSON config
+                        var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                        var routineType = obj.Type == ObjectType.Procedures ? "P" : "F";
+                        var sqlTemplate = metadataHandler.GetRequiredStatement("GetRoutineSource");
+                        var sql = ReplaceSqlPlaceholders(sqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "", routineType);
                         var result = await _connectionManager.ExecuteScalarAsync(sql);
                         definition = result?.ToString();
                     }
@@ -2257,8 +2306,11 @@ public partial class ConnectionTabControl : UserControl
                     
                 case ObjectType.Procedures:
                 case ObjectType.Functions:
-                    // For routines, get the source code
-                    var routineSql = $"SELECT TEXT FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = '{obj.SchemaName?.Trim()}' AND ROUTINENAME = '{obj.Name?.Trim()}'";
+                    // For routines, get the source code using required statement
+                    var routineMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var routineType = obj.Type == ObjectType.Procedures ? "P" : "F";
+                    var routineSqlTemplate = routineMetadata.GetRequiredStatement("GetRoutineSource");
+                    var routineSql = ReplaceSqlPlaceholders(routineSqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "", routineType);
                     var routineResult = await _connectionManager.ExecuteScalarAsync(routineSql);
                     var sourceCode = routineResult?.ToString();
                     content = !string.IsNullOrEmpty(sourceCode) 
@@ -2268,8 +2320,10 @@ public partial class ConnectionTabControl : UserControl
                     break;
                     
                 case ObjectType.Triggers:
-                    // For triggers, get the trigger definition
-                    var triggerSql = $"SELECT TEXT FROM SYSCAT.TRIGGERS WHERE TRIGSCHEMA = '{obj.SchemaName?.Trim()}' AND TRIGNAME = '{obj.Name?.Trim()}'";
+                    // For triggers, get the trigger definition using required statement
+                    var triggerMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var triggerSqlTemplate = triggerMetadata.GetRequiredStatement("GetTriggerSource");
+                    var triggerSql = ReplaceSqlPlaceholders(triggerSqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "");
                     var triggerResult = await _connectionManager.ExecuteScalarAsync(triggerSql);
                     var triggerCode = triggerResult?.ToString();
                     content = !string.IsNullOrEmpty(triggerCode) 
@@ -2280,13 +2334,21 @@ public partial class ConnectionTabControl : UserControl
                     
                 case ObjectType.Sequences:
                     // For sequences, show sequence info and usage
-                    content = $"-- Sequence: {obj.FullName}\n\n-- Get current value (without increment):\nSELECT PREVIOUS VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Get next value:\nSELECT NEXT VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Sequence properties:\nSELECT * FROM SYSCAT.SEQUENCES WHERE SEQSCHEMA = '{obj.SchemaName?.Trim()}' AND SEQNAME = '{obj.Name?.Trim()}';";
+                    var seqMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var seqInfoSqlTemplate = seqMetadata.GetRequiredStatement("GetSequenceInfo");
+                    var seqInfoSql = ReplaceSqlPlaceholders(seqInfoSqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "");
+                    content = $"-- Sequence: {obj.FullName}\n\n-- Get current value (without increment):\nSELECT PREVIOUS VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Get next value:\nSELECT NEXT VALUE FOR {obj.FullName} FROM SYSIBM.SYSDUMMY1;\n\n-- Sequence properties:\n{seqInfoSql};";
                     tabTitle = $"Seq: {obj.Name?.Trim()}";
                     break;
                     
                 case ObjectType.Indexes:
-                    // For indexes, show index definition
-                    content = $"-- Index: {obj.FullName}\n\n-- Index details:\nSELECT * FROM SYSCAT.INDEXES WHERE INDSCHEMA = '{obj.SchemaName?.Trim()}' AND INDNAME = '{obj.Name?.Trim()}';\n\n-- Index columns:\nSELECT * FROM SYSCAT.INDEXCOLUSE WHERE INDSCHEMA = '{obj.SchemaName?.Trim()}' AND INDNAME = '{obj.Name?.Trim()}' ORDER BY COLSEQ;";
+                    // For indexes, show index definition using required statements
+                    var indexMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var indexInfoSqlTemplate = indexMetadata.GetRequiredStatement("GetIndexInfo");
+                    var indexColsSqlTemplate = indexMetadata.GetRequiredStatement("GetIndexColumns");
+                    var indexInfoSql = ReplaceSqlPlaceholders(indexInfoSqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "");
+                    var indexColsSql = ReplaceSqlPlaceholders(indexColsSqlTemplate, obj.SchemaName?.Trim() ?? "", obj.Name?.Trim() ?? "");
+                    content = $"-- Index: {obj.FullName}\n\n-- Index details:\n{indexInfoSql};\n\n-- Index columns:\n{indexColsSql};";
                     tabTitle = $"Index: {obj.Name?.Trim()}";
                     break;
                     
@@ -2396,8 +2458,10 @@ public partial class ConnectionTabControl : UserControl
     /// </summary>
     private async void RefreshObjectBrowser_Click(object sender, RoutedEventArgs e)
     {
+        // Prevent multiple refreshes at once
+        if (!RefreshButton.IsEnabled) return;
+        
         Logger.Info("Refreshing object browser");
-        ObjectBrowserStatusText.Text = "Refreshing...";
         
         try
         {
@@ -2410,6 +2474,40 @@ public partial class ConnectionTabControl : UserControl
             ObjectBrowserStatusText.Text = "Refresh failed";
             MessageBox.Show($"Failed to refresh: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+    
+    private System.Windows.Threading.DispatcherTimer? _spinnerTimer;
+    
+    /// <summary>
+    /// Start the refresh button loading spinner
+    /// </summary>
+    private void StartRefreshSpinner()
+    {
+        RefreshButton.IsEnabled = false;
+        RefreshSpinnerOverlay.Visibility = Visibility.Visible;
+        
+        // Create rotating animation timer
+        _spinnerTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(50)
+        };
+        _spinnerTimer.Tick += (s, e) =>
+        {
+            SpinnerRotation.Angle = (SpinnerRotation.Angle + 15) % 360;
+        };
+        _spinnerTimer.Start();
+    }
+    
+    /// <summary>
+    /// Stop the refresh button loading spinner
+    /// </summary>
+    private void StopRefreshSpinner()
+    {
+        _spinnerTimer?.Stop();
+        _spinnerTimer = null;
+        RefreshButton.IsEnabled = true;
+        RefreshSpinnerOverlay.Visibility = Visibility.Collapsed;
+        SpinnerRotation.Angle = 0;
     }
 
     private void TableNode_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -2785,8 +2883,10 @@ public partial class ConnectionTabControl : UserControl
             {
                 if (Window.GetWindow(this) is MainWindow mainWindow)
                 {
-                    // Get package statements
-                    var stmtSql = $"SELECT STMTNO, TEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = '{package.PackageSchema?.Trim()}' AND PKGNAME = '{package.PackageName?.Trim()}' ORDER BY STMTNO FETCH FIRST 50 ROWS ONLY";
+                    // Get package statements using required statement
+                    var pkgMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var stmtSqlTemplate = pkgMetadata.GetRequiredStatement("GetPackageStatementsWithText");
+                    var stmtSql = ReplaceSqlPlaceholders(stmtSqlTemplate, package.PackageSchema?.Trim() ?? "", package.PackageName?.Trim() ?? "");
                     var sb = new System.Text.StringBuilder();
                     sb.AppendLine($"-- Package: {package.PackageSchema?.Trim()}.{package.PackageName?.Trim()}");
                     sb.AppendLine($"-- Created: {package.CreateTime:yyyy-MM-dd HH:mm:ss}");
@@ -2843,7 +2943,11 @@ public partial class ConnectionTabControl : UserControl
         {
             if (Window.GetWindow(this) is MainWindow mainWindow)
             {
-                var sql = $"-- Tablespace: {tablespace.TablespaceName}\n-- Type: {tablespace.TablespaceType}\n-- Page Size: {tablespace.PageSize} bytes\n-- Owner: {tablespace.Owner}\n\n-- Tables in this tablespace:\nSELECT TABSCHEMA, TABNAME, TYPE, CARD AS ROW_COUNT\nFROM SYSCAT.TABLES\nWHERE TBSPACE = '{tablespace.TablespaceName}'\nORDER BY TABSCHEMA, TABNAME;";
+                // Use required statement for tables in tablespace
+                var tsMetadata = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                var tablesSqlTemplate = tsMetadata.GetRequiredStatement("GetTablesInTablespace");
+                var tablesSql = tablesSqlTemplate.Replace("?", $"'{tablespace.TablespaceName}'");
+                var sql = $"-- Tablespace: {tablespace.TablespaceName}\n-- Type: {tablespace.TablespaceType}\n-- Page Size: {tablespace.PageSize} bytes\n-- Owner: {tablespace.Owner}\n\n-- Tables in this tablespace:\n{tablesSql};";
                 mainWindow.CreateNewTabWithSql(sql, $"Tablespace: {tablespace.TablespaceName}");
             }
         };
@@ -3834,6 +3938,23 @@ public partial class ConnectionTabControl : UserControl
     private async void Commit_Click(object sender, RoutedEventArgs e) => await CommitTransaction();
     
     private async void Rollback_Click(object sender, RoutedEventArgs e) => await RollbackTransaction();
+    
+    /// <summary>
+    /// Replace ? placeholders in SQL templates with quoted values
+    /// </summary>
+    private static string ReplaceSqlPlaceholders(string sql, params string[] values)
+    {
+        var result = sql;
+        foreach (var value in values)
+        {
+            var idx = result.IndexOf('?');
+            if (idx >= 0)
+            {
+                result = result.Remove(idx, 1).Insert(idx, $"'{value}'");
+            }
+        }
+        return result;
+    }
 
     public void Cleanup()
     {

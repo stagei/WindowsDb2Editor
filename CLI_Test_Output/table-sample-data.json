@@ -275,15 +275,29 @@
   {
     "FIRMA": 2054,
     "AAR": 2025,
-    "SISTE_BILAGNR": 689601,
+    "SISTE_BILAGNR": 689971,
     "TIDSPUNKT": "2025-01-01T11:29:54.863",
     "BRUKERID": "MEH     "
   },
   {
     "FIRMA": 9000,
     "AAR": 2025,
-    "SISTE_BILAGNR": 198878,
+    "SISTE_BILAGNR": 198931,
     "TIDSPUNKT": "2025-01-01T11:30:40.456",
+    "BRUKERID": "MEH     "
+  },
+  {
+    "FIRMA": 2054,
+    "AAR": 2026,
+    "SISTE_BILAGNR": 690000,
+    "TIDSPUNKT": "2026-01-01T10:06:58.726",
+    "BRUKERID": "MEH     "
+  },
+  {
+    "FIRMA": 9000,
+    "AAR": 2026,
+    "SISTE_BILAGNR": 199000,
+    "TIDSPUNKT": "2026-01-01T10:08:52.321",
     "BRUKERID": "MEH     "
   }
 ]

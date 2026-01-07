@@ -3,13 +3,14 @@ using System;
 namespace WindowsDb2Editor.Models;
 
 /// <summary>
-/// Represents database activity metrics for a table
+/// Represents database activity metrics for a table.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class TableActivityMetrics
 {
-    public string TabSchema { get; set; } = string.Empty;
-    public string TabName { get; set; } = string.Empty;
-    public string Tablespace { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
+    public string TablespaceName { get; set; } = string.Empty;
     public long TotalRowsRead { get; set; }
     public long TotalRowsInserted { get; set; }
     public long TotalRowsUpdated { get; set; }
@@ -75,12 +76,13 @@ public class ActivitySnapshot
 }
 
 /// <summary>
-/// Represents delta between two snapshots
+/// Represents delta between two snapshots.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class TableActivityDelta
 {
-    public string TabSchema { get; set; } = string.Empty;
-    public string TabName { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
     
     // Current snapshot values
     public long CurrentRowsRead { get; set; }

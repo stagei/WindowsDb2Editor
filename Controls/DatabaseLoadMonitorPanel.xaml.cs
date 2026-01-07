@@ -294,7 +294,7 @@ public partial class DatabaseLoadMonitorPanel : UserControl
         // Data rows
         foreach (var metric in metrics)
         {
-            csv.AppendLine($"{metric.TabSchema},{metric.TabName},{metric.Tablespace}," +
+            csv.AppendLine($"{metric.SchemaName},{metric.TableName},{metric.TablespaceName}," +
                           $"{metric.TotalRowsRead},{metric.TotalRowsInserted}," +
                           $"{metric.TotalRowsUpdated},{metric.TotalRowsDeleted}," +
                           $"{metric.TotalActivity},{metric.ReadPercentage:F1}," +

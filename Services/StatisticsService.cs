@@ -111,17 +111,17 @@ public class StatisticsService
             {
                 var stat = new TableStatistics
                 {
-                    TabSchema = row["TABSCHEMA"]?.ToString() ?? string.Empty,
-                    TabName = row["TABNAME"]?.ToString() ?? string.Empty,
+                    SchemaName = row["TABSCHEMA"]?.ToString() ?? string.Empty,
+                    TableName = row["TABNAME"]?.ToString() ?? string.Empty,
                     StatsTime = row["STATS_TIME"] == DBNull.Value ? null : Convert.ToDateTime(row["STATS_TIME"]),
-                    TableSpace = row["TBSPACE"]?.ToString() ?? string.Empty,
+                    TablespaceName = row["TBSPACE"]?.ToString() ?? string.Empty,
                     CardinalityEstimate = row["CARD"] == DBNull.Value ? null : Convert.ToInt64(row["CARD"])
                 };
                 
                 statistics.Add(stat);
                 
                 Logger.Debug("Statistics: {Schema}.{Table} - Last updated: {StatsTime}, Status: {Status}",
-                    stat.TabSchema, stat.TabName, stat.StatsTime, stat.StatsStatus);
+                    stat.SchemaName, stat.TableName, stat.StatsTime, stat.StatsStatus);
             }
             catch (Exception ex)
             {
@@ -147,8 +147,8 @@ public class StatisticsService
         
         foreach (var table in tables)
         {
-            var schema = table.TabSchema?.Trim() ?? "";
-            var tableName = table.TabName?.Trim() ?? "";
+            var schema = table.SchemaName?.Trim() ?? "";
+            var tableName = table.TableName?.Trim() ?? "";
             
             script.AppendLine($"-- Update statistics for {schema}.{tableName}");
             script.AppendLine($"-- Last update: {table.StatsTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "NEVER"}");

@@ -72,9 +72,29 @@
                                 </TextBox.Style>
                             </TextBox>
                             
-                            <Button Grid.Column="1" Content="🔄 Refresh" 
-                                    Click="RefreshObjectBrowser_Click"
-                                    Margin="5,0,0,0" Padding="10,6"/>
+                            <Grid Grid.Column="1" Margin="5,0,0,0">
+                                <Button x:Name="RefreshButton" Content="🔄 Refresh" 
+                                        Click="RefreshObjectBrowser_Click"
+                                        Padding="10,6"/>
+                                <!-- Loading spinner overlay -->
+                                <Border x:Name="RefreshSpinnerOverlay" 
+                                        Visibility="Collapsed"
+                                        Background="#80000000"
+                                        CornerRadius="3"
+                                        IsHitTestVisible="False">
+                                    <TextBlock x:Name="RefreshSpinnerText" 
+                                               Text="⟳" 
+                                               FontSize="16" 
+                                               Foreground="White"
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"
+                                               RenderTransformOrigin="0.5,0.5">
+                                        <TextBlock.RenderTransform>
+                                            <RotateTransform x:Name="SpinnerRotation" Angle="0"/>
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </Border>
                     

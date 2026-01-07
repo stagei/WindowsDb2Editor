@@ -157,8 +157,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
                 
                 foreach (System.Data.DataRow row in tablesTable.Rows)
                 {
-                    var schema = row["TABSCHEMA"].ToString()?.Trim() ?? string.Empty;
-                    var name = row["TABNAME"].ToString()?.Trim() ?? string.Empty;
+                    // Use raw DB2 column names for IntelliSense (internal use only)
+                    var schema = (row.Table.Columns.Contains("SchemaName") ? row["SchemaName"] : row["TABSCHEMA"])?.ToString()?.Trim() ?? string.Empty;
+                    var name = (row.Table.Columns.Contains("TableName") ? row["TableName"] : row["TABNAME"])?.ToString()?.Trim() ?? string.Empty;
                     _tableNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} table names", _tableNames.Count);
@@ -174,8 +175,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
                 
                 foreach (System.Data.DataRow row in viewsTable.Rows)
                 {
-                    var schema = row["TABSCHEMA"].ToString()?.Trim() ?? string.Empty;
-                    var name = row["TABNAME"].ToString()?.Trim() ?? string.Empty;
+                    // Use raw DB2 column names for IntelliSense (internal use only)
+                    var schema = (row.Table.Columns.Contains("SchemaName") ? row["SchemaName"] : row["TABSCHEMA"])?.ToString()?.Trim() ?? string.Empty;
+                    var name = (row.Table.Columns.Contains("TableName") ? row["TableName"] : row["TABNAME"])?.ToString()?.Trim() ?? string.Empty;
                     _viewNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} view names", _viewNames.Count);
@@ -191,8 +193,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
                 
                 foreach (System.Data.DataRow row in procTable.Rows)
                 {
-                    var schema = row["ROUTINESCHEMA"].ToString()?.Trim() ?? string.Empty;
-                    var name = row["ROUTINENAME"].ToString()?.Trim() ?? string.Empty;
+                    // Use raw DB2 column names for IntelliSense (internal use only)
+                    var schema = (row.Table.Columns.Contains("RoutineSchema") ? row["RoutineSchema"] : row["ROUTINESCHEMA"])?.ToString()?.Trim() ?? string.Empty;
+                    var name = (row.Table.Columns.Contains("RoutineName") ? row["RoutineName"] : row["ROUTINENAME"])?.ToString()?.Trim() ?? string.Empty;
                     _procedureNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} procedure names", _procedureNames.Count);
@@ -208,8 +211,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
                 
                 foreach (System.Data.DataRow row in funcTable.Rows)
                 {
-                    var schema = row["ROUTINESCHEMA"].ToString()?.Trim() ?? string.Empty;
-                    var name = row["ROUTINENAME"].ToString()?.Trim() ?? string.Empty;
+                    // Use raw DB2 column names for IntelliSense (internal use only)
+                    var schema = (row.Table.Columns.Contains("RoutineSchema") ? row["RoutineSchema"] : row["ROUTINESCHEMA"])?.ToString()?.Trim() ?? string.Empty;
+                    var name = (row.Table.Columns.Contains("RoutineName") ? row["RoutineName"] : row["ROUTINENAME"])?.ToString()?.Trim() ?? string.Empty;
                     _functionNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} function names", _functionNames.Count);

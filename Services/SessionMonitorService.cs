@@ -101,7 +101,7 @@ public class SessionMonitorService
                 {
                     AgentId = ConvertToInt(row["AGENT_ID"]),
                     DatabaseName = row["DB_NAME"]?.ToString() ?? string.Empty,
-                    PrimaryAuthId = row["PRIMARY_AUTH_ID"]?.ToString() ?? string.Empty,
+                    AuthorizationId = row["PRIMARY_AUTH_ID"]?.ToString() ?? string.Empty,
                     ClientName = row["CLIENT_NNAME"]?.ToString() ?? string.Empty,
                     ApplicationName = row["APPL_NAME"]?.ToString() ?? string.Empty,
                     ApplicationId = row["APPL_ID"]?.ToString() ?? string.Empty,
@@ -114,7 +114,7 @@ public class SessionMonitorService
                 sessions.Add(session);
                 
                 Logger.Debug("Session: Agent {AgentId}, User: {User}, App: {App}, Duration: {Duration}",
-                    session.AgentId, session.PrimaryAuthId, session.ApplicationName, session.DurationText);
+                    session.AgentId, session.AuthorizationId, session.ApplicationName, session.DurationText);
             }
             catch (Exception ex)
             {
@@ -142,7 +142,7 @@ public class SessionMonitorService
         foreach (var session in sessions)
         {
             script.AppendLine($"-- Agent ID: {session.AgentId}");
-            script.AppendLine($"-- User: {session.PrimaryAuthId}");
+            script.AppendLine($"-- User: {session.AuthorizationId}");
             script.AppendLine($"-- Application: {session.ApplicationName}");
             script.AppendLine($"-- Client: {session.ClientName}");
             script.AppendLine($"-- Duration: {session.DurationText}");

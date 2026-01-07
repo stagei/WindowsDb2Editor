@@ -3,14 +3,15 @@ using System;
 namespace WindowsDb2Editor.Models;
 
 /// <summary>
-/// Represents data capture (CDC) information for a table
+/// Represents data capture (CDC) information for a table.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class DataCaptureInfo
 {
-    public string TabSchema { get; set; } = string.Empty;
-    public string TabName { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
     public string DataCapture { get; set; } = string.Empty;
-    public string TableSpace { get; set; } = string.Empty;
+    public string TablespaceName { get; set; } = string.Empty;
     public string TableType { get; set; } = string.Empty;
     
     /// <summary>

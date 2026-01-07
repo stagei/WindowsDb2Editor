@@ -91,7 +91,7 @@ public partial class ActiveSessionsPanel : UserControl
             var csv = new StringBuilder();
             csv.AppendLine("Agent ID,Database,User,Application,Client,Connected,Duration,Status");
             foreach (var s in sessions)
-                csv.AppendLine($"{s.AgentId},{s.DatabaseName},{s.PrimaryAuthId},{s.ApplicationName},{s.ClientName},{s.ConnectTime},{s.DurationText},{s.Status}");
+                csv.AppendLine($"{s.AgentId},{s.DatabaseName},{s.AuthorizationId},{s.ApplicationName},{s.ClientName},{s.ConnectTime},{s.DurationText},{s.Status}");
             await File.WriteAllTextAsync(saveDialog.FileName, csv.ToString());
             MessageBox.Show("Exported", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
         }

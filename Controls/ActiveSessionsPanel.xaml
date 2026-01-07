@@ -25,7 +25,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Agent ID" Binding="{Binding AgentId}" Width="80"/>
                 <DataGridTextColumn Header="Database" Binding="{Binding DatabaseName}" Width="120"/>
-                <DataGridTextColumn Header="User" Binding="{Binding PrimaryAuthId}" Width="120"/>
+                <DataGridTextColumn Header="User" Binding="{Binding AuthorizationId}" Width="120"/>
                 <DataGridTextColumn Header="Application" Binding="{Binding ApplicationName}" Width="200"/>
                 <DataGridTextColumn Header="Client" Binding="{Binding ClientName}" Width="150"/>
                 <DataGridTextColumn Header="Connected" Binding="{Binding ConnectTime, StringFormat=HH:mm:ss}" Width="100"/>

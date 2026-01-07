@@ -105,8 +105,8 @@ public class ObjectBrowserService
                 Logger.Warn(ex, "Failed to preload security principals (may require SECADM)");
             }
             
-            // Preload objects for non-system schemas (limit to first 20 schemas for performance)
-            var userSchemas = schemas.Where(s => s.Type != "SYSTEM").Take(20).ToList();
+            // Preload objects for all non-system schemas (no limit for complete cache coverage)
+            var userSchemas = schemas.Where(s => s.Type != "SYSTEM").ToList();
             int schemaIndex = 0;
             
             foreach (var schema in userSchemas)

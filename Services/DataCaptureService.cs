@@ -104,17 +104,17 @@ public class DataCaptureService
             {
                 var cdcInfo = new DataCaptureInfo
                 {
-                    TabSchema = row["TABSCHEMA"]?.ToString() ?? string.Empty,
-                    TabName = row["TABNAME"]?.ToString() ?? string.Empty,
+                    SchemaName = row["TABSCHEMA"]?.ToString() ?? string.Empty,
+                    TableName = row["TABNAME"]?.ToString() ?? string.Empty,
                     DataCapture = row["DATACAPTURE"]?.ToString() ?? "N",
-                    TableSpace = row["TBSPACE"]?.ToString() ?? string.Empty,
+                    TablespaceName = row["TBSPACE"]?.ToString() ?? string.Empty,
                     TableType = row["TYPE"]?.ToString() ?? string.Empty
                 };
                 
                 cdcInfoList.Add(cdcInfo);
                 
                 Logger.Debug("CDC: {Schema}.{Table} - DataCapture: {DataCapture}, Status: {Status}",
-                    cdcInfo.TabSchema, cdcInfo.TabName, cdcInfo.DataCapture, cdcInfo.CdcStatus);
+                    cdcInfo.SchemaName, cdcInfo.TableName, cdcInfo.DataCapture, cdcInfo.CdcStatus);
             }
             catch (Exception ex)
             {
@@ -141,8 +141,8 @@ public class DataCaptureService
         
         foreach (var table in tables.Where(t => !t.IsCdcEnabled))
         {
-            var schema = table.TabSchema?.Trim() ?? "";
-            var tableName = table.TabName?.Trim() ?? "";
+            var schema = table.SchemaName?.Trim() ?? "";
+            var tableName = table.TableName?.Trim() ?? "";
             
             script.AppendLine($"-- Enable CDC for {schema}.{tableName}");
             script.AppendLine($"-- Current status: {table.CdcStatus}");
@@ -169,8 +169,8 @@ public class DataCaptureService
         
         foreach (var table in tables.Where(t => t.IsCdcEnabled))
         {
-            var schema = table.TabSchema?.Trim() ?? "";
-            var tableName = table.TabName?.Trim() ?? "";
+            var schema = table.SchemaName?.Trim() ?? "";
+            var tableName = table.TableName?.Trim() ?? "";
             
             script.AppendLine($"-- Disable CDC for {schema}.{tableName}");
             script.AppendLine($"-- Current status: {table.CdcStatus}");

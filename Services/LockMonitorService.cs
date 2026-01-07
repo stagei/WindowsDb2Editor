@@ -116,11 +116,11 @@ public class LockMonitorService
             {
                 var lockInfo = new LockInfo
                 {
-                    TabSchema = row["TABSCHEMA"]?.ToString() ?? string.Empty,
-                    TabName = row["TABNAME"]?.ToString() ?? string.Empty,
+                    SchemaName = row["TABSCHEMA"]?.ToString() ?? string.Empty,
+                    TableName = row["TABNAME"]?.ToString() ?? string.Empty,
                     LockStatus = row["LOCK_STATUS"]?.ToString() ?? string.Empty,
                     LockMode = row["LOCK_MODE"]?.ToString() ?? string.Empty,
-                    PrimaryAuthId = row["PRIMARY_AUTH_ID"]?.ToString() ?? string.Empty,
+                    AuthorizationId = row["PRIMARY_AUTH_ID"]?.ToString() ?? string.Empty,
                     ClientName = row["CLIENT_NNAME"]?.ToString() ?? string.Empty,
                     ApplicationName = row["APPL_NAME"]?.ToString() ?? string.Empty,
                     AgentId = ConvertToInt(row["AGENT_ID"])
@@ -129,8 +129,8 @@ public class LockMonitorService
                 locks.Add(lockInfo);
                 
                 Logger.Debug("Lock: {Schema}.{Table} - Mode: {Mode}, Status: {Status}, User: {User}",
-                    lockInfo.TabSchema, lockInfo.TabName, lockInfo.LockMode, 
-                    lockInfo.LockStatus, lockInfo.PrimaryAuthId);
+                    lockInfo.SchemaName, lockInfo.TableName, lockInfo.LockMode, 
+                    lockInfo.LockStatus, lockInfo.AuthorizationId);
             }
             catch (Exception ex)
             {
@@ -162,10 +162,10 @@ public class LockMonitorService
             var firstLock = agentLocks.First();
             
             script.AppendLine($"-- Agent ID: {agentId}");
-            script.AppendLine($"-- User: {firstLock.PrimaryAuthId}");
+            script.AppendLine($"-- User: {firstLock.AuthorizationId}");
             script.AppendLine($"-- Application: {firstLock.ApplicationName}");
             script.AppendLine($"-- Client: {firstLock.ClientName}");
-            script.AppendLine($"-- Locks: {string.Join(", ", agentLocks.Select(l => $"{l.TabSchema?.Trim()}.{l.TabName?.Trim()}"))}");
+            script.AppendLine($"-- Locks: {string.Join(", ", agentLocks.Select(l => $"{l.SchemaName?.Trim()}.{l.TableName?.Trim()}"))}");
             script.AppendLine($"FORCE APPLICATION ({agentId});");
             script.AppendLine();
         }

@@ -30,6 +30,10 @@
       "REG_VAR_VALUE": "C:\\PROGRAMDATA\\IBM\\DB2\\DB2COPY1"
     },
     {
+      "REG_VAR_NAME": "DB2NTNOCACHE",
+      "REG_VAR_VALUE": "ON"
+    },
+    {
       "REG_VAR_NAME": "DB2PATH",
       "REG_VAR_VALUE": "C:\\DbInst"
     },

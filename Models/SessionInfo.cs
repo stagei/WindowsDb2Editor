@@ -3,13 +3,14 @@ using System;
 namespace WindowsDb2Editor.Models;
 
 /// <summary>
-/// Represents active database session information
+/// Represents active database session information.
+/// Uses database-agnostic property names for multi-provider support.
 /// </summary>
 public class SessionInfo
 {
     public int AgentId { get; set; }
     public string DatabaseName { get; set; } = string.Empty;
-    public string PrimaryAuthId { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
     public string ApplicationName { get; set; } = string.Empty;
     public string ApplicationId { get; set; } = string.Empty;

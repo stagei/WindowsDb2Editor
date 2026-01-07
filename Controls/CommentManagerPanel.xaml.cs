@@ -83,9 +83,25 @@ public partial class CommentManagerPanel : UserControl
         var comments = CommentsDataGrid.ItemsSource as List<ObjectComment>;
         if (comments == null) return;
         
-        var script = _commentService.GenerateCommentScript(comments);
-        var window = Services.ThemedWindowHelper.CreateScriptWindow("COMMENT ON Script", script, 700, 500, Window.GetWindow(this));
-        window.ShowDialog();
+        // Only export changed comments, not all comments
+        var script = _commentService.GenerateCommentScript(comments, changedOnly: true);
+        var modifiedCount = comments.Count(c => c.IsModified);
+        var tabTitle = modifiedCount > 0 
+            ? $"COMMENT Script ({modifiedCount} modified)" 
+            : "COMMENT Script";
+        
+        // Open the generated script in a new editor tab for the current connection
+        if (Window.GetWindow(this) is MainWindow mainWindow)
+        {
+            mainWindow.CreateNewTabWithSql(script, tabTitle);
+            Logger.Info("COMMENT script opened in new tab with {Count} modified comments", modifiedCount);
+        }
+        else
+        {
+            // Fallback to dialog if MainWindow not available
+            var window = Services.ThemedWindowHelper.CreateScriptWindow(tabTitle, script, 700, 500, Window.GetWindow(this));
+            window.ShowDialog();
+        }
     }
     
     private async void ExportButton_Click(object sender, RoutedEventArgs e)
