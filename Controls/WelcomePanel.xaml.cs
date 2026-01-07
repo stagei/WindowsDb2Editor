@@ -55,9 +55,10 @@ public partial class WelcomePanel : UserControl
                     {
                         return new RecentConnectionViewModel
                         {
-                            Connection = (DB2Connection)connection,
+                            Connection = connection,
                             History = history,
                             ProfileName = history.ProfileName,
+                            ProviderName = connection.ProviderType ?? "DB2",
                             LastUsedDisplay = history.LastUsedDisplay,
                             LastUsedRelative = history.LastUsedRelative,
                             UseCount = history.UseCount
@@ -322,9 +323,10 @@ public partial class WelcomePanel : UserControl
 /// </summary>
 public class RecentConnectionViewModel
 {
-    public DB2Connection Connection { get; set; } = new();
+    public DatabaseConnection Connection { get; set; } = new();
     public ConnectionHistoryEntry History { get; set; } = new();
     public string ProfileName { get; set; } = string.Empty;
+    public string ProviderName { get; set; } = string.Empty;
     public string LastUsedDisplay { get; set; } = string.Empty;
     public string LastUsedRelative { get; set; } = string.Empty;
     public int UseCount { get; set; }

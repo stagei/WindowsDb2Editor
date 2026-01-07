@@ -5,7 +5,6 @@ using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
-using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Dialogs;
 
@@ -146,10 +145,9 @@ public partial class UserDetailsDialog : Window
                 FROM SYSCAT.DBAUTH 
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?";
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
-            command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@grantee", _principal.Name));
+            command.Parameters.Add(_connectionManager.CreateParameter("@granteetype", granteeType));
             
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
@@ -224,13 +222,12 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY TABSCHEMA, TABNAME";
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
-            command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@grantee", _principal.Name));
+            command.Parameters.Add(_connectionManager.CreateParameter("@granteetype", granteeType));
             
             var dataTable = new DataTable();
-            using var adapter = new DB2DataAdapter(command);
+            using var adapter = _connectionManager.CreateDataAdapter(command);
             await Task.Run(() => adapter.Fill(dataTable));
             
             TablePrivilegesGrid.ItemsSource = dataTable.DefaultView;
@@ -262,13 +259,12 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY SCHEMANAME";
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
-            command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@grantee", _principal.Name));
+            command.Parameters.Add(_connectionManager.CreateParameter("@granteetype", granteeType));
             
             var dataTable = new DataTable();
-            using var adapter = new DB2DataAdapter(command);
+            using var adapter = _connectionManager.CreateDataAdapter(command);
             await Task.Run(() => adapter.Fill(dataTable));
             
             SchemaPrivilegesGrid.ItemsSource = dataTable.DefaultView;
@@ -300,13 +296,12 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ? AND GRANTEETYPE = ?
                 ORDER BY SCHEMA, SPECIFICNAME";
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
-            command.Parameters.Add(new DB2Parameter("@granteetype", granteeType));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@grantee", _principal.Name));
+            command.Parameters.Add(_connectionManager.CreateParameter("@granteetype", granteeType));
             
             var dataTable = new DataTable();
-            using var adapter = new DB2DataAdapter(command);
+            using var adapter = _connectionManager.CreateDataAdapter(command);
             await Task.Run(() => adapter.Fill(dataTable));
             
             RoutinePrivilegesGrid.ItemsSource = dataTable.DefaultView;
@@ -330,12 +325,11 @@ public partial class UserDetailsDialog : Window
                 WHERE GRANTEE = ?
                 ORDER BY ROLENAME";
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@grantee", _principal.Name));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@grantee", _principal.Name));
             
             var dataTable = new DataTable();
-            using var adapter = new DB2DataAdapter(command);
+            using var adapter = _connectionManager.CreateDataAdapter(command);
             await Task.Run(() => adapter.Fill(dataTable));
             
             RolesList.ItemsSource = dataTable.DefaultView;
@@ -372,12 +366,11 @@ public partial class UserDetailsDialog : Window
                     ORDER BY GRANTEE";
             }
             
-            var db2Conn = GetDb2Connection();
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@principal", _principal.Name));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@principal", _principal.Name));
             
             var dataTable = new DataTable();
-            using var adapter = new DB2DataAdapter(command);
+            using var adapter = _connectionManager.CreateDataAdapter(command);
             await Task.Run(() => adapter.Fill(dataTable));
             
             MembersList.ItemsSource = dataTable.DefaultView;
@@ -394,11 +387,6 @@ public partial class UserDetailsDialog : Window
         Close();
     }
     
-    private DB2ConnectionManager GetDb2Connection()
-    {
-        if (_connectionManager is not DB2ConnectionManager db2Conn)
-            throw new InvalidOperationException("UserDetailsDialog requires DB2ConnectionManager");
-        return db2Conn;
-    }
+    // Removed GetDb2Connection() - now using IConnectionManager directly for provider-agnostic operation
 }
 

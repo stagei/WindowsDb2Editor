@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using IBM.Data.Db2;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
@@ -11,7 +10,8 @@ using WindowsDb2Editor.Models;
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// Service for querying DB2 system catalog (SYSCAT) to populate object browser
+/// Service for querying database system catalog to populate object browser.
+/// Uses IConnectionManager factory methods for database-agnostic operation.
 /// </summary>
 public class ObjectBrowserService
 {
@@ -330,8 +330,7 @@ public class ObjectBrowserService
             var sql = _metadataHandler?.GetStatement("GetUserAccessLevel") 
                 ?? "SELECT DBADMAUTH, SECURITYADMAUTH, DATAACCESSAUTH, CREATETABAUTH, BINDADDAUTH FROM SYSCAT.DBAUTH WHERE GRANTEE = CURRENT USER AND GRANTEETYPE = 'U' FETCH FIRST 1 ROW ONLY";
             
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             if (await reader.ReadAsync())
@@ -513,8 +512,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetSchemasCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMATA";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -531,8 +529,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetAliasCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'A'";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -549,8 +546,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetTablespacesCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.TABLESPACES";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -567,8 +563,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetPackagesCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.PACKAGES";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -585,8 +580,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetUDTsCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.DATATYPES WHERE METATYPE IN ('A', 'D', 'R', 'S')";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -603,8 +597,7 @@ public class ObjectBrowserService
         {
             var sql = _metadataHandler?.GetStatement("GetSecurityObjectCount") 
                 ?? "SELECT (SELECT COUNT(*) FROM SYSCAT.ROLES) + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G') + (SELECT COUNT(DISTINCT GRANTEE) FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U') FROM SYSIBM.SYSDUMMY1";
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -642,8 +635,7 @@ public class ObjectBrowserService
             }
             
             var schemas = new List<SchemaNode>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -726,9 +718,8 @@ public class ObjectBrowserService
             // Get SQL from MetadataHandler or use fallback
             var sql = _metadataHandler?.GetStatement(statementName) ?? GetFallbackCountSql(objectType);
             
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
@@ -774,9 +765,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(TABNAME), TRIM(TYPE), TRIM(OWNER), CARD AS ROW_COUNT, TRIM(TBSPACE), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W') ORDER BY TABNAME";
             
             var tables = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -825,9 +815,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(V.VIEWNAME) AS VIEWNAME, TRIM(T.DEFINER) AS OWNER, TRIM(T.REMARKS) AS REMARKS FROM SYSCAT.TABLES T JOIN SYSCAT.VIEWS V ON T.TABSCHEMA = V.VIEWSCHEMA AND T.TABNAME = V.VIEWNAME WHERE T.TYPE = 'V' AND T.TABSCHEMA = ? ORDER BY V.VIEWNAME";
             
             var views = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("schemaName", schemaName.Trim()));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("schemaName", schemaName.Trim()));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -872,9 +861,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(ROUTINENAME), TRIM(SPECIFICNAME), TRIM(LANGUAGE), PARM_COUNT, CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.ROUTINES WHERE TRIM(ROUTINESCHEMA) = ? AND ROUTINETYPE = 'P' ORDER BY ROUTINENAME";
             
             var procedures = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -922,9 +910,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(ROUTINENAME) AS ROUTINENAME, TRIM(SPECIFICNAME) AS SPECIFICNAME, TRIM(LANGUAGE) AS LANGUAGE, PARM_COUNT, TRIM(FUNCTIONTYPE) AS FUNCTIONTYPE, CREATE_TIME, TRIM(OWNER) AS OWNER, TRIM(REMARKS) AS REMARKS FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = ? AND ROUTINETYPE = 'F' ORDER BY ROUTINENAME";
             
             var functions = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("schemaName", schemaName.Trim()));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("schemaName", schemaName.Trim()));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -973,8 +960,7 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(TBSPACE), TRIM(TBSPACETYPE), TRIM(DATATYPE), PAGESIZE, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLESPACES ORDER BY TBSPACE";
             
             var tablespaces = new List<TablespaceInfo>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1018,8 +1004,7 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(ROLENAME), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.ROLES ORDER BY ROLENAME";
             
             var roles = new List<SecurityPrincipal>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1061,8 +1046,7 @@ public class ObjectBrowserService
                 ?? "SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'G' UNION SELECT DISTINCT TRIM(GRANTEE) AS GROUPNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'G' ORDER BY GROUPNAME";
             
             var groups = new List<SecurityPrincipal>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1105,8 +1089,7 @@ public class ObjectBrowserService
                 ?? "SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.DBAUTH WHERE GRANTEETYPE = 'U' UNION SELECT DISTINCT TRIM(GRANTEE) AS USERNAME FROM SYSCAT.TABAUTH WHERE GRANTEETYPE = 'U' ORDER BY USERNAME";
             
             var users = new List<SecurityPrincipal>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1134,16 +1117,6 @@ public class ObjectBrowserService
     #region Security - Privilege Queries
     
     /// <summary>
-    /// Get DB2ConnectionManager from IConnectionManager (this service requires DB2-specific features)
-    /// </summary>
-    private DB2ConnectionManager GetDb2Connection()
-    {
-        if (_connectionManager is not DB2ConnectionManager db2Conn)
-            throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-        return db2Conn;
-    }
-    
-    /// <summary>
     /// Get privilege counts for a role (all 15 categories)
     /// </summary>
     public async Task<Dictionary<PrivilegeCategoryType, int>> GetRolePrivilegeCountsAsync(string roleName)
@@ -1153,12 +1126,11 @@ public class ObjectBrowserService
         
         try
         {
-            var db2Conn = GetDb2Connection();
             // Users who have this role
             var usersSql = _metadataHandler?.GetStatement("GetRoleAuthCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.ROLEAUTH WHERE TRIM(ROLENAME) = ?";
-            using var usersCmd = db2Conn.CreateCommand(usersSql);
-            usersCmd.Parameters.Add(new DB2Parameter("@roleName", roleName));
+            using var usersCmd = _connectionManager.CreateCommand(usersSql);
+            usersCmd.Parameters.Add(_connectionManager.CreateParameter("@roleName", roleName));
             counts[PrivilegeCategoryType.Users] = Convert.ToInt32(await usersCmd.ExecuteScalarAsync());
             
             // Note: Roles in DB2 don't have direct object privileges
@@ -1191,19 +1163,18 @@ public class ObjectBrowserService
         
         try
         {
-            var db2Conn = GetDb2Connection();
             // Tables
             var tablesSql = _metadataHandler?.GetStatement("GetGroupTablePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
-            using var tablesCmd = db2Conn.CreateCommand(tablesSql);
-            tablesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
+            using var tablesCmd = _connectionManager.CreateCommand(tablesSql);
+            tablesCmd.Parameters.Add(_connectionManager.CreateParameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Tables] = Convert.ToInt32(await tablesCmd.ExecuteScalarAsync());
             
             // Routines (Procedures + Functions)
             var routinesSql = _metadataHandler?.GetStatement("GetGroupRoutinePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
-            using var routinesCmd = db2Conn.CreateCommand(routinesSql);
-            routinesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
+            using var routinesCmd = _connectionManager.CreateCommand(routinesSql);
+            routinesCmd.Parameters.Add(_connectionManager.CreateParameter("@groupName", groupName));
             var routineCount = Convert.ToInt32(await routinesCmd.ExecuteScalarAsync());
             counts[PrivilegeCategoryType.Procedures] = routineCount; // Approximate
             counts[PrivilegeCategoryType.Functions] = routineCount;
@@ -1211,15 +1182,15 @@ public class ObjectBrowserService
             // Schemas
             var schemasSql = _metadataHandler?.GetStatement("GetGroupSchemaPrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
-            using var schemasCmd = db2Conn.CreateCommand(schemasSql);
-            schemasCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
+            using var schemasCmd = _connectionManager.CreateCommand(schemasSql);
+            schemasCmd.Parameters.Add(_connectionManager.CreateParameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Schemas] = Convert.ToInt32(await schemasCmd.ExecuteScalarAsync());
             
             // Sequences
             var sequencesSql = _metadataHandler?.GetStatement("GetGroupSequencePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'G'";
-            using var sequencesCmd = db2Conn.CreateCommand(sequencesSql);
-            sequencesCmd.Parameters.Add(new DB2Parameter("@groupName", groupName));
+            using var sequencesCmd = _connectionManager.CreateCommand(sequencesSql);
+            sequencesCmd.Parameters.Add(_connectionManager.CreateParameter("@groupName", groupName));
             counts[PrivilegeCategoryType.Sequences] = Convert.ToInt32(await sequencesCmd.ExecuteScalarAsync());
             
             // Fill remaining categories with 0 for now
@@ -1250,12 +1221,11 @@ public class ObjectBrowserService
         
         try
         {
-            var db2Conn = GetDb2Connection();
             // Tables
             var tablesSql = _metadataHandler?.GetStatement("GetUserTablePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.TABAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var tablesCmd = db2Conn.CreateCommand(tablesSql);
-            tablesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var tablesCmd = _connectionManager.CreateCommand(tablesSql);
+            tablesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Tables] = Convert.ToInt32(await tablesCmd.ExecuteScalarAsync());
             
             // Views (subset of tables)
@@ -1264,15 +1234,15 @@ public class ObjectBrowserService
             // Columns
             var columnsSql = _metadataHandler?.GetStatement("GetUserColumnPrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.COLAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var columnsCmd = db2Conn.CreateCommand(columnsSql);
-            columnsCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var columnsCmd = _connectionManager.CreateCommand(columnsSql);
+            columnsCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Columns] = Convert.ToInt32(await columnsCmd.ExecuteScalarAsync());
             
             // Routines (Procedures + Functions)
             var routinesSql = _metadataHandler?.GetStatement("GetUserRoutinePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.ROUTINEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var routinesCmd = db2Conn.CreateCommand(routinesSql);
-            routinesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var routinesCmd = _connectionManager.CreateCommand(routinesSql);
+            routinesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             var routineCount = Convert.ToInt32(await routinesCmd.ExecuteScalarAsync());
             counts[PrivilegeCategoryType.Procedures] = routineCount / 2; // Approximate
             counts[PrivilegeCategoryType.Functions] = routineCount / 2;
@@ -1280,36 +1250,36 @@ public class ObjectBrowserService
             // Schemas
             var schemasSql = _metadataHandler?.GetStatement("GetUserSchemaPrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.SCHEMAAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var schemasCmd = db2Conn.CreateCommand(schemasSql);
-            schemasCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var schemasCmd = _connectionManager.CreateCommand(schemasSql);
+            schemasCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Schemas] = Convert.ToInt32(await schemasCmd.ExecuteScalarAsync());
             
             // Sequences
             var sequencesSql = _metadataHandler?.GetStatement("GetUserSequencePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.SEQUENCEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var sequencesCmd = db2Conn.CreateCommand(sequencesSql);
-            sequencesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var sequencesCmd = _connectionManager.CreateCommand(sequencesSql);
+            sequencesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Sequences] = Convert.ToInt32(await sequencesCmd.ExecuteScalarAsync());
             
             // Tablespaces
             var tablespacesSql = _metadataHandler?.GetStatement("GetUserTablespacePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.TBSPACEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var tablespacesCmd = db2Conn.CreateCommand(tablespacesSql);
-            tablespacesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var tablespacesCmd = _connectionManager.CreateCommand(tablespacesSql);
+            tablespacesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Tablespaces] = Convert.ToInt32(await tablespacesCmd.ExecuteScalarAsync());
             
             // Packages
             var packagesSql = _metadataHandler?.GetStatement("GetUserPackagePrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.PACKAGEAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var packagesCmd = db2Conn.CreateCommand(packagesSql);
-            packagesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var packagesCmd = _connectionManager.CreateCommand(packagesSql);
+            packagesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Packages] = Convert.ToInt32(await packagesCmd.ExecuteScalarAsync());
             
             // Indexes
             var indexesSql = _metadataHandler?.GetStatement("GetUserIndexPrivCount") 
                 ?? "SELECT COUNT(*) FROM SYSCAT.INDEXAUTH WHERE GRANTEE = ? AND GRANTEETYPE = 'U'";
-            using var indexesCmd = db2Conn.CreateCommand(indexesSql);
-            indexesCmd.Parameters.Add(new DB2Parameter("@userName", userName));
+            using var indexesCmd = _connectionManager.CreateCommand(indexesSql);
+            indexesCmd.Parameters.Add(_connectionManager.CreateParameter("@userName", userName));
             counts[PrivilegeCategoryType.Indexes] = Convert.ToInt32(await indexesCmd.ExecuteScalarAsync());
             
             // Fill remaining categories with 0 for now
@@ -1347,9 +1317,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(INDNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(UNIQUERULE), TRIM(INDEXTYPE), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.INDEXES WHERE TRIM(TABSCHEMA) = ? ORDER BY INDNAME";
             
             var indexes = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1398,9 +1367,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(TRIGNAME), TRIM(TABSCHEMA), TRIM(TABNAME), TRIM(TRIGEVENT), TRIM(TRIGTIME), CREATE_TIME, TRIM(OWNER), TRIM(REMARKS) FROM SYSCAT.TRIGGERS WHERE TRIM(TRIGSCHEMA) = ? ORDER BY TRIGNAME";
             
             var triggers = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1446,9 +1414,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(SEQNAME), TRIM(SEQTYPE), START, INCREMENT, TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? ORDER BY SEQNAME";
             
             var sequences = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1493,9 +1460,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(TABNAME) AS ALIAS_NAME, TRIM(BASE_TABSCHEMA), TRIM(BASE_TABNAME), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'A' ORDER BY TABNAME";
             
             var synonyms = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1541,9 +1507,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(TYPENAME), TRIM(METATYPE), TRIM(OWNER), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.DATATYPES WHERE TRIM(TYPESCHEMA) = ? AND METATYPE IN ('A', 'D', 'R', 'S') ORDER BY TYPENAME";
             
             var types = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1588,8 +1553,7 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(PKGSCHEMA), TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES ORDER BY PKGSCHEMA, PKGNAME";
             
             var packages = new List<PackageInfo>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
+            using var command = _connectionManager.CreateCommand(sql);
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())
@@ -1629,9 +1593,8 @@ public class ObjectBrowserService
                 ?? "SELECT TRIM(PKGNAME), TRIM(BOUNDBY), TRIM(OWNER), TRIM(ISOLATION), CREATE_TIME, TRIM(REMARKS) FROM SYSCAT.PACKAGES WHERE TRIM(PKGSCHEMA) = ? ORDER BY PKGNAME";
             
             var packages = new List<DatabaseObject>();
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ObjectBrowserService requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@schemaName", schemaName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@schemaName", schemaName));
             using var reader = await command.ExecuteReaderAsync();
             
             while (await reader.ReadAsync())

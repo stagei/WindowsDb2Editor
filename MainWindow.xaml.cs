@@ -1207,7 +1207,7 @@ public partial class MainWindow : Window
         Logger.Debug("About dialog requested");
         MessageBox.Show(
             "WindowsDb2Editor v1.0.0\n\n" +
-            "A modern DB2 database editor for Windows 11\n" +
+            "A modern database editor for Windows 11\n" +
             "Built with .NET 10 and WPF\n\n" +
             "Features:\n" +
             "- Multiple connection tabs\n" +

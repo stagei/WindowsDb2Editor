@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="New DB2 Connection"
+        Title="New Database Connection"
         SizeToContent="Height"
         Width="500"
         WindowStartupLocation="CenterOwner"

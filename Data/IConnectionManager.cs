@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using WindowsDb2Editor.Models;
 
 namespace WindowsDb2Editor.Data;
@@ -50,4 +51,40 @@ public interface IConnectionManager : IDisposable
     
     /// <summary>Cancel any running query</summary>
     void CancelQuery();
+    
+    #region Factory Methods (Database-Agnostic Object Creation)
+    
+    /// <summary>
+    /// Create a database command for the current connection.
+    /// Returns the provider-agnostic DbCommand base class.
+    /// </summary>
+    /// <param name="sql">SQL statement to execute</param>
+    /// <returns>A DbCommand configured for this connection</returns>
+    DbCommand CreateCommand(string sql);
+    
+    /// <summary>
+    /// Create a database parameter with the specified name and value.
+    /// Returns the provider-agnostic DbParameter base class.
+    /// </summary>
+    /// <param name="name">Parameter name (with or without @ prefix)</param>
+    /// <param name="value">Parameter value</param>
+    /// <returns>A DbParameter configured for this provider</returns>
+    DbParameter CreateParameter(string name, object? value);
+    
+    /// <summary>
+    /// Create a data adapter for the specified command.
+    /// Returns the provider-agnostic DbDataAdapter base class.
+    /// </summary>
+    /// <param name="command">The command to create an adapter for</param>
+    /// <returns>A DbDataAdapter configured for this provider</returns>
+    DbDataAdapter CreateDataAdapter(DbCommand command);
+    
+    /// <summary>
+    /// Get the underlying database connection.
+    /// Returns the provider-agnostic DbConnection base class.
+    /// </summary>
+    /// <returns>The underlying DbConnection</returns>
+    DbConnection GetUnderlyingConnection();
+    
+    #endregion
 }

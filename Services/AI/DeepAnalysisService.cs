@@ -1,4 +1,3 @@
-using IBM.Data.Db2;
 using NLog;
 using System;
 using System.Collections.Generic;

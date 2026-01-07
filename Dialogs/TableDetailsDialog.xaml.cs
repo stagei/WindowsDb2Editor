@@ -410,8 +410,7 @@ public partial class TableDetailsDialog : Window
     {
         try
         {
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("TableDetailsDialog requires DB2ConnectionManager");
-            var packages = await _relationshipService.GetReferencingPackagesAsync(db2Conn, _schema, _tableName);
+            var packages = await _relationshipService.GetReferencingPackagesAsync(_connectionManager, _schema, _tableName);
             PackagesGrid.ItemsSource = packages;
             Logger.Info("Loaded {Count} referencing packages", packages.Count);
         }
@@ -425,8 +424,7 @@ public partial class TableDetailsDialog : Window
     {
         try
         {
-            if (_connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("TableDetailsDialog requires DB2ConnectionManager");
-            var views = await _relationshipService.GetReferencingViewsAsync(db2Conn2, _schema, _tableName);
+            var views = await _relationshipService.GetReferencingViewsAsync(_connectionManager, _schema, _tableName);
             ViewsGrid.ItemsSource = views;
             Logger.Info("Loaded {Count} referencing views", views.Count);
         }

@@ -62,7 +62,7 @@
             <TextBlock Grid.Row="8" Grid.Column="0" Text="Read-Only:" FontWeight="SemiBold" Margin="0,5"/>
             <TextBlock Grid.Row="8" Grid.Column="1" x:Name="ReadOnlyText" Margin="10,5"/>
             
-            <TextBlock Grid.Row="9" Grid.Column="0" Text="DB2 Version:" FontWeight="SemiBold" Margin="0,5"/>
+            <TextBlock Grid.Row="9" Grid.Column="0" Text="Database Version:" FontWeight="SemiBold" Margin="0,5"/>
             <TextBlock Grid.Row="9" Grid.Column="1" x:Name="VersionText" Margin="10,5"/>
         </Grid>
         

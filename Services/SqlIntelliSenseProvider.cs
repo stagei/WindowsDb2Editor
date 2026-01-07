@@ -1,6 +1,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -9,87 +10,137 @@ using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
 using ICSharpCode.AvalonEdit.CodeCompletion;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// DB2-specific IntelliSense provider.
+/// Database-agnostic SQL IntelliSense provider.
+/// Loads keywords, functions, and data types from provider-specific JSON files.
 /// </summary>
-public class Db2IntelliSenseProvider : IIntelliSenseProvider
+public class SqlIntelliSenseProvider : IIntelliSenseProvider
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly IntelliSenseDataLoader _dataLoader = new();
     
-    // Metadata from JSON files
+    // Current provider metadata
+    private IntelliSenseMetadata? _metadata;
+    private string _currentProvider = "DB2";
+    private string _currentVersion = "12.1";
+    
+    // Cached lists from metadata
     private List<string> _keywords = new();
     private List<string> _dataTypes = new();
     private List<string> _functions = new();
     private List<string> _systemTables = new();
-    private Dictionary<string, SqlStatementTemplate> _statementTemplates = new();
+    private Dictionary<string, SnippetDefinition> _snippets = new();
     
-    // Live schema metadata
+    // Live schema metadata (loaded from database)
     private Dictionary<string, List<ColumnInfo>> _tableColumns = new();
     private List<string> _tableNames = new();
     private List<string> _viewNames = new();
     private List<string> _procedureNames = new();
     private List<string> _functionNames = new();
     
+    /// <summary>
+    /// Current database provider (e.g., "DB2", "PostgreSQL").
+    /// </summary>
+    public string Provider => _currentProvider;
+    
+    /// <summary>
+    /// Current provider version.
+    /// </summary>
+    public string Version => _currentVersion;
+    
     public async Task LoadMetadataAsync(string keywordsFile, string statementsFile, string metadataFile)
     {
-        Logger.Debug("Loading metadata from JSON files");
+        Logger.Debug("Loading metadata - Provider: {Provider}, Version: {Version}", _currentProvider, _currentVersion);
         
         try
         {
-            // Load keywords from db2_12.1_keywords.json
+            // Try to load from JSON first
+            _metadata = await _dataLoader.LoadAsync(_currentProvider, _currentVersion);
+            
+            if (_metadata != null)
+            {
+                // Populate cached lists from metadata
+                _keywords = _metadata.GetAllKeywords();
+                _dataTypes = _metadata.GetAllDataTypes();
+                _functions = _metadata.GetAllFunctions();
+                _systemTables = _metadata.GetAllSystemTables();
+                _snippets = _metadata.Snippets ?? new Dictionary<string, SnippetDefinition>();
+                
+                Logger.Info("Loaded IntelliSense from JSON: {Keywords} keywords, {DataTypes} data types, " +
+                           "{Functions} functions, {SystemTables} system tables, {Snippets} snippets",
+                           _keywords.Count, _dataTypes.Count, _functions.Count, _systemTables.Count, _snippets.Count);
+            }
+            else
+            {
+                // Fall back to legacy file loading
+                await LoadLegacyMetadataAsync(keywordsFile, statementsFile, metadataFile);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load metadata");
+            LoadDefaultKeywords();
+        }
+    }
+    
+    /// <summary>
+    /// Set the active provider and version.
+    /// </summary>
+    public async Task SetProviderAsync(string provider, string version)
+    {
+        if (_currentProvider == provider && _currentVersion == version)
+            return;
+        
+        _currentProvider = provider;
+        _currentVersion = version;
+        
+        Logger.Info("Switching IntelliSense to {Provider} {Version}", provider, version);
+        
+        // Reload metadata for new provider
+        await LoadMetadataAsync(string.Empty, string.Empty, string.Empty);
+    }
+    
+    /// <summary>
+    /// Legacy metadata loading for backward compatibility.
+    /// </summary>
+    private async Task LoadLegacyMetadataAsync(string keywordsFile, string statementsFile, string metadataFile)
+    {
+        Logger.Debug("Loading legacy metadata from files");
+        
+        try
+        {
+            // Load keywords from db2_12.1_keywords.json (old format)
             if (File.Exists(keywordsFile))
             {
                 var keywordsJson = await File.ReadAllTextAsync(keywordsFile);
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var keywordsData = JsonSerializer.Deserialize<KeywordsMetadata>(keywordsJson, options);
+                var keywordsData = JsonSerializer.Deserialize<LegacyKeywordsMetadata>(keywordsJson, options);
                 
                 if (keywordsData?.Keywords != null)
                 {
-                    // Get all keywords from nested structure
                     _keywords = keywordsData.GetAllKeywords();
                     _dataTypes = keywordsData.Keywords.Datatypes ?? new List<string>();
                     _functions = keywordsData.Keywords.Functions ?? new List<string>();
                     _systemTables = keywordsData.Keywords.SystemTables ?? new List<string>();
                     
-                    Logger.Info("Loaded {KeywordCount} keywords, {DataTypeCount} data types, " +
-                              "{FunctionCount} functions, {SystemTableCount} system tables",
-                              _keywords.Count, _dataTypes.Count, _functions.Count, _systemTables.Count);
+                    Logger.Info("Loaded legacy keywords: {Count} total", _keywords.Count);
                 }
                 else
                 {
-                    Logger.Warn("Keywords file loaded but structure is null: {File}", keywordsFile);
                     LoadDefaultKeywords();
                 }
             }
             else
             {
-                Logger.Warn("Keywords file not found: {File}, loading defaults", keywordsFile);
                 LoadDefaultKeywords();
             }
-            
-            // Load statement templates
-            if (File.Exists(statementsFile))
-            {
-                // Statement templates will be parsed in future version
-                Logger.Debug("Statement templates file found: {File}", statementsFile);
-            }
-            else
-            {
-                Logger.Debug("Statements file not found: {File}", statementsFile);
-            }
-            
-            Logger.Info("Metadata loading complete - Total: {Keywords} keywords, {DataTypes} datatypes, {Functions} functions, {SystemTables} system tables",
-                _keywords.Count, _dataTypes.Count, _functions.Count, _systemTables.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load metadata files");
+            Logger.Error(ex, "Failed to load legacy metadata");
             LoadDefaultKeywords();
         }
     }
@@ -136,8 +187,7 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         _systemTables = new List<string>
         {
             "SYSCAT.TABLES", "SYSCAT.COLUMNS", "SYSCAT.INDEXES",
-            "SYSCAT.VIEWS", "SYSCAT.ROUTINES", "SYSCAT.TRIGGERS",
-            "SYSIBM.SYSDUMMY1"
+            "SYSCAT.VIEWS", "SYSCAT.ROUTINES", "SYSCAT.TRIGGERS"
         };
     }
     
@@ -147,84 +197,75 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         
         try
         {
-            // Load table names from SYSCAT.TABLES
-            var tablesSql = "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' FETCH FIRST 500 ROWS ONLY";
-            // Cast to DB2ConnectionManager for DB2-specific CreateCommand (this provider is DB2-specific)
-            if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
-            using (var tableCmd = db2Conn.CreateCommand(tablesSql))
+            // Load table names
+            var tablesSql = GetSystemTableQuery("tables");
+            using (var tableCmd = connection.CreateCommand(tablesSql))
             {
-                using var tableAdapter = new DB2DataAdapter((DB2Command)tableCmd);
+                using var adapter = connection.CreateDataAdapter(tableCmd);
                 var tablesTable = new System.Data.DataTable();
-                await Task.Run(() => tableAdapter.Fill(tablesTable));
+                await Task.Run(() => adapter.Fill(tablesTable));
                 
                 foreach (System.Data.DataRow row in tablesTable.Rows)
                 {
-                    // Use raw DB2 column names for IntelliSense (internal use only)
-                    var schema = (row.Table.Columns.Contains("SchemaName") ? row["SchemaName"] : row["TABSCHEMA"])?.ToString()?.Trim() ?? string.Empty;
-                    var name = (row.Table.Columns.Contains("TableName") ? row["TableName"] : row["TABNAME"])?.ToString()?.Trim() ?? string.Empty;
+                    var schema = GetColumnValue(row, "TABSCHEMA", "SchemaName")?.Trim() ?? string.Empty;
+                    var name = GetColumnValue(row, "TABNAME", "TableName")?.Trim() ?? string.Empty;
                     _tableNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} table names", _tableNames.Count);
             }
             
-            // Load view names from SYSCAT.TABLES
-            var viewsSql = "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'V' FETCH FIRST 500 ROWS ONLY";
-            if (connection is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
-            using (var viewCmd = db2Conn2.CreateCommand(viewsSql))
+            // Load view names
+            var viewsSql = GetSystemTableQuery("views");
+            using (var viewCmd = connection.CreateCommand(viewsSql))
             {
-                using var viewAdapter = new DB2DataAdapter((DB2Command)viewCmd);
+                using var adapter = connection.CreateDataAdapter(viewCmd);
                 var viewsTable = new System.Data.DataTable();
-                await Task.Run(() => viewAdapter.Fill(viewsTable));
+                await Task.Run(() => adapter.Fill(viewsTable));
                 
                 foreach (System.Data.DataRow row in viewsTable.Rows)
                 {
-                    // Use raw DB2 column names for IntelliSense (internal use only)
-                    var schema = (row.Table.Columns.Contains("SchemaName") ? row["SchemaName"] : row["TABSCHEMA"])?.ToString()?.Trim() ?? string.Empty;
-                    var name = (row.Table.Columns.Contains("TableName") ? row["TableName"] : row["TABNAME"])?.ToString()?.Trim() ?? string.Empty;
+                    var schema = GetColumnValue(row, "TABSCHEMA", "SchemaName")?.Trim() ?? string.Empty;
+                    var name = GetColumnValue(row, "TABNAME", "TableName")?.Trim() ?? string.Empty;
                     _viewNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} view names", _viewNames.Count);
             }
             
-            // Load procedure names from SYSCAT.ROUTINES
-            var proceduresSql = "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P' FETCH FIRST 500 ROWS ONLY";
-            if (connection is not DB2ConnectionManager db2Conn3) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
-            using (var procCmd = db2Conn3.CreateCommand(proceduresSql))
+            // Load procedure names
+            var proceduresSql = GetSystemTableQuery("procedures");
+            using (var procCmd = connection.CreateCommand(proceduresSql))
             {
-                using var procAdapter = new DB2DataAdapter((DB2Command)procCmd);
+                using var adapter = connection.CreateDataAdapter(procCmd);
                 var procTable = new System.Data.DataTable();
-                await Task.Run(() => procAdapter.Fill(procTable));
+                await Task.Run(() => adapter.Fill(procTable));
                 
                 foreach (System.Data.DataRow row in procTable.Rows)
                 {
-                    // Use raw DB2 column names for IntelliSense (internal use only)
-                    var schema = (row.Table.Columns.Contains("RoutineSchema") ? row["RoutineSchema"] : row["ROUTINESCHEMA"])?.ToString()?.Trim() ?? string.Empty;
-                    var name = (row.Table.Columns.Contains("RoutineName") ? row["RoutineName"] : row["ROUTINENAME"])?.ToString()?.Trim() ?? string.Empty;
+                    var schema = GetColumnValue(row, "ROUTINESCHEMA", "RoutineSchema")?.Trim() ?? string.Empty;
+                    var name = GetColumnValue(row, "ROUTINENAME", "RoutineName")?.Trim() ?? string.Empty;
                     _procedureNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} procedure names", _procedureNames.Count);
             }
             
-            // Load function names from SYSCAT.ROUTINES
-            var functionsSql = "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F' FETCH FIRST 500 ROWS ONLY";
-            if (connection is not DB2ConnectionManager db2Conn4) throw new InvalidOperationException("Db2IntelliSenseProvider requires DB2ConnectionManager");
-            using (var funcCmd = db2Conn4.CreateCommand(functionsSql))
+            // Load function names
+            var functionsSql = GetSystemTableQuery("functions");
+            using (var funcCmd = connection.CreateCommand(functionsSql))
             {
-                using var funcAdapter = new DB2DataAdapter((DB2Command)funcCmd);
+                using var adapter = connection.CreateDataAdapter(funcCmd);
                 var funcTable = new System.Data.DataTable();
-                await Task.Run(() => funcAdapter.Fill(funcTable));
+                await Task.Run(() => adapter.Fill(funcTable));
                 
                 foreach (System.Data.DataRow row in funcTable.Rows)
                 {
-                    // Use raw DB2 column names for IntelliSense (internal use only)
-                    var schema = (row.Table.Columns.Contains("RoutineSchema") ? row["RoutineSchema"] : row["ROUTINESCHEMA"])?.ToString()?.Trim() ?? string.Empty;
-                    var name = (row.Table.Columns.Contains("RoutineName") ? row["RoutineName"] : row["ROUTINENAME"])?.ToString()?.Trim() ?? string.Empty;
+                    var schema = GetColumnValue(row, "ROUTINESCHEMA", "RoutineSchema")?.Trim() ?? string.Empty;
+                    var name = GetColumnValue(row, "ROUTINENAME", "RoutineName")?.Trim() ?? string.Empty;
                     _functionNames.Add($"{schema}.{name}");
                 }
                 Logger.Debug("Loaded {Count} function names", _functionNames.Count);
             }
             
-            Logger.Info("Live schema metadata loaded successfully - {Tables} tables, {Views} views, {Procedures} procedures, {Functions} functions",
+            Logger.Info("Live schema metadata loaded - {Tables} tables, {Views} views, {Procedures} procedures, {Functions} functions",
                         _tableNames.Count, _viewNames.Count, _procedureNames.Count, _functionNames.Count);
         }
         catch (Exception ex)
@@ -233,13 +274,51 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         }
     }
     
+    /// <summary>
+    /// Get provider-specific system table query.
+    /// </summary>
+    private string GetSystemTableQuery(string objectType)
+    {
+        // These queries will be moved to JSON in a future update
+        return _currentProvider.ToUpperInvariant() switch
+        {
+            "POSTGRESQL" or "POSTGRES" => objectType switch
+            {
+                "tables" => "SELECT schemaname AS TABSCHEMA, tablename AS TABNAME FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema') LIMIT 500",
+                "views" => "SELECT schemaname AS TABSCHEMA, viewname AS TABNAME FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema') LIMIT 500",
+                "procedures" => "SELECT routine_schema AS ROUTINESCHEMA, routine_name AS ROUTINENAME FROM information_schema.routines WHERE routine_type = 'PROCEDURE' LIMIT 500",
+                "functions" => "SELECT routine_schema AS ROUTINESCHEMA, routine_name AS ROUTINENAME FROM information_schema.routines WHERE routine_type = 'FUNCTION' LIMIT 500",
+                _ => string.Empty
+            },
+            _ => objectType switch // Default to DB2
+            {
+                "tables" => "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' FETCH FIRST 500 ROWS ONLY",
+                "views" => "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'V' FETCH FIRST 500 ROWS ONLY",
+                "procedures" => "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P' FETCH FIRST 500 ROWS ONLY",
+                "functions" => "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F' FETCH FIRST 500 ROWS ONLY",
+                _ => string.Empty
+            }
+        };
+    }
+    
+    /// <summary>
+    /// Get column value with fallback column name.
+    /// </summary>
+    private string? GetColumnValue(System.Data.DataRow row, string primaryColumn, string fallbackColumn)
+    {
+        if (row.Table.Columns.Contains(primaryColumn))
+            return row[primaryColumn]?.ToString();
+        if (row.Table.Columns.Contains(fallbackColumn))
+            return row[fallbackColumn]?.ToString();
+        return null;
+    }
+    
     public List<ICompletionData> GetCompletions(CompletionContext context)
     {
         var completions = new List<ICompletionData>();
         
         try
         {
-            // Determine SQL context
             var sqlContext = DetermineSqlContext(context.Text, context.CaretPosition);
             Logger.Debug("SQL context: {Context}", sqlContext);
             
@@ -251,6 +330,7 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
                 SqlContext.Function => GetFunctionCompletions(),
                 SqlContext.DataType => GetDataTypeCompletions(),
                 SqlContext.SystemCatalog => GetSystemCatalogCompletions(),
+                SqlContext.Snippet => GetSnippetCompletions(),
                 _ => GetGeneralCompletions()
             };
         }
@@ -264,66 +344,39 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
     
     public async Task<FunctionSignature?> GetSignatureHintAsync(string functionName)
     {
-        // Future: Query SYSCAT.ROUTINEPARMS for function parameters
         Logger.Debug("Getting signature hint for function: {Function}", functionName);
-        
-        // Placeholder for now
         return await Task.FromResult<FunctionSignature?>(null);
     }
     
     private SqlContext DetermineSqlContext(string text, int caretPosition)
     {
         if (caretPosition == 0 || string.IsNullOrEmpty(text))
-        {
             return SqlContext.Keyword;
-        }
         
-        // Get text before caret
         var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
         var lastWords = GetLastWords(textBeforeCaret, 3);
         
-        // Analyze context based on last keywords
         if (lastWords.Count > 0)
         {
             var lastWord = lastWords[^1].ToUpperInvariant();
             var secondLastWord = lastWords.Count > 1 ? lastWords[^2].ToUpperInvariant() : string.Empty;
             
-            // After FROM or JOIN → suggest table names
             if (lastWord == "FROM" || lastWord == "JOIN" || lastWord == "TABLE" || lastWord == "INTO")
-            {
                 return SqlContext.TableName;
-            }
             
-            // After WHERE, AND, OR → suggest column names
             if (lastWord == "WHERE" || lastWord == "AND" || lastWord == "OR" || lastWord == "ON")
-            {
                 return SqlContext.ColumnName;
-            }
             
-            // After SELECT → suggest columns or *
             if (lastWord == "SELECT")
-            {
                 return SqlContext.ColumnName;
-            }
             
-            // After AS keyword for data type in CREATE TABLE
-            if ((lastWord == "AS" && secondLastWord == "TYPE") || 
-                (new[] { "INT", "INTEGER", "VARCHAR", "DECIMAL", "DATE", "TIME" }.Contains(secondLastWord)))
-            {
+            if (lastWord == "AS" && secondLastWord == "TYPE")
                 return SqlContext.DataType;
-            }
             
-            // In SYSCAT context
-            if (textBeforeCaret.Contains("SYSCAT.", StringComparison.OrdinalIgnoreCase))
-            {
+            if (textBeforeCaret.Contains("SYSCAT.", StringComparison.OrdinalIgnoreCase) ||
+                textBeforeCaret.Contains("pg_catalog.", StringComparison.OrdinalIgnoreCase) ||
+                textBeforeCaret.Contains("information_schema.", StringComparison.OrdinalIgnoreCase))
                 return SqlContext.SystemCatalog;
-            }
-            
-            // Check if in function call
-            if (Regex.IsMatch(textBeforeCaret, @"\b[A-Z_]+\s*\($", RegexOptions.IgnoreCase))
-            {
-                return SqlContext.Function;
-            }
         }
         
         return SqlContext.Keyword;
@@ -331,18 +384,16 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
     
     private List<string> GetLastWords(string text, int count)
     {
-        var words = Regex.Split(text, @"[^\w\.]+")
+        return Regex.Split(text, @"[^\w\.]+")
             .Where(w => !string.IsNullOrWhiteSpace(w))
+            .TakeLast(count)
             .ToList();
-        
-        return words.TakeLast(count).ToList();
     }
     
     private List<ICompletionData> GetKeywordCompletions()
     {
-        Logger.Debug("Generating keyword completions");
         return _keywords
-            .Select(k => new Db2KeywordCompletionData
+            .Select(k => new SqlKeywordCompletionData
             {
                 Text = k,
                 Description = $"SQL Keyword: {k}",
@@ -354,43 +405,35 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
     
     private List<ICompletionData> GetTableNameCompletions()
     {
-        Logger.Debug("Generating table name completions");
         var completions = new List<ICompletionData>();
         
-        // Add table names
-        completions.AddRange(_tableNames
-            .Select(t => new Db2TableCompletionData
-            {
-                Text = t,
-                Description = $"Table: {t}",
-                Priority = 2.0
-            }));
+        completions.AddRange(_tableNames.Select(t => new SqlTableCompletionData
+        {
+            Text = t,
+            Description = $"Table: {t}",
+            Priority = 2.0
+        }));
         
-        // Add view names
-        completions.AddRange(_viewNames
-            .Select(v => new Db2ViewCompletionData
-            {
-                Text = v,
-                Description = $"View: {v}",
-                Priority = 2.0
-            }));
+        completions.AddRange(_viewNames.Select(v => new SqlViewCompletionData
+        {
+            Text = v,
+            Description = $"View: {v}",
+            Priority = 2.0
+        }));
         
         return completions;
     }
     
     private List<ICompletionData> GetColumnNameCompletions(string text, int caretPosition)
     {
-        Logger.Debug("Generating column name completions");
         var completions = new List<ICompletionData>();
-        
-        // Try to find table name in FROM clause
         var tableNames = ExtractTableNamesFromQuery(text);
         
         foreach (var tableName in tableNames)
         {
             if (_tableColumns.TryGetValue(tableName, out var columns))
             {
-                completions.AddRange(columns.Select(c => new Db2ColumnCompletionData
+                completions.AddRange(columns.Select(c => new SqlColumnCompletionData
                 {
                     ColumnName = c.Name,
                     DataType = c.DataType,
@@ -402,10 +445,9 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             }
         }
         
-        // If no specific columns found, suggest all keywords
         if (completions.Count == 0)
         {
-            completions.Add(new Db2KeywordCompletionData
+            completions.Add(new SqlKeywordCompletionData
             {
                 Text = "*",
                 Description = "Select all columns",
@@ -418,35 +460,29 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
     
     private List<ICompletionData> GetFunctionCompletions()
     {
-        Logger.Debug("Generating function completions");
         var completions = new List<ICompletionData>();
         
-        // Add built-in functions
-        completions.AddRange(_functions
-            .Select(f => new Db2FunctionCompletionData
-            {
-                Text = f,
-                Description = $"Function: {f}",
-                Priority = 2.0
-            }));
+        completions.AddRange(_functions.Select(f => new SqlFunctionCompletionData
+        {
+            Text = f,
+            Description = $"Function: {f}",
+            Priority = 2.0
+        }));
         
-        // Add user-defined functions
-        completions.AddRange(_functionNames
-            .Select(f => new Db2FunctionCompletionData
-            {
-                Text = f,
-                Description = $"User Function: {f}",
-                Priority = 2.5
-            }));
+        completions.AddRange(_functionNames.Select(f => new SqlFunctionCompletionData
+        {
+            Text = f,
+            Description = $"User Function: {f}",
+            Priority = 2.5
+        }));
         
         return completions;
     }
     
     private List<ICompletionData> GetDataTypeCompletions()
     {
-        Logger.Debug("Generating data type completions");
         return _dataTypes
-            .Select(dt => new Db2KeywordCompletionData
+            .Select(dt => new SqlDataTypeCompletionData
             {
                 Text = dt,
                 Description = $"Data Type: {dt}",
@@ -458,9 +494,8 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
     
     private List<ICompletionData> GetSystemCatalogCompletions()
     {
-        Logger.Debug("Generating system catalog completions");
         return _systemTables
-            .Select(st => new Db2TableCompletionData
+            .Select(st => new SqlSystemTableCompletionData
             {
                 Text = st,
                 Description = $"System Table: {st}",
@@ -470,15 +505,27 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
             .ToList();
     }
     
+    private List<ICompletionData> GetSnippetCompletions()
+    {
+        return _snippets
+            .Select(s => new SqlSnippetCompletionData
+            {
+                Trigger = s.Value.Trigger,
+                Template = s.Value.Template,
+                Description = s.Value.Description,
+                Text = s.Value.Trigger,
+                Priority = 1.5
+            })
+            .Cast<ICompletionData>()
+            .ToList();
+    }
+    
     private List<ICompletionData> GetGeneralCompletions()
     {
-        Logger.Debug("Generating general completions");
         var completions = new List<ICompletionData>();
-        
-        // Mix of keywords and common suggestions
         completions.AddRange(GetKeywordCompletions().Take(20));
+        completions.AddRange(GetSnippetCompletions().Take(10));
         completions.AddRange(GetTableNameCompletions().Take(10));
-        
         return completions;
     }
     
@@ -488,24 +535,19 @@ public class Db2IntelliSenseProvider : IIntelliSenseProvider
         
         try
         {
-            // Simple regex to find table names after FROM and JOIN
             var fromMatches = Regex.Matches(sql, @"FROM\s+([A-Z0-9_]+\.?[A-Z0-9_]+)", RegexOptions.IgnoreCase);
             var joinMatches = Regex.Matches(sql, @"JOIN\s+([A-Z0-9_]+\.?[A-Z0-9_]+)", RegexOptions.IgnoreCase);
             
             foreach (Match match in fromMatches)
             {
                 if (match.Groups.Count > 1)
-                {
                     tableNames.Add(match.Groups[1].Value);
-                }
             }
             
             foreach (Match match in joinMatches)
             {
                 if (match.Groups.Count > 1)
-                {
                     tableNames.Add(match.Groups[1].Value);
-                }
             }
         }
         catch (Exception ex)
@@ -528,22 +570,22 @@ public enum SqlContext
     Function,
     DataType,
     SystemCatalog,
+    Snippet,
     General
 }
 
+#region Legacy Compatibility
+
 /// <summary>
-/// Keywords metadata structure matching db2_12.1_keywords.json.
+/// Legacy keywords metadata structure (for backward compatibility with db2_12.1_keywords.json).
 /// </summary>
-public class KeywordsMetadata
+public class LegacyKeywordsMetadata
 {
     public string Provider { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public KeywordCategories? Keywords { get; set; }
+    public LegacyKeywordCategories? Keywords { get; set; }
     
-    /// <summary>
-    /// Get all keywords as a flat list.
-    /// </summary>
     public List<string> GetAllKeywords()
     {
         var all = new List<string>();
@@ -559,10 +601,7 @@ public class KeywordsMetadata
     }
 }
 
-/// <summary>
-/// Nested keyword categories.
-/// </summary>
-public class KeywordCategories
+public class LegacyKeywordCategories
 {
     public List<string>? Statements { get; set; }
     public List<string>? Clauses { get; set; }
@@ -578,13 +617,13 @@ public class KeywordCategories
 }
 
 /// <summary>
-/// SQL statement template.
+/// Alias for backward compatibility - redirects to SqlIntelliSenseProvider.
 /// </summary>
-public class SqlStatementTemplate
+public class Db2IntelliSenseProvider : SqlIntelliSenseProvider
 {
-    public string Name { get; set; } = string.Empty;
-    public string Sql { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public List<string> Parameters { get; set; } = new();
+    public Db2IntelliSenseProvider() : base()
+    {
+    }
 }
 
+#endregion

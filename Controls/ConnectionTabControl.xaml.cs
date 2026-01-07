@@ -1045,7 +1045,7 @@ public partial class ConnectionTabControl : UserControl
                     }
                     else
                     {
-                        Logger.Warn("Metadata collection currently only supports DB2 connections");
+                        Logger.Warn("Metadata collection is not supported for this connection type");
                     }
                     Logger.Info("Background metadata collection completed");
                 }

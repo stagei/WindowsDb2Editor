@@ -5,7 +5,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using IBM.Data.Db2;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
@@ -120,10 +119,9 @@ public partial class PackageDetailsDialog : Window
                     WHERE TRIM(S.PKGSCHEMA) = ? AND TRIM(S.PKGNAME) = ?
                     ORDER BY S.STMTNO, S.SECTNO, S.SEQNO";
 
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageDetailsDialog requires DB2ConnectionManager");
-            using var command = db2Conn.CreateCommand(sql);
-            command.Parameters.Add(new DB2Parameter("@pkgschema", _package.PackageSchema));
-            command.Parameters.Add(new DB2Parameter("@pkgname", _package.PackageName));
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@pkgschema", _package.PackageSchema));
+            command.Parameters.Add(_connectionManager.CreateParameter("@pkgname", _package.PackageName));
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -260,10 +258,9 @@ public partial class PackageDetailsDialog : Window
             ProceduresCalledCount.Text = "⏳ Analyzing dependencies...";
             FunctionsCalledCount.Text = "⏳ Analyzing dependencies...";
             
-            if (_connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("PackageDetailsDialog requires DB2ConnectionManager");
             var analyzer = new PackageDependencyAnalyzer();
             var dependencies = await analyzer.AnalyzeDependenciesAsync(
-                db2Conn2,
+                _connectionManager,
                 _package.PackageSchema,
                 _package.PackageName);
             

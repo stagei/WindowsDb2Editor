@@ -6,16 +6,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
-using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Services;
 
+// MetadataHandler reference for provider-agnostic queries
+
 /// <summary>
 /// Service for comparing database objects across multiple databases.
+/// Uses IConnectionManager factory methods for database-agnostic operation.
 /// </summary>
 public class DatabaseComparisonService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    public DatabaseComparisonService(MetadataHandler? metadataHandler = null)
+    {
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+    }
     
     /// <summary>
     /// Compare table structures across multiple databases.
@@ -48,8 +56,7 @@ public class DatabaseComparisonService
             
             try
             {
-                if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("DatabaseComparisonService requires DB2ConnectionManager");
-                var tableDef = await FetchTableDefinitionAsync(db2Conn, schema, tableName);
+                var tableDef = await FetchTableDefinitionAsync(connection, schema, tableName);
                 result.TableDefinitions[alias] = tableDef;
                 Logger.Debug("Fetched table definition from {Alias}: {ColumnCount} columns",
                            alias, tableDef.Columns.Count);
@@ -70,7 +77,7 @@ public class DatabaseComparisonService
     /// Fetch table definition from a database.
     /// </summary>
     private async Task<TableDefinition> FetchTableDefinitionAsync(
-        DB2ConnectionManager connection,
+        IConnectionManager connection,
         string schema,
         string tableName)
     {
@@ -81,19 +88,18 @@ public class DatabaseComparisonService
         };
         
         // Fetch columns
-        var columnsSql = @"
-            SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, IDENTITY
+        var columnsSql = _metadataHandler?.GetStatement("COMPARE_GetTableColumns") 
+            ?? @"SELECT COLNAME, TYPENAME, LENGTH, SCALE, NULLS, DEFAULT, IDENTITY
             FROM SYSCAT.COLUMNS
             WHERE TABSCHEMA = ? AND TABNAME = ?
-            ORDER BY COLNO
-        ";
+            ORDER BY COLNO";
         
         using (var cmd = connection.CreateCommand(columnsSql))
         {
-            cmd.Parameters.Add(new DB2Parameter("@schema", schema));
-            cmd.Parameters.Add(new DB2Parameter("@table", tableName));
+            cmd.Parameters.Add(connection.CreateParameter("@schema", schema));
+            cmd.Parameters.Add(connection.CreateParameter("@table", tableName));
             
-            using var adapter = new DB2DataAdapter((DB2Command)cmd);
+            using var adapter = connection.CreateDataAdapter(cmd);
             var dt = new DataTable();
             await Task.Run(() => adapter.Fill(dt));
             
@@ -113,19 +119,18 @@ public class DatabaseComparisonService
         }
         
         // Fetch primary key
-        var pkSql = @"
-            SELECT COLNAME
+        var pkSql = _metadataHandler?.GetStatement("COMPARE_GetPrimaryKeyColumns") 
+            ?? @"SELECT COLNAME
             FROM SYSCAT.KEYCOLUSE
             WHERE TABSCHEMA = ? AND TABNAME = ? AND CONSTNAME LIKE 'PK%'
-            ORDER BY COLSEQ
-        ";
+            ORDER BY COLSEQ";
         
         using (var cmd = connection.CreateCommand(pkSql))
         {
-            cmd.Parameters.Add(new DB2Parameter("@schema", schema));
-            cmd.Parameters.Add(new DB2Parameter("@table", tableName));
+            cmd.Parameters.Add(connection.CreateParameter("@schema", schema));
+            cmd.Parameters.Add(connection.CreateParameter("@table", tableName));
             
-            using var adapter = new DB2DataAdapter((DB2Command)cmd);
+            using var adapter = connection.CreateDataAdapter(cmd);
             var dt = new DataTable();
             await Task.Run(() => adapter.Fill(dt));
             
@@ -136,18 +141,17 @@ public class DatabaseComparisonService
         }
         
         // Fetch indexes
-        var indexSql = @"
-            SELECT INDNAME, UNIQUERULE, COLNAMES
+        var indexSql = _metadataHandler?.GetStatement("COMPARE_GetTableIndexes") 
+            ?? @"SELECT INDNAME, UNIQUERULE, COLNAMES
             FROM SYSCAT.INDEXES
-            WHERE TABSCHEMA = ? AND TABNAME = ?
-        ";
+            WHERE TABSCHEMA = ? AND TABNAME = ?";
         
         using (var cmd = connection.CreateCommand(indexSql))
         {
-            cmd.Parameters.Add(new DB2Parameter("@schema", schema));
-            cmd.Parameters.Add(new DB2Parameter("@table", tableName));
+            cmd.Parameters.Add(connection.CreateParameter("@schema", schema));
+            cmd.Parameters.Add(connection.CreateParameter("@table", tableName));
             
-            using var adapter = new DB2DataAdapter((DB2Command)cmd);
+            using var adapter = connection.CreateDataAdapter(cmd);
             var dt = new DataTable();
             await Task.Run(() => adapter.Fill(dt));
             

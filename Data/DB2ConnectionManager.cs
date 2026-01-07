@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using IBM.Data.Db2;
 using NLog;
 using WindowsDb2Editor.Models;
@@ -734,8 +735,20 @@ public class DB2ConnectionManager : IConnectionManager
         return await ReconnectAsync();
     }
 
+    #region Factory Methods (IConnectionManager implementation)
+    
     /// <summary>
-    /// Create a DB2Command for custom query execution
+    /// Create a database command for the current connection (IConnectionManager implementation).
+    /// Returns DbCommand for provider-agnostic usage.
+    /// </summary>
+    DbCommand IConnectionManager.CreateCommand(string sql)
+    {
+        return CreateCommand(sql);
+    }
+    
+    /// <summary>
+    /// Create a DB2Command for custom query execution.
+    /// This is the DB2-specific version that returns the concrete type.
     /// </summary>
     public DB2Command CreateCommand(string sql)
     {
@@ -749,6 +762,43 @@ public class DB2ConnectionManager : IConnectionManager
         command.CommandTimeout = _connectionInfo.ConnectionTimeout;
         return command;
     }
+    
+    /// <summary>
+    /// Create a database parameter with the specified name and value.
+    /// Returns the provider-agnostic DbParameter base class.
+    /// </summary>
+    public DbParameter CreateParameter(string name, object? value)
+    {
+        return new DB2Parameter(name, value ?? DBNull.Value);
+    }
+    
+    /// <summary>
+    /// Create a data adapter for the specified command.
+    /// Returns the provider-agnostic DbDataAdapter base class.
+    /// </summary>
+    public DbDataAdapter CreateDataAdapter(DbCommand command)
+    {
+        if (command is not DB2Command db2Command)
+        {
+            throw new ArgumentException("Command must be a DB2Command", nameof(command));
+        }
+        return new DB2DataAdapter(db2Command);
+    }
+    
+    /// <summary>
+    /// Get the underlying database connection.
+    /// Returns the provider-agnostic DbConnection base class.
+    /// </summary>
+    public DbConnection GetUnderlyingConnection()
+    {
+        if (_db2Connection == null)
+        {
+            throw new InvalidOperationException("Connection has not been established.");
+        }
+        return _db2Connection;
+    }
+    
+    #endregion
 
     /// <summary>
     /// Execute scalar query (return single value)

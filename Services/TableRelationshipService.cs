@@ -96,7 +96,7 @@ public class TableRelationshipService
     /// Get packages that reference this table
     /// </summary>
     public async Task<List<ReferencingObject>> GetReferencingPackagesAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -128,7 +128,7 @@ public class TableRelationshipService
     /// Get views that reference this table
     /// </summary>
     public async Task<List<ReferencingObject>> GetReferencingViewsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

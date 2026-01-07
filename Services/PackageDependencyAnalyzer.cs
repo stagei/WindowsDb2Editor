@@ -6,16 +6,22 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using WindowsDb2Editor.Data;
-using IBM.Data.Db2;
 
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
 /// Analyzes package dependencies by parsing SQL statements.
+/// Uses IConnectionManager factory methods for database-agnostic operation.
 /// </summary>
 public class PackageDependencyAnalyzer
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly MetadataHandler? _metadataHandler;
+    
+    public PackageDependencyAnalyzer(MetadataHandler? metadataHandler = null)
+    {
+        _metadataHandler = metadataHandler ?? App.MetadataHandler;
+    }
     
     /// <summary>
     /// Analyze dependencies for a specific package.
@@ -36,8 +42,7 @@ public class PackageDependencyAnalyzer
         try
         {
             // Fetch all SQL statements from SYSCAT.STATEMENTS
-            if (connection is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageDependencyAnalyzer requires DB2ConnectionManager");
-            var statements = await FetchPackageStatementsAsync(db2Conn, schema, packageName);
+            var statements = await FetchPackageStatementsAsync(connection, schema, packageName);
             Logger.Debug("Fetched {Count} statements for analysis", statements.Count);
             
             // Parse each statement to extract dependencies
@@ -53,8 +58,8 @@ public class PackageDependencyAnalyzer
                 }
             }
             
-            // Verify objects exist in database (DB2-specific)
-            await VerifyDependenciesAsync(db2Conn, dependencies);
+            // Verify objects exist in database
+            await VerifyDependenciesAsync(connection, dependencies);
             
             Logger.Info("Package {Schema}.{Package} has {TableCount} tables, {ViewCount} views, " +
                        "{ProcCount} procedures, {FuncCount} functions used",
@@ -74,26 +79,23 @@ public class PackageDependencyAnalyzer
     /// Fetch all SQL statements for a package from SYSCAT.STATEMENTS.
     /// </summary>
     private async Task<List<PackageStatement>> FetchPackageStatementsAsync(
-        DB2ConnectionManager connection,
+        IConnectionManager connection,
         string schema,
         string packageName)
     {
         var statements = new List<PackageStatement>();
         
-        var sql = @"
-            SELECT STMTNO, TEXT
+        var sql = _metadataHandler?.GetStatement("PACKAGE_GetStatements") 
+            ?? @"SELECT STMTNO, TEXT
             FROM SYSCAT.STATEMENTS
             WHERE PKGSCHEMA = ? AND PKGNAME = ?
-            ORDER BY STMTNO
-        ";
+            ORDER BY STMTNO";
         
         using var command = connection.CreateCommand(sql);
-        var schemaParam = new DB2Parameter("@schema", schema);
-        var nameParam = new DB2Parameter("@name", packageName);
-        command.Parameters.Add(schemaParam);
-        command.Parameters.Add(nameParam);
+        command.Parameters.Add(connection.CreateParameter("@schema", schema));
+        command.Parameters.Add(connection.CreateParameter("@name", packageName));
         
-        using var adapter = new DB2DataAdapter((DB2Command)command);
+        using var adapter = connection.CreateDataAdapter(command);
         var dataTable = new DataTable();
         await Task.Run(() => adapter.Fill(dataTable));
         
@@ -306,7 +308,7 @@ public class PackageDependencyAnalyzer
     /// <summary>
     /// Verify that extracted dependencies actually exist in the database.
     /// </summary>
-    private async Task VerifyDependenciesAsync(DB2ConnectionManager connection, PackageDependencies dependencies)
+    private async Task VerifyDependenciesAsync(IConnectionManager connection, PackageDependencies dependencies)
     {
         Logger.Debug("Verifying extracted dependencies");
         
@@ -324,7 +326,7 @@ public class PackageDependencyAnalyzer
     /// Verify objects exist in system catalog.
     /// </summary>
     private async Task<HashSet<string>> VerifyObjectsAsync(
-        DB2ConnectionManager connection,
+        IConnectionManager connection,
         List<ObjectDependency> dependencies,
         string catalogTable,
         string schemaColumn,
@@ -347,7 +349,7 @@ public class PackageDependencyAnalyzer
         try
         {
             using var command = connection.CreateCommand(sql);
-            using var adapter = new DB2DataAdapter((DB2Command)command);
+            using var adapter = connection.CreateDataAdapter(command);
             var dataTable = new DataTable();
             await Task.Run(() => adapter.Fill(dataTable));
             

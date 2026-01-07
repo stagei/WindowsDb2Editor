@@ -347,7 +347,7 @@
                                Foreground="White"
                                FontWeight="Bold"
                                FontSize="11"
-                               ToolTip="Your DB2 access level"/>
+                               ToolTip="Your database access level"/>
                 </Border>
             </ToolBar>
 

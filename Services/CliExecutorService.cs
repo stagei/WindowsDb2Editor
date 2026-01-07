@@ -172,7 +172,7 @@ public class CliExecutorService
             // Feature #5: Metadata collection (DB2-specific for now)
             if (connectionManager is not DB2ConnectionManager db2Manager)
             {
-                Console.Error.WriteLine("ERROR: Metadata collection currently only supports DB2");
+                Console.Error.WriteLine("ERROR: Metadata collection is not supported for this database provider");
                 return 1;
             }
             var metadataService = new DB2MetadataService();

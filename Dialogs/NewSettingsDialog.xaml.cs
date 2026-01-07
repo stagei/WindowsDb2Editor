@@ -422,7 +422,7 @@ public partial class NewSettingsDialog : Window
         panel.Children.Add(CreateSectionHeader("Error Handling"));
         
         var handleDecimal = new CheckBox { 
-            Content = "Handle DB2Decimal errors gracefully", 
+            Content = "Handle decimal type errors gracefully", 
             IsChecked = _workingPreferences.HandleDecimalErrorsGracefully,
             Margin = new Thickness(0, 10, 0, 5)
         };

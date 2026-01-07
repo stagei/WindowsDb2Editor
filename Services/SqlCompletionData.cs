@@ -11,9 +11,10 @@ using ICSharpCode.AvalonEdit.Editing;
 namespace WindowsDb2Editor.Services;
 
 /// <summary>
-/// Base class for DB2 completion data.
+/// Base class for SQL completion data.
+/// Database-agnostic - works with any SQL provider.
 /// </summary>
-public abstract class Db2CompletionDataBase : ICompletionData
+public abstract class SqlCompletionDataBase : ICompletionData
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
@@ -34,9 +35,9 @@ public abstract class Db2CompletionDataBase : ICompletionData
 /// <summary>
 /// Completion data for SQL keywords.
 /// </summary>
-public class Db2KeywordCompletionData : Db2CompletionDataBase
+public class SqlKeywordCompletionData : SqlCompletionDataBase
 {
-    public Db2KeywordCompletionData()
+    public SqlKeywordCompletionData()
     {
         // Keywords have highest priority
         Priority = 1.0;
@@ -46,11 +47,11 @@ public class Db2KeywordCompletionData : Db2CompletionDataBase
 /// <summary>
 /// Completion data for table names.
 /// </summary>
-public class Db2TableCompletionData : Db2CompletionDataBase
+public class SqlTableCompletionData : SqlCompletionDataBase
 {
     public int RowCount { get; set; }
     
-    public Db2TableCompletionData()
+    public SqlTableCompletionData()
     {
         Priority = 2.0;
     }
@@ -93,9 +94,9 @@ public class Db2TableCompletionData : Db2CompletionDataBase
 /// <summary>
 /// Completion data for view names.
 /// </summary>
-public class Db2ViewCompletionData : Db2CompletionDataBase
+public class SqlViewCompletionData : SqlCompletionDataBase
 {
-    public Db2ViewCompletionData()
+    public SqlViewCompletionData()
     {
         Priority = 2.0;
     }
@@ -126,7 +127,7 @@ public class Db2ViewCompletionData : Db2CompletionDataBase
 /// <summary>
 /// Completion data for column names.
 /// </summary>
-public class Db2ColumnCompletionData : Db2CompletionDataBase
+public class SqlColumnCompletionData : SqlCompletionDataBase
 {
     public string ColumnName { get; set; } = string.Empty;
     public string DataType { get; set; } = string.Empty;
@@ -134,7 +135,7 @@ public class Db2ColumnCompletionData : Db2CompletionDataBase
     public bool IsPrimaryKey { get; set; }
     public string TableName { get; set; } = string.Empty;
     
-    public Db2ColumnCompletionData()
+    public SqlColumnCompletionData()
     {
         Priority = 3.0;
     }
@@ -188,11 +189,12 @@ public class Db2ColumnCompletionData : Db2CompletionDataBase
 /// <summary>
 /// Completion data for function names.
 /// </summary>
-public class Db2FunctionCompletionData : Db2CompletionDataBase
+public class SqlFunctionCompletionData : SqlCompletionDataBase
 {
     public string? ParameterHint { get; set; }
+    public string? Category { get; set; }
     
-    public Db2FunctionCompletionData()
+    public SqlFunctionCompletionData()
     {
         Priority = 2.0;
     }
@@ -235,12 +237,12 @@ public class Db2FunctionCompletionData : Db2CompletionDataBase
 /// <summary>
 /// Completion data for SQL snippets.
 /// </summary>
-public class Db2SnippetCompletionData : Db2CompletionDataBase
+public class SqlSnippetCompletionData : SqlCompletionDataBase
 {
     public string Template { get; set; } = string.Empty;
     public string Trigger { get; set; } = string.Empty;
     
-    public Db2SnippetCompletionData()
+    public SqlSnippetCompletionData()
     {
         Priority = 1.5;
     }
@@ -284,3 +286,102 @@ public class Db2SnippetCompletionData : Db2CompletionDataBase
     }
 }
 
+/// <summary>
+/// Completion data for data types.
+/// </summary>
+public class SqlDataTypeCompletionData : SqlCompletionDataBase
+{
+    public string? Category { get; set; }
+    
+    public SqlDataTypeCompletionData()
+    {
+        Priority = 1.5;
+    }
+    
+    public new object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = "📦 ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = Text,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.DarkMagenta,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            
+            return panel;
+        }
+    }
+}
+
+/// <summary>
+/// Completion data for system catalog tables.
+/// </summary>
+public class SqlSystemTableCompletionData : SqlCompletionDataBase
+{
+    public string? Schema { get; set; }
+    
+    public SqlSystemTableCompletionData()
+    {
+        Priority = 2.0;
+    }
+    
+    public new object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = "🗃️ ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = Text,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.DarkOrange,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            
+            return panel;
+        }
+    }
+}
+
+#region Backward Compatibility Aliases
+
+// These aliases maintain backward compatibility with existing code
+// that uses the old Db2* class names
+
+/// <summary>Alias for SqlCompletionDataBase (backward compatibility)</summary>
+public abstract class Db2CompletionDataBase : SqlCompletionDataBase { }
+
+/// <summary>Alias for SqlKeywordCompletionData (backward compatibility)</summary>
+public class Db2KeywordCompletionData : SqlKeywordCompletionData { }
+
+/// <summary>Alias for SqlTableCompletionData (backward compatibility)</summary>
+public class Db2TableCompletionData : SqlTableCompletionData { }
+
+/// <summary>Alias for SqlViewCompletionData (backward compatibility)</summary>
+public class Db2ViewCompletionData : SqlViewCompletionData { }
+
+/// <summary>Alias for SqlColumnCompletionData (backward compatibility)</summary>
+public class Db2ColumnCompletionData : SqlColumnCompletionData { }
+
+/// <summary>Alias for SqlFunctionCompletionData (backward compatibility)</summary>
+public class Db2FunctionCompletionData : SqlFunctionCompletionData { }
+
+/// <summary>Alias for SqlSnippetCompletionData (backward compatibility)</summary>
+public class Db2SnippetCompletionData : SqlSnippetCompletionData { }
+
+#endregion

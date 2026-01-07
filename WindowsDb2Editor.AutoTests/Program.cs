@@ -248,7 +248,7 @@ public class WindowsDb2EditorTester
         var title = _mainWindow.Name;
         Console.WriteLine($"   ✅ Window title: {title}");
         
-        if (!title.Contains("DbExplorer") && !title.Contains("DB2 Database Manager"))
+        if (!title.Contains("DbExplorer") && !title.Contains("Database Manager"))
         {
             throw new Exception($"Unexpected window title: {title}");
         }
