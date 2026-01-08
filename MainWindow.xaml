@@ -7,8 +7,10 @@
         xmlns:controls="clr-namespace:WindowsDb2Editor.Controls"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
+        ui:TitleBar.IsIconVisible="True"
         mc:Ignorable="d"
         Title="DbExplorer - Database Manager" 
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         Height="800" 
         Width="1200"
         WindowState="Maximized">
@@ -150,11 +152,6 @@
                 <MenuItem Header="_Comment Manager..." Click="CommentManager_Click" Tag="AccessLevel:Middle">
                     <MenuItem.Icon>
                         <TextBlock Text="💬" FontSize="16"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="_Package Analyzer..." Click="PackageAnalyzer_Click" Tag="AccessLevel:Middle">
-                    <MenuItem.Icon>
-                        <TextBlock Text="📦" FontSize="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="_Dependency Analyzer..." Click="DependencyAnalyzer_Click" Tag="AccessLevel:Middle">

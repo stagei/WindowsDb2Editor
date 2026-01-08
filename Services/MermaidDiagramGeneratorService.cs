@@ -49,10 +49,8 @@ public class MermaidDiagramGeneratorService
         {
             Logger.Error(ex, "Failed to generate Mermaid via SqlMermaidErdTools, falling back to legacy method");
             
-            // Fallback to legacy method if SqlMermaidErdTools fails (DB2-specific)
-            if (connectionManager is not DB2ConnectionManager db2Conn)
-                throw new InvalidOperationException("MermaidDiagramGeneratorService requires DB2ConnectionManager");
-            return await GenerateMermaidDiagramLegacyAsync(db2Conn, selectedTables);
+            // Fallback to legacy method if SqlMermaidErdTools fails
+            return await GenerateMermaidDiagramLegacyAsync(connectionManager, selectedTables);
         }
     }
     
@@ -61,7 +59,7 @@ public class MermaidDiagramGeneratorService
     /// Uses old custom Mermaid generation logic.
     /// </summary>
     private async Task<string> GenerateMermaidDiagramLegacyAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<string> selectedTables)
     {
         Logger.Warn("Using legacy Mermaid generation method (fallback)");
@@ -87,7 +85,7 @@ public class MermaidDiagramGeneratorService
     }
     
     private async Task<MermaidTable?> GetTableStructureAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -143,7 +141,7 @@ public class MermaidDiagramGeneratorService
     }
     
     private async Task<List<MermaidRelationship>> GetRelationshipsAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         List<MermaidTable> tables)
     {
         var relationships = new List<MermaidRelationship>();

@@ -18,8 +18,8 @@
       "source": "ObjectBrowserService"
     },
     "GetTablesForSchema": {
-      "sql": "SELECT TRIM(TABNAME) AS TABNAME, TRIM(OWNER) AS OWNER, CREATED, CARD AS ROW_COUNT, TRIM(REMARKS) AS REMARKS FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W') ORDER BY TABNAME",
-      "description": "Get all tables in a specific schema. Returns table name, owner, creation date, row count, and remarks. TYPE IN (...) filters for various table types. TRIM() applied to all CHAR columns.",
+      "sql": "SELECT TRIM(TABNAME) AS TABNAME, TRIM(OWNER) AS OWNER, CREATE_TIME, CARD AS ROW_COUNT, TRIM(REMARKS) AS REMARKS FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE IN ('T', 'S', 'G', 'H', 'L', 'N', 'U', 'W') ORDER BY TABNAME",
+      "description": "Get all tables in a specific schema. Returns table name, owner, creation time, row count, and remarks. TYPE IN (...) filters for various table types. TRIM() applied to all CHAR columns.",
       "parameters": ["TABSCHEMA"],
       "returns": "List of tables in specified schema",
       "source": "ObjectBrowserService"
@@ -417,11 +417,18 @@
       "source": "ConnectionTabControl"
     },
     "GetTablesInTablespace": {
-      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TYPE, CARD AS ROW_COUNT FROM SYSCAT.TABLES WHERE TBSPACE = ? ORDER BY TABSCHEMA, TABNAME",
-      "description": "Get tables in a specific tablespace.",
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TYPE, CARD AS ROW_COUNT FROM SYSCAT.TABLES WHERE TRIM(TBSPACE) = ? ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get tables in a specific tablespace. TRIM() applied to TBSPACE for proper matching.",
       "parameters": ["TBSPACE"],
       "returns": "Tables in tablespace",
-      "source": "ConnectionTabControl"
+      "source": "TablespaceDetailsDialog"
+    },
+    "GetIndexesInTablespace": {
+      "sql": "SELECT TRIM(INDSCHEMA) AS INDSCHEMA, TRIM(INDNAME) AS INDNAME, TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TRIM(INDEXTYPE) AS INDEXTYPE FROM SYSCAT.INDEXES WHERE TRIM(TBSPACE) = ? ORDER BY INDSCHEMA, INDNAME",
+      "description": "Get indexes in a specific tablespace. Returns index name, table name, and index type. Used by TablespaceDetailsDialog.",
+      "parameters": ["TBSPACE"],
+      "returns": "Indexes in tablespace",
+      "source": "TablespaceDetailsDialog"
     },
     "GetSequenceInfo": {
       "sql": "SELECT TRIM(SEQSCHEMA) AS SEQSCHEMA, TRIM(SEQNAME) AS SEQNAME, START, INCREMENT, MINVALUE, MAXVALUE, CYCLE, CACHE FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? AND TRIM(SEQNAME) = ?",
@@ -465,16 +472,16 @@
       "returns": "List of primary key columns in order",
       "source": "Db2CreateDBQA_NonRelated.sql:258"
     },
-    "GetForeignKeysForTable": {
-      "sql": "SELECT TRIM(FK.CONSTNAME) AS CONSTNAME, TRIM(FK.TABSCHEMA) AS TABSCHEMA, TRIM(FK.TABNAME) AS TABNAME, TRIM(FK.REFTABSCHEMA) AS REFTABSCHEMA, TRIM(FK.REFTABNAME) AS REFTABNAME, TRIM(FK.FK_COLNAMES) AS FK_COLNAMES, TRIM(FK.PK_COLNAMES) AS PK_COLNAMES, TRIM(FK.DELETERULE) AS DELETERULE, TRIM(FK.UPDATERULE) AS UPDATERULE FROM SYSCAT.REFERENCES FK WHERE TRIM(FK.TABSCHEMA) = ? AND TRIM(FK.TABNAME) = ?",
-      "description": "Get foreign keys for a table. PROVEN PATTERN from Db2CreateDBQA_NonRelated.sql (Line 390-396). Returns FK constraints with referenced table and columns. TRIM() applied to CHAR columns.",
+    "GetForeignKeysForTable_Full": {
+      "sql": "SELECT TRIM(FK.CONSTNAME) AS CONSTNAME, TRIM(FK.TABSCHEMA) AS TABSCHEMA, TRIM(FK.TABNAME) AS TABNAME, TRIM(FK.REFTABSCHEMA) AS REFTABSCHEMA, TRIM(FK.REFTABNAME) AS REFTABNAME, TRIM(FK.FK_COLNAMES) AS FK_COLNAMES, TRIM(FK.PK_COLNAMES) AS PK_COLNAMES, TRIM(FK.DELETERULE) AS DELETERULE, TRIM(FK.UPDATERULE) AS UPDATERULE FROM SYSCAT.REFERENCES FK WHERE TRIM(FK.TABSCHEMA) = ? AND TRIM(FK.TABNAME) = ? ORDER BY FK.CONSTNAME",
+      "description": "Get foreign keys for a table with full details. PROVEN PATTERN from Db2CreateDBQA_NonRelated.sql. Returns FK constraints with referenced table and columns. TRIM() applied to CHAR columns.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of foreign keys with references",
       "source": "Db2CreateDBQA_NonRelated.sql:274-396"
     },
-    "GetIndexesForTable": {
+    "GetIndexesForTable_WithColumns": {
       "sql": "SELECT TRIM(I.INDNAME) AS INDNAME, TRIM(I.INDSCHEMA) AS INDSCHEMA, TRIM(I.UNIQUERULE) AS UNIQUERULE, TRIM(I.INDEXTYPE) AS INDEXTYPE, I.COLCOUNT, TRIM(I.COMPRESSION) AS COMPRESSION, I.CREATE_TIME, LISTAGG(TRIM(C.COLNAME) || ' ' || CASE WHEN C.COLORDER = 'A' THEN 'ASC' ELSE 'DESC' END, ', ') WITHIN GROUP (ORDER BY C.COLSEQ) AS COLUMNS FROM SYSCAT.INDEXCOLUSE C JOIN SYSCAT.INDEXES I ON C.INDNAME = I.INDNAME AND C.INDSCHEMA = I.INDSCHEMA WHERE TRIM(I.TABSCHEMA) = ? AND TRIM(I.TABNAME) = ? GROUP BY I.INDNAME, I.INDSCHEMA, I.UNIQUERULE, I.INDEXTYPE, I.COLCOUNT, I.COMPRESSION, I.CREATE_TIME ORDER BY I.INDNAME",
-      "description": "Get indexes for a table. PROVEN PATTERN from Db2CreateDBQA_NonRelated.sql (Line 446-465). Returns index definitions with columns. TRIM() applied to CHAR columns.",
+      "description": "Get indexes for a table with individual column details via LISTAGG. PROVEN PATTERN from Db2CreateDBQA_NonRelated.sql. Returns index definitions with columns. TRIM() applied to CHAR columns.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of indexes with column details",
       "source": "Db2CreateDBQA_NonRelated.sql:402-465"
@@ -563,11 +570,11 @@
       "returns": "Tablespace details",
       "source": "ObjectBrowserService"
     },
-    "GetSequencesForSchema": {
-      "sql": "SELECT TRIM(SEQNAME) AS SequenceName, TRIM(SEQSCHEMA) AS SequenceSchema, TRIM(OWNER) AS Owner, START AS StartValue, INCREMENT AS IncrementBy, MAXVALUE AS MaxValue, MINVALUE AS MinValue, CYCLE AS IsCycle, CACHE AS CacheSize, CREATE_TIME AS CreatedDate FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? ORDER BY SEQNAME",
-      "description": "Get sequences in a schema. Returns sequence metadata including start, increment, min/max values, and cache settings. TRIM() applied to CHAR columns.",
+    "GetSequencesForSchema_Full": {
+      "sql": "SELECT TRIM(SEQNAME) AS SequenceName, TRIM(SEQSCHEMA) AS SequenceSchema, TRIM(OWNER) AS Owner, START AS StartValue, INCREMENT AS IncrementBy, MAXVALUE AS MaxValue, MINVALUE AS MinValue, CYCLE AS IsCycle, CACHE AS CacheSize, CREATE_TIME AS CreatedDate FROM SYSCAT.SEQUENCES WHERE TRIM(SEQSCHEMA) = ? AND SEQTYPE = 'S' ORDER BY SEQNAME",
+      "description": "Get user sequences in a schema with full details. SEQTYPE='S' filters for user sequences only. Returns sequence metadata including start, increment, min/max values, and cache settings. TRIM() applied to CHAR columns.",
       "parameters": ["SEQSCHEMA"],
-      "returns": "List of sequences",
+      "returns": "List of sequences with full metadata",
       "source": "ObjectBrowserService"
     },
     "GetVariablesForSchema": {
@@ -605,60 +612,11 @@
       "returns": "Count of users",
       "source": "ObjectBrowserService"
     },
-    "GetProceduresCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P'",
-      "description": "Count total stored procedures.",
-      "parameters": [],
-      "returns": "Count of procedures",
-      "source": "ObjectBrowserService"
-    },
-    "GetFunctionsCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F'",
-      "description": "Count total functions.",
-      "parameters": [],
-      "returns": "Count of functions",
-      "source": "ObjectBrowserService"
-    },
-    "GetIndexesCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.INDEXES",
-      "description": "Count total indexes.",
-      "parameters": [],
-      "returns": "Count of indexes",
-      "source": "ObjectBrowserService"
-    },
-    "GetTriggersCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.TRIGGERS",
-      "description": "Count total triggers.",
-      "parameters": [],
-      "returns": "Count of triggers",
-      "source": "ObjectBrowserService"
-    },
-    "GetSequencesCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.SEQUENCES",
-      "description": "Count total sequences.",
-      "parameters": [],
-      "returns": "Count of sequences",
-      "source": "ObjectBrowserService"
-    },
-    "GetPackagesCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.PACKAGES",
-      "description": "Count total packages.",
-      "parameters": [],
-      "returns": "Count of packages",
-      "source": "ObjectBrowserService"
-    },
-    "GetViewsCount": {
-      "sql": "SELECT COUNT(*) FROM SYSCAT.VIEWS",
-      "description": "Count total views.",
-      "parameters": [],
-      "returns": "Count of views",
-      "source": "ObjectBrowserService"
-    },
-    "GetTablesCount": {
+    "GetTablesCount_BaseOnly": {
       "sql": "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'T'",
-      "description": "Count total tables (excluding views and system tables).",
+      "description": "Count total base tables only (TYPE='T'). Excludes MQTs, GTTs, nicknames, etc.",
       "parameters": [],
-      "returns": "Count of tables",
+      "returns": "Count of base tables",
       "source": "ObjectBrowserService"
     },
     "GetIndexesForSchemaDetailed": {
@@ -843,9 +801,9 @@
       "returns": "List of tables and views",
       "source": "MetadataLoaderService:LoadAsync"
     },
-    "GetTablesForSchema": {
-      "sql": "SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TABSCHEMA = ? AND TYPE = 'T' ORDER BY TABNAME",
-      "description": "Get all tables in a specific schema for metadata loading. Returns schema, table name, and type (T=table).",
+    "GetTablesForSchema_MetadataLoader": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, TYPE FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = ? AND TYPE = 'T' ORDER BY TABNAME",
+      "description": "Get all tables in a specific schema for metadata loading. Returns schema, table name, and type (T=table). TRIM() applied.",
       "parameters": ["TABSCHEMA"],
       "returns": "List of tables in schema",
       "source": "MetadataLoaderService:LoadSchemaMetadata"
@@ -864,9 +822,9 @@
       "returns": "List of packages",
       "source": "PackageAnalyzerService:GetPackagesAsync"
     },
-    "GetPackageStatements": {
-      "sql": "SELECT TEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = ? AND PKGNAME = ? ORDER BY STMTNO",
-      "description": "Get all SQL statement texts from a package. Returns statement text for all statements in package, ordered by statement number.",
+    "GetPackageStatements_Simple": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO",
+      "description": "Get all SQL statement texts from a package. Returns statement text for all statements in package, ordered by statement number. TRIM() applied.",
       "parameters": ["PKGSCHEMA", "PKGNAME"],
       "returns": "Statement texts",
       "source": "PackageAnalyzerService:GetPackageStatementsAsync"
@@ -1074,16 +1032,16 @@
       "returns": "SQL WHERE clause fragment",
       "source": "DatabaseLoadMonitorService"
     },
-    "GetTableStatistics": {
-      "sql": "SELECT TABSCHEMA, TABNAME, CARD, NPAGES, FPAGES, STATS_TIME FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') ORDER BY TABSCHEMA, TABNAME",
-      "description": "Get table statistics including row count (CARD), data pages, free pages, and last stats update time. Schema filter supports wildcards. Used by CLI command 'table-stats'.",
+    "GetTableStatistics_BySchema": {
+      "sql": "SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, CARD, NPAGES, FPAGES, STATS_TIME FROM SYSCAT.TABLES WHERE TABSCHEMA LIKE ? AND TYPE IN ('T', 'U') ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get table statistics for all tables in a schema pattern. Returns row count (CARD), data pages, free pages, and last stats update time. Schema filter supports wildcards. TRIM() applied. Used by CLI command 'table-stats'.",
       "parameters": ["TABSCHEMA_PATTERN"],
       "returns": "Table statistics with cardinality and page info",
       "source": "CliCommandHandlerService:GetTableStatsAsync"
     },
-    "GetTableDependencies": {
-      "sql": "SELECT BSCHEMA, BNAME, BTYPE, DTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY BSCHEMA, BNAME",
-      "description": "Get object dependencies (objects that this table/view depends on). Returns target schema, object name, type, and dependency type from SYSCAT.TABDEP. Used by CLI command 'dependencies'.",
+    "GetTableDependencies_Outgoing": {
+      "sql": "SELECT TRIM(BSCHEMA) AS BSCHEMA, TRIM(BNAME) AS BNAME, BTYPE, DTYPE FROM SYSCAT.TABDEP WHERE TRIM(TABSCHEMA) = ? AND TRIM(TABNAME) = ? ORDER BY BSCHEMA, BNAME",
+      "description": "Get outgoing object dependencies (objects that this table/view depends on). Returns target schema, object name, type, and dependency type from SYSCAT.TABDEP. TRIM() applied. Used by CLI command 'dependencies'.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of dependencies with target objects",
       "source": "CliCommandHandlerService:GetDependenciesAsync"
@@ -1235,9 +1193,9 @@
       "returns": "Foreign key relationships",
       "source": "DeepAnalysisService:GetRelationshipsAsync"
     },
-    "GetViewDefinition": {
-      "sql": "SELECT TEXT FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = ? AND VIEWNAME = ?",
-      "description": "Get view SQL definition for AI context building.",
+    "GetViewDefinition_AI": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.VIEWS WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ?",
+      "description": "Get view SQL definition for AI context building. TRIM() applied.",
       "parameters": ["VIEWSCHEMA", "VIEWNAME"],
       "returns": "View SQL text",
       "source": "ViewContextBuilder:GetViewDefinitionAsync"
@@ -1249,9 +1207,9 @@
       "returns": "View columns",
       "source": "ViewContextBuilder:GetViewColumnsAsync"
     },
-    "GetViewDependencies": {
-      "sql": "SELECT DISTINCT BSCHEMA || '.' || BNAME as DEPENDENCY FROM SYSCAT.VIEWDEP WHERE VIEWSCHEMA = ? AND VIEWNAME = ? AND BTYPE = 'T' ORDER BY DEPENDENCY",
-      "description": "Get tables used by a view for dependency analysis.",
+    "GetViewDependencies_TablesOnly": {
+      "sql": "SELECT DISTINCT TRIM(BSCHEMA) || '.' || TRIM(BNAME) AS DEPENDENCY FROM SYSCAT.VIEWDEP WHERE TRIM(VIEWSCHEMA) = ? AND TRIM(VIEWNAME) = ? AND BTYPE = 'T' ORDER BY DEPENDENCY",
+      "description": "Get tables used by a view for dependency analysis. Filters to BTYPE='T' (tables only). TRIM() applied.",
       "parameters": ["VIEWSCHEMA", "VIEWNAME"],
       "returns": "Table dependencies",
       "source": "ViewContextBuilder:GetViewDependenciesAsync"
@@ -1312,9 +1270,9 @@
       "returns": "Package metadata",
       "source": "PackageContextBuilder:GetPackageMetadataAsync"
     },
-    "GetPackageStatements": {
-      "sql": "SELECT STMTTEXT FROM SYSCAT.STATEMENTS WHERE PKGSCHEMA = ? AND PKGNAME = ? ORDER BY STMTNO",
-      "description": "Get all SQL statements in a package for AI analysis.",
+    "GetPackageStatements_AI": {
+      "sql": "SELECT TRIM(TEXT) AS TEXT FROM SYSCAT.STATEMENTS WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ? ORDER BY STMTNO",
+      "description": "Get all SQL statements in a package for AI analysis. Fixed: STMTTEXT→TEXT, added TRIM().",
       "parameters": ["PKGSCHEMA", "PKGNAME"],
       "returns": "Package SQL statements",
       "source": "PackageContextBuilder:GetPackageStatementsAsync"
@@ -1417,9 +1375,9 @@
       "returns": "Object metadata",
       "source": "CliCommandHandlerService:GetObjectMetadataAsync"
     },
-    "GetUserAccessLevel": {
+    "GetCurrentUserAccessLevel": {
       "sql": "SELECT DBADMAUTH, SECURITYADMAUTH, DATAACCESSAUTH, CREATETABAUTH, BINDADDAUTH FROM SYSCAT.DBAUTH WHERE GRANTEE = CURRENT USER AND GRANTEETYPE = 'U' FETCH FIRST 1 ROW ONLY",
-      "description": "Get current user's database authorities to determine access level (DBA/Advanced/Standard).",
+      "description": "Get current user's database authorities to determine access level (DBA/Advanced/Standard). Uses CURRENT USER instead of parameter.",
       "parameters": [],
       "returns": "User authority flags",
       "source": "ObjectBrowserService:GetUserAccessLevelAsync"

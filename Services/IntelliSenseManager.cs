@@ -98,7 +98,7 @@ public class IntelliSenseManager
         {
             Text = text,
             CaretPosition = caretPosition,
-            Connection = connection as DB2ConnectionManager // IntelliSense currently only supports DB2
+            Connection = connection // Provider-agnostic
         };
         
         try
@@ -135,7 +135,7 @@ public class CompletionContext
 {
     public string Text { get; set; } = string.Empty;
     public int CaretPosition { get; set; }
-    public DB2ConnectionManager? Connection { get; set; }
+    public IConnectionManager? Connection { get; set; }
 }
 
 /// <summary>

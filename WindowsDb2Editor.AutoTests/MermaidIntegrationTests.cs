@@ -6,6 +6,7 @@ using NLog;
 using SqlMermaidErdTools;
 using SqlMermaidErdTools.Models;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Data.Providers.DB2;
 using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.AutoTests;

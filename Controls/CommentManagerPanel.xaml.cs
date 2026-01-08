@@ -21,7 +21,7 @@ public partial class CommentManagerPanel : UserControl
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly CommentService _commentService;
     private readonly MetadataLoaderService _metadataService;
-    private DB2ConnectionManager? _connectionManager;
+    private IConnectionManager? _connectionManager;
     private IConnectionInfo? _connection;
     private ObjectComment? _selectedTableForColumnMenu;
     
@@ -35,13 +35,10 @@ public partial class CommentManagerPanel : UserControl
     
     private void ApplyGridPreferences()
     {
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(CommentsDataGrid, App.PreferencesService.Preferences);
-        }
+        UIStyleService.ApplyStyles(this);
     }
     
-    public async Task InitializeAsync(DB2ConnectionManager connectionManager)
+    public async Task InitializeAsync(IConnectionManager connectionManager)
     {
         _connectionManager = connectionManager;
         _connection = connectionManager.ConnectionInfo;

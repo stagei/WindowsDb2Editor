@@ -197,14 +197,16 @@ public partial class MainWindow : Window
         try
         {
             // Get the currently active tab's connection
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
-                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+            var (connectionManager, connection) = GetConnectionFromTab(selectedTab);
+            
+            if (connection != null)
             {
-                CreateNewTabWithSql(sqlContent, tabName, activeTab.Connection);
+                CreateNewTabWithSql(sqlContent, tabName, connection);
             }
             else
             {
-                Logger.Warn("No active connection tab found");
+                Logger.Warn("No active connection found");
                 MessageBox.Show("No active connection found.", "Error", 
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
@@ -278,11 +280,11 @@ public partial class MainWindow : Window
         try
         {
             // Get the currently active tab's connection
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
-                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+            var (_, connection) = GetConnectionFromTab(selectedTab);
+            
+            if (connection != null)
             {
-                var connection = activeTab.Connection;
-                
                 // Create a TableDetailsPanel as the tab content
                 var detailsPanel = new Controls.TableDetailsPanel(connectionManager, fullTableName);
                 
@@ -290,7 +292,7 @@ public partial class MainWindow : Window
                 {
                     Header = CreateTabHeader($"📋 {displayName} - {connection.GetDisplayName()}"),
                     Content = detailsPanel,
-                    Tag = new { Type = "TableDetails", TableName = fullTableName }
+                    Tag = new { Type = "TableDetails", TableName = fullTableName, ConnectionManager = connectionManager, Connection = connection }
                 };
 
                 ConnectionTabs.Items.Add(newTabItem);
@@ -300,7 +302,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                Logger.Warn("No active connection tab found");
+                Logger.Warn("No active connection found");
                 MessageBox.Show("No active connection found.", "Error", 
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
@@ -322,17 +324,18 @@ public partial class MainWindow : Window
         
         try
         {
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
-                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+            var (_, connection) = GetConnectionFromTab(selectedTab);
+            
+            if (connection != null)
             {
-                var connection = activeTab.Connection;
                 var detailsPanel = new Controls.ViewDetailsPanel(connectionManager, schema, viewName);
                 
                 var newTabItem = new TabItem
                 {
                     Header = CreateTabHeader($"👁️ {viewName?.Trim()} - {connection.GetDisplayName()}"),
                     Content = detailsPanel,
-                    Tag = new { Type = "ViewDetails", Schema = schema, ViewName = viewName }
+                    Tag = new { Type = "ViewDetails", Schema = schema, ViewName = viewName, ConnectionManager = connectionManager, Connection = connection }
                 };
 
                 ConnectionTabs.Items.Add(newTabItem);
@@ -360,10 +363,11 @@ public partial class MainWindow : Window
         
         try
         {
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
-                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+            var (_, connection) = GetConnectionFromTab(selectedTab);
+            
+            if (connection != null)
             {
-                var connection = activeTab.Connection;
                 var detailsPanel = new Controls.RoutineDetailsPanel(connectionManager, schema, routineName, routineType);
                 
                 var icon = routineType == "F" ? "🔧" : "⚙️";
@@ -372,7 +376,7 @@ public partial class MainWindow : Window
                 {
                     Header = CreateTabHeader($"{icon} {routineName?.Trim()} - {connection.GetDisplayName()}"),
                     Content = detailsPanel,
-                    Tag = new { Type = "RoutineDetails", Schema = schema, RoutineName = routineName, RoutineType = routineType }
+                    Tag = new { Type = "RoutineDetails", Schema = schema, RoutineName = routineName, RoutineType = routineType, ConnectionManager = connectionManager, Connection = connection }
                 };
 
                 ConnectionTabs.Items.Add(newTabItem);
@@ -400,17 +404,18 @@ public partial class MainWindow : Window
         
         try
         {
-            if (ConnectionTabs.SelectedItem is TabItem selectedTab && 
-                selectedTab.Content is Controls.ConnectionTabControl activeTab)
+            var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+            var (_, connection) = GetConnectionFromTab(selectedTab);
+            
+            if (connection != null)
             {
-                var connection = activeTab.Connection;
                 var detailsPanel = new Controls.PackageDetailsPanel(connectionManager, package);
                 
                 var newTabItem = new TabItem
                 {
                     Header = CreateTabHeader($"📦 {package.PackageName?.Trim()} - {connection.GetDisplayName()}"),
                     Content = detailsPanel,
-                    Tag = new { Type = "PackageDetails", Package = package }
+                    Tag = new { Type = "PackageDetails", Package = package, ConnectionManager = connectionManager, Connection = connection }
                 };
 
                 ConnectionTabs.Items.Add(newTabItem);
@@ -528,6 +533,41 @@ public partial class MainWindow : Window
             }
         };
         contextMenu.Items.Add(closeItem);
+        
+        var closeAllRightItem = new MenuItem { Header = "➡️ Close All to the Right" };
+        closeAllRightItem.Click += (s, e) =>
+        {
+            var menuItem = s as MenuItem;
+            var menu = menuItem?.Parent as ContextMenu;
+            var panel = menu?.PlacementTarget as StackPanel;
+            var tabItem = panel?.Parent as TabItem;
+            if (tabItem != null)
+            {
+                CloseAllTabsToTheRight(tabItem);
+            }
+        };
+        contextMenu.Items.Add(closeAllRightItem);
+        
+        var closeAllButThisItem = new MenuItem { Header = "📌 Close All but This" };
+        closeAllButThisItem.Click += (s, e) =>
+        {
+            var menuItem = s as MenuItem;
+            var menu = menuItem?.Parent as ContextMenu;
+            var panel = menu?.PlacementTarget as StackPanel;
+            var tabItem = panel?.Parent as TabItem;
+            if (tabItem != null)
+            {
+                CloseAllTabsExcept(tabItem);
+            }
+        };
+        contextMenu.Items.Add(closeAllButThisItem);
+        
+        var closeAllItem = new MenuItem { Header = "🗑️ Close All Tabs" };
+        closeAllItem.Click += (s, e) =>
+        {
+            CloseAllTabs();
+        };
+        contextMenu.Items.Add(closeAllItem);
         
         stackPanel.ContextMenu = contextMenu;
 
@@ -741,6 +781,124 @@ public partial class MainWindow : Window
             Logger.Error(ex, "Error closing tab");
         }
     }
+    
+    /// <summary>
+    /// Close all tabs to the right of the specified tab
+    /// </summary>
+    private void CloseAllTabsToTheRight(TabItem currentTab)
+    {
+        Logger.Info("Closing all tabs to the right");
+        
+        try
+        {
+            var currentIndex = ConnectionTabs.Items.IndexOf(currentTab);
+            if (currentIndex < 0)
+            {
+                Logger.Warn("Current tab not found in tab collection");
+                return;
+            }
+            
+            // Collect tabs to close (from right to left to avoid index issues)
+            var tabsToClose = new List<TabItem>();
+            for (int i = ConnectionTabs.Items.Count - 1; i > currentIndex; i--)
+            {
+                if (ConnectionTabs.Items[i] is TabItem tab)
+                {
+                    tabsToClose.Add(tab);
+                }
+            }
+            
+            // Close collected tabs
+            foreach (var tab in tabsToClose)
+            {
+                CloseTab(tab);
+            }
+            
+            Logger.Info("Closed {Count} tabs to the right", tabsToClose.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error closing tabs to the right");
+            MessageBox.Show($"Failed to close tabs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Close all tabs except the specified tab
+    /// </summary>
+    private void CloseAllTabsExcept(TabItem tabToKeep)
+    {
+        Logger.Info("Closing all tabs except current");
+        
+        try
+        {
+            // Collect tabs to close
+            var tabsToClose = new List<TabItem>();
+            foreach (var item in ConnectionTabs.Items)
+            {
+                if (item is TabItem tab && tab != tabToKeep)
+                {
+                    tabsToClose.Add(tab);
+                }
+            }
+            
+            // Close collected tabs
+            foreach (var tab in tabsToClose)
+            {
+                CloseTab(tab);
+            }
+            
+            Logger.Info("Closed {Count} tabs", tabsToClose.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error closing tabs");
+            MessageBox.Show($"Failed to close tabs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Close all tabs
+    /// </summary>
+    private void CloseAllTabs()
+    {
+        Logger.Info("Closing all tabs");
+        
+        try
+        {
+            var result = MessageBox.Show(
+                "Are you sure you want to close all tabs?",
+                "Close All Tabs",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                // Collect all tabs
+                var tabsToClose = new List<TabItem>();
+                foreach (var item in ConnectionTabs.Items)
+                {
+                    if (item is TabItem tab)
+                    {
+                        tabsToClose.Add(tab);
+                    }
+                }
+                
+                // Close collected tabs
+                foreach (var tab in tabsToClose)
+                {
+                    CloseTab(tab);
+                }
+                
+                Logger.Info("Closed all {Count} tabs", tabsToClose.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error closing all tabs");
+            MessageBox.Show($"Failed to close tabs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
 
     private void ConnectionTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -919,32 +1077,32 @@ public partial class MainWindow : Window
 
     private void LockMonitor_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<LockMonitorPanel>("Lock Monitor", "🔒");
+        OpenToolWindow<LockMonitorPanel>("Lock Monitor", "🔒");
     }
     
     private void StatisticsManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<StatisticsManagerPanel>("Statistics Manager", "📊");
+        OpenToolWindow<StatisticsManagerPanel>("Statistics Manager", "📊");
     }
     
     private void ActiveSessions_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<ActiveSessionsPanel>("Active Sessions", "👥");
+        OpenToolWindow<ActiveSessionsPanel>("Active Sessions", "👥");
     }
     
     private void CdcManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<CdcManagerPanel>("CDC Manager", "🔄");
+        OpenToolWindow<CdcManagerPanel>("CDC Manager", "🔄");
     }
     
     private void UnusedObjects_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<UnusedObjectsPanel>("Unused Objects", "🗑️");
+        OpenToolWindow<UnusedObjectsPanel>("Unused Objects", "🗑️");
     }
     
     private void SourceBrowser_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<SourceCodeBrowserPanel>("Source Code Browser", "📄");
+        OpenToolWindow<SourceCodeBrowserPanel>("Source Code Browser", "📄");
     }
     
     // DDL Generator is now accessed via context menu on individual objects in the Object Browser
@@ -964,36 +1122,33 @@ public partial class MainWindow : Window
     
     private void CommentManager_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<CommentManagerPanel>("Comment Manager", "💬");
-    }
-    
-    private void PackageAnalyzer_Click(object sender, RoutedEventArgs e)
-    {
-        OpenPanelAsTab<PackageAnalyzerPanel>("Package Analyzer", "📦");
+        OpenToolWindow<CommentManagerPanel>("Comment Manager", "💬");
     }
     
     private void DependencyAnalyzer_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<DependencyGraphPanel>("Dependency Analyzer", "🔗");
+        OpenToolWindow<DependencyGraphPanel>("Dependency Analyzer", "🔗");
     }
     
     private void MigrationAssistant_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<MigrationAssistantPanel>("Migration Assistant", "🚀");
+        OpenToolWindow<MigrationAssistantPanel>("Migration Assistant", "🚀");
     }
     
     private void MermaidDesigner_Click(object sender, RoutedEventArgs e)
     {
         Logger.Info("Opening Mermaid Visual Designer");
         
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+        var (connectionManager, connection) = GetConnectionFromTab(selectedTab);
+        
+        if (connectionManager == null || connection == null)
         {
             MessageBox.Show("Please connect to a database first.", "No Active Connection", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         
-        var connectionManager = activeTab.ConnectionManager;
-        var schema = activeTab.Connection.Database ?? "FK";
+        var schema = connection.Database ?? "FK";
         
         var designerWindow = new MermaidDesignerWindow(connectionManager, schema);
         designerWindow.Owner = this;
@@ -1006,8 +1161,22 @@ public partial class MainWindow : Window
         
         try
         {
-            // The new dialog doesn't require an active connection - it uses connection profiles
-            var dialog = new CrossDatabaseComparisonDialog();
+            CrossDatabaseComparisonDialog dialog;
+            
+            // If there's an active connection, pass it as the default source
+            var activeTabControl = GetActiveTabControl();
+            if (activeTabControl != null)
+            {
+                var connectionName = activeTabControl.Connection.Name ?? activeTabControl.Connection.GetDisplayName();
+                Logger.Debug("Passing current connection as source: {Name}", connectionName);
+                dialog = new CrossDatabaseComparisonDialog(activeTabControl.ConnectionManager, connectionName);
+            }
+            else
+            {
+                // No active connection - use profile-based selection
+                dialog = new CrossDatabaseComparisonDialog();
+            }
+            
             dialog.Owner = this;
             dialog.ShowDialog();
         }
@@ -1018,26 +1187,41 @@ public partial class MainWindow : Window
         }
     }
     
+    /// <summary>
+    /// Opens a tool window - as floating (undocked) by default, or docked if AutoDockTools preference is enabled
+    /// </summary>
+    private void OpenToolWindow<T>(string title, string icon, int defaultWidth = 1200, int defaultHeight = 800) where T : UserControl, new()
+    {
+        // Check preference - default is undocked (floating window)
+        if (_preferencesService?.Preferences?.AutoDockTools == true)
+        {
+            Logger.Debug("Opening {Panel} as DOCKED tab (AutoDockTools enabled)", title);
+            OpenPanelAsTab<T>(title, icon);
+        }
+        else
+        {
+            Logger.Debug("Opening {Panel} as UNDOCKED floating window (default)", title);
+            OpenMonitorPanel<T>($"{icon} {title}", defaultWidth, defaultHeight);
+        }
+    }
+    
     private void OpenMonitorPanel<T>(string title, int width, int height) where T : UserControl, new()
     {
         Logger.Info("Opening {Panel}", title);
         
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+        var (connectionManager, connection) = GetConnectionFromTab(selectedTab);
+        
+        if (connectionManager == null || connection == null)
         {
             MessageBox.Show("No active database connection.\n\nPlease connect to a database first.",
                 title, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         
-        if (activeTab.ConnectionManager == null)
-        {
-            MessageBox.Show("Connection is not active.", title, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        
         try
         {
-            var connectionName = GetTabHeaderText(selectedTab);
+            var connectionName = selectedTab != null ? GetTabHeaderText(selectedTab) : connection.GetDisplayName();
             var window = new Window
             {
                 Title = $"{title} - {connectionName}",
@@ -1062,7 +1246,7 @@ public partial class MainWindow : Window
                     var initMethod = panel.GetType().GetMethod("InitializeAsync");
                     if (initMethod != null)
                     {
-                        var task = initMethod.Invoke(panel, new object[] { activeTab.ConnectionManager }) as Task;
+                        var task = initMethod.Invoke(panel, new object[] { connectionManager }) as Task;
                         if (task != null) await task;
                     }
                 }
@@ -1088,33 +1272,61 @@ public partial class MainWindow : Window
     /// <summary>
     /// Open a tool panel as a docked tab in the main window
     /// </summary>
+    /// <summary>
+    /// Helper method to get connection info from any tab (ConnectionTabControl or tool tab)
+    /// </summary>
+    private (IConnectionManager? ConnectionManager, Models.DatabaseConnection? Connection) GetConnectionFromTab(TabItem? tabItem)
+    {
+        if (tabItem == null)
+            return (null, null);
+        
+        // Try to get from ConnectionTabControl
+        if (tabItem.Content is ConnectionTabControl connectionTab)
+        {
+            return (connectionTab.ConnectionManager, connectionTab.Connection);
+        }
+        
+        // Try to get from Tag (for tool tabs and detail tabs)
+        if (tabItem.Tag != null)
+        {
+            var tagType = tabItem.Tag.GetType();
+            var connectionManagerProp = tagType.GetProperty("ConnectionManager");
+            var connectionProp = tagType.GetProperty("Connection");
+            
+            if (connectionManagerProp != null && connectionProp != null)
+            {
+                var connMgr = connectionManagerProp.GetValue(tabItem.Tag) as IConnectionManager;
+                var conn = connectionProp.GetValue(tabItem.Tag) as Models.DatabaseConnection;
+                return (connMgr, conn);
+            }
+        }
+        
+        return (null, null);
+    }
+    
     private void OpenPanelAsTab<T>(string title, string icon) where T : UserControl, new()
     {
         Logger.Info("Opening {Panel} as tab", title);
         
-        if (ConnectionTabs.SelectedItem is not TabItem selectedTab || selectedTab.Content is not ConnectionTabControl activeTab)
+        var selectedTab = ConnectionTabs.SelectedItem as TabItem;
+        var (connectionManager, connection) = GetConnectionFromTab(selectedTab);
+        
+        if (connectionManager == null || connection == null)
         {
             MessageBox.Show("No active database connection.\n\nPlease connect to a database first.",
                 title, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         
-        if (activeTab.ConnectionManager == null)
-        {
-            MessageBox.Show("Connection is not active.", title, MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        
         try
         {
-            var connection = activeTab.Connection;
             var panel = new T();
             
             var newTabItem = new TabItem
             {
                 Header = CreateTabHeader($"{icon} {title} - {connection.GetDisplayName()}"),
                 Content = panel,
-                Tag = new { Type = "ToolPanel", ToolName = title }
+                Tag = new { Type = "ToolPanel", ToolName = title, ConnectionManager = connectionManager, Connection = connection }
             };
 
             ConnectionTabs.Items.Add(newTabItem);
@@ -1130,7 +1342,7 @@ public partial class MainWindow : Window
                         var initMethod = panel.GetType().GetMethod("InitializeAsync");
                         if (initMethod != null)
                         {
-                            var task = initMethod.Invoke(panel, new object[] { activeTab.ConnectionManager }) as Task;
+                            var task = initMethod.Invoke(panel, new object[] { connectionManager }) as Task;
                             if (task != null) await task;
                         }
                     });
@@ -1155,7 +1367,7 @@ public partial class MainWindow : Window
     
     private void DatabaseLoadMonitor_Click(object sender, RoutedEventArgs e)
     {
-        OpenPanelAsTab<DatabaseLoadMonitorPanel>("Database Load Monitor", "📈");
+        OpenToolWindow<DatabaseLoadMonitorPanel>("Database Load Monitor", "📈");
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
@@ -1647,7 +1859,7 @@ public partial class MainWindow : Window
         
         try
         {
-            var connectionManager = new Data.DB2ConnectionManager(connection);
+            var connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
             var result = await connectionManager.TestConnectionAsync();
             
             if (result)
@@ -1806,7 +2018,7 @@ public partial class MainWindow : Window
                             {
                                 objectDialog.ActivateTab(tabName);
                             }
-                            else if (dialog is Dialogs.PackageDetailsDialog packageDialog)
+                            else if (dialog is Dialogs.PackagePropertiesDialog packageDialog)
                             {
                                 packageDialog.ActivateTab(tabName);
                             }
@@ -2013,7 +2225,7 @@ public partial class MainWindow : Window
             PackageName = parts.Length == 2 ? parts[1] : fullName
         };
         
-        var dialog = new Dialogs.PackageDetailsDialog(tabControl.ConnectionManager, packageInfo);
+        var dialog = new Dialogs.PackagePropertiesDialog(tabControl.ConnectionManager, packageInfo);
         if (!string.IsNullOrEmpty(tabName))
         {
             dialog.Loaded += (s, e) => dialog.ActivateTab(tabName);

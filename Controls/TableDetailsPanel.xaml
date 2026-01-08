@@ -67,9 +67,17 @@
                         </DataGrid.Columns>
                     </DataGrid>
                     
-                    <TextBlock Grid.Row="1" Text="💡 Tip: Double-click a foreign key to view the referenced table" 
-                               Margin="5,5,5,0" FontSize="11" FontStyle="Italic"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                    <StackPanel Grid.Row="1" Margin="5,5,5,10">
+                        <TextBlock x:Name="ForeignKeysStatusText" 
+                                   Text="No foreign keys defined" 
+                                   Margin="0,0,0,5" 
+                                   FontSize="11" 
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="💡 Tip: These are foreign keys FROM this table TO other tables. Double-click to view the referenced table." 
+                                   FontSize="11" 
+                                   FontStyle="Italic"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
 
@@ -120,12 +128,19 @@
 
             <!-- Statistics Tab -->
             <TabItem Header="📈 Statistics" x:Name="StatisticsTab">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
-                    <StackPanel>
-                        <TextBlock Text="Table Statistics" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
-                        
-                        <Grid>
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Summary Section -->
+                    <GroupBox Grid.Row="0" Header="Table Statistics Summary">
+                        <Grid Margin="10">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="200"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -135,43 +150,95 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Row Count:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="RowCountText" Text="Loading..." Margin="10,5"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Last Stats Update:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="StatsTimeText" Text="Loading..." Margin="10,5"/>
                             
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Total Columns:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="ColumnCountText" Text="-" Margin="10,5"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Days Old:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="0" Grid.Column="3" x:Name="DaysSinceUpdateText" Text="-" Margin="10,5"/>
                             
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Foreign Keys:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="FKCountText" Text="-" Margin="10,5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Row Count:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="RowCountText" Text="Loading..." Margin="10,5"/>
                             
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Indexes:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="IndexCountText" Text="-" Margin="10,5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="Statistics Status:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="3" x:Name="StatsStatusText" Text="-" Margin="10,5" FontWeight="Bold"/>
                             
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Table Type:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TableTypeText" Text="-" Margin="10,5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Tablespace:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TablespaceText" Text="-" Margin="10,5"/>
                             
-                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Tablespace:" FontWeight="SemiBold" Margin="0,5"/>
-                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TablespaceText" Text="-" Margin="10,5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="Table Type:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="3" x:Name="TableTypeText" Text="-" Margin="10,5"/>
+                            
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Total Columns:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="ColumnCountText" Text="-" Margin="10,5"/>
+                            
+                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Foreign Keys:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="3" Grid.Column="3" x:Name="FKCountText" Text="-" Margin="10,5"/>
+                            
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Indexes:" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="IndexCountText" Text="-" Margin="10,5"/>
                         </Grid>
+                    </GroupBox>
+                    
+                    <!-- Actions Section -->
+                    <StackPanel Grid.Row="2" Orientation="Vertical">
+                        <GroupBox Header="Actions" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal" Margin="10">
+                                <Button x:Name="GenerateRunstatsButton" Content="📝 Generate RUNSTATS" 
+                                        Click="GenerateRunstats_Click" Padding="10,5" Margin="0,0,10,0"/>
+                                <Button x:Name="RefreshStatsButton" Content="🔄 Refresh Statistics" 
+                                        Click="RefreshStats_Click" Padding="10,5"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- Additional Statistics Info -->
+                        <GroupBox Header="Recommendation">
+                            <TextBlock x:Name="StatsRecommendationText" TextWrapping="Wrap" Margin="10"
+                                       Text="Statistics information will appear here after loading."/>
+                        </GroupBox>
                     </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </TabItem>
             
             <TabItem Header="🔗 Incoming FK" x:Name="IncomingFKTab">
-                <DataGrid x:Name="IncomingFKGrid" AutoGenerateColumns="False" IsReadOnly="True" Margin="5">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Referencing Schema" Binding="{Binding [ReferencingSchema]}" Width="150"/>
-                        <DataGridTextColumn Header="Referencing Table" Binding="{Binding [ReferencingTable]}" Width="200"/>
-                        <DataGridTextColumn Header="Constraint" Binding="{Binding [ConstraintName]}" Width="150"/>
-                        <DataGridTextColumn Header="FK Columns" Binding="{Binding [FkColumns]}" Width="*"/>
-                        <DataGridTextColumn Header="PK Columns" Binding="{Binding [PkColumns]}" Width="*"/>
-                        <DataGridTextColumn Header="Delete Rule" Binding="{Binding [DeleteRule]}" Width="100"/>
-                        <DataGridTextColumn Header="Update Rule" Binding="{Binding [UpdateRule]}" Width="100"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <DataGrid Grid.Row="0" x:Name="IncomingFKGrid" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True" 
+                              Margin="5"
+                              SelectionMode="Single"
+                              MouseDoubleClick="IncomingFK_DoubleClick"
+                              AlternatingRowBackground="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                              GridLinesVisibility="All">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Referencing Schema" Binding="{Binding ReferencingSchema}" Width="150"/>
+                            <DataGridTextColumn Header="Referencing Table" Binding="{Binding ReferencingTable}" Width="200"/>
+                            <DataGridTextColumn Header="Constraint Name" Binding="{Binding ConstraintName}" Width="180"/>
+                            <DataGridTextColumn Header="FK Columns" Binding="{Binding FkColumns}" Width="*" MinWidth="150"/>
+                            <DataGridTextColumn Header="PK Columns" Binding="{Binding PkColumns}" Width="*" MinWidth="150"/>
+                            <DataGridTextColumn Header="Delete Rule" Binding="{Binding DeleteRule}" Width="100"/>
+                            <DataGridTextColumn Header="Update Rule" Binding="{Binding UpdateRule}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <StackPanel Grid.Row="1" Margin="5,5,5,10">
+                        <TextBlock x:Name="IncomingFKStatusText" 
+                                   Text="No incoming foreign keys found" 
+                                   Margin="0,0,0,5" 
+                                   FontSize="11" 
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="💡 Tip: These are tables that reference this table. Double-click to view the referencing table." 
+                                   FontSize="11" 
+                                   FontStyle="Italic"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                    </StackPanel>
+                </Grid>
             </TabItem>
             
             <TabItem Header="📦 Used By Packages" x:Name="PackagesTab">

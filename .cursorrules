@@ -805,6 +805,149 @@ taskkill /F /IM WindowsDb2Editor.exe 2>$null; dotnet build; if ($LASTEXITCODE -e
 - After adding new files to the project
 - Essentially: AFTER EVERY CHANGE that affects the compiled code
 
+## 🏭 Factory Pattern Usage (CRITICAL - DATABASE AGNOSTIC)
+
+### MANDATORY Rule: NEVER Directly Instantiate Provider Classes
+
+**❌ FORBIDDEN - Direct Instantiation:**
+```csharp
+// WRONG! Do NOT do this ANYWHERE except in factory classes
+var connectionManager = new DB2ConnectionManager(connection);
+var metadataService = new DB2MetadataService();
+```
+
+**✅ REQUIRED - Use Factory Pattern:**
+```csharp
+// CORRECT! Always use factories
+var connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
+var metadataService = MetadataServiceFactory.CreateMetadataService(connectionManager);
+```
+
+### Factory Classes (THE ONLY PLACE for Provider References)
+
+**Only these files may reference provider-specific classes:**
+1. `Data/ConnectionManagerFactory.cs` - Creates connection managers
+2. `Services/MetadataServiceFactory.cs` - Creates metadata services
+
+**These factories MUST:**
+- Import provider namespaces: `using WindowsDb2Editor.Data.Providers.DB2;`
+- Use switch statements to select provider
+- Return interface types (`IConnectionManager`, not concrete types)
+- Throw `NotImplementedException` for unsupported providers
+
+### Correct Patterns for All Other Code
+
+**Services:**
+```csharp
+// ✅ CORRECT - Accept interface in constructor
+public class MyService
+{
+    private readonly IConnectionManager _connectionManager;
+    
+    public MyService(IConnectionManager connectionManager)
+    {
+        _connectionManager = connectionManager; // Works with ANY provider
+    }
+}
+```
+
+**Controls/Dialogs:**
+```csharp
+// ✅ CORRECT - Use factory to create connection manager
+public class MyControl : UserControl
+{
+    private readonly IConnectionManager _connectionManager;
+    
+    public MyControl(DatabaseConnection connection)
+    {
+        _connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
+    }
+}
+```
+
+**Testing Connection:**
+```csharp
+// ✅ CORRECT - Use factory
+var connection = new DatabaseConnection { /* properties */ };
+var connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
+var result = await connectionManager.TestConnectionAsync();
+```
+
+### Provider-Specific Type Checks (When Necessary)
+
+**If you MUST check provider type, use string comparison:**
+```csharp
+// ✅ CORRECT - Check provider string
+var providerType = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+if (providerType != "DB2")
+{
+    throw new NotSupportedException($"Feature not supported for provider: {providerType}");
+}
+
+// ❌ WRONG - Type check against concrete class
+if (connectionManager is not DB2ConnectionManager db2Manager)
+{
+    throw new NotSupportedException();
+}
+```
+
+### Namespace Import Rules
+
+**❌ FORBIDDEN in all files except factories:**
+```csharp
+using WindowsDb2Editor.Data.Providers.DB2;
+using WindowsDb2Editor.Data.Providers.PostgreSQL;
+using WindowsDb2Editor.Services.Providers.DB2;
+```
+
+**✅ ALWAYS use agnostic imports:**
+```csharp
+using WindowsDb2Editor.Data;           // ✅ Contains IConnectionManager
+using WindowsDb2Editor.Services;       // ✅ Contains factories
+using WindowsDb2Editor.Models;         // ✅ Provider-agnostic models
+```
+
+### Verification Commands
+
+**Check for violations:**
+```bash
+# Find direct DB2ConnectionManager instantiation (should return 0 results except factories)
+grep -r "new DB2ConnectionManager" --exclude-dir=obj --exclude-dir=bin | grep -v "Factory.cs"
+
+# Find provider namespace imports (should return 0 results except factories)
+grep -r "using.*Providers\.DB2" --exclude-dir=obj --exclude-dir=bin | grep -v "Factory.cs"
+
+# Find provider type checks (should use string comparison)
+grep -r "is.*DB2ConnectionManager" --exclude-dir=obj --exclude-dir=bin
+```
+
+### Why This Matters
+
+**Benefits of Factory Pattern:**
+- ✅ Add PostgreSQL support by updating 2 factory files (not 50+ service files)
+- ✅ Test with mock connections easily
+- ✅ Swap providers at runtime without code changes
+- ✅ Clear separation of concerns
+- ✅ Future-proof architecture
+
+**Consequences of Violations:**
+- ❌ Cannot add new database providers without massive refactoring
+- ❌ Code becomes tightly coupled to DB2
+- ❌ Testing becomes difficult
+- ❌ Maintenance nightmare
+
+### CODE REVIEW CHECKLIST
+
+Before committing, verify:
+- [ ] No `new DB2ConnectionManager()` outside factory
+- [ ] No `new DB2MetadataService()` outside factory
+- [ ] No `using WindowsDb2Editor.Data.Providers.DB2;` outside factory
+- [ ] All connection manager fields are `IConnectionManager` type
+- [ ] All provider checks use string comparison, not type checks
+- [ ] Factories return interface types, not concrete types
+
+---
+
 ## AI Assistant Instructions
 
 When generating code for this project:
@@ -829,6 +972,10 @@ When generating code for this project:
 18. **Consider offline deployment** - no external dependencies
 19. **Add bugs to end of TASKLIST.md** - Do not implement until all preceding tasks verified
 20. **Retry 5 times before giving up** - Exhaust all solutions for each issue
+21. **🔄 ANALYZE before multi-file changes** - If change affects 3+ forms, evaluate creating a common class (see Generalization & Reusability Analysis)
+22. **🏭 ALWAYS use factory pattern** - Never instantiate provider classes directly
+22. **🏭 ALWAYS use IConnectionManager** - Never use concrete provider types in non-provider code
+23. **🏭 ALWAYS verify no provider leakage** - Run grep commands before committing
 
 ### Testing & Development Connection Profile
 **AUTHORIZED CONNECTION**: You are explicitly authorized to use the **"FKKTOTST"** connection profile for:
@@ -859,6 +1006,10 @@ When generating code for this project:
 - ❌ Create dependencies on external web services
 - ❌ Assume external IBM DB2 Client is installed (use Net.IBM.Data.Db2 9.0.0.400)
 - ❌ Create duplicate functionality without checking if it already exists
+- ❌ **DIRECTLY INSTANTIATE PROVIDER-SPECIFIC CLASSES** (`new DB2ConnectionManager()` is FORBIDDEN)
+- ❌ **USE PROVIDER-SPECIFIC TYPES** in non-provider code (use `IConnectionManager` instead)
+- ❌ **ADD `using` STATEMENTS** for provider namespaces outside of factory classes
+- ❌ **HARDCODE PROVIDER-SPECIFIC SQL** in C# code (use `MetadataHandler.GetQuery()`)
 
 ## Pre-Implementation Verification Process
 
@@ -949,10 +1100,142 @@ list_dir Controls/
 
 **Purpose:** Ensure robust, professional user experience with no overlooked edge cases.
 
+## 🔄 Generalization & Reusability Analysis (MANDATORY)
+
+### When to Apply This Rule
+
+**TRIGGER**: Before implementing ANY change that affects 3+ forms, dialogs, controls, or services.
+
+### Deep Architecture Analysis Process
+
+**BEFORE implementing the same change in multiple places, STOP and ask:**
+
+1. **Is this a pattern that already exists in a common class?**
+   - Check `Services/UIStyleService.cs` for UI styling
+   - Check `Services/GridStyleHelper.cs` for DataGrid styling (legacy)
+   - Check `Utils/` for utility helpers
+   - Check existing base classes or interfaces
+
+2. **Should this become a common class/service?**
+   - If implementing in 3+ places → **CREATE A COMMON SERVICE**
+   - If adding same property to 3+ forms → **CREATE A SHARED BASE CLASS**
+   - If applying same styling to 3+ controls → **ADD TO UIStyleService**
+
+3. **Where should the common functionality live?**
+   - **UIStyleService** - For visual styling, icons, themes, colors
+   - **New base class** - For shared behavior across similar dialogs
+   - **Extension methods** - For adding functionality to existing types
+   - **Interface** - For shared contracts across implementations
+
+### Examples of Proper Generalization
+
+**❌ BAD - Same code in multiple files:**
+```csharp
+// In Dialog1.xaml
+Icon="pack://application:,,,/Resources/dEdge.ico"
+
+// In Dialog2.xaml
+Icon="pack://application:,,,/Resources/dEdge.ico"
+
+// In Dialog3.xaml
+Icon="pack://application:,,,/Resources/dEdge.ico"
+
+// ... repeated in 25 dialogs
+```
+
+**✅ GOOD - Centralized in common service:**
+```csharp
+// In UIStyleService.cs
+public const string ApplicationIconPath = "pack://application:,,,/Resources/dEdge.ico";
+
+public static void ApplyWindowIcon(Window window)
+{
+    if (window?.Icon == null)
+        window.Icon = GetApplicationIcon();
+}
+
+// In each dialog (or via App.xaml default style)
+UIStyleService.ApplyStyles(this); // Icon applied automatically
+```
+
+### Mandatory Checklist Before Multi-File Changes
+
+**Before making the same change to multiple files:**
+
+- [ ] **Search for existing common class** that handles this concern
+- [ ] **Count affected files** - If 3+, consider creating/extending common class
+- [ ] **Identify the concern type**:
+  - Styling/Theme → `UIStyleService`
+  - Connection handling → `IConnectionManager` pattern
+  - SQL execution → `MetadataHandler`
+  - Logging → NLog patterns
+  - Configuration → `PreferencesService`/`AppSettings`
+- [ ] **Evaluate maintenance burden** - Will this need to change again?
+- [ ] **Consider future needs** - Will other forms need this too?
+
+### Common Classes Reference
+
+| Concern | Common Class | Location |
+|---------|--------------|----------|
+| Window icons | `UIStyleService.ApplicationIconPath` | Services/UIStyleService.cs |
+| UI theming | `UIStyleService.ApplyStyles()` | Services/UIStyleService.cs |
+| DataGrid styling | `UIStyleService.ApplyDataGridStyle()` | Services/UIStyleService.cs |
+| Theme management | `UIStyleService` theme methods | Services/UIStyleService.cs |
+| SQL queries | `MetadataHandler.GetStatement()` | Services/MetadataHandler.cs |
+| Connection | `IConnectionManager` interface | Data/IConnectionManager.cs |
+| Preferences | `PreferencesService` | Services/PreferencesService.cs |
+| Grid preferences | `GridStyleHelper` (legacy) | Services/GridStyleHelper.cs |
+
+### When to Create NEW Common Classes
+
+**Create a new common service when:**
+1. Same logic appears in 3+ places
+2. The logic is likely to change/evolve
+3. Testing the logic independently would be valuable
+4. Multiple team members might implement it differently
+5. The concern is clearly separable from the hosting class
+
+**Naming Conventions for New Common Classes:**
+- `[Concern]Service.cs` - For services (e.g., `ExportService`, `ValidationService`)
+- `[Concern]Helper.cs` - For stateless utilities (e.g., `StringHelper`, `DateHelper`)
+- `[Concern]Manager.cs` - For stateful managers (e.g., `ThemeManager`, `ConnectionManager`)
+- `Base[Type].cs` - For base classes (e.g., `BaseDialog`, `BasePanel`)
+- `I[Concern].cs` - For interfaces (e.g., `IExportable`, `IRefreshable`)
+
+### Architecture Review Trigger
+
+**If you find yourself:**
+- Copying code from one dialog to another → **STOP - CREATE COMMON CLASS**
+- Adding the same property to multiple models → **STOP - CREATE BASE MODEL**
+- Implementing same event handler in multiple controls → **STOP - CREATE BEHAVIOR**
+- Applying same styling to multiple elements → **STOP - ADD TO UIStyleService**
+
+**Then:**
+1. Identify the common pattern
+2. Design the common abstraction
+3. Implement in ONE place
+4. Update all consumers to use the common class
+5. Document the common class for future use
+
+### Verification Commands
+
+```powershell
+# Find duplicate code patterns
+# Look for identical method implementations across files
+Get-ChildItem -Recurse -Include "*.cs" | Select-String "Icon.*dEdge" | Group-Object Pattern
+
+# Find potential candidates for common classes
+# Methods with same name in different files
+Get-ChildItem -Recurse -Include "*.cs" -Exclude "obj","bin" | Select-String "private void ApplyGridStyles" | Measure-Object
+```
+
+---
+
 ## Questions to Ask Before Implementing
 
 1. **CRITICAL: Have I verified this functionality doesn't already exist?** (See Pre-Implementation Verification Process above)
 2. **CRITICAL: Have I performed logical user scenario walkthrough?** (See above - MANDATORY for UIs)
+3. **CRITICAL: Does this change affect 3+ forms/controls?** → Evaluate for common class (See Generalization & Reusability Analysis above)
 3. **What access level does this feature require?** (DBA, Middle, or Low level)
 4. **Have I tagged the menu item with the correct access level?**
 5. Does this work offline (no internet)?
@@ -1097,6 +1380,409 @@ if (_userAccessLevel < UserAccessLevel.DBA)
 
 ## 🔥 CRITICAL ARCHITECTURE DECISIONS
 
+### DB2-Specific Code Isolation (MANDATORY)
+
+**ABSOLUTE RULE**: DB2-specific code MUST ONLY exist in designated files.
+
+**Allowed Files/Folders for DB2-Specific Code:**
+1. **`Data/Providers/DB2/DB2ConnectionManager.cs`** - Uses IBM.Data.Db2 driver directly for connection management
+2. **`Services/Providers/DB2/DB2MetadataService.cs`** - DB2 system catalog (SYSCAT) query implementations
+3. **`Resources/SyntaxHighlighting/DB2SQL.xshd`** - DB2 syntax highlighting definitions for AvalonEdit
+4. **`ConfigFiles/db2_*_sql_statements.json`** - DB2-specific SQL statements by version
+5. **`Data/ConnectionManagerFactory.cs`** - ONLY file that may reference provider-specific connection managers
+6. **`Services/MetadataServiceFactory.cs`** - ONLY file that may reference provider-specific metadata services
+
+**Code Abstraction Requirements:**
+- All other services, controls, and dialogs MUST use **database-agnostic interfaces**:
+  - Use `IConnectionManager` instead of `DB2ConnectionManager` directly
+  - Use `IConnectionInfo` instead of `DatabaseConnection` with provider checks
+  - Use `MetadataHandler.GetStatement()` to retrieve SQL from JSON files
+  - Never use `IBM.Data.Db2` types outside of `DB2ConnectionManager`
+
+**New DB2-Specific File Creation:**
+- **Explicit permission required** before creating any new file containing DB2-specific code
+- Must provide detailed explanation of:
+  1. Why the new class is necessary
+  2. Why existing abstractions (`IConnectionManager`, `DB2MetadataService`, JSON SQL files) are insufficient
+  3. How the new class will maintain provider-agnostic architecture
+  4. Migration plan for when other database providers (PostgreSQL, Oracle, SQL Server) are added
+
+**Examples:**
+
+✅ **CORRECT - Database-Agnostic Code:**
+```csharp
+// In any service/control/dialog
+public class TableService
+{
+    private readonly IConnectionManager _connectionManager;
+    private readonly MetadataHandler _metadataHandler;
+    
+    public async Task<DataTable> GetColumnsAsync(string schema, string table)
+    {
+        var sql = _metadataHandler.GetStatement("GetTableColumns");
+        return await _connectionManager.ExecuteQueryAsync(sql, schema, table);
+    }
+}
+```
+
+❌ **FORBIDDEN - DB2-Specific Code Outside Allowed Files:**
+```csharp
+// In any service/control/dialog (WRONG!)
+using IBM.Data.Db2;
+
+public class TableService
+{
+    public async Task<DataTable> GetColumnsAsync(DB2Connection connection)  // ❌ DB2-specific
+    {
+        var sql = "SELECT * FROM SYSCAT.COLUMNS WHERE...";  // ❌ Hardcoded DB2 SQL
+        using var cmd = new DB2Command(sql, connection);   // ❌ DB2-specific
+        // ...
+    }
+}
+```
+
+**Rationale:**
+- Enables future support for PostgreSQL, Oracle, SQL Server without code rewrites
+- Centralizes all provider-specific logic for easy maintenance
+- Makes testing easier with mock connections
+- Enforces separation of concerns
+
+**Enforcement - Run Before Every Commit:**
+```powershell
+# 1. Check for direct instantiation (MUST return 0 results)
+Get-ChildItem -Recurse -Include "*.cs" -Exclude "obj","bin" | Select-String "new DB2ConnectionManager" | Where-Object { $_.Path -notmatch "Factory" }
+
+# 2. Check for provider namespace imports (MUST return 0 results)
+Get-ChildItem -Recurse -Include "*.cs" -Exclude "obj","bin" | Select-String "using WindowsDb2Editor.Data.Providers.DB2" | Where-Object { $_.Path -notmatch "Factory" }
+
+# 3. Check for service provider imports (MUST return 0 results)
+Get-ChildItem -Recurse -Include "*.cs" -Exclude "obj","bin" | Select-String "using WindowsDb2Editor.Services.Providers.DB2" | Where-Object { $_.Path -notmatch "Factory" }
+
+# 4. Check for IBM.Data.Db2 usage (MUST only be in DB2ConnectionManager.cs)
+Get-ChildItem -Recurse -Include "*.cs" -Exclude "obj","bin" | Select-String "using IBM.Data.Db2" | Where-Object { $_.Path -notmatch "DB2ConnectionManager" }
+```
+
+**All checks MUST return 0 results. Any violation must be refactored before commit.**
+
+---
+
+### Adding New Database Providers (MANDATORY ARCHITECTURE)
+
+**When implementing support for PostgreSQL, Oracle, SQL Server, MySQL, etc., follow these STRICT rules:**
+
+#### 1. Required New Files (Provider-Specific Only)
+
+For each new provider (e.g., PostgreSQL), create ONLY these files:
+
+**A. Connection Manager Implementation:**
+```
+Data/PostgreSQLConnectionManager.cs
+```
+- Must implement `IConnectionManager` interface
+- Uses provider-specific driver (e.g., Npgsql for PostgreSQL)
+- Handles provider-specific connection string format
+- Implements provider-specific parameter creation
+- Never used directly outside this file
+
+**B. Metadata Service Implementation:**
+```
+Services/PostgreSQLMetadataService.cs
+```
+- Queries provider-specific system catalogs (e.g., `pg_catalog` for PostgreSQL)
+- Implements provider-specific metadata retrieval
+- Used only by `MetadataHandler` to get provider-appropriate SQL
+
+**C. Syntax Highlighting:**
+```
+Resources/PostgreSQLSQL.xshd
+```
+- Provider-specific SQL syntax highlighting for AvalonEdit
+- Defines keywords, data types, functions specific to the provider
+
+**D. SQL Statements JSON Files:**
+```
+ConfigFiles/postgresql_16.0_sql_statements.json
+ConfigFiles/postgresql_15.0_sql_statements.json
+```
+- All SQL queries specific to this provider and version
+- Same statement names as DB2 (e.g., "GetTableColumns") for consistency
+- Provider-specific syntax variations
+
+#### 2. Files That MUST NOT Change (Database-Agnostic)
+
+**FORBIDDEN to make provider-specific:**
+- All files in `Controls/` - Must work with any `IConnectionManager`
+- All files in `Dialogs/` - Must work with any `IConnectionManager`
+- All files in `Services/` (except new `[Provider]MetadataService.cs`)
+- All files in `Models/` - Must be provider-agnostic data structures
+- All files in `Utils/` - Must be generic utilities
+- `MainWindow.xaml.cs` - Uses factory pattern for provider selection
+
+#### 3. Factory Pattern Usage
+
+**`ConnectionManagerFactory.cs` Example:**
+```csharp
+public static IConnectionManager CreateConnectionManager(DatabaseConnection connection)
+{
+    return connection.ProviderType?.ToUpperInvariant() switch
+    {
+        "DB2" => new DB2ConnectionManager(connection),
+        "POSTGRESQL" or "POSTGRES" => new PostgreSQLConnectionManager(connection),
+        "ORACLE" => new OracleConnectionManager(connection),
+        "SQLSERVER" or "MSSQL" => new SqlServerConnectionManager(connection),
+        "MYSQL" => new MySqlConnectionManager(connection),
+        _ => throw new NotSupportedException($"Provider '{connection.ProviderType}' not supported")
+    };
+}
+```
+
+#### 4. MetadataHandler Updates
+
+**`MetadataHandler.cs` must route to correct provider:**
+```csharp
+public string GetStatement(string provider, string version, string statementName)
+{
+    var fileName = provider.ToUpperInvariant() switch
+    {
+        "DB2" => $"db2_{version}_sql_statements.json",
+        "POSTGRESQL" => $"postgresql_{version}_sql_statements.json",
+        "ORACLE" => $"oracle_{version}_sql_statements.json",
+        "SQLSERVER" => $"sqlserver_{version}_sql_statements.json",
+        "MYSQL" => $"mysql_{version}_sql_statements.json",
+        _ => throw new NotSupportedException($"Provider '{provider}' not supported")
+    };
+    
+    // Load and return statement from JSON
+}
+```
+
+#### 5. SQL Statement Naming Consistency
+
+**CRITICAL**: All providers must use the SAME statement names for equivalent operations:
+
+| Statement Name | DB2 Query | PostgreSQL Equivalent | Oracle Equivalent |
+|----------------|-----------|----------------------|-------------------|
+| `GetTableColumns` | `SELECT * FROM SYSCAT.COLUMNS WHERE...` | `SELECT * FROM information_schema.columns WHERE...` | `SELECT * FROM ALL_TAB_COLUMNS WHERE...` |
+| `GetAllTables` | `SELECT * FROM SYSCAT.TABLES WHERE...` | `SELECT * FROM information_schema.tables WHERE...` | `SELECT * FROM ALL_TABLES WHERE...` |
+| `GetForeignKeys` | `SELECT * FROM SYSCAT.REFERENCES WHERE...` | `SELECT * FROM information_schema.table_constraints WHERE...` | `SELECT * FROM ALL_CONSTRAINTS WHERE...` |
+
+**Why**: This allows all UI code to remain unchanged when switching providers.
+
+#### 6. Testing Requirements for New Providers
+
+**Before marking provider support as complete:**
+
+1. **Create test connection profile** (e.g., `POSTGRESQLTST`)
+2. **Run all 119+ CLI commands** with new provider
+3. **Test all dialogs and panels** with new provider
+4. **Verify all tabs load correctly** in table properties, view properties, etc.
+5. **Test IntelliSense** with provider-specific keywords
+6. **Create comprehensive CLI test suite** for new provider
+7. **Achieve 100% parity** with DB2 functionality where applicable
+
+#### 7. supported_providers.json Updates
+
+**Add new provider to list:**
+```json
+{
+  "providers": [
+    {
+      "name": "DB2",
+      "displayName": "IBM DB2",
+      "versions": ["12.1", "11.5", "11.1"],
+      "driver": "IBM.Data.Db2",
+      "defaultPort": 50000
+    },
+    {
+      "name": "POSTGRESQL",
+      "displayName": "PostgreSQL",
+      "versions": ["16.0", "15.0", "14.0"],
+      "driver": "Npgsql",
+      "defaultPort": 5432
+    }
+  ]
+}
+```
+
+#### 8. NuGet Package Requirements
+
+**Add provider-specific driver package:**
+```xml
+<!-- For PostgreSQL -->
+<PackageReference Include="Npgsql" Version="8.0.0" />
+
+<!-- For Oracle -->
+<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.4.0" />
+
+<!-- For SQL Server -->
+<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+
+<!-- For MySQL -->
+<PackageReference Include="MySql.Data" Version="8.3.0" />
+```
+
+#### 9. Connection Dialog Updates
+
+**`ConnectionDialog.xaml` must include provider dropdown:**
+```xml
+<ComboBox x:Name="ProviderComboBox" SelectedIndex="0">
+    <ComboBoxItem Content="IBM DB2" Tag="DB2"/>
+    <ComboBoxItem Content="PostgreSQL" Tag="POSTGRESQL"/>
+    <ComboBoxItem Content="Oracle" Tag="ORACLE"/>
+    <ComboBoxItem Content="SQL Server" Tag="SQLSERVER"/>
+    <ComboBoxItem Content="MySQL" Tag="MYSQL"/>
+</ComboBox>
+```
+
+#### 10. Pre-Implementation Checklist
+
+**Before starting new provider implementation, verify:**
+
+- [ ] All existing code uses `IConnectionManager` (no direct `DB2ConnectionManager` references)
+- [ ] All SQL is externalized to JSON files (no hardcoded SQL in C#)
+- [ ] All UI code is provider-agnostic (no DB2-specific logic in Controls/Dialogs)
+- [ ] `ConnectionManagerFactory` pattern is in place
+- [ ] `MetadataHandler` can route to different JSON files
+- [ ] Test connection profile for new provider is available
+
+**If ANY checkbox is unchecked, DO NOT proceed with new provider implementation.**
+
+#### 11. Implementation Order
+
+**Recommended sequence for adding a new provider:**
+
+1. **Phase 1: Core Infrastructure**
+   - Create `[Provider]ConnectionManager.cs`
+   - Implement `IConnectionManager` interface
+   - Test basic connection, query execution, parameter handling
+
+2. **Phase 2: SQL Statements**
+   - Create `[provider]_[version]_sql_statements.json`
+   - Map all statement names from DB2 equivalent
+   - Test with simple metadata queries
+
+3. **Phase 3: Metadata Service**
+   - Create `[Provider]MetadataService.cs`
+   - Implement system catalog queries
+   - Test metadata retrieval
+
+4. **Phase 4: Syntax Highlighting**
+   - Create `[Provider]SQL.xshd`
+   - Define provider-specific keywords
+   - Test in SQL editor
+
+5. **Phase 5: CLI Testing**
+   - Run all CLI commands with new provider
+   - Fix any provider-specific issues
+   - Achieve 100% pass rate
+
+6. **Phase 6: UI Testing**
+   - Test all dialogs and panels
+   - Verify all tabs load correctly
+   - Test IntelliSense
+
+7. **Phase 7: Documentation**
+   - Update README with new provider support
+   - Document provider-specific quirks
+   - Create migration guide from DB2
+
+#### 12. Common Pitfalls to Avoid
+
+**❌ DO NOT:**
+- Hardcode provider-specific SQL in UI code
+- Use provider-specific types (e.g., `NpgsqlConnection`) outside connection manager
+- Create provider-specific methods in shared services
+- Modify existing agnostic models to add provider-specific fields
+- Skip CLI testing for new provider
+- Assume SQL syntax is identical across providers
+
+**✅ DO:**
+- Use `IConnectionManager` everywhere
+- Externalize ALL SQL to JSON files
+- Use `System.Data.Common` base classes (`DbConnection`, `DbCommand`, etc.)
+- Create comprehensive test suites for each provider
+- Document SQL dialect differences in JSON file comments
+- Test with multiple versions of the same provider
+
+#### 13. Permission Requirements
+
+**Before implementing a new provider:**
+- **User approval required** with business justification
+- **Architecture review required** to ensure adherence to these rules
+- **Test environment required** with access to target database
+- **Time estimate required** (typically 40-80 hours per provider)
+- **Maintenance plan required** for ongoing support
+
+#### 14. Success Criteria
+
+**Provider implementation is complete ONLY when:**
+- All 119+ CLI commands work with new provider
+- All dialogs and panels display data correctly
+- All tabs in table/view/procedure properties work
+- IntelliSense provides provider-specific suggestions
+- Syntax highlighting works correctly
+- 100% CLI test pass rate
+- Build succeeds without warnings
+- No provider-specific code leaked into agnostic areas
+- Documentation is complete
+
+**Verification Command:**
+```bash
+# Verify no provider leakage
+grep -r "using [Provider-specific-namespace]" --exclude-dir=obj --exclude-dir=bin | grep -v "ConnectionManager.cs" | grep -v "MetadataService.cs"
+# Must return: No results
+```
+
+---
+
+### System Metadata Reference Files (DEVELOPMENT REFERENCE ONLY)
+
+**CRITICAL**: The `<provider>_<version>_system_metadata.json` files are **REFERENCE ONLY** for developers and AI.
+
+**Purpose:**
+- Document the database provider's system catalog structure (tables, columns, relationships)
+- Provide column data types for proper TRIM() usage and data handling
+- Serve as the authoritative source when creating/validating SQL statements
+- NOT loaded by the application at runtime
+
+**File Naming Convention:**
+```
+ConfigFiles/<provider>_<version>_system_metadata.json
+```
+
+**Examples:**
+- `db2_12.1_system_metadata.json` - DB2 12.1 SYSCAT/SYSIBM/SYSIBMADM schema
+- `postgresql_16.0_system_metadata.json` - PostgreSQL pg_catalog/information_schema (future)
+- `oracle_19c_system_metadata.json` - Oracle ALL_/DBA_/USER_ views (future)
+- `sqlserver_2022_system_metadata.json` - SQL Server sys schema (future)
+
+**How to Use:**
+1. **Creating new SQL statements**: Consult the metadata JSON to verify table/column names exist
+2. **Checking data types**: Use to determine if TRIM() is needed (CHAR vs VARCHAR)
+3. **Understanding relationships**: Reference for JOINs between system tables
+4. **AI code generation**: Provides context for accurate SQL generation
+
+**When Adding a New Database Provider:**
+1. Create `<provider>_<version>_system_metadata.json` documenting the system catalog
+2. Include: catalog_tables, columns with types, relationships, common_queries
+3. Then create `<provider>_<version>_sql_statements.json` with actual SQL queries
+4. Validate all SQL statements against the metadata file
+
+**Content Structure (see db2_12.1_system_metadata.json for reference):**
+```json
+{
+  "provider": "DB2",
+  "version": "12.1",
+  "purpose": "Reference file for building SQL statements",
+  "catalog_tables": { /* table definitions with columns */ },
+  "relationships": { /* how tables relate */ },
+  "common_queries": { /* example query patterns */ },
+  "critical_notes": [ /* important gotchas */ ]
+}
+```
+
+---
+
 ### Provider-Agnostic SQL Abstraction (MANDATORY)
 
 **ABSOLUTE RULE**: NO hardcoded SQL statements in C# code.
@@ -1105,6 +1791,7 @@ if (_userAccessLevel < UserAccessLevel.DBA)
 1. Stored in JSON files: `ConfigFiles/db2_12.1_sql_statements.json`
 2. Retrieved via `MetadataHandler.GetStatement("StatementName")`
 3. Parameterized with `?` placeholders
+4. **Validated against** the corresponding `<provider>_<version>_system_metadata.json` file
 
 **File Structure**:
 ```

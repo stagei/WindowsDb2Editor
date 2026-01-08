@@ -416,8 +416,8 @@ namespace WindowsDb2Editor.Dialogs
                 // Save to file
                 _preferencesService.SavePreferences();
 
-                // Refresh all existing grids with new preferences
-                GridStyleHelper.RefreshAllGrids(_preferencesService.Preferences);
+                // Refresh all existing UI with new preferences
+                UIStyleService.RefreshAllStyles();
 
                 Logger.Info("Settings saved successfully");
                 DialogResult = true;

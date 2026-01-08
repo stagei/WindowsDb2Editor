@@ -21,7 +21,7 @@ namespace WindowsDb2Editor.Controls;
 public partial class ConnectionTabControl : UserControl
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private readonly DB2ConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
     private readonly DatabaseConnection _connection;
     private readonly SqlFormatterService _formatterService;
     private readonly QueryHistoryService _queryHistoryService;
@@ -46,7 +46,7 @@ public partial class ConnectionTabControl : UserControl
     /// <summary>
     /// Public property to access the connection manager for monitoring and management
     /// </summary>
-    public DB2ConnectionManager ConnectionManager => _connectionManager;
+    public IConnectionManager ConnectionManager => _connectionManager;
     
     /// <summary>
     /// Public property to access the connection information (database-agnostic)
@@ -59,7 +59,7 @@ public partial class ConnectionTabControl : UserControl
         Logger.Debug($"ConnectionTabControl initializing for {connection.GetDisplayName()}");
 
         _connection = connection;
-        _connectionManager = new DB2ConnectionManager(connection);
+        _connectionManager = ConnectionManagerFactory.CreateConnectionManager(connection);
         _formatterService = new SqlFormatterService();
         _queryHistoryService = new QueryHistoryService();
         _exportService = new ExportService();
@@ -94,13 +94,9 @@ public partial class ConnectionTabControl : UserControl
         {
             // Reload preferences to get latest values
             _preferencesService.Reload();
-            
-            // Apply to results grid
-            GridStyleHelper.ApplyGridStyle(ResultsGrid, _preferencesService.Preferences);
-            
-            // Apply to object browser TreeView
-            DatabaseTreeView.FontSize = GetTreeViewFontSize();
-            DatabaseTreeView.FontFamily = GetTreeViewFontFamily();
+
+            // Apply all UI styles to this control
+            UIStyleService.ApplyStyles(this);
             
             // Apply spacing to all existing TreeViewItems
             ApplyTreeViewSpacingToAll(DatabaseTreeView);
@@ -238,7 +234,11 @@ public partial class ConnectionTabControl : UserControl
             var config = configuration.Get<AppSettings>();
             _objectBrowserSettings = config?.ObjectBrowser;
             
-            if (_objectBrowserSettings?.AutoGrowWidth == true)
+            // Check user preference override
+            var preferences = App.PreferencesService?.Preferences;
+            bool userDisabledAutoResize = preferences?.DisableObjectBrowserAutoResize == true;
+            
+            if (_objectBrowserSettings?.AutoGrowWidth == true && !userDisabledAutoResize)
             {
                 Logger.Debug("Object browser auto-grow enabled (Min: {Min}px, Max: {Max}px)", 
                     _objectBrowserSettings.MinWidth, _objectBrowserSettings.MaxWidth);
@@ -261,16 +261,54 @@ public partial class ConnectionTabControl : UserControl
                         _lastAutoGrowUpdate = DateTime.Now;
                     }
                 };
+                
+                // Hook into TreeView item expansion to auto-resize
+                DatabaseTreeView.AddHandler(TreeViewItem.ExpandedEvent, new RoutedEventHandler(OnTreeViewItemExpanded));
+                DatabaseTreeView.AddHandler(TreeViewItem.CollapsedEvent, new RoutedEventHandler(OnTreeViewItemCollapsed));
             }
             else
             {
-                Logger.Debug("Object browser auto-grow disabled");
+                Logger.Debug("Object browser auto-grow disabled (app setting: {AppSetting}, user override: {UserOverride})", 
+                    _objectBrowserSettings?.AutoGrowWidth, userDisabledAutoResize);
             }
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to initialize object browser auto-grow");
         }
+    }
+    
+    /// <summary>
+    /// Handle TreeViewItem expansion to trigger auto-resize
+    /// </summary>
+    private void OnTreeViewItemExpanded(object sender, RoutedEventArgs e)
+    {
+        // Force layout update first, then measure after all rendering is complete
+        DatabaseTreeView.UpdateLayout();
+        
+        // Use ContextIdle priority - this runs only when the UI is completely idle after all rendering
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            // Force another layout pass to ensure children are fully rendered
+            DatabaseTreeView.UpdateLayout();
+            AutoAdjustObjectBrowserWidth();
+        }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+    }
+    
+    /// <summary>
+    /// Handle TreeViewItem collapse to trigger auto-resize
+    /// </summary>
+    private void OnTreeViewItemCollapsed(object sender, RoutedEventArgs e)
+    {
+        // Force layout update first, then measure after all rendering is complete
+        DatabaseTreeView.UpdateLayout();
+        
+        // Use ContextIdle priority - this runs only when the UI is completely idle after all rendering
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            DatabaseTreeView.UpdateLayout();
+            AutoAdjustObjectBrowserWidth();
+        }), System.Windows.Threading.DispatcherPriority.ContextIdle);
     }
     
     /// <summary>
@@ -636,21 +674,34 @@ public partial class ConnectionTabControl : UserControl
 
         try
         {
-            // Load custom DB2 SQL syntax highlighting
-            var xshdPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "DB2SQL.xshd");
+            // Load custom DB2 SQL syntax highlighting (moved to SyntaxHighlighting subfolder)
+            var xshdPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "SyntaxHighlighting", "DB2SQL.xshd");
             
             if (File.Exists(xshdPath))
             {
                 using var reader = new XmlTextReader(xshdPath);
                 var definition = HighlightingLoader.Load(reader, HighlightingManager.Instance);
                 SqlEditor.SyntaxHighlighting = definition;
-                Logger.Debug("DB2 SQL syntax highlighting loaded");
+                Logger.Debug("DB2 SQL syntax highlighting loaded from: {Path}", xshdPath);
             }
             else
             {
                 Logger.Warn($"Syntax highlighting file not found: {xshdPath}");
-                // Use SQL as fallback
-                SqlEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("SQL");
+                // Try legacy path for backward compatibility
+                var legacyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "DB2SQL.xshd");
+                if (File.Exists(legacyPath))
+                {
+                    using var reader = new XmlTextReader(legacyPath);
+                    var definition = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                    SqlEditor.SyntaxHighlighting = definition;
+                    Logger.Debug("DB2 SQL syntax highlighting loaded from legacy path: {Path}", legacyPath);
+                }
+                else
+                {
+                    // Use SQL as fallback
+                    SqlEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("SQL");
+                    Logger.Warn("Using default SQL syntax highlighting as fallback");
+                }
             }
 
             // Set editor options
@@ -715,14 +766,32 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Handle Ctrl+Space to manually trigger intellisense
+    /// Handle Ctrl+Space to manually trigger intellisense and Backspace to re-trigger
     /// </summary>
     private void TextEditor_KeyDown(object? sender, KeyEventArgs e)
     {
+        // Ctrl+Space - Force show IntelliSense
         if (e.Key == Key.Space && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             ShowCompletionWindow();
             e.Handled = true;
+        }
+        // Backspace - Re-trigger IntelliSense if window was open
+        else if (e.Key == Key.Back && _completionWindow != null)
+        {
+            // Close current window and re-show after backspace is processed
+            _completionWindow.Close();
+            _completionWindow = null;
+            
+            // Schedule re-trigger after backspace is processed
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var currentWord = GetCurrentWord();
+                if (currentWord.Length > 0)
+                {
+                    ShowCompletionWindow();
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
     }
     
@@ -1037,11 +1106,12 @@ public partial class ConnectionTabControl : UserControl
                 try
                 {
                     Logger.Info("Starting background metadata collection");
-                    // DB2MetadataService is DB2-specific, so cast if needed
-                    if (_connectionManager is DB2ConnectionManager db2Conn)
+                    // Check provider type for metadata collection support
+                    var providerType = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+                    if (providerType == "DB2")
                     {
-                        var metadataService = new DB2MetadataService();
-                        await metadataService.CollectMetadataAsync(db2Conn, _connection.Name ?? _connection.GetDisplayName());
+                        var metadataService = MetadataServiceFactory.CreateMetadataService(_connectionManager);
+                        await metadataService.CollectMetadataAsync(_connectionManager, _connection.Name ?? _connection.GetDisplayName());
                     }
                     else
                     {
@@ -1888,7 +1958,7 @@ public partial class ConnectionTabControl : UserControl
                 ObjectType.Views or ObjectType.Procedures or ObjectType.Functions or
                 ObjectType.Indexes or ObjectType.Triggers or ObjectType.Sequences or
                 ObjectType.Synonyms or ObjectType.Types => new ObjectDetailsDialog(_connectionManager, obj, _connection),
-                ObjectType.Packages => CreatePackageDialog(obj),
+                ObjectType.Packages => CreatePackagePropertiesDialog(obj),
                 _ => null
             };
             
@@ -1907,9 +1977,9 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Create package dialog from DatabaseObject
+    /// Create package properties dialog from DatabaseObject
     /// </summary>
-    private Window CreatePackageDialog(DatabaseObject obj)
+    private Window CreatePackagePropertiesDialog(DatabaseObject obj)
     {
         // Need to fetch full package info from database
         var packageInfo = new PackageInfo
@@ -1922,7 +1992,7 @@ public partial class ConnectionTabControl : UserControl
             // BoundBy and Isolation will be fetched by the dialog if needed
         };
         
-        var dialog = new PackageDetailsDialog(_connectionManager, packageInfo);
+        var dialog = new PackagePropertiesDialog(_connectionManager, packageInfo);
         
         // Subscribe to SqlTextRequested event
         dialog.SqlTextRequested += (sender, sqlText) =>
@@ -1964,7 +2034,7 @@ public partial class ConnectionTabControl : UserControl
         {
             Logger.Info("Showing details for package: {Schema}.{Name}", package.PackageSchema, package.PackageName);
             
-            var dialog = new PackageDetailsDialog(_connectionManager, package);
+            var dialog = new PackagePropertiesDialog(_connectionManager, package);
             dialog.Owner = Window.GetWindow(this);
             
             // Subscribe to the SqlTextRequested event to insert SQL into editor
@@ -2092,7 +2162,7 @@ public partial class ConnectionTabControl : UserControl
         {
             Logger.Info("Showing details for tablespace: {Tablespace}", tablespace.TablespaceName);
 
-            var dialog = new Dialogs.TablespaceDetailsDialog(tablespace)
+            var dialog = new Dialogs.TablespaceDetailsDialog(tablespace, _connectionManager)
             {
                 Owner = Window.GetWindow(this)
             };
@@ -2159,7 +2229,12 @@ public partial class ConnectionTabControl : UserControl
                     string? definition = null;
                     if (obj.Type == ObjectType.Views)
                     {
-                        definition = await _connectionManager.GetViewDefinitionAsync(obj.Name);
+                        // Get view definition using MetadataHandler
+                        var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                        var sqlTemplate = metadataHandler.GetRequiredStatement("GetViewText");
+                        var sql = sqlTemplate.Replace("?", $"'{obj.Name}'");
+                        var result = await _connectionManager.ExecuteScalarAsync(sql);
+                        definition = result?.ToString() ?? string.Empty;
                     }
                     else if (obj.Type == ObjectType.Procedures || obj.Type == ObjectType.Functions)
                     {
@@ -2313,10 +2388,14 @@ public partial class ConnectionTabControl : UserControl
                     break;
                     
                 case ObjectType.Views:
-                    // For views, get the view definition
-                    var viewDef = await _connectionManager.GetViewDefinitionAsync(obj.Name);
-                    content = !string.IsNullOrEmpty(viewDef) 
-                        ? $"-- View: {obj.FullName}\n\n{viewDef}" 
+                    // For views, get the view definition using MetadataHandler
+                    var metadataHandler2 = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+                    var viewSqlTemplate = metadataHandler2.GetRequiredStatement("GetViewText");
+                    var viewSql = viewSqlTemplate.Replace("?", $"'{obj.Name}'");
+                    var viewResult = await _connectionManager.ExecuteScalarAsync(viewSql);
+                    var viewDef = viewResult?.ToString() ?? string.Empty;
+                    content = !string.IsNullOrEmpty(viewDef)
+                        ? $"-- View: {obj.FullName}\n\n{viewDef}"
                         : $"-- View: {obj.FullName}\n\nSELECT * FROM {obj.FullName} FETCH FIRST 1000 ROWS ONLY;";
                     tabTitle = $"View: {obj.Name?.Trim()}";
                     break;
@@ -2554,10 +2633,15 @@ public partial class ConnectionTabControl : UserControl
     
     private void DatabaseTreeView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        // Skip if already handled by individual node handlers (ObjectNode_DoubleClick, PackageNode_DoubleClick, etc.)
+        if (e.Handled)
+            return;
+            
         if (DatabaseTreeView.SelectedItem is not TreeViewItem item || item.Tag == null)
             return;
 
         // Requirement: double-click on any leaf item should open the relevant property dialog
+        // This is a fallback for nodes that don't have individual double-click handlers
         if (item.Tag is DatabaseObject obj)
         {
             ShowObjectDetails(obj);
@@ -2910,8 +2994,7 @@ public partial class ConnectionTabControl : UserControl
                     sb.AppendLine($"-- Owner: {package.Owner}");
                     sb.AppendLine();
                     
-                    if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("ConnectionTabControl requires DB2ConnectionManager");
-                    using var cmd = db2Conn.CreateCommand(stmtSql);
+                    using var cmd = _connectionManager.CreateCommand(stmtSql);
                     using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {

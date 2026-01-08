@@ -458,8 +458,8 @@ public class MetadataHandler : IMetadataProvider
             }
         }
         
-        if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("MetadataHandler.CreateCommand requires DB2ConnectionManager");
-        using var command = db2Conn.CreateCommand(sql);
+        // Provider-agnostic command creation
+        using var command = _connectionManager.CreateCommand(sql);
         return await command.ExecuteScalarAsync();
     }
     

@@ -139,7 +139,7 @@ public class DiffBasedDdlGeneratorService
                 foreach (var col in table.RemovedColumns)
                 {
                     ddl.AppendLine($"-- WARNING: Dropping column will DELETE DATA!");
-                    ddl.AppendLine($"-- ALTER TABLE {targetSchema}.{table.TableName} DROP COLUMN {col.ColumnName};");
+                    ddl.AppendLine($"-- ALTER TABLE {targetSchema?.Trim() ?? ""}.{table.TableName?.Trim() ?? ""} DROP COLUMN {col.ColumnName?.Trim() ?? ""};");
                     ddl.AppendLine();
                 }
             }
@@ -148,7 +148,7 @@ public class DiffBasedDdlGeneratorService
         foreach (var table in diff.TableChanges.Where(t => t.ChangeType == TableChangeType.Removed))
         {
             ddl.AppendLine($"-- WARNING: Dropping table will DELETE ALL DATA!");
-            ddl.AppendLine($"-- DROP TABLE {targetSchema}.{table.TableName};");
+            ddl.AppendLine($"-- DROP TABLE {targetSchema?.Trim() ?? ""}.{table.TableName?.Trim() ?? ""};");
             ddl.AppendLine();
         }
         

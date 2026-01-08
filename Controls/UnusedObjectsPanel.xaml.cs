@@ -28,10 +28,7 @@ public partial class UnusedObjectsPanel : UserControl
     
     private void ApplyGridPreferences()
     {
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(UnusedObjectsDataGrid, App.PreferencesService.Preferences);
-        }
+        UIStyleService.ApplyStyles(this);
     }
     
     public async Task InitializeAsync(IConnectionManager connectionManager)

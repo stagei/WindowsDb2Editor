@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Data;
 
-namespace WindowsDb2Editor.Services;
+namespace WindowsDb2Editor.Services.Providers.DB2;
 
 /// <summary>
 /// Service for collecting and caching DB2 metadata
@@ -38,7 +38,7 @@ public class DB2MetadataService
     /// <summary>
     /// Collect database metadata and save to JSON (version-specific, not database-specific)
     /// </summary>
-    public async Task CollectMetadataAsync(DB2ConnectionManager connectionManager, string profileName)
+    public async Task CollectMetadataAsync(IConnectionManager connectionManager, string profileName)
     {
         Logger.Info("Starting metadata collection for profile: {Profile}", profileName);
         
@@ -87,7 +87,7 @@ public class DB2MetadataService
     /// <summary>
     /// Get DB2 version information
     /// </summary>
-    private async Task<string> GetDB2VersionAsync(DB2ConnectionManager connectionManager)
+    private async Task<string> GetDB2VersionAsync(IConnectionManager connectionManager)
     {
         Logger.Debug("Querying DB2 version");
         
@@ -141,7 +141,7 @@ public class DB2MetadataService
     /// <summary>
     /// Get all SYSCAT tables
     /// </summary>
-    private async Task<DataTable> GetSyscatTablesAsync(DB2ConnectionManager connectionManager)
+    private async Task<DataTable> GetSyscatTablesAsync(IConnectionManager connectionManager)
     {
         Logger.Debug("Querying SYSCAT.TABLES");
         
@@ -215,7 +215,7 @@ public class DB2MetadataService
     /// Collect table-specific metadata
     /// </summary>
     public async Task CollectTableMetadataAsync(
-        DB2ConnectionManager connectionManager, 
+        IConnectionManager connectionManager, 
         string tableName, 
         string schemaName,
         string version,

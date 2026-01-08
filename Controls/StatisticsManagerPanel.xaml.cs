@@ -30,10 +30,7 @@ public partial class StatisticsManagerPanel : UserControl
     
     private void ApplyGridPreferences()
     {
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(StatisticsDataGrid, App.PreferencesService.Preferences);
-        }
+        UIStyleService.ApplyStyles(this);
     }
     
     public async Task InitializeAsync(IConnectionManager connectionManager)

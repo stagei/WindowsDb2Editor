@@ -150,6 +150,30 @@ namespace WindowsDb2Editor.Models
         /// </summary>
         [JsonPropertyName("editorCurrentLineColor")]
         public string EditorCurrentLineColor { get; set; } = "#2D2D30";
+
+        /// <summary>
+        /// Auto-dock tool windows as tabs instead of floating windows (default: false - tools open undocked)
+        /// </summary>
+        [JsonPropertyName("autoDockTools")]
+        public bool AutoDockTools { get; set; } = false;
+
+        /// <summary>
+        /// Currently active theme name (e.g., "Dark", "Light", or custom theme name)
+        /// </summary>
+        [JsonPropertyName("activeThemeName")]
+        public string ActiveThemeName { get; set; } = "Dark";
+
+        /// <summary>
+        /// Whether user is using custom overrides on top of the base theme
+        /// </summary>
+        [JsonPropertyName("useCustomOverrides")]
+        public bool UseCustomOverrides { get; set; } = false;
+
+        /// <summary>
+        /// Disable auto-adjust of Object Browser width on tree expansion (default: false = auto-adjust enabled)
+        /// </summary>
+        [JsonPropertyName("disableObjectBrowserAutoResize")]
+        public bool DisableObjectBrowserAutoResize { get; set; } = false;
     }
 }
 

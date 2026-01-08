@@ -6,7 +6,7 @@ using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 using DB2Conn = IBM.Data.Db2.DB2Connection;
 
-namespace WindowsDb2Editor.Data;
+namespace WindowsDb2Editor.Data.Providers.DB2;
 
 /// <summary>
 /// Manager for DB2 database connections

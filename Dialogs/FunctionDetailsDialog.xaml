@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Function Details"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         Width="900"
         Height="700"
         WindowStartupLocation="CenterOwner"

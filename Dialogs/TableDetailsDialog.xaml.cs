@@ -1,4 +1,6 @@
+using System;
 using System.Data;
+using System.Linq;
 using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
@@ -12,6 +14,7 @@ public partial class TableDetailsDialog : Window
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IConnectionManager _connectionManager;
     private readonly TableRelationshipService _relationshipService;
+    private readonly StatisticsService _statisticsService;
     private readonly MetadataHandler _metadataHandler;
     private readonly string _fullTableName;
     private readonly string _schema;
@@ -41,20 +44,21 @@ public partial class TableDetailsDialog : Window
         InitializeComponent();
         _connectionManager = connectionManager;
         _relationshipService = new TableRelationshipService();
+        _statisticsService = new StatisticsService();
         _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         _fullTableName = fullTableName;
         
-        // Parse schema and table name
+        // Parse schema and table name - trim both parts
         var parts = fullTableName.Split('.');
         if (parts.Length == 2)
         {
-            _schema = parts[0];
-            _tableName = parts[1];
+            _schema = parts[0].Trim();
+            _tableName = parts[1].Trim();
         }
         else
         {
             _schema = "";
-            _tableName = fullTableName;
+            _tableName = fullTableName?.Trim() ?? string.Empty;
         }
         
         Logger.Debug("TableDetailsDialog opened for: {Table}", fullTableName);
@@ -62,14 +66,8 @@ public partial class TableDetailsDialog : Window
         TableNameText.Text = _tableName;
         TableInfoText.Text = $"Schema: {_schema} • Full Name: {_fullTableName}";
         
-        // Apply grid preferences to all grids in this dialog
-        this.Loaded += (s, e) =>
-        {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
-            }
-        };
+        // Apply all UI styles from the unified style service
+        this.Loaded += (s, e) => UIStyleService.ApplyStyles(this);
         
         _ = LoadTableDetailsAsync();
     }
@@ -186,6 +184,30 @@ public partial class TableDetailsDialog : Window
             {
                 ForeignKeysGrid.ItemsSource = dataTable.DefaultView;
                 FKCountText.Text = dataTable.Rows.Count.ToString();
+                
+                // Update status text
+                if (dataTable.Rows.Count == 0)
+                {
+                    ForeignKeysStatusText.Text = "No foreign keys defined - This table does not reference other tables.";
+                }
+                else
+                {
+                    // Count unique referenced tables
+                    var referencedTables = new HashSet<string>();
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        referencedTables.Add(row["PKTable"]?.ToString() ?? "");
+                    }
+                    
+                    if (dataTable.Rows.Count == 1)
+                    {
+                        ForeignKeysStatusText.Text = $"✅ Found 1 foreign key constraint referencing {referencedTables.Count} table(s)";
+                    }
+                    else
+                    {
+                        ForeignKeysStatusText.Text = $"✅ Found {dataTable.Rows.Count} foreign key constraints referencing {referencedTables.Count} table(s)";
+                    }
+                }
             });
             
             Logger.Info("Loaded {Count} foreign keys", dataTable.Rows.Count);
@@ -232,6 +254,82 @@ public partial class TableDetailsDialog : Window
         
         try
         {
+            // Use StatisticsService to get comprehensive statistics for this specific table
+            var filter = new StatisticsFilter
+            {
+                SchemaFilter = _schema,
+                ShowOnlyOutdated = false,
+                OutdatedThresholdDays = 30
+            };
+            
+            var allStats = await _statisticsService.GetTableStatisticsAsync(_connectionManager, filter);
+            var tableStats = allStats.FirstOrDefault(s => 
+                s.SchemaName.Equals(_schema, StringComparison.OrdinalIgnoreCase) && 
+                s.TableName.Equals(_tableName, StringComparison.OrdinalIgnoreCase));
+            
+            if (tableStats != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // Statistics information
+                    StatsTimeText.Text = tableStats.StatsTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never";
+                    DaysSinceUpdateText.Text = tableStats.DaysSinceUpdate?.ToString() ?? "-";
+                    RowCountText.Text = tableStats.CardinalityEstimate?.ToString("N0") ?? "Unknown";
+                    TablespaceText.Text = tableStats.TablespaceName ?? "-";
+                    
+                    // Status with color coding
+                    StatsStatusText.Text = $"{tableStats.StatsIcon} {tableStats.StatsStatus}";
+                    StatsStatusText.Foreground = tableStats.StatsStatus switch
+                    {
+                        "Critical" => System.Windows.Media.Brushes.Red,
+                        "Warning" => System.Windows.Media.Brushes.Orange,
+                        "Good" => System.Windows.Media.Brushes.Green,
+                        _ => System.Windows.Media.Brushes.Gray
+                    };
+                    
+                    // Recommendation text based on status
+                    if (tableStats.DaysSinceUpdate > 90)
+                    {
+                        StatsRecommendationText.Text = $"⚠️ Statistics are {tableStats.DaysSinceUpdate} days old. " +
+                            "Consider running RUNSTATS to improve query performance. Outdated statistics can lead to " +
+                            "poor query plans and slow performance.";
+                        StatsRecommendationText.Foreground = System.Windows.Media.Brushes.Red;
+                    }
+                    else if (tableStats.DaysSinceUpdate > 30)
+                    {
+                        StatsRecommendationText.Text = $"⚠️ Statistics are {tableStats.DaysSinceUpdate} days old. " +
+                            "Running RUNSTATS soon is recommended.";
+                        StatsRecommendationText.Foreground = System.Windows.Media.Brushes.Orange;
+                    }
+                    else
+                    {
+                        StatsRecommendationText.Text = "✅ Statistics are up-to-date. No action needed.";
+                        StatsRecommendationText.Foreground = System.Windows.Media.Brushes.Green;
+                    }
+                });
+            }
+            else
+            {
+                // If not found in stats service, fallback to basic info
+                await LoadBasicStatisticsAsync();
+            }
+            
+            Logger.Info("Statistics loaded successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load statistics");
+            await LoadBasicStatisticsAsync();
+        }
+    }
+    
+    /// <summary>
+    /// Fallback method for basic statistics if StatisticsService fails
+    /// </summary>
+    private async Task LoadBasicStatisticsAsync()
+    {
+        try
+        {
             // Get row count
             var countSql = $"SELECT COUNT(*) FROM {_fullTableName}";
             var rowCount = await _connectionManager.ExecuteScalarAsync(countSql);
@@ -240,12 +338,14 @@ public partial class TableDetailsDialog : Window
             var infoSqlTemplate = _metadataHandler.GetQuery("DB2", "12.1", "GetTableBasicInfo");
             var infoSql = ReplacePlaceholders(infoSqlTemplate, _schema, _tableName);
             
-            Logger.Debug("Using query: GUI_GetTableBasicInfo");
             var infoTable = await _connectionManager.ExecuteQueryAsync(infoSql);
             
             Dispatcher.Invoke(() =>
             {
                 RowCountText.Text = rowCount != null ? Convert.ToInt64(rowCount).ToString("N0") : "Unknown";
+                StatsTimeText.Text = "Unknown";
+                DaysSinceUpdateText.Text = "-";
+                StatsStatusText.Text = "Unknown";
                 
                 if (infoTable.Rows.Count > 0)
                 {
@@ -263,14 +363,19 @@ public partial class TableDetailsDialog : Window
                     
                     TablespaceText.Text = tbspace;
                 }
+                
+                StatsRecommendationText.Text = "Unable to retrieve detailed statistics. Basic information shown.";
+                StatsRecommendationText.Foreground = System.Windows.Media.Brushes.Gray;
             });
-            
-            Logger.Info("Statistics loaded - Row count: {Count}", rowCount);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load statistics");
-            Dispatcher.Invoke(() => RowCountText.Text = "Error");
+            Logger.Error(ex, "Failed to load basic statistics");
+            Dispatcher.Invoke(() =>
+            {
+                RowCountText.Text = "Error";
+                StatsTimeText.Text = "Error";
+            });
         }
     }
 
@@ -398,11 +503,60 @@ public partial class TableDetailsDialog : Window
         {
             var incomingFKs = await _relationshipService.GetIncomingForeignKeysAsync(_connectionManager, _schema, _tableName);
             IncomingFKGrid.ItemsSource = incomingFKs;
+            
+            // Update status text
+            if (incomingFKs.Count == 0)
+            {
+                IncomingFKStatusText.Text = "No incoming foreign keys found - No other tables reference this table.";
+            }
+            else if (incomingFKs.Count == 1)
+            {
+                IncomingFKStatusText.Text = $"✅ Found 1 incoming foreign key dependency from 1 table";
+            }
+            else
+            {
+                var uniqueTables = incomingFKs.Select(fk => $"{fk.ReferencingSchema}.{fk.ReferencingTable}").Distinct().Count();
+                IncomingFKStatusText.Text = $"✅ Found {incomingFKs.Count} incoming foreign key dependencies from {uniqueTables} table(s)";
+            }
+            
             Logger.Info("Loaded {Count} incoming foreign keys", incomingFKs.Count);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to load incoming foreign keys");
+            IncomingFKStatusText.Text = "❌ Error loading incoming foreign keys";
+        }
+    }
+    
+    /// <summary>
+    /// Handle double-click on incoming foreign key to view the referencing table
+    /// </summary>
+    private void IncomingFK_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (IncomingFKGrid.SelectedItem is Services.IncomingForeignKey selectedFK)
+        {
+            Logger.Info("Opening referencing table: {Schema}.{Table}", 
+                selectedFK.ReferencingSchema, selectedFK.ReferencingTable);
+            
+            try
+            {
+                var fullTableName = $"{selectedFK.ReferencingSchema}.{selectedFK.ReferencingTable}";
+                
+                // Open the referencing table in a new tab
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.CreateTabWithTableDetails(_connectionManager, fullTableName, selectedFK.ReferencingTable);
+                    
+                    // Close this dialog
+                    Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open referencing table");
+                MessageBox.Show($"Failed to open table:\n\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
     
@@ -543,6 +697,66 @@ public partial class TableDetailsDialog : Window
             "MYSQL" => "8.0",
             _ => "12.1" // DB2 default
         };
+    }
+    
+    /// <summary>
+    /// Generate RUNSTATS script for this table
+    /// </summary>
+    private void GenerateRunstats_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Logger.Info("Generating RUNSTATS for table: {Table}", _fullTableName);
+            
+            // Create a simple TableStatistics object for this table
+            var tableStats = new TableStatistics
+            {
+                SchemaName = _schema,
+                TableName = _tableName
+            };
+            
+            var script = _statisticsService.GenerateRunstatsScript(new List<TableStatistics> { tableStats });
+            
+            // Open script in a new editor tab
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.CreateNewTabWithSql(script, $"RUNSTATS - {_tableName}");
+                Logger.Info("RUNSTATS script opened in new tab");
+            }
+            else
+            {
+                // Fallback: copy to clipboard
+                Clipboard.SetText(script);
+                MessageBox.Show("RUNSTATS script copied to clipboard.",
+                    "Generate RUNSTATS", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to generate RUNSTATS");
+            MessageBox.Show($"Failed to generate RUNSTATS:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Refresh statistics data
+    /// </summary>
+    private async void RefreshStats_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Logger.Info("Refreshing statistics for table: {Table}", _fullTableName);
+            await LoadStatisticsAsync();
+            MessageBox.Show("Statistics refreshed successfully.",
+                "Refresh Statistics", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to refresh statistics");
+            MessageBox.Show($"Failed to refresh statistics:\n\n{ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 using NLog;
 using WindowsDb2Editor.Services.AI;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Data.Providers.DB2;
 using Xunit;
 
 namespace WindowsDb2Editor.AutoTests;

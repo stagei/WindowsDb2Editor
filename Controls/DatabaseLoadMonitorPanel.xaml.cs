@@ -33,10 +33,7 @@ public partial class DatabaseLoadMonitorPanel : UserControl
     
     private void ApplyGridPreferences()
     {
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(ActivityDataGrid, App.PreferencesService.Preferences);
-        }
+        UIStyleService.ApplyStyles(this);
     }
     
     /// <summary>

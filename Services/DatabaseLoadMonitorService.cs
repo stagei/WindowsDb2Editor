@@ -33,8 +33,7 @@ public class DatabaseLoadMonitorService
         IConnectionManager connectionManager,
         LoadMonitorFilter filter)
     {
-        if (connectionManager is not DB2ConnectionManager db2Conn)
-            throw new InvalidOperationException("DatabaseLoadMonitorService.GetTableActivityAsync requires DB2ConnectionManager");
+        // Provider-agnostic - uses IConnectionManager
         Logger.Info("Getting table activity metrics - Schema: {Schema}, Table: {Table}, ExcludeSystem: {ExcludeSystem}",
             filter.SelectedSchema, filter.SelectedTable, filter.ExcludeSystemSchemas);
         
@@ -45,7 +44,7 @@ public class DatabaseLoadMonitorService
             Logger.Debug("SQL: {SQL}", sql);
             
             var startTime = System.Diagnostics.Stopwatch.StartNew();
-            var resultTable = await db2Conn.ExecuteQueryAsync(sql);
+            var resultTable = await connectionManager.ExecuteQueryAsync(sql);
             startTime.Stop();
             
             Logger.Info("Query completed in {Ms}ms, returned {Count} rows", 
@@ -154,8 +153,7 @@ public class DatabaseLoadMonitorService
         IConnectionManager connectionManager,
         bool excludeSystem = true)
     {
-        if (connectionManager is not DB2ConnectionManager db2Conn)
-            throw new InvalidOperationException("DatabaseLoadMonitorService.GetAvailableSchemasAsync requires DB2ConnectionManager");
+        // Provider-agnostic - uses IConnectionManager
         Logger.Debug("Getting available schemas - ExcludeSystem: {ExcludeSystem}", excludeSystem);
         
         try
@@ -176,7 +174,7 @@ public class DatabaseLoadMonitorService
             
             sql.AppendLine("ORDER BY schemaname");
             
-            var resultTable = await db2Conn.ExecuteQueryAsync(sql.ToString());
+            var resultTable = await connectionManager.ExecuteQueryAsync(sql.ToString());
             
             var schemas = new List<string> { "*" }; // Add wildcard option
             
@@ -206,9 +204,7 @@ public class DatabaseLoadMonitorService
         IConnectionManager connectionManager,
         string schema)
     {
-        if (connectionManager is not DB2ConnectionManager db2Conn)
-            throw new InvalidOperationException("DatabaseLoadMonitorService.GetTablesForSchemaAsync requires DB2ConnectionManager");
-        
+        // Provider-agnostic - uses IConnectionManager
         Logger.Debug("Getting tables for schema: {Schema}", schema);
         
         if (schema == "*")
@@ -226,7 +222,7 @@ public class DatabaseLoadMonitorService
                 ORDER BY tabname
             ";
             
-            var resultTable = await db2Conn.ExecuteQueryAsync(sql);
+            var resultTable = await connectionManager.ExecuteQueryAsync(sql);
             
             var tables = new List<string> { "*" }; // Add wildcard option
             

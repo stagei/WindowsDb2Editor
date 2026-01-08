@@ -398,26 +398,25 @@ public class ObjectBrowserService
     
     /// <summary>
     /// Get list of visible object types for user's access level
+    /// All object types are visible to all users (read-only viewing is always permitted)
     /// </summary>
     public List<ObjectType> GetVisibleObjectTypes(UserAccessLevel userAccessLevel)
     {
-        var visibleTypes = new List<ObjectType> { ObjectType.Tables, ObjectType.Views, ObjectType.Synonyms };
-        
-        if (userAccessLevel >= UserAccessLevel.Advanced)
+        // All object types are visible regardless of access level
+        // Access level only controls what actions can be performed, not what can be viewed
+        return new List<ObjectType>
         {
-            visibleTypes.AddRange(new[]
-            {
-                ObjectType.Procedures,
-                ObjectType.Functions,
-                ObjectType.Indexes,
-                ObjectType.Triggers,
-                ObjectType.Sequences,
-                ObjectType.Types,
-                ObjectType.Packages
-            });
-        }
-        
-        return visibleTypes;
+            ObjectType.Tables,
+            ObjectType.Views,
+            ObjectType.Synonyms,
+            ObjectType.Procedures,
+            ObjectType.Functions,
+            ObjectType.Indexes,
+            ObjectType.Triggers,
+            ObjectType.Sequences,
+            ObjectType.Types,
+            ObjectType.Packages
+        };
     }
     
     #endregion
@@ -454,41 +453,38 @@ public class ObjectBrowserService
             Count = await GetAliasCountAsync()
         });
         
-        // Advanced level categories
-        if (userAccessLevel >= UserAccessLevel.Advanced)
+        // Tablespaces, Packages, User-Defined Types - visible to all users (read-only viewing permitted)
+        categories.Add(new CategoryNode
         {
-            categories.Add(new CategoryNode
-            {
-                Name = "Tablespaces",
-                Icon = ObjectBrowserIcons.Tablespaces,
-                Type = CategoryType.Tablespaces,
-                IsLazyLoad = true,
-                MinimumAccessLevel = UserAccessLevel.Advanced,
-                Count = await GetTablespaceCountAsync()
-            });
-            
-            categories.Add(new CategoryNode
-            {
-                Name = "Packages",
-                Icon = ObjectBrowserIcons.Packages,
-                Type = CategoryType.Packages,
-                IsLazyLoad = true,
-                MinimumAccessLevel = UserAccessLevel.Advanced,
-                Count = await GetPackageCountAsync()
-            });
-            
-            categories.Add(new CategoryNode
-            {
-                Name = "User-Defined Types",
-                Icon = ObjectBrowserIcons.UserDefinedTypes,
-                Type = CategoryType.UserDefinedTypes,
-                IsLazyLoad = true,
-                MinimumAccessLevel = UserAccessLevel.Advanced,
-                Count = await GetUserDefinedTypeCountAsync()
-            });
-        }
+            Name = "Tablespaces",
+            Icon = ObjectBrowserIcons.Tablespaces,
+            Type = CategoryType.Tablespaces,
+            IsLazyLoad = true,
+            MinimumAccessLevel = UserAccessLevel.Standard,
+            Count = await GetTablespaceCountAsync()
+        });
         
-        // DBA level categories
+        categories.Add(new CategoryNode
+        {
+            Name = "Packages",
+            Icon = ObjectBrowserIcons.Packages,
+            Type = CategoryType.Packages,
+            IsLazyLoad = true,
+            MinimumAccessLevel = UserAccessLevel.Standard,
+            Count = await GetPackageCountAsync()
+        });
+        
+        categories.Add(new CategoryNode
+        {
+            Name = "User-Defined Types",
+            Icon = ObjectBrowserIcons.UserDefinedTypes,
+            Type = CategoryType.UserDefinedTypes,
+            IsLazyLoad = true,
+            MinimumAccessLevel = UserAccessLevel.Standard,
+            Count = await GetUserDefinedTypeCountAsync()
+        });
+        
+        // Security category - still requires DBA access (contains sensitive information)
         if (userAccessLevel >= UserAccessLevel.DBA)
         {
             categories.Add(new CategoryNode
@@ -772,11 +768,12 @@ public class ObjectBrowserService
             while (await reader.ReadAsync())
             {
                 var tableName = reader.GetString(0).Trim();
+                var trimmedSchema = schemaName?.Trim() ?? string.Empty;
                 tables.Add(new DatabaseObject
                 {
                     Name = tableName,
-                    SchemaName = schemaName,
-                    FullName = $"{schemaName}.{tableName}",
+                    SchemaName = trimmedSchema,
+                    FullName = $"{trimmedSchema}.{tableName}",
                     Type = ObjectType.Tables,
                     Icon = ObjectBrowserIcons.Table,
                     TableType = reader.GetString(1).Trim(),

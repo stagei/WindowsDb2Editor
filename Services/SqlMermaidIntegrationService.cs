@@ -36,8 +36,8 @@ public class SqlMermaidIntegrationService
         foreach (var fullTableName in selectedTables)
         {
             var parts = fullTableName.Split('.');
-            var schema = parts.Length == 2 ? parts[0] : "SYSCAT";
-            var tableName = parts.Length == 2 ? parts[1] : fullTableName;
+            var schema = parts.Length == 2 ? parts[0].Trim() : "SYSCAT";
+            var tableName = parts.Length == 2 ? parts[1].Trim() : fullTableName?.Trim() ?? string.Empty;
             
             Logger.Debug("Processing table: {Schema}.{Table}", schema, tableName);
             var tableDdl = await GenerateTableDdlAsync(connectionManager, schema, tableName);
@@ -63,6 +63,10 @@ public class SqlMermaidIntegrationService
     {
         try
         {
+            // Trim schema and table name to ensure clean concatenation
+            var trimmedSchema = schema?.Trim() ?? string.Empty;
+            var trimmedTableName = tableName?.Trim() ?? string.Empty;
+            
             // Get table columns with metadata
             var sql = $@"
                 SELECT 
@@ -73,8 +77,8 @@ public class SqlMermaidIntegrationService
                     ON c.TABSCHEMA = k.TABSCHEMA 
                     AND c.TABNAME = k.TABNAME 
                     AND c.COLNAME = k.COLNAME
-                WHERE c.TABSCHEMA = '{schema}' 
-                  AND c.TABNAME = '{tableName}'
+                WHERE c.TABSCHEMA = '{trimmedSchema}' 
+                  AND c.TABNAME = '{trimmedTableName}'
                 ORDER BY c.COLNO
             ";
             
@@ -82,12 +86,12 @@ public class SqlMermaidIntegrationService
             
             if (result.Rows.Count == 0)
             {
-                Logger.Warn("No columns found for {Schema}.{Table}", schema, tableName);
+                Logger.Warn("No columns found for {Schema}.{Table}", trimmedSchema, trimmedTableName);
                 return string.Empty;
             }
             
             var ddl = new StringBuilder();
-            ddl.AppendLine($"CREATE TABLE {schema}.{tableName} (");
+            ddl.AppendLine($"CREATE TABLE {trimmedSchema}.{trimmedTableName} (");
             
             var columns = new List<string>();
             var pkColumns = new List<string>();
@@ -120,9 +124,8 @@ public class SqlMermaidIntegrationService
             
             ddl.AppendLine(");");
             
-            // Get foreign keys (DB2-specific)
-            if (connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("SqlMermaidIntegrationService.GenerateForeignKeyDdlAsync requires DB2ConnectionManager");
-            var fkDdl = await GenerateForeignKeyDdlAsync(db2Conn, schema, tableName);
+            // Get foreign keys
+            var fkDdl = await GenerateForeignKeyDdlAsync(connectionManager, schema, tableName);
             if (!string.IsNullOrEmpty(fkDdl))
             {
                 ddl.AppendLine();
@@ -130,9 +133,7 @@ public class SqlMermaidIntegrationService
             }
             
             // Get indexes
-            // Get indexes (DB2-specific for now)
-            if (connectionManager is not DB2ConnectionManager db2Conn2) throw new InvalidOperationException("SqlMermaidIntegrationService.GenerateIndexDdlAsync requires DB2ConnectionManager");
-            var indexDdl = await GenerateIndexDdlAsync(db2Conn2, schema, tableName);
+            var indexDdl = await GenerateIndexDdlAsync(connectionManager, schema, tableName);
             if (!string.IsNullOrEmpty(indexDdl))
             {
                 ddl.AppendLine();
@@ -155,7 +156,7 @@ public class SqlMermaidIntegrationService
     /// Generates ALTER TABLE statements for foreign keys.
     /// </summary>
     private async Task<string> GenerateForeignKeyDdlAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {
@@ -205,7 +206,7 @@ public class SqlMermaidIntegrationService
     /// Generates CREATE INDEX statements for a DB2 table.
     /// </summary>
     private async Task<string> GenerateIndexDdlAsync(
-        DB2ConnectionManager connectionManager,
+        IConnectionManager connectionManager,
         string schema,
         string tableName)
     {

@@ -34,7 +34,7 @@ public class MultiDatabaseConnectionManager : IDisposable
                 "SQLSERVER" or "MSSQL" => throw new NotImplementedException("SQL Server connection manager not yet implemented"),
                 "ORACLE" => throw new NotImplementedException("Oracle connection manager not yet implemented"),
                 "MYSQL" => throw new NotImplementedException("MySQL connection manager not yet implemented"),
-                _ => new DB2ConnectionManager(connectionInfo) // Default to DB2
+                _ => ConnectionManagerFactory.CreateConnectionManager(connectionInfo) // Use factory
             };
             
             await connectionManager.OpenAsync();

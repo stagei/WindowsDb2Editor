@@ -29,10 +29,7 @@ public partial class CdcManagerPanel : UserControl
     
     private void ApplyGridPreferences()
     {
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(CdcDataGrid, App.PreferencesService.Preferences);
-        }
+        UIStyleService.ApplyStyles(this);
     }
     
     public async Task InitializeAsync(IConnectionManager connectionManager)

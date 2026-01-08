@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         Title="Copy to Clipboard"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         SizeToContent="Height"
         Width="450"
         MinHeight="350"

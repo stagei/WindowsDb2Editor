@@ -160,8 +160,8 @@ ORDER BY STMTNO";
         try
         {
             // Use the public API to analyze package dependencies (DB2-specific)
-            if (_connectionManager is not DB2ConnectionManager db2Conn) throw new InvalidOperationException("PackageContextBuilder requires DB2ConnectionManager");
-            var deps = await _dependencyAnalyzer.AnalyzeDependenciesAsync(db2Conn, schema, packageName);
+            // Provider-agnostic - uses IConnectionManager
+            var deps = await _dependencyAnalyzer.AnalyzeDependenciesAsync(_connectionManager, schema, packageName);
             
             foreach (var table in deps.TablesUsed)
             {

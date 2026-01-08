@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using NLog;
+using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Dialogs;
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
@@ -199,7 +200,7 @@ public partial class WelcomePanel : UserControl
             
             try
             {
-                var connectionManager = new Data.DB2ConnectionManager(vm.Connection);
+                var connectionManager = ConnectionManagerFactory.CreateConnectionManager(vm.Connection);
                 
                 // Show progress
                 var progressWindow = new Window

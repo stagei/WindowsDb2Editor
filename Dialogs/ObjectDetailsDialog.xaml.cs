@@ -37,14 +37,8 @@ public partial class ObjectDetailsDialog : Window
         
         Title = $"{databaseObject.Type} Details - {databaseObject.Name}";
         
-        // Apply grid preferences to all grids in this dialog
-        this.Loaded += (s, e) =>
-        {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
-            }
-        };
+        // Apply all UI styles from the unified style service
+        this.Loaded += (s, e) => UIStyleService.ApplyStyles(this);
         
         _ = LoadDetailsAsync();
     }

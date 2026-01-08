@@ -34,10 +34,7 @@ public partial class RoutineDetailsPanel : UserControl
 
         this.Loaded += async (s, e) =>
         {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStyle(ParametersGrid, App.PreferencesService.Preferences);
-            }
+            UIStyleService.ApplyStyles(this);
             await LoadRoutineDetailsAsync();
         };
     }

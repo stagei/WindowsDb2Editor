@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Select Tables for Diagram"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         Width="600"
         Height="700"
         WindowStartupLocation="CenterOwner">

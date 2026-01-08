@@ -47,10 +47,8 @@ public partial class UserDetailsDialog : Window
         // Apply grid preferences to all grids in this dialog
         this.Loaded += (s, e) =>
         {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
-            }
+            // Apply all UI styles from the unified style service
+            UIStyleService.ApplyStyles(this);
         };
         
         _ = LoadDetailsAsync();

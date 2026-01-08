@@ -18,6 +18,7 @@ public partial class NewSettingsDialog : Window
     private readonly Dictionary<string, FrameworkElement> _contentPanels = new();
     private UserPreferences _workingPreferences = null!;
     private bool _isDirty = false;
+    private AppTheme? _originalTheme; // Track original theme to detect customizations
 
     public NewSettingsDialog(PreferencesService preferencesService)
     {
@@ -43,6 +44,83 @@ public partial class NewSettingsDialog : Window
     {
         var json = System.Text.Json.JsonSerializer.Serialize(_preferencesService.Preferences);
         _workingPreferences = System.Text.Json.JsonSerializer.Deserialize<UserPreferences>(json) ?? new UserPreferences();
+        
+        // Store original theme to detect customizations later
+        _originalTheme = UIStyleService.GetCurrentTheme();
+    }
+    
+    /// <summary>
+    /// Check if the current working preferences differ from the original theme
+    /// </summary>
+    private bool HasUnsavedThemeCustomizations()
+    {
+        if (_originalTheme == null) return false;
+        
+        // Compare key values between working preferences and original theme
+        return _workingPreferences.GridBackgroundColor != _originalTheme.Grid.BackgroundColor ||
+               _workingPreferences.GridForegroundColor != _originalTheme.Grid.ForegroundColor ||
+               _workingPreferences.GridSelectedBackgroundColor != _originalTheme.Grid.SelectedBackgroundColor ||
+               _workingPreferences.GridSelectedForegroundColor != _originalTheme.Grid.SelectedForegroundColor ||
+               _workingPreferences.GridFontSize != _originalTheme.Grid.FontSize ||
+               _workingPreferences.GridFontFamily != _originalTheme.Grid.FontFamily ||
+               _workingPreferences.GridCellHeight != _originalTheme.Grid.CellHeight ||
+               _workingPreferences.EditorBackgroundColor != _originalTheme.Editor.BackgroundColor ||
+               _workingPreferences.EditorForegroundColor != _originalTheme.Editor.ForegroundColor ||
+               _workingPreferences.EditorLineNumberColor != _originalTheme.Editor.LineNumberColor ||
+               _workingPreferences.EditorCurrentLineColor != _originalTheme.Editor.CurrentLineColor ||
+               _workingPreferences.FontFamily != _originalTheme.Editor.FontFamily ||
+               _workingPreferences.FontSize != _originalTheme.Editor.FontSize;
+    }
+    
+    /// <summary>
+    /// Prompt user to save customizations before switching themes
+    /// Returns true if user wants to proceed with theme switch, false to cancel
+    /// </summary>
+    private bool PromptToSaveCustomizations(string currentThemeName)
+    {
+        // Create a dialog to ask user
+        var result = MessageBox.Show(
+            $"You have customized the '{currentThemeName}' theme.\n\n" +
+            "Would you like to save your customizations as a new theme before switching?\n\n" +
+            "• Yes - Save customizations and switch\n" +
+            "• No - Discard customizations and switch\n" +
+            "• Cancel - Stay on current theme",
+            "Save Theme Customizations?",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+        
+        if (result == MessageBoxResult.Cancel)
+        {
+            return false; // Don't switch
+        }
+        
+        if (result == MessageBoxResult.Yes)
+        {
+            // Show save dialog with default name
+            var defaultName = $"{currentThemeName}-{DateTime.Now:yyyy-MM-dd-HHmm}";
+            var saveDialog = new SaveThemeDialog(defaultName);
+            saveDialog.Owner = this;
+            
+            if (saveDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(saveDialog.ThemeName))
+            {
+                var themeName = saveDialog.ThemeName.Trim();
+                
+                // Check for built-in theme names
+                if (themeName.Equals("Dark", StringComparison.OrdinalIgnoreCase) || 
+                    themeName.Equals("Light", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Cannot overwrite built-in themes. Your customizations were not saved.", 
+                        "Save Theme", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else if (UIStyleService.SaveAsCustomTheme(themeName))
+                {
+                    MessageBox.Show($"Theme '{themeName}' saved successfully!", 
+                        "Theme Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
+        
+        return true; // Proceed with switch
     }
 
     #region Content Panel Builders
@@ -54,6 +132,7 @@ public partial class NewSettingsDialog : Window
         _contentPanels["ColorsAndFonts"] = BuildColorsAndFontsPanel();
         _contentPanels["ObjectBrowser"] = BuildObjectBrowserPanel();
         _contentPanels["DataGrids"] = BuildDataGridsPanel();
+        _contentPanels["WindowBehavior"] = BuildWindowBehaviorPanel();
         _contentPanels["Editor"] = BuildEditorPanel();
         _contentPanels["EditorGeneral"] = BuildEditorGeneralPanel();
         _contentPanels["EditorFormatting"] = BuildEditorFormattingPanel();
@@ -77,54 +156,174 @@ public partial class NewSettingsDialog : Window
         panel.Children.Add(CreateSubcategoryLink("Colors and Fonts", "Customize colors and font settings"));
         panel.Children.Add(CreateSubcategoryLink("Object Browser", "Configure the database object browser appearance"));
         panel.Children.Add(CreateSubcategoryLink("Data Grids", "Configure data grid styling and colors"));
+        panel.Children.Add(CreateSubcategoryLink("Window Behavior", "Configure how tool windows open (docked or floating)"));
         return panel;
     }
 
     private StackPanel BuildThemePanel()
     {
         var panel = new StackPanel { Margin = new Thickness(0, 0, 20, 0) };
-        panel.Children.Add(CreateDescription("Select the application theme. Changes apply immediately."));
+        panel.Children.Add(CreateDescription("Select from built-in themes or your saved custom themes. You can adjust colors and fonts in the settings, then save as your own theme."));
         
-        panel.Children.Add(CreateSectionHeader("Application Theme"));
+        panel.Children.Add(CreateSectionHeader("Select Theme"));
         
-        var themeCombo = new ComboBox { Width = 200, Margin = new Thickness(0, 5, 0, 15) };
-        themeCombo.Items.Add(new ComboBoxItem { Content = "Dark", Tag = "Dark" });
-        themeCombo.Items.Add(new ComboBoxItem { Content = "Light", Tag = "Light" });
-        themeCombo.Items.Add(new ComboBoxItem { Content = "System Default", Tag = "System" });
-        SetComboBoxValue(themeCombo, _workingPreferences.DefaultTheme);
+        // Get all available themes
+        var availableThemes = UIStyleService.GetAvailableThemes();
+        var themeCombo = new ComboBox { Width = 300, Margin = new Thickness(0, 5, 0, 15) };
+        
+        foreach (var theme in availableThemes)
+        {
+            var displayName = theme.IsBuiltIn ? $"🎨 {theme.Name} (Built-in)" : $"⭐ {theme.Name}";
+            themeCombo.Items.Add(new ComboBoxItem { Content = displayName, Tag = theme.Name });
+        }
+        
+        // Set current selection
+        var activeTheme = _workingPreferences.ActiveThemeName ?? "Dark";
+        SetComboBoxValue(themeCombo, activeTheme);
+        
         themeCombo.SelectionChanged += (s, e) => {
-            var newTheme = GetComboBoxValue(themeCombo);
-            _workingPreferences.DefaultTheme = newTheme;
+            var newThemeName = GetComboBoxValue(themeCombo);
+            var selectedTheme = availableThemes.Find(t => t.Name == newThemeName);
+            var currentThemeName = _workingPreferences.ActiveThemeName ?? "Dark";
             
-            // Auto-apply matching color scheme
-            bool isDark = newTheme == "Dark" || (newTheme == "System" && IsSystemDarkTheme());
-            if (isDark)
+            // Skip if selecting the same theme
+            if (newThemeName == currentThemeName || selectedTheme == null)
+                return;
+            
+            // Check if user has customized the current theme
+            if (HasUnsavedThemeCustomizations())
             {
-                _workingPreferences.EditorBackgroundColor = "#1E1E1E";
-                _workingPreferences.EditorForegroundColor = "#D4D4D4";
-                _workingPreferences.EditorLineNumberColor = "#858585";
-                _workingPreferences.EditorCurrentLineColor = "#2D2D30";
-                _workingPreferences.GridBackgroundColor = "#2D2D2D";
-                _workingPreferences.GridForegroundColor = "#E0E0E0";
+                if (!PromptToSaveCustomizations(currentThemeName))
+                {
+                    // User cancelled - revert combo selection
+                    SetComboBoxValue(themeCombo, currentThemeName);
+                    return;
+                }
+                
+                // Refresh available themes in case user saved a new one
+                var refreshedThemes = UIStyleService.GetAvailableThemes();
+                selectedTheme = refreshedThemes.Find(t => t.Name == newThemeName);
+                if (selectedTheme == null) return;
             }
-            else
-            {
-                _workingPreferences.EditorBackgroundColor = "#FFFFFF";
-                _workingPreferences.EditorForegroundColor = "#000000";
-                _workingPreferences.EditorLineNumberColor = "#2B91AF";
-                _workingPreferences.EditorCurrentLineColor = "#E8F2FF";
-                _workingPreferences.GridBackgroundColor = "#FFFFFF";
-                _workingPreferences.GridForegroundColor = "#000000";
-            }
+            
+            // Proceed with theme switch
+            _workingPreferences.ActiveThemeName = newThemeName;
+            _workingPreferences.DefaultTheme = selectedTheme.BaseTheme;
+            
+            // Apply theme colors to working preferences
+            _workingPreferences.EditorBackgroundColor = selectedTheme.Editor.BackgroundColor;
+            _workingPreferences.EditorForegroundColor = selectedTheme.Editor.ForegroundColor;
+            _workingPreferences.EditorLineNumberColor = selectedTheme.Editor.LineNumberColor;
+            _workingPreferences.EditorCurrentLineColor = selectedTheme.Editor.CurrentLineColor;
+            _workingPreferences.FontFamily = selectedTheme.Editor.FontFamily;
+            _workingPreferences.FontSize = selectedTheme.Editor.FontSize;
+            
+            _workingPreferences.GridBackgroundColor = selectedTheme.Grid.BackgroundColor;
+            _workingPreferences.GridForegroundColor = selectedTheme.Grid.ForegroundColor;
+            _workingPreferences.GridSelectedBackgroundColor = selectedTheme.Grid.SelectedBackgroundColor;
+            _workingPreferences.GridSelectedForegroundColor = selectedTheme.Grid.SelectedForegroundColor;
+            _workingPreferences.GridFontSize = selectedTheme.Grid.FontSize;
+            _workingPreferences.GridFontFamily = selectedTheme.Grid.FontFamily;
+            _workingPreferences.GridCellHeight = selectedTheme.Grid.CellHeight;
+            
+            _workingPreferences.UIFontSize = selectedTheme.UI.ObjectBrowserFontSize;
+            
+            // IMPORTANT: Apply the theme immediately to all windows
+            // This ensures the ModernWpf theme change propagates to all UI elements
+            UIStyleService.ApplyTheme(selectedTheme);
+            
+            // Update original theme to track future customizations against new theme
+            _originalTheme = selectedTheme;
             
             _isDirty = true;
             
             // Rebuild colors panel to reflect changes
             _contentPanels["ColorsAndFonts"] = BuildColorsAndFontsPanel();
+            _contentPanels["DataGrids"] = BuildDataGridsPanel();
+            
+            // Rebuild theme panel to refresh available themes
+            _contentPanels["Theme"] = BuildThemePanel();
         };
         panel.Children.Add(themeCombo);
         
-        panel.Children.Add(CreateTip("Tip: Use Ctrl+D to quickly toggle between Dark and Light mode. Theme changes also update editor and grid colors automatically."));
+        panel.Children.Add(CreateSectionHeader("Save Custom Theme"));
+        panel.Children.Add(CreateDescription("After customizing colors and fonts, save your settings as a reusable theme."));
+        
+        var savePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+        var themeNameBox = new TextBox { Width = 200, Text = "My Custom Theme" };
+        savePanel.Children.Add(themeNameBox);
+        
+        var saveBtn = new Button { Content = "💾 Save Theme", Margin = new Thickness(10, 0, 0, 0), Width = 120 };
+        saveBtn.Click += (s, e) => {
+            var themeName = themeNameBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(themeName))
+            {
+                MessageBox.Show("Please enter a theme name.", "Save Theme", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            if (themeName.Equals("Dark", StringComparison.OrdinalIgnoreCase) || 
+                themeName.Equals("Light", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Cannot overwrite built-in themes. Please choose a different name.", "Save Theme", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            // Save current preferences as theme
+            if (UIStyleService.SaveAsCustomTheme(themeName))
+            {
+                MessageBox.Show($"Theme '{themeName}' saved successfully!\n\nYou can now select it from the theme dropdown.", "Theme Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                
+                // Rebuild the theme panel to show new theme
+                _contentPanels["Theme"] = BuildThemePanel();
+                ContentPanel.Content = _contentPanels["Theme"];
+            }
+            else
+            {
+                MessageBox.Show("Failed to save theme. See log for details.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        };
+        savePanel.Children.Add(saveBtn);
+        panel.Children.Add(savePanel);
+        
+        // Delete custom theme section
+        var customThemes = availableThemes.Where(t => !t.IsBuiltIn).ToList();
+        if (customThemes.Count > 0)
+        {
+            panel.Children.Add(CreateSectionHeader("Delete Custom Theme"));
+            
+            var deletePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+            var deleteCombo = new ComboBox { Width = 200 };
+            foreach (var theme in customThemes)
+            {
+                deleteCombo.Items.Add(new ComboBoxItem { Content = theme.Name, Tag = theme.Name });
+            }
+            if (deleteCombo.Items.Count > 0) deleteCombo.SelectedIndex = 0;
+            deletePanel.Children.Add(deleteCombo);
+            
+            var deleteBtn = new Button { Content = "🗑️ Delete", Margin = new Thickness(10, 0, 0, 0), Width = 80 };
+            deleteBtn.Click += (s, e) => {
+                var themeName = GetComboBoxValue(deleteCombo);
+                if (string.IsNullOrEmpty(themeName)) return;
+                
+                var result = MessageBox.Show($"Are you sure you want to delete the theme '{themeName}'?", "Delete Theme", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    if (UIStyleService.DeleteCustomTheme(themeName))
+                    {
+                        MessageBox.Show($"Theme '{themeName}' deleted.", "Theme Deleted", MessageBoxButton.OK, MessageBoxImage.Information);
+                        
+                        // Rebuild the theme panel
+                        _contentPanels["Theme"] = BuildThemePanel();
+                        ContentPanel.Content = _contentPanels["Theme"];
+                    }
+                }
+            };
+            deletePanel.Children.Add(deleteBtn);
+            panel.Children.Add(deletePanel);
+        }
+        
+        panel.Children.Add(CreateTip("Tip: Built-in themes (Dark, Light) cannot be overwritten or deleted. Customize their colors and save as a new theme with a different name."));
         
         return panel;
     }
@@ -265,6 +464,27 @@ public partial class NewSettingsDialog : Window
         
         panel.Children.Add(CreateTip("Tip: Use Ctrl+Shift++ and Ctrl+Shift+- to quickly adjust spacing"));
         
+        panel.Children.Add(CreateSectionHeader("Auto-Resize"));
+        
+        var autoResizeCheckbox = new CheckBox
+        {
+            Content = "Disable auto-resize on tree expansion",
+            IsChecked = _workingPreferences.DisableObjectBrowserAutoResize,
+            Margin = new Thickness(0, 5, 0, 5),
+            Foreground = (System.Windows.Media.Brush)FindResource("SystemControlForegroundBaseHighBrush")
+        };
+        autoResizeCheckbox.Checked += (s, e) => {
+            _workingPreferences.DisableObjectBrowserAutoResize = true;
+            _isDirty = true;
+        };
+        autoResizeCheckbox.Unchecked += (s, e) => {
+            _workingPreferences.DisableObjectBrowserAutoResize = false;
+            _isDirty = true;
+        };
+        panel.Children.Add(autoResizeCheckbox);
+        
+        panel.Children.Add(CreateTip("When enabled, the Object Browser width will not automatically adjust when expanding tree nodes. Use the splitter to resize manually."));
+        
         return panel;
     }
 
@@ -311,6 +531,38 @@ public partial class NewSettingsDialog : Window
             _isDirty = true;
         });
         panel.Children.Add(heightSlider);
+        
+        return panel;
+    }
+
+    private StackPanel BuildWindowBehaviorPanel()
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 20, 0) };
+        panel.Children.Add(CreateDescription("Configure how tool windows and panels are opened."));
+        
+        panel.Children.Add(CreateSectionHeader("Tool Window Mode"));
+        
+        var autoDockCheck = new CheckBox { 
+            Content = "Auto-dock tools as tabs", 
+            IsChecked = _workingPreferences.AutoDockTools,
+            Margin = new Thickness(0, 10, 0, 5)
+        };
+        autoDockCheck.Checked += (s, e) => { _workingPreferences.AutoDockTools = true; _isDirty = true; };
+        autoDockCheck.Unchecked += (s, e) => { _workingPreferences.AutoDockTools = false; _isDirty = true; };
+        panel.Children.Add(autoDockCheck);
+        
+        panel.Children.Add(CreateTip("When enabled, tool windows (Database Load Monitor, Lock Monitor, etc.) open as docked tabs in the main window. When disabled (default), tools open as separate floating windows that can be moved independently."));
+        
+        panel.Children.Add(CreateSectionHeader("Current Behavior"));
+        var behaviorText = new TextBlock
+        {
+            Text = _workingPreferences.AutoDockTools 
+                ? "🔒 Tools will open DOCKED as tabs in the main window"
+                : "🪟 Tools will open UNDOCKED as floating windows (default)",
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 5, 0, 10)
+        };
+        panel.Children.Add(behaviorText);
         
         return panel;
     }
@@ -969,12 +1221,17 @@ public partial class NewSettingsDialog : Window
         _preferencesService.Preferences.EditorForegroundColor = _workingPreferences.EditorForegroundColor;
         _preferencesService.Preferences.EditorLineNumberColor = _workingPreferences.EditorLineNumberColor;
         _preferencesService.Preferences.EditorCurrentLineColor = _workingPreferences.EditorCurrentLineColor;
-        
+        _preferencesService.Preferences.AutoDockTools = _workingPreferences.AutoDockTools;
+        _preferencesService.Preferences.ActiveThemeName = _workingPreferences.ActiveThemeName;
+
         _preferencesService.SavePreferences();
-        
+
         // Apply global font size to entire application
         GlobalFontService.ApplyAllPreferences(_preferencesService.Preferences);
-        
+
+        // Refresh all UI styles to ensure theme changes propagate to all windows
+        UIStyleService.RefreshAllStyles();
+
         Logger.Info("Preferences saved from new settings dialog");
     }
 

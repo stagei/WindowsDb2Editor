@@ -56,9 +56,9 @@ public class CliCommandHandlerService
         
         try
         {
-            // Cast to DB2ConnectionManager for DB2-specific CLI commands
-            if (connectionManager is not DB2ConnectionManager db2Conn)
-                throw new InvalidOperationException("CliCommandHandlerService currently only supports DB2 connections");
+            // Cast to connectionManagerectionManager for DB2-specific CLI commands
+            // Provider check done earlier in ExecuteCommandAsync
+                // Already validated provider type
             
             object? result = args.Command switch
             {
@@ -70,224 +70,224 @@ public class CliCommandHandlerService
                 "connection-history" => await GetConnectionHistoryAsync(args),
                 
                 // Table Properties (multiple aliases)
-                "table-props" or "table-properties" => await GetTablePropertiesAsync(db2Conn, args),
-                "trigger-info" => await GetTriggerInfoAsync(db2Conn, args),
-                "trigger-usage" => await GetTriggerUsageAsync(db2Conn, args),
+                "table-props" or "table-properties" => await GetTablePropertiesAsync(connectionManager, args),
+                "trigger-info" => await GetTriggerInfoAsync(connectionManager, args),
+                "trigger-usage" => await GetTriggerUsageAsync(connectionManager, args),
                 
                 // View Properties (multiple aliases)
-                "view-info" or "view-properties" => await GetViewInfoAsync(db2Conn, args),
+                "view-info" or "view-properties" => await GetViewInfoAsync(connectionManager, args),
                 
                 // Procedure Properties (multiple aliases)
-                "procedure-info" or "procedure-properties" => await GetProcedureInfoAsync(db2Conn, args),
+                "procedure-info" or "procedure-properties" => await GetProcedureInfoAsync(connectionManager, args),
                 
                 // Function Properties (multiple aliases)
-                "function-info" or "function-properties" => await GetFunctionInfoAsync(db2Conn, args),
+                "function-info" or "function-properties" => await GetFunctionInfoAsync(connectionManager, args),
                 
                 // Monitoring commands (multiple aliases)
-                "lock-monitor" or "db-locks" => await GetLockMonitorAsync(db2Conn, args),
-                "active-sessions" or "db-sessions" => await GetActiveSessionsAsync(db2Conn, args),
-                "database-load" or "db-load" => await GetDatabaseLoadAsync(db2Conn, args),
-                "table-stats" or "table-statistics" => await GetTableStatsAsync(db2Conn, args),
-                "dependencies" => await GetDependenciesAsync(db2Conn, args),
-                "cdc-info" or "cdc-status" => await GetCdcInfoAsync(db2Conn, args),
-                "list-tables" => await ListTablesAsync(db2Conn, args),
-                "list-views" => await ListViewsAsync(db2Conn, args),
-                "list-procedures" => await ListProceduresAsync(db2Conn, args),
-                "list-triggers" => await ListTriggersAsync(db2Conn, args),
-                "list-functions" => await ListFunctionsAsync(db2Conn, args),
+                "lock-monitor" or "db-locks" => await GetLockMonitorAsync(connectionManager, args),
+                "active-sessions" or "db-sessions" => await GetActiveSessionsAsync(connectionManager, args),
+                "database-load" or "db-load" => await GetDatabaseLoadAsync(connectionManager, args),
+                "table-stats" or "table-statistics" => await GetTableStatsAsync(connectionManager, args),
+                "dependencies" => await GetDependenciesAsync(connectionManager, args),
+                "cdc-info" or "cdc-status" => await GetCdcInfoAsync(connectionManager, args),
+                "list-tables" => await ListTablesAsync(connectionManager, args),
+                "list-views" => await ListViewsAsync(connectionManager, args),
+                "list-procedures" => await ListProceduresAsync(connectionManager, args),
+                "list-triggers" => await ListTriggersAsync(connectionManager, args),
+                "list-functions" => await ListFunctionsAsync(connectionManager, args),
                 
                 // TableDetailsDialog - Complete table information (with aliases)
-                "table-columns" => await GetTableColumnsAsync(db2Conn, args),
-                "table-foreign-keys" or "table-foreignkeys" => await GetTableForeignKeysAsync(db2Conn, args),
-                "table-indexes" => await GetTableIndexesAsync(db2Conn, args),
-                "table-statistics-full" => await GetTableStatisticsFullAsync(db2Conn, args),
-                "table-ddl" => await GetTableDdlAsync(db2Conn, args),
-                "table-incoming-fks" or "table-incoming-fk" => await GetTableIncomingFKsAsync(db2Conn, args),
-                "table-referencing-packages" or "table-used-by-packages" => await GetTableReferencingPackagesAsync(db2Conn, args),
-                "table-referencing-views" or "table-used-by-views" => await GetTableReferencingViewsAsync(db2Conn, args),
-                "table-referencing-routines" or "table-used-by-routines" => await GetTableReferencingRoutinesAsync(db2Conn, args),
+                "table-columns" => await GetTableColumnsAsync(connectionManager, args),
+                "table-foreign-keys" or "table-foreignkeys" => await GetTableForeignKeysAsync(connectionManager, args),
+                "table-indexes" => await GetTableIndexesAsync(connectionManager, args),
+                "table-statistics-full" => await GetTableStatisticsFullAsync(connectionManager, args),
+                "table-ddl" => await GetTableDdlAsync(connectionManager, args),
+                "table-incoming-fks" or "table-incoming-fk" => await GetTableIncomingFKsAsync(connectionManager, args),
+                "table-referencing-packages" or "table-used-by-packages" => await GetTableReferencingPackagesAsync(connectionManager, args),
+                "table-referencing-views" or "table-used-by-views" => await GetTableReferencingViewsAsync(connectionManager, args),
+                "table-referencing-routines" or "table-used-by-routines" => await GetTableReferencingRoutinesAsync(connectionManager, args),
                 
                 // Table Dependencies
-                "table-dependencies" => await GetTableDependenciesAsync(db2Conn, args),
+                "table-dependencies" => await GetTableDependenciesAsync(connectionManager, args),
                 
                 // Source Code Browser commands (3 commands)
-                "list-all-source" => await ListAllSourceAsync(db2Conn, args),
-                "source-code-full" => await GetSourceCodeFullAsync(db2Conn, args),
-                "source-search" => await SearchSourceCodeAsync(db2Conn, args),
+                "list-all-source" => await ListAllSourceAsync(connectionManager, args),
+                "source-code-full" => await GetSourceCodeFullAsync(connectionManager, args),
+                "source-search" => await SearchSourceCodeAsync(connectionManager, args),
                 
                 // Package Analyzer commands (3 commands)
-                "list-packages" => await ListPackagesAsync(db2Conn, args),
-                "package-analysis" => await AnalyzePackageAsync(db2Conn, args),
-                "package-details" => await GetPackageDetailsAsync(db2Conn, args),
+                "list-packages" => await ListPackagesAsync(connectionManager, args),
+                "package-analysis" => await AnalyzePackageAsync(connectionManager, args),
+                "package-details" => await GetPackageDetailsAsync(connectionManager, args),
                 
                 // Comment Manager commands (3 commands)
-                "list-comments" => await ListCommentsAsync(db2Conn, args),
-                "object-comment" => await GetObjectCommentAsync(db2Conn, args),
-                "missing-comments" => await FindMissingCommentsAsync(db2Conn, args),
+                "list-comments" => await ListCommentsAsync(connectionManager, args),
+                "object-comment" => await GetObjectCommentAsync(connectionManager, args),
+                "missing-comments" => await FindMissingCommentsAsync(connectionManager, args),
                 
                 // Statistics Manager commands (3 commands)
-                "statistics-overview" => await GetStatisticsOverviewAsync(db2Conn, args),
-                "statistics-recommendations" => await GetStatisticsRecommendationsAsync(db2Conn, args),
-                "index-statistics" => await GetIndexStatisticsAsync(db2Conn, args),
+                "statistics-overview" => await GetStatisticsOverviewAsync(connectionManager, args),
+                "statistics-recommendations" => await GetStatisticsRecommendationsAsync(connectionManager, args),
+                "index-statistics" => await GetIndexStatisticsAsync(connectionManager, args),
                 
                 // Unused Objects commands (4 commands)
-                "unused-tables" => await FindUnusedTablesAsync(db2Conn, args),
-                "unused-indexes" => await FindUnusedIndexesAsync(db2Conn, args),
-                "unused-views" => await FindUnusedViewsAsync(db2Conn, args),
-                "unused-routines" => await FindUnusedRoutinesAsync(db2Conn, args),
+                "unused-tables" => await FindUnusedTablesAsync(connectionManager, args),
+                "unused-indexes" => await FindUnusedIndexesAsync(connectionManager, args),
+                "unused-views" => await FindUnusedViewsAsync(connectionManager, args),
+                "unused-routines" => await FindUnusedRoutinesAsync(connectionManager, args),
                 
                 // Mermaid ERD commands (5 commands - using SqlMermaidErdTools)
-                "mermaid-erd" => await GenerateMermaidErdAsync(db2Conn, args),
+                "mermaid-erd" => await GenerateMermaidErdAsync(connectionManager, args),
                 "mermaid-from-sql" => await ConvertSqlToMermaidAsync(args),
                 "sql-from-mermaid" => await ConvertMermaidToSqlAsync(args),
                 "mermaid-diff" => await GenerateMermaidDiffDdlAsync(args),
                 "sql-translate" => await TranslateSqlDialectAsync(args),
                 
                 // Metadata commands (2 commands - query-history already at top)
-                "schema-metadata" => await GetSchemaMetadataAsync(db2Conn, args),
-                "database-metadata" => await GetDatabaseMetadataAsync(db2Conn, args),
+                "schema-metadata" => await GetSchemaMetadataAsync(connectionManager, args),
+                "database-metadata" => await GetDatabaseMetadataAsync(connectionManager, args),
                 
                 // AI Assistant commands (10 commands)
-                "ai-query" => await GenerateAiQueryAsync(db2Conn, args),
-                "ai-explain-table" => await ExplainTableWithAiAsync(db2Conn, args),
-                "ai-explain-view" => await ExplainViewWithAiAsync(db2Conn, args),
-                "ai-analyze-procedure" => await AnalyzeProcedureWithAiAsync(db2Conn, args),
-                "ai-analyze-function" => await AnalyzeFunctionWithAiAsync(db2Conn, args),
-                "ai-analyze-package" => await AnalyzePackageWithAiAsync(db2Conn, args),
-                "ai-deep-analysis" => await PerformDeepAnalysisAsync(db2Conn, args),
-                "db-compare" => await CompareDatabasesAsync(db2Conn, args),
-                "db-compare-source-only" => await CompareSourceOnlyAsync(db2Conn, args),
-                "db-compare-target-only" => await CompareTargetOnlyAsync(db2Conn, args),
-                "db-compare-different" => await CompareDifferentAsync(db2Conn, args),
-                "db-compare-ddl" => await CompareDdlAsync(db2Conn, args),
+                "ai-query" => await GenerateAiQueryAsync(connectionManager, args),
+                "ai-explain-table" => await ExplainTableWithAiAsync(connectionManager, args),
+                "ai-explain-view" => await ExplainViewWithAiAsync(connectionManager, args),
+                "ai-analyze-procedure" => await AnalyzeProcedureWithAiAsync(connectionManager, args),
+                "ai-analyze-function" => await AnalyzeFunctionWithAiAsync(connectionManager, args),
+                "ai-analyze-package" => await AnalyzePackageWithAiAsync(connectionManager, args),
+                "ai-deep-analysis" => await PerformDeepAnalysisAsync(connectionManager, args),
+                "db-compare" => await CompareDatabasesAsync(connectionManager, args),
+                "db-compare-source-only" => await CompareSourceOnlyAsync(connectionManager, args),
+                "db-compare-target-only" => await CompareTargetOnlyAsync(connectionManager, args),
+                "db-compare-different" => await CompareDifferentAsync(connectionManager, args),
+                "db-compare-ddl" => await CompareDdlAsync(connectionManager, args),
                 
                 // View Detail commands (with additional commands)
-                "view-definition" => await GetViewDefinitionAsync(db2Conn, args),
-                "view-columns" => await GetViewColumnsAsync(db2Conn, args),
-                "view-dependencies" => await GetViewDependenciesAsync(db2Conn, args),
-                "view-sample-data" => await GetViewSampleDataAsync(db2Conn, args),
-                "view-used-by-packages" => await GetViewUsedByPackagesAsync(db2Conn, args),
-                "view-used-by-views" => await GetViewUsedByViewsAsync(db2Conn, args),
+                "view-definition" => await GetViewDefinitionAsync(connectionManager, args),
+                "view-columns" => await GetViewColumnsAsync(connectionManager, args),
+                "view-dependencies" => await GetViewDependenciesAsync(connectionManager, args),
+                "view-sample-data" => await GetViewSampleDataAsync(connectionManager, args),
+                "view-used-by-packages" => await GetViewUsedByPackagesAsync(connectionManager, args),
+                "view-used-by-views" => await GetViewUsedByViewsAsync(connectionManager, args),
                 
                 // Procedure Detail commands (with additional commands)
-                "procedure-source" => await GetProcedureSourceAsync(db2Conn, args),
-                "procedure-parameters" => await GetProcedureParametersAsync(db2Conn, args),
-                "procedure-dependencies" => await GetProcedureDependenciesAsync(db2Conn, args),
-                "procedure-usage" => await GetProcedureUsageAsync(db2Conn, args),
-                "procedure-grants" => await GetProcedureGrantsAsync(db2Conn, args),
+                "procedure-source" => await GetProcedureSourceAsync(connectionManager, args),
+                "procedure-parameters" => await GetProcedureParametersAsync(connectionManager, args),
+                "procedure-dependencies" => await GetProcedureDependenciesAsync(connectionManager, args),
+                "procedure-usage" => await GetProcedureUsageAsync(connectionManager, args),
+                "procedure-grants" => await GetProcedureGrantsAsync(connectionManager, args),
                 
                 // Function Detail commands (with additional commands)
-                "function-source" => await GetFunctionSourceAsync(db2Conn, args),
-                "function-parameters" => await GetFunctionParametersAsync(db2Conn, args),
-                "function-dependencies" => await GetFunctionDependenciesAsync(db2Conn, args),
-                "function-usage" => await GetFunctionUsageAsync(db2Conn, args),
-                "function-grants" => await GetFunctionGrantsAsync(db2Conn, args),
+                "function-source" => await GetFunctionSourceAsync(connectionManager, args),
+                "function-parameters" => await GetFunctionParametersAsync(connectionManager, args),
+                "function-dependencies" => await GetFunctionDependenciesAsync(connectionManager, args),
+                "function-usage" => await GetFunctionUsageAsync(connectionManager, args),
+                "function-grants" => await GetFunctionGrantsAsync(connectionManager, args),
                 
                 // Package Detail commands (with additional commands)
-                "package-properties" => await GetPackagePropertiesAsync(db2Conn, args),
-                "package-statements" => await GetPackageStatementsAsync(db2Conn, args),
-                "package-dependencies" => await GetPackageDependenciesAsync(db2Conn, args),
-                "package-statistics" => await GetPackageStatisticsAsync(db2Conn, args),
-                "package-list-tables" => await GetPackageListTablesAsync(db2Conn, args),
-                "package-list-views" => await GetPackageListViewsAsync(db2Conn, args),
-                "package-list-procedures" => await GetPackageListProceduresAsync(db2Conn, args),
-                "package-list-functions" => await GetPackageListFunctionsAsync(db2Conn, args),
+                "package-properties" => await GetPackagePropertiesAsync(connectionManager, args),
+                "package-statements" => await GetPackageStatementsAsync(connectionManager, args),
+                "package-dependencies" => await GetPackageDependenciesAsync(connectionManager, args),
+                "package-statistics" => await GetPackageStatisticsAsync(connectionManager, args),
+                "package-list-tables" => await GetPackageListTablesAsync(connectionManager, args),
+                "package-list-views" => await GetPackageListViewsAsync(connectionManager, args),
+                "package-list-procedures" => await GetPackageListProceduresAsync(connectionManager, args),
+                "package-list-functions" => await GetPackageListFunctionsAsync(connectionManager, args),
                 
                 // Table Analysis commands (2 commands)
-                "table-relationships" => await GetTableRelationshipsAsync(db2Conn, args),
-                "table-sample-data" => await GetTableSampleDataAsync(db2Conn, args),
+                "table-relationships" => await GetTableRelationshipsAsync(connectionManager, args),
+                "table-sample-data" => await GetTableSampleDataAsync(connectionManager, args),
                 
                 // User Management commands (with additional commands)
-                "user-properties" => await GetUserPropertiesAsync(db2Conn, args),
-                "user-privileges" => await GetUserPrivilegesAsync(db2Conn, args),
-                "user-tables" => await GetUserTablesAsync(db2Conn, args),
-                "user-schemas" => await GetUserSchemasAsync(db2Conn, args),
-                "user-connections" => await GetUserConnectionsAsync(db2Conn, args),
+                "user-properties" => await GetUserPropertiesAsync(connectionManager, args),
+                "user-privileges" => await GetUserPrivilegesAsync(connectionManager, args),
+                "user-tables" => await GetUserTablesAsync(connectionManager, args),
+                "user-schemas" => await GetUserSchemasAsync(connectionManager, args),
+                "user-connections" => await GetUserConnectionsAsync(connectionManager, args),
                 
                 // Generic Object commands (1 command)
-                "object-metadata" => await GetObjectMetadataAsync(db2Conn, args),
+                "object-metadata" => await GetObjectMetadataAsync(connectionManager, args),
                 
                 // Advanced Monitoring commands (8 commands)
-                "database-load-full" => await GetDatabaseLoadFullAsync(db2Conn, args),
-                "table-activity" => await GetTableActivityAsync(db2Conn, args),
-                "top-active-tables" => await GetTopActiveTablesAsync(db2Conn, args),
-                "lock-monitor-full" => await GetLockMonitorFullAsync(db2Conn, args),
-                "lock-chains" => await GetLockChainsAsync(db2Conn, args),
-                "active-sessions-full" => await GetActiveSessionsFullAsync(db2Conn, args),
-                "session-details" => await GetSessionDetailsAsync(db2Conn, args),
-                "long-running-sessions" => await GetLongRunningSessionsAsync(db2Conn, args),
+                "database-load-full" => await GetDatabaseLoadFullAsync(connectionManager, args),
+                "table-activity" => await GetTableActivityAsync(connectionManager, args),
+                "top-active-tables" => await GetTopActiveTablesAsync(connectionManager, args),
+                "lock-monitor-full" => await GetLockMonitorFullAsync(connectionManager, args),
+                "lock-chains" => await GetLockChainsAsync(connectionManager, args),
+                "active-sessions-full" => await GetActiveSessionsFullAsync(connectionManager, args),
+                "session-details" => await GetSessionDetailsAsync(connectionManager, args),
+                "long-running-sessions" => await GetLongRunningSessionsAsync(connectionManager, args),
                 
                 // Dependency commands (3 commands)
-                "dependency-graph" => await GetDependencyGraphAsync(db2Conn, args),
-                "dependency-impact" => await GetDependencyImpactAsync(db2Conn, args),
-                "dependency-chain" => await GetDependencyChainAsync(db2Conn, args),
+                "dependency-graph" => await GetDependencyGraphAsync(connectionManager, args),
+                "dependency-impact" => await GetDependencyImpactAsync(connectionManager, args),
+                "dependency-chain" => await GetDependencyChainAsync(connectionManager, args),
                 
                 // Migration commands (3 commands)
-                "migration-plan" => await GenerateMigrationPlanAsync(db2Conn, args),
-                "migration-ddl" => await GenerateMigrationDdlAsync(db2Conn, args),
-                "migration-data-script" => await GenerateMigrationDataScriptAsync(db2Conn, args),
+                "migration-plan" => await GenerateMigrationPlanAsync(connectionManager, args),
+                "migration-ddl" => await GenerateMigrationDdlAsync(connectionManager, args),
+                "migration-data-script" => await GenerateMigrationDataScriptAsync(connectionManager, args),
                 
                 // Export commands (3 commands)
-                "export-table-data" => await ExportTableDataAsync(db2Conn, args),
-                "export-query-results" => await ExportQueryResultsAsync(db2Conn, args),
-                "export-schema-ddl" => await ExportSchemaDdlAsync(db2Conn, args),
+                "export-table-data" => await ExportTableDataAsync(connectionManager, args),
+                "export-query-results" => await ExportQueryResultsAsync(connectionManager, args),
+                "export-schema-ddl" => await ExportSchemaDdlAsync(connectionManager, args),
                 
                 // SQL Tools commands (2 commands)
                 "sql-validate" => await ValidateSqlAsync(args),
                 "sql-format" => await FormatSqlAsync(args),
                 
                 // Schema Diff commands (2 commands)
-                "schema-compare" => await CompareSchemas(db2Conn, args),
-                "schema-diff-ddl" => await GenerateSchemaDiffDdlAsync(db2Conn, args),
+                "schema-compare" => await CompareSchemas(connectionManager, args),
+                "schema-diff-ddl" => await GenerateSchemaDiffDdlAsync(connectionManager, args),
                 
                 // User/Privileges Enhanced (2 commands)
-                "user-info-enhanced" => await GetUserInfoEnhancedAsync(db2Conn, args),
-                "user-privileges-full" => await GetUserPrivilegesFullAsync(db2Conn, args),
+                "user-info-enhanced" => await GetUserInfoEnhancedAsync(connectionManager, args),
+                "user-privileges-full" => await GetUserPrivilegesFullAsync(connectionManager, args),
                 
                 // CDC Enhanced (3 commands)
-                "cdc-status-full" => await GetCdcStatusFullAsync(db2Conn, args),
-                "cdc-configuration" => await GetCdcConfigurationAsync(db2Conn, args),
-                "cdc-changes" => await GetCdcChangesAsync(db2Conn, args),
+                "cdc-status-full" => await GetCdcStatusFullAsync(connectionManager, args),
+                "cdc-configuration" => await GetCdcConfigurationAsync(connectionManager, args),
+                "cdc-changes" => await GetCdcChangesAsync(connectionManager, args),
                 
                 // Connection Stats (2 commands)
                 "connection-stats" => await GetConnectionStatsAsync(args),
                 "connection-test" => await TestConnectionAsync(args),
                 
                 // Additional utility commands (with aliases)
-                "list-schemas" => await ListSchemasAsync(db2Conn, args),
-                "list-tablespaces" => await ListTablespacesAsync(db2Conn, args),
-                "list-indexes-all" or "list-all-indexes" => await ListAllIndexesAsync(db2Conn, args),
-                "list-constraints" => await ListConstraintsAsync(db2Conn, args),
-                "list-sequences" => await ListSequencesAsync(db2Conn, args),
-                "table-size" => await GetTableSizeAsync(db2Conn, args),
-                "schema-size" => await GetSchemaSizeAsync(db2Conn, args),
-                "database-size" or "db-size" => await GetDatabaseSizeAsync(db2Conn, args),
-                "table-grants" => await GetTableGrantsAsync(db2Conn, args),
-                "db-config" or "db-parameters" => await GetDbConfigAsync(db2Conn, args),
+                "list-schemas" => await ListSchemasAsync(connectionManager, args),
+                "list-tablespaces" => await ListTablespacesAsync(connectionManager, args),
+                "list-indexes-all" or "list-all-indexes" => await ListAllIndexesAsync(connectionManager, args),
+                "list-constraints" => await ListConstraintsAsync(connectionManager, args),
+                "list-sequences" => await ListSequencesAsync(connectionManager, args),
+                "table-size" => await GetTableSizeAsync(connectionManager, args),
+                "schema-size" => await GetSchemaSizeAsync(connectionManager, args),
+                "database-size" or "db-size" => await GetDatabaseSizeAsync(connectionManager, args),
+                "table-grants" => await GetTableGrantsAsync(connectionManager, args),
+                "db-config" or "db-parameters" => await GetDbConfigAsync(connectionManager, args),
                 
                 // Additional monitoring commands
-                "db-version" => await GetDbVersionAsync(db2Conn, args),
-                "db-registry" => await GetDbRegistryAsync(db2Conn, args),
-                "active-queries" => await GetActiveQueriesAsync(db2Conn, args),
-                "bufferpool-stats" => await GetBufferpoolStatsAsync(db2Conn, args),
-                "tablespace-usage" => await GetTablespaceUsageAsync(db2Conn, args),
+                "db-version" => await GetDbVersionAsync(connectionManager, args),
+                "db-registry" => await GetDbRegistryAsync(connectionManager, args),
+                "active-queries" => await GetActiveQueriesAsync(connectionManager, args),
+                "bufferpool-stats" => await GetBufferpoolStatsAsync(connectionManager, args),
+                "tablespace-usage" => await GetTablespaceUsageAsync(connectionManager, args),
                 
                 // CDC Enhanced commands
-                "cdc-enable" => await EnableCdcAsync(db2Conn, args),
-                "cdc-disable" => await DisableCdcAsync(db2Conn, args),
-                "cdc-history" => await GetCdcHistoryAsync(db2Conn, args),
+                "cdc-enable" => await EnableCdcAsync(connectionManager, args),
+                "cdc-disable" => await DisableCdcAsync(connectionManager, args),
+                "cdc-history" => await GetCdcHistoryAsync(connectionManager, args),
                 
                 // Search commands
-                "object-search" => await SearchObjectsAsync(db2Conn, args),
-                "column-search" => await SearchColumnsAsync(db2Conn, args),
+                "object-search" => await SearchObjectsAsync(connectionManager, args),
+                "column-search" => await SearchColumnsAsync(connectionManager, args),
                 
                 // Summary commands
-                "schema-summary" => await GetSchemaSummaryAsync(db2Conn, args),
-                "database-summary" => await GetDatabaseSummaryAsync(db2Conn, args),
-                "health-check" => await PerformHealthCheckAsync(db2Conn, args),
+                "schema-summary" => await GetSchemaSummaryAsync(connectionManager, args),
+                "database-summary" => await GetDatabaseSummaryAsync(connectionManager, args),
+                "health-check" => await PerformHealthCheckAsync(connectionManager, args),
                 
                 // GUI Test command
-                "gui-test" => await ExecuteGuiTestAsync(db2Conn, args),
+                "gui-test" => await ExecuteGuiTestAsync(connectionManager, args),
                 
                 _ => throw new ArgumentException($"Unknown command: {args.Command}")
             };
@@ -386,7 +386,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all tables in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> ListTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListTablesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing tables in schema: {Schema}", schema);
@@ -439,7 +439,7 @@ public class CliCommandHandlerService
         return sql;
     }
     
-    private async Task<object> GetTablePropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTablePropertiesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -448,8 +448,8 @@ public class CliCommandHandlerService
         if (parts.Length != 2)
             throw new ArgumentException("Object must be in format: SCHEMA.TABLE");
         
-        var schema = parts[0];
-        var tableName = parts[1];
+        var schema = parts[0].Trim();
+        var tableName = parts[1].Trim();
         
         Logger.Debug("Getting table properties: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Retrieving table properties for: {schema}.{tableName}");
@@ -559,7 +559,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get trigger information (READ-ONLY)
     /// </summary>
-    private async Task<object> GetTriggerInfoAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTriggerInfoAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TRIGGER)");
@@ -607,7 +607,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find all triggers in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> GetTriggerUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTriggerUsageAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting trigger usage for schema: {Schema}", schema);
@@ -642,7 +642,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get view information (READ-ONLY)
     /// </summary>
-    private async Task<object> GetViewInfoAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewInfoAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.VIEW)");
@@ -707,7 +707,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get stored procedure information (READ-ONLY)
     /// </summary>
-    private async Task<object> GetProcedureInfoAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureInfoAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.PROCEDURE)");
@@ -748,7 +748,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get function information (READ-ONLY)
     /// </summary>
-    private async Task<object> GetFunctionInfoAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionInfoAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.FUNCTION)");
@@ -791,7 +791,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get current database locks (READ-ONLY monitoring)
     /// </summary>
-    private async Task<object> GetLockMonitorAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetLockMonitorAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Getting lock monitor data");
         Console.WriteLine("Retrieving current database locks...");
@@ -827,7 +827,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get active database sessions (READ-ONLY monitoring)
     /// </summary>
-    private async Task<object> GetActiveSessionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetActiveSessionsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Getting active sessions");
         Console.WriteLine("Retrieving active database sessions...");
@@ -857,7 +857,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get database load metrics (READ-ONLY monitoring)
     /// </summary>
-    private async Task<object> GetDatabaseLoadAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDatabaseLoadAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting database load for schema: {Schema}", schema);
@@ -892,7 +892,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get table statistics (READ-ONLY)
     /// </summary>
-    private async Task<object> GetTableStatsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableStatsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting table statistics for schema: {Schema}", schema);
@@ -927,7 +927,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Analyze object dependencies (READ-ONLY)
     /// </summary>
-    private async Task<object> GetDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.OBJECT)");
@@ -971,7 +971,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get CDC information (READ-ONLY)
     /// </summary>
-    private async Task<object> GetCdcInfoAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetCdcInfoAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting CDC info for schema: {Schema}", schema);
@@ -1001,7 +1001,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all views in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> ListViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListViewsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing views in schema: {Schema}", schema);
@@ -1034,7 +1034,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all procedures in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> ListProceduresAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListProceduresAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing procedures in schema: {Schema}", schema);
@@ -1067,7 +1067,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all triggers in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> ListTriggersAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListTriggersAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing triggers in schema: {Schema}", schema);
@@ -1103,7 +1103,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all functions in schema (READ-ONLY)
     /// </summary>
-    private async Task<object> ListFunctionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListFunctionsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing functions in schema: {Schema}", schema);
@@ -1140,7 +1140,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete column metadata (Tab 1 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableColumnsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1187,7 +1187,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get outgoing foreign keys (Tab 2 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableForeignKeysAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableForeignKeysAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1232,7 +1232,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete index details (Tab 3 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableIndexesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableIndexesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1278,7 +1278,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get full table statistics (Tab 4 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableStatisticsFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableStatisticsFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1325,7 +1325,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate CREATE TABLE DDL (Tab 5 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableDdlAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1334,8 +1334,8 @@ public class CliCommandHandlerService
         if (parts.Length != 2)
             throw new ArgumentException("Object must be in format: SCHEMA.TABLE");
         
-        var schema = parts[0];
-        var tableName = parts[1];
+        var schema = parts[0].Trim();
+        var tableName = parts[1].Trim();
         
         Logger.Debug("Generating DDL: {Schema}.{Table}", schema, tableName);
         Console.WriteLine($"Generating DDL for: {schema}.{tableName}");
@@ -1414,7 +1414,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get incoming foreign keys (Tab 6 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableIncomingFKsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableIncomingFKsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1457,7 +1457,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get packages that reference this table (Tab 7 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableReferencingPackagesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableReferencingPackagesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1498,7 +1498,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get views that reference this table (Tab 8 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableReferencingViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableReferencingViewsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1538,7 +1538,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get routines that reference this table (Tab 9 of TableDetailsDialog)
     /// </summary>
-    private async Task<object> GetTableReferencingRoutinesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableReferencingRoutinesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -1583,7 +1583,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all source code objects (procedures, functions, views, triggers)
     /// </summary>
-    private async Task<object> ListAllSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListAllSourceAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         var objectType = args.ObjectType ?? "ALL";
@@ -1664,7 +1664,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete source code for an object
     /// </summary>
-    private async Task<object> GetSourceCodeFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetSourceCodeFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.OBJECT)");
@@ -1735,7 +1735,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Search in source code
     /// </summary>
-    private async Task<object> SearchSourceCodeAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> SearchSourceCodeAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Schema))
             throw new ArgumentException("Schema parameter required for source code search");
@@ -1805,7 +1805,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List all packages in schema
     /// </summary>
-    private async Task<object> ListPackagesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListPackagesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Listing packages in schema: {Schema}", schema);
@@ -1838,7 +1838,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Analyze package dependencies
     /// </summary>
-    private async Task<object> AnalyzePackageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> AnalyzePackageAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.PACKAGE)");
@@ -1889,7 +1889,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get detailed package information
     /// </summary>
-    private async Task<object> GetPackageDetailsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageDetailsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.PACKAGE)");
@@ -1945,7 +1945,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// List objects with/without comments
     /// </summary>
-    private async Task<object> ListCommentsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListCommentsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         var objectType = args.ObjectType?.ToUpper() ?? "TABLE";
@@ -2018,7 +2018,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get comment for specific object
     /// </summary>
-    private async Task<object> GetObjectCommentAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetObjectCommentAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.OBJECT)");
@@ -2061,7 +2061,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find objects without comments
     /// </summary>
-    private async Task<object> FindMissingCommentsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> FindMissingCommentsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         var objectType = args.ObjectType?.ToUpper() ?? "TABLE";
@@ -2100,7 +2100,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get statistics overview for schema
     /// </summary>
-    private async Task<object> GetStatisticsOverviewAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetStatisticsOverviewAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting statistics overview for schema: {Schema}", schema);
@@ -2159,7 +2159,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Recommend tables needing RUNSTATS
     /// </summary>
-    private async Task<object> GetStatisticsRecommendationsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetStatisticsRecommendationsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         var staleThresholdDays = args.Limit ?? 30; // Use Limit as threshold days
@@ -2226,7 +2226,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get detailed index statistics
     /// </summary>
-    private async Task<object> GetIndexStatisticsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetIndexStatisticsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -2291,7 +2291,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find tables with no dependencies
     /// </summary>
-    private async Task<object> FindUnusedTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> FindUnusedTablesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Finding unused tables in schema: {Schema}", schema);
@@ -2328,7 +2328,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find indexes that may be unused or redundant
     /// </summary>
-    private async Task<object> FindUnusedIndexesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> FindUnusedIndexesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Finding unused indexes in schema: {Schema}", schema);
@@ -2376,7 +2376,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find views that are not referenced
     /// </summary>
-    private async Task<object> FindUnusedViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> FindUnusedViewsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Finding unused views in schema: {Schema}", schema);
@@ -2428,7 +2428,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find routines (procedures/functions) that are not called
     /// </summary>
-    private async Task<object> FindUnusedRoutinesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> FindUnusedRoutinesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Finding unused routines in schema: {Schema}", schema);
@@ -2489,7 +2489,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate Mermaid ERD from DB2 tables
     /// </summary>
-    private async Task<object> GenerateMermaidErdAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateMermaidErdAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         var limit = args.Limit ?? 20;
@@ -2695,7 +2695,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete schema metadata
     /// </summary>
-    private async Task<object> GetSchemaMetadataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetSchemaMetadataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
@@ -2758,7 +2758,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete database metadata
     /// </summary>
-    private async Task<object> GetDatabaseMetadataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDatabaseMetadataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Getting database metadata");
         Console.WriteLine("Retrieving complete database metadata...");
@@ -2849,7 +2849,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete database load metrics (enhanced version of database-load)
     /// </summary>
-    private async Task<object> GetDatabaseLoadFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDatabaseLoadFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Logger.Debug("Getting full database load metrics for schema: {Schema}", schema);
@@ -2910,7 +2910,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get table activity metrics (simplified for DB2 12.1)
     /// </summary>
-    private async Task<object> GetTableActivityAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableActivityAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -2965,7 +2965,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get top N most active tables (by size/rows)
     /// </summary>
-    private async Task<object> GetTopActiveTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTopActiveTablesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         var limit = args.Limit ?? 10;
@@ -3019,7 +3019,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete lock information (enhanced, simplified for DB2 12.1)
     /// </summary>
-    private async Task<object> GetLockMonitorFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetLockMonitorFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Getting full lock monitor information");
         Console.WriteLine("Retrieving complete lock information...");
@@ -3052,7 +3052,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Identify lock wait chains (simplified for DB2 12.1)
     /// </summary>
-    private async Task<object> GetLockChainsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetLockChainsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Checking for lock wait chains");
         Console.WriteLine("Analyzing lock wait chains...");
@@ -3086,7 +3086,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete active session information (enhanced)
     /// </summary>
-    private async Task<object> GetActiveSessionsFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetActiveSessionsFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Logger.Debug("Getting full active sessions information");
         Console.WriteLine("Retrieving complete active session information...");
@@ -3130,7 +3130,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get detailed information for specific session
     /// </summary>
-    private async Task<object> GetSessionDetailsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetSessionDetailsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sessionId = args.Object ?? "CURRENT";
         
@@ -3167,7 +3167,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find sessions running longer than N seconds
     /// </summary>
-    private async Task<object> GetLongRunningSessionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetLongRunningSessionsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var durationThreshold = args.Limit ?? 60; // Default 60 seconds
         
@@ -3204,7 +3204,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get complete dependency graph for an object
     /// </summary>
-    private async Task<object> GetDependencyGraphAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDependencyGraphAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.OBJECT)");
@@ -3213,8 +3213,8 @@ public class CliCommandHandlerService
         if (parts.Length != 2)
             throw new ArgumentException("Object must be in format: SCHEMA.OBJECT");
         
-        var schema = parts[0];
-        var objectName = parts[1];
+        var schema = parts[0].Trim();
+        var objectName = parts[1].Trim();
         var includeRecursive = args.IncludeDependencies; // Use for recursive flag
         
         Logger.Debug("Getting dependency graph: {Schema}.{Object}, Recursive: {Recursive}", schema, objectName, includeRecursive);
@@ -3264,7 +3264,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Get dependency impact analysis (what breaks if object changes)
     /// </summary>
-    private async Task<object> GetDependencyImpactAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDependencyImpactAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.OBJECT)");
@@ -3322,7 +3322,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Find dependency chain from object A to object B
     /// </summary>
-    private async Task<object> GetDependencyChainAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDependencyChainAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object) || string.IsNullOrEmpty(args.Schema))
             throw new ArgumentException("Both Object (source) and Schema (target) parameters required");
@@ -3351,7 +3351,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate migration plan for schema
     /// </summary>
-    private async Task<object> GenerateMigrationPlanAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateMigrationPlanAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sourceSchema = args.Schema ?? throw new ArgumentException("Schema parameter required (source schema)");
         var targetSchema = args.Object ?? throw new ArgumentException("Object parameter required (target schema)");
@@ -3413,7 +3413,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate migration DDL for schema
     /// </summary>
-    private async Task<object> GenerateMigrationDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateMigrationDdlAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sourceSchema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
@@ -3433,7 +3433,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate data migration scripts
     /// </summary>
-    private async Task<object> GenerateMigrationDataScriptAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateMigrationDataScriptAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sourceSchema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
@@ -3457,7 +3457,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Export table data to file
     /// </summary>
-    private async Task<object> ExportTableDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExportTableDataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -3509,7 +3509,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Export query results
     /// </summary>
-    private async Task<object> ExportQueryResultsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExportQueryResultsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Sql))
             throw new ArgumentException("Sql parameter required (SQL query to execute)");
@@ -3545,7 +3545,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Export complete schema DDL
     /// </summary>
-    private async Task<object> ExportSchemaDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExportSchemaDdlAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
@@ -3665,7 +3665,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Compare two schemas
     /// </summary>
-    private async Task<object> CompareSchemas(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareSchemas(IConnectionManager connectionManager, CliArguments args)
     {
         var sourceSchema = args.Schema ?? throw new ArgumentException("Schema parameter required (source schema)");
         var targetSchema = args.Object ?? throw new ArgumentException("Object parameter required (target schema)");
@@ -3714,7 +3714,7 @@ public class CliCommandHandlerService
     /// <summary>
     /// Generate schema diff DDL
     /// </summary>
-    private async Task<object> GenerateSchemaDiffDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateSchemaDiffDdlAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sourceSchema = args.Schema ?? throw new ArgumentException("Schema parameter required (source schema)");
         var targetSchema = args.Object ?? throw new ArgumentException("Object parameter required (target schema)");
@@ -3737,7 +3737,7 @@ public class CliCommandHandlerService
     // User/Privileges Enhanced (2 commands)
     // ========================================================================
     
-    private async Task<object> GetUserInfoEnhancedAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserInfoEnhancedAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var username = args.Object ?? "CURRENT";
         Console.WriteLine($"Getting enhanced user info for: {username}");
@@ -3758,7 +3758,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetUserPrivilegesFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserPrivilegesFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var username = args.Object ?? "CURRENT";
         Console.WriteLine($"Getting full privileges for: {username}");
@@ -3775,7 +3775,7 @@ public class CliCommandHandlerService
     // CDC Enhanced (3 commands)
     // ========================================================================
     
-    private async Task<object> GetCdcStatusFullAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetCdcStatusFullAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Getting complete CDC status...");
         
@@ -3790,7 +3790,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetCdcConfigurationAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetCdcConfigurationAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Getting CDC configuration...");
         
@@ -3802,7 +3802,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetCdcChangesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetCdcChangesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Getting CDC changes...");
         
@@ -3854,7 +3854,7 @@ public class CliCommandHandlerService
     // Additional Utility Commands (10 commands)
     // ========================================================================
     
-    private async Task<object> ListSchemasAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListSchemasAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Listing all schemas...");
         
@@ -3876,7 +3876,7 @@ public class CliCommandHandlerService
         return new { schemaCount = schemas.Count, schemas, retrievedAt = DateTime.Now };
     }
     
-    private async Task<object> ListTablespacesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListTablespacesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Listing tablespaces...");
         
@@ -3892,7 +3892,7 @@ public class CliCommandHandlerService
         return new { tablespaceCount = tablespaces.Count, tablespaces, retrievedAt = DateTime.Now };
     }
     
-    private async Task<object> ListAllIndexesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListAllIndexesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing all indexes in schema: {schema}");
@@ -3911,7 +3911,7 @@ public class CliCommandHandlerService
         return new { command = "list-all-indexes", indexCount = indexes.Count, limitApplied = limit, indexes, retrievedAt = DateTime.Now };
     }
     
-    private async Task<object> ListConstraintsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListConstraintsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing constraints in schema: {schema}");
@@ -3930,7 +3930,7 @@ public class CliCommandHandlerService
         return new { command = "list-constraints", constraintCount = constraints.Count, limitApplied = limit, constraints, retrievedAt = DateTime.Now };
     }
     
-    private async Task<object> ListSequencesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ListSequencesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? "%";
         Console.WriteLine($"Listing sequences in schema: {schema}");
@@ -3950,7 +3950,7 @@ public class CliCommandHandlerService
         return new { command = "list-sequences", sequenceCount = sequences.Count, sequences, retrievedAt = DateTime.Now };
     }
     
-    private async Task<object> GetTableSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableSizeAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -3976,7 +3976,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetSchemaSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetSchemaSizeAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema ?? throw new ArgumentException("Schema parameter required");
         
@@ -3996,7 +3996,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetDatabaseSizeAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDatabaseSizeAsync(IConnectionManager connectionManager, CliArguments args)
     {
         // Use MetadataHandler
         var sql = _metadataHandler.GetQuery("DB2", "12.1", "GetDatabaseSize");
@@ -4013,7 +4013,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetTableGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableGrantsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         if (string.IsNullOrEmpty(args.Object))
             throw new ArgumentException("Object parameter required (format: SCHEMA.TABLE)");
@@ -4050,7 +4050,7 @@ public class CliCommandHandlerService
         };
     }
     
-    private async Task<object> GetDbConfigAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDbConfigAsync(IConnectionManager connectionManager, CliArguments args)
     {
         try
         {
@@ -4233,7 +4233,7 @@ public class CliCommandHandlerService
     /// CLI: ai-query - Generate SQL query from natural language input
     /// Example: -Command ai-query -Prompt "Find all employees hired last month" -Outfile result.json
     /// </summary>
-    private async Task<object> GenerateAiQueryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GenerateAiQueryAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine("Generating SQL from natural language query...");
         Logger.Info("AI Query generation requested: {Prompt}", args.Prompt);
@@ -4273,7 +4273,7 @@ public class CliCommandHandlerService
     /// CLI: ai-explain-table - Get AI explanation of table purpose and usage
     /// Example: -Command ai-explain-table -Object INL.EMPLOYEE -Outfile explain.json
     /// </summary>
-    private async Task<object> ExplainTableWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExplainTableWithAiAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Generating AI explanation for table: {args.Object}...");
         Logger.Info("AI table explanation requested: {Object}", args.Object);
@@ -4339,7 +4339,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// CLI: ai-deep-analysis - Perform deep AI analysis with data sampling and profiling
     /// Example: -Command ai-deep-analysis -Object INL.EMPLOYEE -Outfile analysis.json
     /// </summary>
-    private async Task<object> PerformDeepAnalysisAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> PerformDeepAnalysisAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Performing deep AI analysis: {args.Object}...");
         Logger.Info("AI deep analysis requested: {Object}", args.Object);
@@ -4393,7 +4393,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// CLI: db-compare - Compare database objects between two connections/schemas
     /// Example: -Command db-compare -Object SOURCE_SCHEMA -Schema TARGET_SCHEMA -Outfile diff.json
     /// </summary>
-    private async Task<object> CompareDatabasesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareDatabasesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Comparing databases: {args.Object} vs {args.Schema}...");
         Logger.Info("Database comparison requested: {Source} vs {Target}", args.Object, args.Schema);
@@ -4474,7 +4474,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: ai-explain-view - AI explanation of view purpose
     /// </summary>
-    private async Task<object> ExplainViewWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExplainViewWithAiAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing view: {args.Object}...");
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4488,7 +4488,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: ai-analyze-procedure - AI code analysis for procedure
     /// </summary>
-    private async Task<object> AnalyzeProcedureWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> AnalyzeProcedureWithAiAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing procedure: {args.Object}...");
         var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4502,7 +4502,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: ai-analyze-function - AI code analysis for function
     /// </summary>
-    private async Task<object> AnalyzeFunctionWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> AnalyzeFunctionWithAiAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing function: {args.Object}...");
         var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4516,7 +4516,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: ai-analyze-package - AI analysis of package
     /// </summary>
-    private async Task<object> AnalyzePackageWithAiAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> AnalyzePackageWithAiAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"AI analyzing package: {args.Object}...");
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4530,7 +4530,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: db-compare-source-only - Tables only in source
     /// </summary>
-    private async Task<object> CompareSourceOnlyAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareSourceOnlyAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Finding tables only in source schema: {args.Object}...");
         var sourceSchema = args.Object;
@@ -4548,7 +4548,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: db-compare-target-only - Tables only in target
     /// </summary>
-    private async Task<object> CompareTargetOnlyAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareTargetOnlyAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Finding tables only in target schema: {args.Schema}...");
         var sourceSchema = args.Object;
@@ -4566,7 +4566,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: db-compare-different - Tables with structural differences
     /// </summary>
-    private async Task<object> CompareDifferentAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareDifferentAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Finding tables with differences: {args.Object} vs {args.Schema}...");
         var sourceSchema = args.Object;
@@ -4581,7 +4581,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: db-compare-ddl - Generate ALTER statements for migration
     /// </summary>
-    private async Task<object> CompareDdlAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> CompareDdlAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Generating migration DDL: {args.Object} → {args.Schema}...");
         return new { 
@@ -4596,7 +4596,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: view-definition - Get view definition (CREATE VIEW statement)
     /// </summary>
-    private async Task<object> GetViewDefinitionAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewDefinitionAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view definition: {args.Object}...");
         var parts = args.Object?.Split('.') ?? new[] { "UNKNOWN", "UNKNOWN" };
@@ -4609,7 +4609,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
     /// <summary>
     /// CLI: view-columns - Get view columns
     /// </summary>
-    private async Task<object> GetViewColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewColumnsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view columns: {args.Object}...");
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4625,7 +4625,7 @@ ORDER BY COLNO";
     /// <summary>
     /// CLI: view-dependencies - Get view dependencies (tables/views used)
     /// </summary>
-    private async Task<object> GetViewDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching view dependencies: {args.Object}...");
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4640,7 +4640,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{viewName}'";
     /// <summary>
     /// CLI: procedure-source - Get procedure source code
     /// </summary>
-    private async Task<object> GetProcedureSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureSourceAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching procedure source: {args.Object}...");
         var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4652,7 +4652,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{viewName}'";
     /// <summary>
     /// CLI: procedure-parameters - Get procedure parameters
     /// </summary>
-    private async Task<object> GetProcedureParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureParametersAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching procedure parameters: {args.Object}...");
         var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4668,7 +4668,7 @@ ORDER BY ORDINAL";
     /// <summary>
     /// CLI: function-source - Get function source code
     /// </summary>
-    private async Task<object> GetFunctionSourceAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionSourceAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching function source: {args.Object}...");
         var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4680,7 +4680,7 @@ ORDER BY ORDINAL";
     /// <summary>
     /// CLI: function-parameters - Get function parameters
     /// </summary>
-    private async Task<object> GetFunctionParametersAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionParametersAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching function parameters: {args.Object}...");
         var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4696,7 +4696,7 @@ ORDER BY ORDINAL";
     /// <summary>
     /// CLI: package-properties - Get package properties
     /// </summary>
-    private async Task<object> GetPackagePropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackagePropertiesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching package properties: {args.Object}...");
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4711,7 +4711,7 @@ WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
     /// <summary>
     /// CLI: package-statements - Get package SQL statements
     /// </summary>
-    private async Task<object> GetPackageStatementsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageStatementsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching package statements: {args.Object}...");
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4727,7 +4727,7 @@ ORDER BY STMTNO, SEQNO";
     /// <summary>
     /// CLI: table-relationships - Get table relationships (FK in/out)
     /// </summary>
-    private async Task<object> GetTableRelationshipsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableRelationshipsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching table relationships: {args.Object}...");
         var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4743,7 +4743,7 @@ WHERE (TABSCHEMA = '{schema}' AND TABNAME = '{tableName}')
     /// <summary>
     /// CLI: table-sample-data - Get sample data from table (top 100 rows)
     /// </summary>
-    private async Task<object> GetTableSampleDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableSampleDataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching sample data: {args.Object}...");
         var sql = $"SELECT * FROM {args.Object} FETCH FIRST 100 ROWS ONLY";
@@ -4754,7 +4754,7 @@ WHERE (TABSCHEMA = '{schema}' AND TABNAME = '{tableName}')
     /// <summary>
     /// CLI: user-properties - Get user/database authority properties
     /// </summary>
-    private async Task<object> GetUserPropertiesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserPropertiesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching user properties: {args.Object}...");
         var sql = $@"
@@ -4768,7 +4768,7 @@ WHERE GRANTEE = '{args.Object}'";
     /// <summary>
     /// CLI: user-privileges - Get user privileges on specific object
     /// </summary>
-    private async Task<object> GetUserPrivilegesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserPrivilegesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching user privileges: {args.Object}...");
         var parts = (args.Object ?? string.Empty).Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -4788,7 +4788,7 @@ WHERE GRANTEE = '{username}'";
     /// <summary>
     /// CLI: object-metadata - Get generic object metadata from SYSCAT.TABLES
     /// </summary>
-    private async Task<object> GetObjectMetadataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetObjectMetadataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         Console.WriteLine($"Fetching object metadata: {args.Object}...");
         var (schema, objectName) = ParseSchemaAndName(args.Object, nameof(args.Object));
@@ -4805,131 +4805,131 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
     
     #region Additional CLI Commands - Architecture Fix
     
-    private async Task<object> GetTableDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTableDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.TABDEP WHERE TABSCHEMA = '{schema}' AND TABNAME = '{tableName}'";
         return new { command = "table-dependencies", schema, table = tableName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetViewSampleDataAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewSampleDataAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT * FROM {schema}.{viewName} FETCH FIRST 10 ROWS ONLY";
         return new { command = "view-sample-data", schema, view = viewName, data = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetViewUsedByPackagesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewUsedByPackagesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT DISTINCT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{viewName}' AND BTYPE = 'V'";
         return new { command = "view-used-by-packages", schema, view = viewName, packages = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetViewUsedByViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetViewUsedByViewsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, viewName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT VIEWSCHEMA, VIEWNAME FROM SYSCAT.VIEWDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{viewName}'";
         return new { command = "view-used-by-views", schema, view = viewName, views = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetProcedureDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{procName}'";
         return new { command = "procedure-dependencies", schema, procedure = procName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetProcedureUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureUsageAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, procName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{procName}' AND BTYPE IN ('P', 'F')";
         return new { command = "procedure-usage", schema, procedure = procName, usedBy = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetProcedureGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetProcedureGrantsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, specificName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{schema}' AND SPECIFICNAME = '{specificName}'";
         return new { command = "procedure-grants", schema, procedure = specificName, grants = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetFunctionDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.ROUTINEDEP WHERE ROUTINESCHEMA = '{schema}' AND ROUTINENAME = '{funcName}'";
         return new { command = "function-dependencies", schema, function = funcName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetFunctionUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionUsageAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, funcName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT PKGSCHEMA, PKGNAME FROM SYSCAT.PACKAGEDEP WHERE BSCHEMA = '{schema}' AND BNAME = '{funcName}' AND BTYPE = 'F'";
         return new { command = "function-usage", schema, function = funcName, usedBy = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetFunctionGrantsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetFunctionGrantsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, specificName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT GRANTEE, GRANTEETYPE, EXECUTEAUTH FROM SYSCAT.ROUTINEAUTH WHERE SCHEMA = '{schema}' AND SPECIFICNAME = '{specificName}'";
         return new { command = "function-grants", schema, function = specificName, grants = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageDependenciesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageDependenciesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME, BTYPE FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
         return new { command = "package-dependencies", schema, package = pkgName, dependencies = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageStatisticsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageStatisticsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT PKGSCHEMA, PKGNAME, VALID, LAST_BIND_TIME, LASTUSED FROM SYSCAT.PACKAGES WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}'";
         return new { command = "package-statistics", schema, package = pkgName, statistics = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageListTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageListTablesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'T'";
         return new { command = "package-list-tables", schema, package = pkgName, tables = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageListViewsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageListViewsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'V'";
         return new { command = "package-list-views", schema, package = pkgName, views = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageListProceduresAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageListProceduresAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'P'";
         return new { command = "package-list-procedures", schema, package = pkgName, procedures = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetPackageListFunctionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetPackageListFunctionsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, pkgName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         var sql = $"SELECT BSCHEMA, BNAME FROM SYSCAT.PACKAGEDEP WHERE PKGSCHEMA = '{schema}' AND PKGNAME = '{pkgName}' AND BTYPE = 'F'";
         return new { command = "package-list-functions", schema, package = pkgName, functions = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetUserTablesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserTablesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = $"SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE OWNER = '{args.Object}' ORDER BY TABSCHEMA, TABNAME";
         return new { command = "user-tables", user = args.Object, tables = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetUserSchemasAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserSchemasAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = $"SELECT SCHEMANAME FROM SYSCAT.SCHEMATA WHERE OWNER = '{args.Object}' ORDER BY SCHEMANAME";
         return new { command = "user-schemas", user = args.Object, schemas = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetUserConnectionsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetUserConnectionsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         try
         {
@@ -4943,31 +4943,31 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         }
     }
     
-    private async Task<object> GetDbVersionAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDbVersionAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = "SELECT SERVICE_LEVEL, FIXPACK_NUM FROM SYSIBMADM.ENV_INST_INFO";
         return new { command = "db-version", version = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetDbRegistryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDbRegistryAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = "SELECT REG_VAR_NAME, REG_VAR_VALUE FROM SYSIBMADM.REG_VARIABLES ORDER BY REG_VAR_NAME";
         return new { command = "db-registry", registry = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetActiveQueriesAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetActiveQueriesAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = "SELECT APPLICATION_HANDLE, STMT_TEXT, ELAPSED_TIME_SEC FROM SYSIBMADM.MON_CURRENT_SQL ORDER BY ELAPSED_TIME_SEC DESC FETCH FIRST 20 ROWS ONLY";
         return new { command = "active-queries", queries = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetBufferpoolStatsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetBufferpoolStatsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = "SELECT BP_NAME, POOL_DATA_L_READS, POOL_DATA_P_READS, POOL_INDEX_L_READS, POOL_INDEX_P_READS FROM SYSIBMADM.SNAPBP";
         return new { command = "bufferpool-stats", stats = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetTablespaceUsageAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetTablespaceUsageAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var sql = "SELECT TBSP_NAME, TBSP_TYPE, TBSP_TOTAL_SIZE_KB, TBSP_USED_SIZE_KB, TBSP_FREE_SIZE_KB FROM SYSIBMADM.TBSP_UTILIZATION";
         return new { command = "tablespace-usage", usage = await connectionManager.ExecuteQueryAsync(sql) };
@@ -4978,41 +4978,43 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         return Task.FromResult<object>(new { command = "connection-history", message = "Connection history not available in current session", history = new object[] {} });
     }
     
-    private async Task<object> EnableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> EnableCdcAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         return new { command = "cdc-enable", schema, table = tableName, status = "CDC enable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE CHANGES" };
     }
     
-    private async Task<object> DisableCdcAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> DisableCdcAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var (schema, tableName) = ParseSchemaAndName(args.Object, nameof(args.Object));
         return new { command = "cdc-disable", schema, table = tableName, status = "CDC disable command would require ALTER TABLE permissions", note = "Use: ALTER TABLE schema.table DATA CAPTURE NONE" };
     }
     
-    private async Task<object> GetCdcHistoryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetCdcHistoryAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var parts = args.Object?.Split('.') ?? new[] { "UNKNOWN", "UNKNOWN" };
         if (parts.Length < 2) parts = new[] { parts[0], "UNKNOWN" };
-        var sql = $"SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, DATACAPTURE, ALTER_TIME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = '{parts[0]}' AND TRIM(TABNAME) = '{parts[1]}'";
-        return new { command = "cdc-history", schema = parts[0], table = parts[1], history = await connectionManager.ExecuteQueryAsync(sql) };
+        var schema = parts[0].Trim();
+        var tableName = parts[1].Trim();
+        var sql = $"SELECT TRIM(TABSCHEMA) AS TABSCHEMA, TRIM(TABNAME) AS TABNAME, DATACAPTURE, ALTER_TIME FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA) = '{schema}' AND TRIM(TABNAME) = '{tableName}'";
+        return new { command = "cdc-history", schema = schema, table = tableName, history = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> SearchObjectsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> SearchObjectsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var pattern = args.Object ?? "%";
         var sql = $"SELECT TABSCHEMA, TABNAME, TYPE FROM SYSCAT.TABLES WHERE TABNAME LIKE '{pattern}' ORDER BY TABSCHEMA, TABNAME FETCH FIRST 100 ROWS ONLY";
         return new { command = "object-search", pattern = pattern, objects = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> SearchColumnsAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> SearchColumnsAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var pattern = args.Object ?? "%";
         var sql = $"SELECT TABSCHEMA, TABNAME, COLNAME, TYPENAME FROM SYSCAT.COLUMNS WHERE COLNAME LIKE '{pattern}' ORDER BY TABSCHEMA, TABNAME, COLNAME FETCH FIRST 100 ROWS ONLY";
         return new { command = "column-search", pattern = pattern, columns = await connectionManager.ExecuteQueryAsync(sql) };
     }
     
-    private async Task<object> GetSchemaSummaryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetSchemaSummaryAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var schema = args.Schema;
         var tableSql = $"SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TABSCHEMA = '{schema}' AND TYPE = 'T'";
@@ -5030,7 +5032,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         };
     }
     
-    private async Task<object> GetDatabaseSummaryAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> GetDatabaseSummaryAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var tableSql = "SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TYPE = 'T'";
         var viewSql = "SELECT COUNT(*) FROM SYSCAT.VIEWS";
@@ -5048,7 +5050,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         };
     }
     
-    private async Task<object> PerformHealthCheckAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> PerformHealthCheckAsync(IConnectionManager connectionManager, CliArguments args)
     {
         var checks = new List<object>();
         
@@ -5062,7 +5064,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         return new { command = "health-check", overallStatus = "HEALTHY", checks = checks };
     }
     
-    private async Task<object> ExecuteGuiTestAsync(DB2ConnectionManager connectionManager, CliArguments args)
+    private async Task<object> ExecuteGuiTestAsync(IConnectionManager connectionManager, CliArguments args)
     {
         return new { 
             command = "gui-test", 

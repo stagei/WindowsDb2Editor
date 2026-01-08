@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Object Details"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         Width="700"
         Height="600"
         MinWidth="600"

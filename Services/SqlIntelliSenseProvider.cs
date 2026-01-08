@@ -40,6 +40,7 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     private List<string> _viewNames = new();
     private List<string> _procedureNames = new();
     private List<string> _functionNames = new();
+    private List<string> _schemaNames = new();
     
     /// <summary>
     /// Current database provider (e.g., "DB2", "PostgreSQL").
@@ -248,6 +249,17 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 Logger.Debug("Loaded {Count} procedure names", _procedureNames.Count);
             }
             
+            // Extract unique schema names from all loaded objects
+            _schemaNames = _tableNames
+                .Concat(_viewNames)
+                .Concat(_procedureNames)
+                .Where(obj => obj.Contains('.'))
+                .Select(obj => obj.Split('.')[0])
+                .Distinct()
+                .OrderBy(s => s)
+                .ToList();
+            Logger.Debug("Extracted {Count} unique schema names", _schemaNames.Count);
+            
             // Load function names
             var functionsSql = GetSystemTableQuery("functions");
             using (var funcCmd = connection.CreateCommand(functionsSql))
@@ -331,6 +343,7 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 SqlContext.DataType => GetDataTypeCompletions(),
                 SqlContext.SystemCatalog => GetSystemCatalogCompletions(),
                 SqlContext.Snippet => GetSnippetCompletions(),
+                SqlContext.SchemaObject => GetSchemaObjectCompletions(context.Text, context.CaretPosition),
                 _ => GetGeneralCompletions()
             };
         }
@@ -354,6 +367,21 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
             return SqlContext.Keyword;
         
         var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
+        
+        // Check if we're typing after a schema name followed by a period
+        // e.g., "MYSCHEMA." <- caret here
+        var schemaObjectMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+        if (schemaObjectMatch.Success)
+        {
+            var possibleSchema = schemaObjectMatch.Groups[1].Value;
+            // Check if this is a known schema
+            if (_schemaNames.Contains(possibleSchema, StringComparer.OrdinalIgnoreCase))
+            {
+                Logger.Debug("Detected schema.object context for schema: {Schema}", possibleSchema);
+                return SqlContext.SchemaObject;
+            }
+        }
+        
         var lastWords = GetLastWords(textBeforeCaret, 3);
         
         if (lastWords.Count > 0)
@@ -523,9 +551,82 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     private List<ICompletionData> GetGeneralCompletions()
     {
         var completions = new List<ICompletionData>();
+        
+        // Add schemas at the top with highest priority
+        completions.AddRange(_schemaNames.Select(s => new SqlSchemaCompletionData
+        {
+            Text = s,
+            Description = $"Schema: {s}",
+            Priority = 3.0 // Higher priority than tables/keywords
+        }));
+        
         completions.AddRange(GetKeywordCompletions().Take(20));
         completions.AddRange(GetSnippetCompletions().Take(10));
         completions.AddRange(GetTableNameCompletions().Take(10));
+        return completions;
+    }
+    
+    /// <summary>
+    /// Get completions for objects within a specific schema (after schema.period)
+    /// </summary>
+    private List<ICompletionData> GetSchemaObjectCompletions(string text, int caretPosition)
+    {
+        var completions = new List<ICompletionData>();
+        
+        try
+        {
+            var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
+            var schemaObjectMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+            
+            if (schemaObjectMatch.Success)
+            {
+                var schemaName = schemaObjectMatch.Groups[1].Value;
+                Logger.Debug("Showing objects for schema: {Schema}", schemaName);
+                
+                // Filter tables by schema
+                var schemaTables = _tableNames
+                    .Where(t => t.StartsWith($"{schemaName}.", StringComparison.OrdinalIgnoreCase))
+                    .Select(t => t.Substring(t.IndexOf('.') + 1)) // Remove schema prefix
+                    .Select(t => new SqlTableCompletionData
+                    {
+                        Text = t,
+                        Description = $"Table: {schemaName}.{t}",
+                        Priority = 3.0
+                    });
+                completions.AddRange(schemaTables);
+                
+                // Filter views by schema
+                var schemaViews = _viewNames
+                    .Where(v => v.StartsWith($"{schemaName}.", StringComparison.OrdinalIgnoreCase))
+                    .Select(v => v.Substring(v.IndexOf('.') + 1)) // Remove schema prefix
+                    .Select(v => new SqlViewCompletionData
+                    {
+                        Text = v,
+                        Description = $"View: {schemaName}.{v}",
+                        Priority = 2.5
+                    });
+                completions.AddRange(schemaViews);
+                
+                // Filter procedures by schema
+                var schemaProcedures = _procedureNames
+                    .Where(p => p.StartsWith($"{schemaName}.", StringComparison.OrdinalIgnoreCase))
+                    .Select(p => p.Substring(p.IndexOf('.') + 1)) // Remove schema prefix
+                    .Select(p => new SqlProcedureCompletionData
+                    {
+                        Text = p,
+                        Description = $"Procedure: {schemaName}.{p}",
+                        Priority = 2.0
+                    });
+                completions.AddRange(schemaProcedures);
+                
+                Logger.Debug("Found {Count} objects in schema {Schema}", completions.Count, schemaName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to get schema object completions");
+        }
+        
         return completions;
     }
     
@@ -571,7 +672,8 @@ public enum SqlContext
     DataType,
     SystemCatalog,
     Snippet,
-    General
+    General,
+    SchemaObject
 }
 
 #region Legacy Compatibility

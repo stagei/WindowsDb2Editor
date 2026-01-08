@@ -169,14 +169,17 @@ public class CliExecutorService
             Console.WriteLine("Connected successfully");
             Console.WriteLine("Collecting metadata...");
             
-            // Feature #5: Metadata collection (DB2-specific for now)
-            if (connectionManager is not DB2ConnectionManager db2Manager)
+            // Feature #5: Metadata collection (provider-agnostic check)
+            var providerType = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            if (providerType != "DB2")
             {
-                Console.Error.WriteLine("ERROR: Metadata collection is not supported for this database provider");
+                Console.Error.WriteLine($"ERROR: Metadata collection is not supported for provider: {providerType}");
                 return 1;
             }
-            var metadataService = new DB2MetadataService();
-            await metadataService.CollectMetadataAsync(db2Manager, profile.Name);
+            
+            // Use factory pattern to get provider-specific metadata service
+            var metadataService = MetadataServiceFactory.CreateMetadataService(connectionManager);
+            await metadataService.CollectMetadataAsync(connectionManager, profile.Name);
             
             Console.WriteLine("Metadata collection completed successfully");
             Logger.Info("Metadata collected for profile: {Profile}", profile.Name);

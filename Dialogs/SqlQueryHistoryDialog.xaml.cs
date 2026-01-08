@@ -15,11 +15,8 @@ public partial class SqlQueryHistoryDialog : Window
         
         Logger.Debug("SqlQueryHistoryDialog opened");
         
-        // Apply grid preferences
-        if (App.PreferencesService != null)
-        {
-            GridStyleHelper.ApplyGridStyle(QueryGrid, App.PreferencesService.Preferences);
-        }
+        // Apply all UI styles from the unified style service
+        Loaded += (s, e) => UIStyleService.ApplyStyles(this);
         
         LoadHistory();
     }

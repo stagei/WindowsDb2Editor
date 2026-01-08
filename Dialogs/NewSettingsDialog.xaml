@@ -9,6 +9,7 @@
         MinHeight="600"
         MinWidth="900"
         WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
         Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
     
@@ -63,6 +64,7 @@
                         <TreeViewItem Header="Colors and Fonts" Tag="ColorsAndFonts"/>
                         <TreeViewItem Header="Object Browser" Tag="ObjectBrowser"/>
                         <TreeViewItem Header="Data Grids" Tag="DataGrids"/>
+                        <TreeViewItem Header="Window Behavior" Tag="WindowBehavior"/>
                     </TreeViewItem>
                     
                     <!-- Editor -->

@@ -12,29 +12,25 @@ using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
 
-public partial class PackageDetailsDialog : Window
+public partial class PackagePropertiesDialog : Window
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IConnectionManager _connectionManager;
     private readonly PackageInfo _package;
     private readonly List<PackageStatement> _statements = new();
+    private readonly MetadataHandler? _metadataHandler;
 
     // Event to communicate with parent window
     public event EventHandler<string>? SqlTextRequested;
-    
-    // Public accessors for GUI testing - allows GuiTestingService to extract form data
-    public System.Windows.Controls.DataGrid StatementsGridPublic => StatementsGrid;
-    public System.Windows.Controls.TextBlock PackageNameTextPublic => PackageNameText;
-    public System.Windows.Controls.TextBlock PackageInfoTextPublic => PackageInfoText;
-    public System.Windows.Controls.TextBlock StatementCountTextPublic => StatementCountText;
 
-    public PackageDetailsDialog(IConnectionManager connectionManager, PackageInfo package)
+    public PackagePropertiesDialog(IConnectionManager connectionManager, PackageInfo package)
     {
         InitializeComponent();
         _connectionManager = connectionManager;
         _package = package;
+        _metadataHandler = App.MetadataHandler;
 
-        Logger.Debug("PackageDetailsDialog opened for: {Schema}.{Package}", package.PackageSchema, package.PackageName);
+        Logger.Debug("PackagePropertiesDialog opened for: {Schema}.{Package}", package.PackageSchema, package.PackageName);
 
         PackageNameText.Text = package.PackageName;
         PackageInfoText.Text = $"Schema: {package.PackageSchema} • Full Name: {package.PackageSchema}.{package.PackageName}";
@@ -47,14 +43,8 @@ public partial class PackageDetailsDialog : Window
             AddToEditorButton.IsEnabled = hasSelection;
         };
 
-        // Apply grid preferences to all grids in this dialog
-        this.Loaded += (s, e) =>
-        {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
-            }
-        };
+        // Apply all UI styles from the unified style service
+        this.Loaded += (s, e) => UIStyleService.ApplyStyles(this);
 
         LoadPackageDetails();
         _ = LoadStatementsAsync();
@@ -75,7 +65,7 @@ public partial class PackageDetailsDialog : Window
         {
             "properties" or "props" => PropertiesTab,
             "statements" or "sql-statements" or "sql" => StatementsTab,
-            "dependencies" or "deps" => DependenciesTab,
+            "objectsused" or "dependencies" or "deps" => ObjectsUsedTab,
             _ => null
         };
         
@@ -90,15 +80,72 @@ public partial class PackageDetailsDialog : Window
         }
     }
 
-    private void LoadPackageDetails()
+    private async void LoadPackageDetails()
     {
-        PackageNameValue.Text = _package.PackageName;
-        PackageSchemaValue.Text = _package.PackageSchema;
-        BoundByValue.Text = _package.BoundBy;
-        OwnerValue.Text = _package.Owner;
-        IsolationValue.Text = _package.Isolation;
-        CreateTimeValue.Text = _package.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
-        RemarksValue.Text = string.IsNullOrEmpty(_package.Remarks) ? "No remarks" : _package.Remarks;
+        try
+        {
+            var sql = _metadataHandler?.GetStatement("GetPackageProperties") 
+                ?? @"SELECT 
+                    TRIM(PKGSCHEMA) AS PackageSchema, 
+                    TRIM(PKGNAME) AS PackageName, 
+                    TRIM(BOUNDBY) AS BoundBy, 
+                    TRIM(DEFINER) AS Definer, 
+                    LASTUSED AS LastUsed, 
+                    CREATE_TIME AS CreatedDate, 
+                    VALID AS IsValid, 
+                    TRIM(ISOLATION) AS IsolationLevel, 
+                    TRIM(BLOCKING) AS Blocking, 
+                    TRIM(SQLWARN) AS SqlWarnings, 
+                    TRIM(FUNCPATH) AS FunctionPath, 
+                    TRIM(REMARKS) AS Remarks,
+                    LAST_BIND_TIME AS LastBindTime,
+                    TRIM(UNIQUE_ID) AS UniqueId
+                FROM SYSCAT.PACKAGES 
+                WHERE TRIM(PKGSCHEMA) = ? AND TRIM(PKGNAME) = ?";
+
+            using var command = _connectionManager.CreateCommand(sql);
+            command.Parameters.Add(_connectionManager.CreateParameter("@pkgschema", _package.PackageSchema));
+            command.Parameters.Add(_connectionManager.CreateParameter("@pkgname", _package.PackageName));
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                PackageNameValue.Text = reader.IsDBNull(1) ? _package.PackageName : reader.GetString(1);
+                PackageSchemaValue.Text = reader.IsDBNull(0) ? _package.PackageSchema : reader.GetString(0);
+                BoundByValue.Text = reader.IsDBNull(2) ? _package.BoundBy : reader.GetString(2);
+                OwnerValue.Text = reader.IsDBNull(3) ? _package.Owner : reader.GetString(3);
+                IsolationValue.Text = reader.IsDBNull(7) ? _package.Isolation : reader.GetString(7);
+                ValidValue.Text = reader.IsDBNull(6) ? "N/A" : reader.GetString(6);
+                LastUsedValue.Text = reader.IsDBNull(4) ? "Never" : reader.GetDateTime(4).ToString("yyyy-MM-dd HH:mm:ss");
+                CreateTimeValue.Text = reader.IsDBNull(5) ? (_package.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A") : reader.GetDateTime(5).ToString("yyyy-MM-dd HH:mm:ss");
+                LastBindTimeValue.Text = reader.IsDBNull(12) ? "N/A" : reader.GetDateTime(12).ToString("yyyy-MM-dd HH:mm:ss");
+                UniqueIdValue.Text = reader.IsDBNull(13) ? "N/A" : reader.GetString(13);
+                RemarksValue.Text = reader.IsDBNull(11) ? (string.IsNullOrEmpty(_package.Remarks) ? "No remarks" : _package.Remarks) : reader.GetString(11);
+            }
+            else
+            {
+                // Fallback to package info if query fails
+                PackageNameValue.Text = _package.PackageName;
+                PackageSchemaValue.Text = _package.PackageSchema;
+                BoundByValue.Text = _package.BoundBy;
+                OwnerValue.Text = _package.Owner;
+                IsolationValue.Text = _package.Isolation;
+                CreateTimeValue.Text = _package.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
+                RemarksValue.Text = string.IsNullOrEmpty(_package.Remarks) ? "No remarks" : _package.Remarks;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load package details");
+            // Fallback to package info
+            PackageNameValue.Text = _package.PackageName;
+            PackageSchemaValue.Text = _package.PackageSchema;
+            BoundByValue.Text = _package.BoundBy;
+            OwnerValue.Text = _package.Owner;
+            IsolationValue.Text = _package.Isolation;
+            CreateTimeValue.Text = _package.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
+            RemarksValue.Text = string.IsNullOrEmpty(_package.Remarks) ? "No remarks" : _package.Remarks;
+        }
     }
 
     private async Task LoadStatementsAsync()
@@ -107,17 +154,16 @@ public partial class PackageDetailsDialog : Window
 
         try
         {
-            // Query SYSCAT.STATEMENTS to get all SQL statements in this package
-                var sql = @"
-                    SELECT 
-                        TRIM(S.STMTNO) AS StmtNo,
-                        TRIM(S.SECTNO) AS SectionNo,
-                        TRIM(S.SEQNO) AS SeqNo,
-                        TRIM(S.TEXT) AS StatementText
-                    FROM SYSCAT.STATEMENTS S
-                    JOIN SYSCAT.PACKAGES P ON S.PKGSCHEMA = P.PKGSCHEMA AND S.PKGNAME = P.PKGNAME
-                    WHERE TRIM(S.PKGSCHEMA) = ? AND TRIM(S.PKGNAME) = ?
-                    ORDER BY S.STMTNO, S.SECTNO, S.SEQNO";
+            var sql = _metadataHandler?.GetStatement("GetPackageStatements") 
+                ?? @"SELECT 
+                    TRIM(S.STMTNO) AS StmtNo,
+                    TRIM(S.SECTNO) AS SectionNo,
+                    TRIM(S.SEQNO) AS SeqNo,
+                    TRIM(S.TEXT) AS StatementText
+                FROM SYSCAT.STATEMENTS S
+                JOIN SYSCAT.PACKAGES P ON S.PKGSCHEMA = P.PKGSCHEMA AND S.PKGNAME = P.PKGNAME
+                WHERE TRIM(S.PKGSCHEMA) = ? AND TRIM(S.PKGNAME) = ?
+                ORDER BY S.STMTNO, S.SECTNO, S.SEQNO";
 
             using var command = _connectionManager.CreateCommand(sql);
             command.Parameters.Add(_connectionManager.CreateParameter("@pkgschema", _package.PackageSchema));
@@ -221,7 +267,6 @@ public partial class PackageDetailsDialog : Window
 
             if (viewerDialog.ShowDialog() == true && viewerDialog.AddToEditor)
             {
-                // If user clicked "Add to Editor" in the viewer dialog
                 SqlTextRequested?.Invoke(this, statement.FullText);
                 Logger.Info("Statement added to editor from viewer dialog");
             }
@@ -240,7 +285,6 @@ public partial class PackageDetailsDialog : Window
 
     private void StatementsGrid_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // Double-click on a statement row opens the full viewer
         ViewFullStatement_Click(sender, new RoutedEventArgs());
     }
     
@@ -258,59 +302,63 @@ public partial class PackageDetailsDialog : Window
             ProceduresCalledCount.Text = "⏳ Analyzing dependencies...";
             FunctionsCalledCount.Text = "⏳ Analyzing dependencies...";
             
-            var analyzer = new PackageDependencyAnalyzer();
+            var analyzer = new PackageDependencyAnalyzer(_metadataHandler);
             var dependencies = await analyzer.AnalyzeDependenciesAsync(
                 _connectionManager,
                 _package.PackageSchema,
                 _package.PackageName);
             
             // Populate Tables Used
-            var tablesData = dependencies.TablesUsed.Select(t => new
+            var tablesData = dependencies.TablesUsed.Select(t => new DependencyItem
             {
-                t.Schema,
-                t.Name,
-                t.UsageCount,
-                StatementsText = string.Join(", ", t.StatementsUsedIn.Take(10)),
-                VerifiedText = t.Verified ? "✅ Yes" : "❌ No"
+                Schema = t.Schema,
+                Name = t.Name,
+                UsageCount = t.UsageCount,
+                StatementsText = string.Join(", ", t.StatementsUsedIn.Take(10).Select(s => $"Stmt {s}")),
+                VerifiedText = t.Verified ? "✅ Yes" : "❌ No",
+                ObjectType = "Table"
             }).ToList();
             
             TablesUsedGrid.ItemsSource = tablesData;
             TablesUsedCount.Text = $"📋 {tablesData.Count} table(s) used";
             
             // Populate Views Used
-            var viewsData = dependencies.ViewsUsed.Select(v => new
+            var viewsData = dependencies.ViewsUsed.Select(v => new DependencyItem
             {
-                v.Schema,
-                v.Name,
-                v.UsageCount,
-                StatementsText = string.Join(", ", v.StatementsUsedIn.Take(10)),
-                VerifiedText = v.Verified ? "✅ Yes" : "❌ No"
+                Schema = v.Schema,
+                Name = v.Name,
+                UsageCount = v.UsageCount,
+                StatementsText = string.Join(", ", v.StatementsUsedIn.Take(10).Select(s => $"Stmt {s}")),
+                VerifiedText = v.Verified ? "✅ Yes" : "❌ No",
+                ObjectType = "View"
             }).ToList();
             
             ViewsUsedGrid.ItemsSource = viewsData;
             ViewsUsedCount.Text = $"👁️ {viewsData.Count} view(s) used";
             
             // Populate Procedures Called
-            var proceduresData = dependencies.ProceduresCalled.Select(p => new
+            var proceduresData = dependencies.ProceduresCalled.Select(p => new DependencyItem
             {
-                p.Schema,
-                p.Name,
-                p.UsageCount,
-                StatementsText = string.Join(", ", p.StatementsUsedIn.Take(10)),
-                VerifiedText = p.Verified ? "✅ Yes" : "❌ No"
+                Schema = p.Schema,
+                Name = p.Name,
+                UsageCount = p.UsageCount,
+                StatementsText = string.Join(", ", p.StatementsUsedIn.Take(10).Select(s => $"Stmt {s}")),
+                VerifiedText = p.Verified ? "✅ Yes" : "❌ No",
+                ObjectType = "Procedure"
             }).ToList();
             
             ProceduresCalledGrid.ItemsSource = proceduresData;
             ProceduresCalledCount.Text = $"⚙️ {proceduresData.Count} procedure(s) called";
             
             // Populate Functions Called
-            var functionsData = dependencies.FunctionsCalled.Select(f => new
+            var functionsData = dependencies.FunctionsCalled.Select(f => new DependencyItem
             {
-                f.Schema,
-                f.Name,
-                f.UsageCount,
-                StatementsText = string.Join(", ", f.StatementsUsedIn.Take(10)),
-                VerifiedText = f.Verified ? "✅ Yes" : "❌ No"
+                Schema = f.Schema,
+                Name = f.Name,
+                UsageCount = f.UsageCount,
+                StatementsText = string.Join(", ", f.StatementsUsedIn.Take(10).Select(s => $"Stmt {s}")),
+                VerifiedText = f.Verified ? "✅ Yes" : "❌ No",
+                ObjectType = "Function"
             }).ToList();
             
             FunctionsCalledGrid.ItemsSource = functionsData;
@@ -331,48 +379,71 @@ public partial class PackageDetailsDialog : Window
     }
     
     /// <summary>
-    /// Handle double-click on dependency item (navigate to object)
+    /// Handle double-click on dependency item - open property form for that object
     /// </summary>
     private void DependencyItem_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // Future enhancement: Navigate to table/view/procedure details
-        Logger.Debug("Dependency item double-clicked");
+        if (sender is DataGrid grid && grid.SelectedItem is DependencyItem item)
+        {
+            Logger.Info("Opening property form for {Type}: {Schema}.{Name}", item.ObjectType, item.Schema, item.Name);
+            
+            try
+            {
+                Window? dialog = null;
+                var fullName = $"{item.Schema}.{item.Name}";
+                
+                switch (item.ObjectType)
+                {
+                    case "Table":
+                        dialog = new TableDetailsDialog(_connectionManager, fullName);
+                        break;
+                    case "View":
+                        var viewParts = fullName.Split('.');
+                        if (viewParts.Length == 2)
+                        {
+                            dialog = new ViewDetailsDialog(_connectionManager, viewParts[0], viewParts[1]);
+                        }
+                        break;
+                    case "Procedure":
+                        var procObj = new DatabaseObject
+                        {
+                            Name = item.Name,
+                            SchemaName = item.Schema,
+                            FullName = fullName,
+                            Type = ObjectType.Procedures
+                        };
+                        dialog = new ObjectDetailsDialog(_connectionManager, procObj, null);
+                        break;
+                    case "Function":
+                        var funcObj = new DatabaseObject
+                        {
+                            Name = item.Name,
+                            SchemaName = item.Schema,
+                            FullName = fullName,
+                            Type = ObjectType.Functions
+                        };
+                        dialog = new ObjectDetailsDialog(_connectionManager, funcObj, null);
+                        break;
+                }
+                
+                if (dialog != null)
+                {
+                    dialog.Owner = this;
+                    dialog.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open property form for {Type}: {Schema}.{Name}", item.ObjectType, item.Schema, item.Name);
+                MessageBox.Show($"Failed to open property form:\n\n{ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         Close();
-    }
-    
-    private void DockAsTab_Click(object sender, RoutedEventArgs e)
-    {
-        Logger.Info("Docking PackageDetailsDialog as tab: {Schema}.{Package}", _package.PackageSchema, _package.PackageName);
-        
-        try
-        {
-            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.CreateTabWithPackageDetails(_connectionManager, _package);
-                Close();
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to dock as tab");
-            MessageBox.Show($"Failed to dock as tab: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    
-    private void ExportAiContext_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("AI Context Export requires AI provider configuration.\n\nConfigure Ollama, OpenAI, Claude, or another AI provider in Settings to enable this feature.", 
-            "Export AI Context", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-    
-    private void AnalyzePackage_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("AI Package Analysis requires AI provider configuration.\n\nConfigure an AI provider in Settings to enable:\n• Package purpose explanation\n• Business logic analysis\n• Optimization suggestions\n• Dependency impact analysis", 
-            "Analyze Package with AI", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }
 
@@ -388,3 +459,15 @@ public class PackageStatement
     public string FullText { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Model for dependency items with clickable links
+/// </summary>
+public class DependencyItem
+{
+    public string Schema { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public int UsageCount { get; set; }
+    public string StatementsText { get; set; } = string.Empty;
+    public string VerifiedText { get; set; } = string.Empty;
+    public string ObjectType { get; set; } = string.Empty;
+}

@@ -31,11 +31,7 @@ public partial class PackageDetailsPanel : UserControl
 
         this.Loaded += async (s, e) =>
         {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStyle(StatementsGrid, App.PreferencesService.Preferences);
-                GridStyleHelper.ApplyGridStyle(DependenciesGrid, App.PreferencesService.Preferences);
-            }
+            UIStyleService.ApplyStyles(this);
             await LoadPackageDetailsAsync();
         };
     }

@@ -26,11 +26,8 @@ public partial class ViewDetailsDialog : Window
 
         Loaded += async (s, e) => 
         {
-            // Apply grid preferences to all grids in this dialog
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStylesToWindow(this, App.PreferencesService.Preferences);
-            }
+            // Apply all UI styles from the unified style service
+            UIStyleService.ApplyStyles(this);
             await LoadViewDetailsAsync();
         };
     }

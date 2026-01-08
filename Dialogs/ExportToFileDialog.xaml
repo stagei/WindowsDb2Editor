@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         Title="Export to File"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         SizeToContent="Height"
         Width="500"
         MinHeight="350"

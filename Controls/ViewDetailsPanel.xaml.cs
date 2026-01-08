@@ -31,10 +31,7 @@ public partial class ViewDetailsPanel : UserControl
 
         this.Loaded += async (s, e) =>
         {
-            if (App.PreferencesService != null)
-            {
-                GridStyleHelper.ApplyGridStyle(ColumnsGrid, App.PreferencesService.Preferences);
-            }
+            UIStyleService.ApplyStyles(this);
             await LoadViewDetailsAsync();
         };
     }

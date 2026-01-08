@@ -358,6 +358,73 @@ public class SqlSystemTableCompletionData : SqlCompletionDataBase
     }
 }
 
+/// <summary>
+/// Completion data for schema names.
+/// </summary>
+public class SqlSchemaCompletionData : SqlCompletionDataBase
+{
+    public SqlSchemaCompletionData()
+    {
+        Priority = 3.0; // High priority - schemas shown at top
+    }
+    
+    public new object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = "📁 ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = Text,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.DarkBlue,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            
+            return panel;
+        }
+    }
+}
+
+/// <summary>
+/// Completion data for stored procedure names.
+/// </summary>
+public class SqlProcedureCompletionData : SqlCompletionDataBase
+{
+    public SqlProcedureCompletionData()
+    {
+        Priority = 2.0;
+    }
+    
+    public new object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = "⚙️ ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = Text,
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            
+            return panel;
+        }
+    }
+}
+
 #region Backward Compatibility Aliases
 
 // These aliases maintain backward compatibility with existing code

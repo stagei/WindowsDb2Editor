@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="New Database Connection"
+        Icon="pack://application:,,,/Resources/dEdge.ico"
         SizeToContent="Height"
         Width="500"
         WindowStartupLocation="CenterOwner"
