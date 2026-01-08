@@ -6,6 +6,7 @@ using NLog;
 using WindowsDb2Editor.Controls;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Dialogs;
+using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor;
@@ -1157,11 +1158,11 @@ public partial class MainWindow : Window
     
     private void CrossDatabaseComparison_Click(object sender, RoutedEventArgs e)
     {
-        Logger.Info("Opening Cross-Database Schema Comparison dialog");
+        Logger.Info("Opening Cross-Database Schema Comparison panel");
         
         try
         {
-            CrossDatabaseComparisonDialog dialog;
+            var panel = new SchemaComparisonPanel();
             
             // If there's an active connection, pass it as the default source
             var activeTabControl = GetActiveTabControl();
@@ -1169,22 +1170,115 @@ public partial class MainWindow : Window
             {
                 var connectionName = activeTabControl.Connection.Name ?? activeTabControl.Connection.GetDisplayName();
                 Logger.Debug("Passing current connection as source: {Name}", connectionName);
-                dialog = new CrossDatabaseComparisonDialog(activeTabControl.ConnectionManager, connectionName);
+                panel.SetCurrentConnection(activeTabControl.ConnectionManager, connectionName);
+            }
+
+            // Create the window for the panel
+            var window = new Window
+            {
+                Title = "🔍 Cross-Database Schema Comparison",
+                Width = 1400,
+                Height = 900,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                Content = panel
+            };
+
+            // Apply ModernWpf styling
+            ModernWpf.Controls.Primitives.WindowHelper.SetUseModernWindowStyle(window, true);
+            UIStyleService.ApplyStyles(window);
+
+            // Handle close request from panel
+            panel.CloseRequested += (s, args) => window.Close();
+
+            // Handle script generation - open in new editor tabs
+            panel.OpenScriptRequested += (s, args) =>
+            {
+                Logger.Info("Opening migration script for connection: {Name}", args.Script.ConnectionName);
+                
+                // Find or create a tab for this connection and add the script
+                OpenScriptInNewTab(args.ConnectionManager, args.Script);
+            };
+
+            // Check if AutoDockTools is enabled
+            if (_preferencesService?.Preferences?.AutoDockTools == true)
+            {
+                // Open as docked tab
+                OpenSchemaComparisonAsTab(panel);
             }
             else
             {
-                // No active connection - use profile-based selection
-                dialog = new CrossDatabaseComparisonDialog();
+                // Show as floating window
+                window.Show();
             }
-            
-            dialog.Owner = this;
-            dialog.ShowDialog();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to open Cross-Database Comparison dialog");
+            Logger.Error(ex, "Failed to open Cross-Database Comparison panel");
             MessageBox.Show($"Failed to open Cross-Database Comparison: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void OpenSchemaComparisonAsTab(SchemaComparisonPanel panel)
+    {
+        // Create a new tab for schema comparison
+        var tabItem = new TabItem
+        {
+            Header = CreateTabHeader("🔍 Schema Comparison", () => CloseTabWithConfirmation(null)),
+        };
+
+        var border = new Border
+        {
+            Padding = new Thickness(0),
+            Child = panel
+        };
+
+        tabItem.Content = border;
+        
+        // Handle close request
+        panel.CloseRequested += (s, e) =>
+        {
+            ConnectionTabs.Items.Remove(tabItem);
+        };
+
+        // Handle script generation
+        panel.OpenScriptRequested += (s, args) =>
+        {
+            Logger.Info("Opening migration script for connection: {Name}", args.Script.ConnectionName);
+            OpenScriptInNewTab(args.ConnectionManager, args.Script);
+        };
+
+        ConnectionTabs.Items.Add(tabItem);
+        ConnectionTabs.SelectedItem = tabItem;
+    }
+
+    private void OpenScriptInNewTab(IConnectionManager connectionManager, MigrationScript script)
+    {
+        // Find the tab for this connection
+        foreach (TabItem tab in ConnectionTabs.Items)
+        {
+            if (tab.Content is Border border && border.Child is ConnectionTabControl tabControl)
+            {
+                if (tabControl.ConnectionManager == connectionManager)
+                {
+                    // Use existing tab - add script to editor
+                    tabControl.SetSqlEditorText(script.GetFullScript());
+                    ConnectionTabs.SelectedItem = tab;
+                    return;
+                }
+            }
+        }
+
+        // If no matching tab found, try to open a new connection tab
+        // For now, just copy to clipboard and notify user
+        Logger.Warn("Could not find matching tab for connection, copying script to clipboard");
+        Clipboard.SetText(script.GetFullScript());
+        MessageBox.Show(
+            $"Migration script for {script.ConnectionName}.{script.TargetSchema} copied to clipboard.\n\n" +
+            "Open a connection to the target database and paste the script.",
+            "Script Generated",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
     
     /// <summary>
