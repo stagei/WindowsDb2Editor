@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+// Alias to avoid conflict with existing DifferenceType in DatabaseComparisonService
+using DiffType = WindowsDb2Editor.Models.DifferenceType;
 
 namespace WindowsDb2Editor.Services
 {
@@ -128,20 +130,20 @@ namespace WindowsDb2Editor.Services
 
             switch (diff.DifferenceType)
             {
-                case DifferenceType.OnlyInSource when sourceToTarget:
-                case DifferenceType.OnlyInTarget when !sourceToTarget:
+                case DiffType.OnlyInSource when sourceToTarget:
+                case DiffType.OnlyInTarget when !sourceToTarget:
                     // Create in target
                     sb.Append(GenerateCreateDdl(sourceObj!, toSchema));
                     break;
 
-                case DifferenceType.OnlyInTarget when sourceToTarget:
-                case DifferenceType.OnlyInSource when !sourceToTarget:
+                case DiffType.OnlyInTarget when sourceToTarget:
+                case DiffType.OnlyInSource when !sourceToTarget:
                     // Object exists only in target - may need to drop or skip
                     sb.AppendLine($"-- Object exists only in target, consider DROP if needed:");
                     sb.Append(GenerateDropDdl(targetObj!, toSchema));
                     break;
 
-                case DifferenceType.Modified:
+                case DiffType.Modified:
                     // Generate ALTER or DROP/CREATE
                     sb.Append(GenerateModifyDdl(diff, sourceObj!, targetObj!, toSchema));
                     break;

@@ -1224,7 +1224,7 @@ public partial class MainWindow : Window
         // Create a new tab for schema comparison
         var tabItem = new TabItem
         {
-            Header = CreateTabHeader("🔍 Schema Comparison", () => CloseTabWithConfirmation(null)),
+            Header = CreateTabHeader("🔍 Schema Comparison"),
         };
 
         var border = new Border

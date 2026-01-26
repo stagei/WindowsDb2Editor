@@ -390,7 +390,7 @@ namespace WindowsDb2Editor.Controls
             return panel;
         }
 
-        private StackPanel CreateDiffTypeHeader(DifferenceType type, int count)
+        private StackPanel CreateDiffTypeHeader(WindowsDb2Editor.Models.DifferenceType type, int count)
         {
             var panel = new StackPanel { Orientation = Orientation.Horizontal };
             var (icon, color) = GetDiffTypeIconAndColor(type);
@@ -438,7 +438,7 @@ namespace WindowsDb2Editor.Controls
             panel.Children.Add(new TextBlock { Text = diff.DisplayName });
 
             // Property count for modified items
-            if (diff.DifferenceType == DifferenceType.Modified && diff.PropertyDifferences.Count > 0)
+            if (diff.DifferenceType == WindowsDb2Editor.Models.DifferenceType.Modified && diff.PropertyDifferences.Count > 0)
             {
                 panel.Children.Add(new TextBlock 
                 { 
@@ -471,14 +471,14 @@ namespace WindowsDb2Editor.Controls
             };
         }
 
-        private (string Icon, Brush Color) GetDiffTypeIconAndColor(DifferenceType type)
+        private (string Icon, Brush Color) GetDiffTypeIconAndColor(WindowsDb2Editor.Models.DifferenceType type)
         {
             return type switch
             {
-                DifferenceType.OnlyInSource => ("➕", Brushes.LimeGreen),
-                DifferenceType.OnlyInTarget => ("➖", Brushes.OrangeRed),
-                DifferenceType.Modified => ("⚠", Brushes.Orange),
-                DifferenceType.Identical => ("✓", Brushes.Gray),
+                WindowsDb2Editor.Models.DifferenceType.OnlyInSource => ("➕", Brushes.LimeGreen),
+                WindowsDb2Editor.Models.DifferenceType.OnlyInTarget => ("➖", Brushes.OrangeRed),
+                WindowsDb2Editor.Models.DifferenceType.Modified => ("⚠", Brushes.Orange),
+                WindowsDb2Editor.Models.DifferenceType.Identical => ("✓", Brushes.Gray),
                 _ => ("?", Brushes.Gray)
             };
         }

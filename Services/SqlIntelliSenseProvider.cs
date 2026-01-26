@@ -337,13 +337,17 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
             completions = sqlContext switch
             {
                 SqlContext.Keyword => GetKeywordCompletions(),
+                SqlContext.Schema => GetSchemaCompletions(),  // NEW: Schema-first
                 SqlContext.TableName => GetTableNameCompletions(),
                 SqlContext.ColumnName => GetColumnNameCompletions(context.Text, context.CaretPosition),
+                SqlContext.JoinCondition => GetJoinConditionCompletions(context.Text, context.CaretPosition),
+                SqlContext.OrderByColumn => GetOrderByCompletions(context.Text, context.CaretPosition),
                 SqlContext.Function => GetFunctionCompletions(),
                 SqlContext.DataType => GetDataTypeCompletions(),
                 SqlContext.SystemCatalog => GetSystemCatalogCompletions(),
                 SqlContext.Snippet => GetSnippetCompletions(),
                 SqlContext.SchemaObject => GetSchemaObjectCompletions(context.Text, context.CaretPosition),
+                SqlContext.Alias => new List<ICompletionData>(), // User types alias themselves
                 _ => GetGeneralCompletions()
             };
         }
@@ -353,6 +357,90 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
         }
         
         return completions;
+    }
+    
+    /// <summary>
+    /// Get schema completions (show schemas first after FROM/JOIN)
+    /// </summary>
+    private List<ICompletionData> GetSchemaCompletions()
+    {
+        Logger.Debug("Getting schema completions - {Count} schemas available", _schemaNames.Count);
+        
+        var completions = new List<ICompletionData>();
+        
+        // Add schemas with high priority
+        completions.AddRange(_schemaNames.Select(s => new SqlSchemaCompletionData
+        {
+            Text = s,
+            Description = $"Schema: {s}",
+            Priority = 10.0  // Highest priority
+        }));
+        
+        // Also add common system schemas for DB2
+        var systemSchemas = new[] { "SYSCAT", "SYSIBM", "SYSIBMADM", "SYSSTAT" };
+        foreach (var sysSchema in systemSchemas)
+        {
+            if (!_schemaNames.Contains(sysSchema, StringComparer.OrdinalIgnoreCase))
+            {
+                completions.Add(new SqlSchemaCompletionData
+                {
+                    Text = sysSchema,
+                    Description = $"System Schema: {sysSchema}",
+                    Priority = 5.0
+                });
+            }
+        }
+        
+        Logger.Debug("Returning {Count} schema completions", completions.Count);
+        return completions;
+    }
+    
+    /// <summary>
+    /// Get completions for JOIN ON conditions
+    /// </summary>
+    private List<ICompletionData> GetJoinConditionCompletions(string text, int caretPosition)
+    {
+        // Extract table references from the query for join conditions
+        var tableNames = ExtractTableNamesFromQuery(text);
+        var completions = new List<ICompletionData>();
+        
+        foreach (var tableName in tableNames)
+        {
+            var tableAlias = tableName.Split('.').LastOrDefault() ?? tableName;
+            
+            if (_tableColumns.TryGetValue(tableName, out var columns))
+            {
+                completions.AddRange(columns.Select(c => new SqlColumnCompletionData
+                {
+                    ColumnName = $"{tableAlias}.{c.Name}",  // Include table alias in column name
+                    DataType = c.DataType,
+                    TableName = tableName,
+                    Priority = 3.0
+                }));
+            }
+        }
+        
+        // If no columns found, show table names for user to qualify
+        if (completions.Count == 0)
+        {
+            completions.AddRange(tableNames.Select(t => new SqlTableCompletionData
+            {
+                Text = t.Split('.').LastOrDefault() ?? t,
+                Description = $"Table: {t}",
+                Priority = 2.0
+            }));
+        }
+        
+        return completions;
+    }
+    
+    /// <summary>
+    /// Get completions for ORDER BY / GROUP BY clauses
+    /// </summary>
+    private List<ICompletionData> GetOrderByCompletions(string text, int caretPosition)
+    {
+        // For ORDER BY, show columns from referenced tables
+        return GetColumnNameCompletions(text, caretPosition);
     }
     
     public async Task<FunctionSignature?> GetSignatureHintAsync(string functionName)
@@ -368,46 +456,165 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
         
         var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
         
-        // Check if we're typing after a schema name followed by a period
-        // e.g., "MYSCHEMA." <- caret here
-        var schemaObjectMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
-        if (schemaObjectMatch.Success)
+        // PRIORITY 1: Check if we're typing after a schema/table alias followed by a period
+        // e.g., "MYSCHEMA." or "t." <- caret here
+        var dotMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+        if (dotMatch.Success)
         {
-            var possibleSchema = schemaObjectMatch.Groups[1].Value;
-            // Check if this is a known schema
-            if (_schemaNames.Contains(possibleSchema, StringComparer.OrdinalIgnoreCase))
+            var identifier = dotMatch.Groups[1].Value;
+            
+            // Check if this is a known schema -> show tables/views
+            if (_schemaNames.Contains(identifier, StringComparer.OrdinalIgnoreCase))
             {
-                Logger.Debug("Detected schema.object context for schema: {Schema}", possibleSchema);
+                Logger.Debug("Detected schema.object context for schema: {Schema}", identifier);
                 return SqlContext.SchemaObject;
             }
+            
+            // Could be a table alias -> show columns
+            Logger.Debug("Detected alias.column context for alias: {Alias}", identifier);
+            return SqlContext.ColumnName;
         }
         
-        var lastWords = GetLastWords(textBeforeCaret, 3);
+        // Extract current statement for better context (multi-statement support)
+        var currentStatement = ExtractCurrentStatement(text, caretPosition);
+        var statementBeforeCaret = GetStatementBeforeCaret(currentStatement, text, caretPosition);
+        
+        // Get the previous keyword/token
+        var lastWords = GetLastWords(statementBeforeCaret, 5);
         
         if (lastWords.Count > 0)
         {
             var lastWord = lastWords[^1].ToUpperInvariant();
             var secondLastWord = lastWords.Count > 1 ? lastWords[^2].ToUpperInvariant() : string.Empty;
+            var thirdLastWord = lastWords.Count > 2 ? lastWords[^3].ToUpperInvariant() : string.Empty;
             
-            if (lastWord == "FROM" || lastWord == "JOIN" || lastWord == "TABLE" || lastWord == "INTO")
-                return SqlContext.TableName;
+            // PRIORITY 2: After FROM, JOIN, INTO, UPDATE -> show SCHEMAS first
+            if (lastWord is "FROM" or "JOIN" or "INTO" or "TABLE" or "UPDATE")
+            {
+                Logger.Debug("Context: Schema (after {Keyword})", lastWord);
+                return SqlContext.Schema;
+            }
             
-            if (lastWord == "WHERE" || lastWord == "AND" || lastWord == "OR" || lastWord == "ON")
+            // After INNER, LEFT, RIGHT, FULL, CROSS -> likely followed by JOIN
+            if (lastWord is "INNER" or "LEFT" or "RIGHT" or "FULL" or "CROSS")
+            {
+                // If next would be JOIN, wait for that
+                return SqlContext.Keyword;
+            }
+            
+            // PRIORITY 3: After ON -> show columns for join condition
+            if (lastWord == "ON")
+            {
+                Logger.Debug("Context: JoinCondition");
+                return SqlContext.JoinCondition;
+            }
+            
+            // PRIORITY 4: After SELECT -> show columns, *, functions
+            if (lastWord == "SELECT" || (lastWord == "DISTINCT" && secondLastWord == "SELECT"))
+            {
+                Logger.Debug("Context: ColumnName (SELECT clause)");
                 return SqlContext.ColumnName;
+            }
             
-            if (lastWord == "SELECT")
+            // PRIORITY 5: After WHERE, AND, OR -> show columns
+            if (lastWord is "WHERE" or "AND" or "OR" or "HAVING")
+            {
+                Logger.Debug("Context: ColumnName (predicate)");
                 return SqlContext.ColumnName;
+            }
             
+            // After ORDER BY or GROUP BY -> show columns
+            if ((lastWord == "BY" && secondLastWord is "ORDER" or "GROUP") ||
+                lastWord is "ORDER" or "GROUP")
+            {
+                Logger.Debug("Context: OrderByColumn");
+                return SqlContext.OrderByColumn;
+            }
+            
+            // After SET (in UPDATE) -> show columns
+            if (lastWord == "SET")
+            {
+                Logger.Debug("Context: ColumnName (SET clause)");
+                return SqlContext.ColumnName;
+            }
+            
+            // After AS -> alias context
+            if (lastWord == "AS")
+            {
+                return SqlContext.Alias;
+            }
+            
+            // Data type context
             if (lastWord == "AS" && secondLastWord == "TYPE")
                 return SqlContext.DataType;
             
-            if (textBeforeCaret.Contains("SYSCAT.", StringComparison.OrdinalIgnoreCase) ||
-                textBeforeCaret.Contains("pg_catalog.", StringComparison.OrdinalIgnoreCase) ||
-                textBeforeCaret.Contains("information_schema.", StringComparison.OrdinalIgnoreCase))
+            // System catalog context
+            if (statementBeforeCaret.Contains("SYSCAT.", StringComparison.OrdinalIgnoreCase) ||
+                statementBeforeCaret.Contains("pg_catalog.", StringComparison.OrdinalIgnoreCase) ||
+                statementBeforeCaret.Contains("information_schema.", StringComparison.OrdinalIgnoreCase))
                 return SqlContext.SystemCatalog;
         }
         
         return SqlContext.Keyword;
+    }
+    
+    /// <summary>
+    /// Extract the current SQL statement based on caret position (multi-statement support)
+    /// </summary>
+    private string ExtractCurrentStatement(string text, int caretPosition)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+        
+        // Find statement boundaries using semicolons
+        var statements = new List<(int start, int end, string text)>();
+        var currentStart = 0;
+        
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == ';')
+            {
+                statements.Add((currentStart, i, text.Substring(currentStart, i - currentStart)));
+                currentStart = i + 1;
+            }
+        }
+        
+        // Add last statement (no trailing semicolon)
+        if (currentStart < text.Length)
+        {
+            statements.Add((currentStart, text.Length, text.Substring(currentStart)));
+        }
+        
+        // Find which statement contains the caret
+        foreach (var (start, end, stmt) in statements)
+        {
+            if (caretPosition >= start && caretPosition <= end)
+            {
+                return stmt.Trim();
+            }
+        }
+        
+        return text;
+    }
+    
+    /// <summary>
+    /// Get the portion of the current statement before the caret
+    /// </summary>
+    private string GetStatementBeforeCaret(string currentStatement, string fullText, int caretPosition)
+    {
+        // Find where the current statement starts in the full text
+        var stmtIndex = fullText.IndexOf(currentStatement, StringComparison.Ordinal);
+        if (stmtIndex >= 0)
+        {
+            var offsetInStatement = caretPosition - stmtIndex;
+            if (offsetInStatement > 0 && offsetInStatement <= currentStatement.Length)
+            {
+                return currentStatement.Substring(0, offsetInStatement);
+            }
+        }
+        
+        // Fallback to full text before caret
+        return fullText.Substring(0, Math.Min(caretPosition, fullText.Length));
     }
     
     private List<string> GetLastWords(string text, int count)
@@ -666,14 +873,18 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
 public enum SqlContext
 {
     Keyword,
-    TableName,
-    ColumnName,
+    Schema,           // Show schemas first (after FROM, JOIN, INTO, UPDATE)
+    TableName,        // Legacy - use SchemaObject instead
+    ColumnName,       // Show columns (after SELECT, WHERE, AND, OR)
     Function,
     DataType,
     SystemCatalog,
     Snippet,
     General,
-    SchemaObject
+    SchemaObject,     // Show tables/views in a specific schema (after SCHEMA.)
+    JoinCondition,    // Show columns for ON clause
+    OrderByColumn,    // Show columns for ORDER BY
+    Alias             // Expecting alias name
 }
 
 #region Legacy Compatibility

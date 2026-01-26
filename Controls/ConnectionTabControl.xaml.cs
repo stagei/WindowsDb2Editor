@@ -770,11 +770,11 @@ public partial class ConnectionTabControl : UserControl
     /// </summary>
     private void TextEditor_KeyDown(object? sender, KeyEventArgs e)
     {
-        // Ctrl+Space - Force show IntelliSense
+        // Ctrl+Space - Force show context-aware IntelliSense
         if (e.Key == Key.Space && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
-            ShowCompletionWindow();
             e.Handled = true;
+            ForceContextAwareCompletion();
         }
         // Backspace - Re-trigger IntelliSense if window was open
         else if (e.Key == Key.Back && _completionWindow != null)
@@ -792,6 +792,106 @@ public partial class ConnectionTabControl : UserControl
                     ShowCompletionWindow();
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+    }
+    
+    /// <summary>
+    /// Force context-aware IntelliSense completion (Ctrl+Space)
+    /// Analyzes the SQL statement and cursor position to show relevant suggestions
+    /// </summary>
+    private void ForceContextAwareCompletion()
+    {
+        try
+        {
+            Logger.Debug("Ctrl+Space triggered - forcing context-aware completion");
+            
+            // Close existing window
+            if (_completionWindow != null)
+            {
+                _completionWindow.Close();
+                _completionWindow = null;
+            }
+            
+            var text = SqlEditor.Text;
+            var caretPosition = SqlEditor.CaretOffset;
+            
+            // Get the current word at caret position
+            var currentWord = GetCurrentWord();
+            
+            Logger.Debug("Force completion at position {Position}, current word: '{Word}'", 
+                caretPosition, currentWord);
+            
+            // Get context-aware completions from the new IntelliSense manager
+            List<ICSharpCode.AvalonEdit.CodeCompletion.ICompletionData>? completions = null;
+            
+            if (_newIntelliSenseManager != null)
+            {
+                completions = _newIntelliSenseManager.GetCompletions(text, caretPosition, _connectionManager);
+            }
+            
+            // Fallback to old IntelliSense if no results
+            if (completions == null || completions.Count == 0)
+            {
+                Logger.Debug("No completions from manager, trying fallback");
+                var suggestions = _intellisenseService.GetSuggestions(currentWord);
+                if (suggestions.Count == 0)
+                {
+                    Logger.Debug("No suggestions available");
+                    return;
+                }
+                
+                _completionWindow = new ICSharpCode.AvalonEdit.CodeCompletion.CompletionWindow(SqlEditor.TextArea);
+                _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+                
+                foreach (var suggestion in suggestions)
+                {
+                    _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(suggestion));
+                }
+            }
+            else
+            {
+                // Filter based on current word if there is one
+                var filteredCompletions = completions;
+                if (!string.IsNullOrWhiteSpace(currentWord))
+                {
+                    filteredCompletions = completions
+                        .Where(c => c.Text.StartsWith(currentWord, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    
+                    // If no prefix matches, try contains
+                    if (filteredCompletions.Count == 0)
+                    {
+                        filteredCompletions = completions
+                            .Where(c => c.Text.Contains(currentWord, StringComparison.OrdinalIgnoreCase))
+                            .Take(50)
+                            .ToList();
+                    }
+                }
+                
+                if (filteredCompletions.Count == 0)
+                {
+                    // Show all completions if no filter matches
+                    filteredCompletions = completions.Take(50).ToList();
+                }
+                
+                _completionWindow = new ICSharpCode.AvalonEdit.CodeCompletion.CompletionWindow(SqlEditor.TextArea);
+                _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+                
+                foreach (var completion in filteredCompletions)
+                {
+                    _completionWindow.CompletionList.CompletionData.Add(completion);
+                }
+            }
+            
+            _completionWindow.Closed += (s, args) => _completionWindow = null;
+            _completionWindow.Show();
+            
+            Logger.Info("Context-aware completion shown with {Count} items", 
+                _completionWindow.CompletionList.CompletionData.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show context-aware completion");
         }
     }
     

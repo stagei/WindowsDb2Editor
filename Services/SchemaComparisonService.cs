@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
+// Alias to avoid conflict with existing DifferenceType in DatabaseComparisonService
+using DiffType = WindowsDb2Editor.Models.DifferenceType;
 
 namespace WindowsDb2Editor.Services
 {
@@ -104,7 +106,7 @@ namespace WindowsDb2Editor.Services
             result.DifferencesByType[SchemaObjectType.Table] = differences;
 
             Logger.Debug("Tables: {Source} source, {Target} target, {Diff} differences",
-                sourceTables.Count, targetTables.Count, differences.Count(d => d.DifferenceType != DifferenceType.Identical));
+                sourceTables.Count, targetTables.Count, differences.Count(d => d.DifferenceType != DiffType.Identical));
         }
 
         private async Task<List<SchemaObject>> GetTablesAsync(IConnectionManager connection, string schema)
@@ -728,7 +730,7 @@ namespace WindowsDb2Editor.Services
                     differences.Add(new SchemaDifference
                     {
                         ObjectType = objectType,
-                        DifferenceType = DifferenceType.OnlyInSource,
+                        DifferenceType = DiffType.OnlyInSource,
                         SourceObject = source
                     });
                 }
@@ -742,7 +744,7 @@ namespace WindowsDb2Editor.Services
                     differences.Add(new SchemaDifference
                     {
                         ObjectType = objectType,
-                        DifferenceType = DifferenceType.OnlyInTarget,
+                        DifferenceType = DiffType.OnlyInTarget,
                         TargetObject = target
                     });
                 }
@@ -760,7 +762,7 @@ namespace WindowsDb2Editor.Services
                         differences.Add(new SchemaDifference
                         {
                             ObjectType = objectType,
-                            DifferenceType = DifferenceType.Modified,
+                            DifferenceType = DiffType.Modified,
                             SourceObject = source,
                             TargetObject = target,
                             PropertyDifferences = propDiffs
@@ -771,7 +773,7 @@ namespace WindowsDb2Editor.Services
                         differences.Add(new SchemaDifference
                         {
                             ObjectType = objectType,
-                            DifferenceType = DifferenceType.Identical,
+                            DifferenceType = DiffType.Identical,
                             SourceObject = source,
                             TargetObject = target
                         });
@@ -806,7 +808,7 @@ namespace WindowsDb2Editor.Services
                     differences.Add(new SchemaDifference
                     {
                         ObjectType = objectType,
-                        DifferenceType = DifferenceType.OnlyInSource,
+                        DifferenceType = DiffType.OnlyInSource,
                         SourceObject = source
                     });
                 }
@@ -820,7 +822,7 @@ namespace WindowsDb2Editor.Services
                     differences.Add(new SchemaDifference
                     {
                         ObjectType = objectType,
-                        DifferenceType = DifferenceType.OnlyInTarget,
+                        DifferenceType = DiffType.OnlyInTarget,
                         TargetObject = target
                     });
                 }
@@ -839,7 +841,7 @@ namespace WindowsDb2Editor.Services
                         differences.Add(new SchemaDifference
                         {
                             ObjectType = objectType,
-                            DifferenceType = DifferenceType.Modified,
+                            DifferenceType = DiffType.Modified,
                             SourceObject = source,
                             TargetObject = target,
                             PropertyDifferences = propDiffs,
@@ -851,7 +853,7 @@ namespace WindowsDb2Editor.Services
                         differences.Add(new SchemaDifference
                         {
                             ObjectType = objectType,
-                            DifferenceType = DifferenceType.Identical,
+                            DifferenceType = DiffType.Identical,
                             SourceObject = source,
                             TargetObject = target
                         });
@@ -968,10 +970,10 @@ namespace WindowsDb2Editor.Services
                 var typeSummary = new ObjectTypeSummary
                 {
                     ObjectType = objectType,
-                    OnlyInSource = differences.Count(d => d.DifferenceType == DifferenceType.OnlyInSource),
-                    OnlyInTarget = differences.Count(d => d.DifferenceType == DifferenceType.OnlyInTarget),
-                    Modified = differences.Count(d => d.DifferenceType == DifferenceType.Modified),
-                    Identical = differences.Count(d => d.DifferenceType == DifferenceType.Identical)
+                    OnlyInSource = differences.Count(d => d.DifferenceType == DiffType.OnlyInSource),
+                    OnlyInTarget = differences.Count(d => d.DifferenceType == DiffType.OnlyInTarget),
+                    Modified = differences.Count(d => d.DifferenceType == DiffType.Modified),
+                    Identical = differences.Count(d => d.DifferenceType == DiffType.Identical)
                 };
                 typeSummary.SourceCount = typeSummary.OnlyInSource + typeSummary.Modified + typeSummary.Identical;
                 typeSummary.TargetCount = typeSummary.OnlyInTarget + typeSummary.Modified + typeSummary.Identical;
