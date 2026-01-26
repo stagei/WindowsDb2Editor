@@ -42,6 +42,34 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     private List<string> _functionNames = new();
     private List<string> _schemaNames = new();
     
+    // Table reference with alias information parsed from query
+    private class TableReference
+    {
+        public string FullName { get; set; } = string.Empty;  // SCHEMA.TABLE
+        public string SchemaName { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public string? Alias { get; set; }  // null if no alias
+        
+        /// <summary>
+        /// Gets the identifier to use (alias if present, otherwise table name)
+        /// </summary>
+        public string Identifier => Alias ?? TableName;
+    }
+    
+    // Callback for triggering completion after schema/alias selection
+    private Action? _triggerCompletionCallback;
+    
+    // Current connection for on-demand column loading
+    private IConnectionManager? _currentConnection;
+    
+    /// <summary>
+    /// Set the callback to trigger completion window (called after schema/alias selection)
+    /// </summary>
+    public void SetCompletionCallback(Action? callback)
+    {
+        _triggerCompletionCallback = callback;
+    }
+    
     /// <summary>
     /// Current database provider (e.g., "DB2", "PostgreSQL").
     /// </summary>
@@ -260,6 +288,9 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 .ToList();
             Logger.Debug("Extracted {Count} unique schema names", _schemaNames.Count);
             
+            // Load column information for tables (limited to most common tables for performance)
+            await LoadTableColumnsAsync(connection, _tableNames.Take(100).ToList());
+            
             // Load function names
             var functionsSql = GetSystemTableQuery("functions");
             using (var funcCmd = connection.CreateCommand(functionsSql))
@@ -287,6 +318,97 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     }
     
     /// <summary>
+    /// Load column information for specified tables.
+    /// </summary>
+    private async Task LoadTableColumnsAsync(IConnectionManager connection, List<string> tableNames)
+    {
+        Logger.Debug("Loading columns for {Count} tables", tableNames.Count);
+        _tableColumns.Clear();
+        
+        try
+        {
+            foreach (var fullTableName in tableNames)
+            {
+                await LoadColumnsForTableAsync(connection, fullTableName);
+            }
+            
+            Logger.Info("Loaded column metadata for {Count} tables", _tableColumns.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load column metadata");
+        }
+    }
+    
+    /// <summary>
+    /// Load columns for a single table (can be called on-demand).
+    /// </summary>
+    private async Task LoadColumnsForTableAsync(IConnectionManager connection, string fullTableName)
+    {
+        // Skip if already loaded
+        if (_tableColumns.ContainsKey(fullTableName))
+            return;
+        
+        var parts = fullTableName.Split('.');
+        if (parts.Length != 2) return;
+        
+        var schema = parts[0].Trim();
+        var table = parts[1].Trim();
+        
+        try
+        {
+            // Use inline SQL with parameter substitution for simpler handling
+            var columnsSql = _currentProvider.ToUpperInvariant() switch
+            {
+                "POSTGRESQL" or "POSTGRES" => 
+                    $"SELECT column_name AS COLNAME, data_type AS TYPENAME, is_nullable AS NULLS, " +
+                    $"CASE WHEN column_name IN (SELECT column_name FROM information_schema.key_column_usage " +
+                    $"WHERE table_schema = '{schema}' AND table_name = '{table}') THEN 1 ELSE 0 END AS KEYSEQ " +
+                    $"FROM information_schema.columns WHERE table_schema = '{schema}' AND table_name = '{table}' " +
+                    $"ORDER BY ordinal_position",
+                _ => // DB2
+                    $"SELECT TRIM(COLNAME) AS COLNAME, TRIM(TYPENAME) AS TYPENAME, NULLS, KEYSEQ " +
+                    $"FROM SYSCAT.COLUMNS WHERE TABSCHEMA = '{schema}' AND TABNAME = '{table}' ORDER BY COLNO"
+            };
+            
+            using var cmd = connection.CreateCommand(columnsSql);
+            using var adapter = connection.CreateDataAdapter(cmd);
+            var columnsTable = new System.Data.DataTable();
+            await Task.Run(() => adapter.Fill(columnsTable));
+            
+            var columns = new List<ColumnInfo>();
+            foreach (System.Data.DataRow row in columnsTable.Rows)
+            {
+                var colName = GetColumnValue(row, "COLNAME", "column_name")?.Trim() ?? string.Empty;
+                var dataType = GetColumnValue(row, "TYPENAME", "data_type")?.Trim() ?? "UNKNOWN";
+                var nulls = GetColumnValue(row, "NULLS", "is_nullable")?.Trim();
+                var keySeq = GetColumnValue(row, "KEYSEQ", "keyseq");
+                
+                if (!string.IsNullOrEmpty(colName))
+                {
+                    columns.Add(new ColumnInfo
+                    {
+                        Name = colName,
+                        DataType = dataType,
+                        IsNullable = nulls == "Y" || nulls?.ToUpperInvariant() == "YES",
+                        IsPrimaryKey = !string.IsNullOrEmpty(keySeq) && keySeq != "0"
+                    });
+                }
+            }
+            
+            if (columns.Count > 0)
+            {
+                _tableColumns[fullTableName] = columns;
+                Logger.Debug("Loaded {Count} columns for {Table}", columns.Count, fullTableName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to load columns for {Table}", fullTableName);
+        }
+    }
+    
+    /// <summary>
     /// Get provider-specific system table query.
     /// </summary>
     private string GetSystemTableQuery(string objectType)
@@ -308,6 +430,7 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 "views" => "SELECT TABSCHEMA, TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'V' FETCH FIRST 500 ROWS ONLY",
                 "procedures" => "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'P' FETCH FIRST 500 ROWS ONLY",
                 "functions" => "SELECT ROUTINESCHEMA, ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINETYPE = 'F' FETCH FIRST 500 ROWS ONLY",
+                "columns" => "SELECT TRIM(COLNAME) AS COLNAME, TRIM(TYPENAME) AS TYPENAME, NULLS, KEYSEQ FROM SYSCAT.COLUMNS WHERE TABSCHEMA = ? AND TABNAME = ? ORDER BY COLNO",
                 _ => string.Empty
             }
         };
@@ -328,6 +451,9 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     public List<ICompletionData> GetCompletions(CompletionContext context)
     {
         var completions = new List<ICompletionData>();
+        
+        // Store current connection for on-demand column loading
+        _currentConnection = context.Connection;
         
         try
         {
@@ -368,13 +494,17 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
         
         var completions = new List<ICompletionData>();
         
-        // Add schemas with high priority
-        completions.AddRange(_schemaNames.Select(s => new SqlSchemaCompletionData
+        // Add schemas with high priority, wire up completion callback
+        foreach (var s in _schemaNames)
         {
-            Text = s,
-            Description = $"Schema: {s}",
-            Priority = 10.0  // Highest priority
-        }));
+            completions.Add(new SqlSchemaCompletionData
+            {
+                Text = s,
+                Description = $"Schema: {s}",
+                Priority = 10.0,  // Highest priority
+                OnCompleted = _triggerCompletionCallback  // Trigger table list after selection
+            });
+        }
         
         // Also add common system schemas for DB2
         var systemSchemas = new[] { "SYSCAT", "SYSIBM", "SYSIBMADM", "SYSSTAT" };
@@ -386,7 +516,8 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 {
                     Text = sysSchema,
                     Description = $"System Schema: {sysSchema}",
-                    Priority = 5.0
+                    Priority = 5.0,
+                    OnCompleted = _triggerCompletionCallback
                 });
             }
         }
@@ -488,11 +619,62 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
             var secondLastWord = lastWords.Count > 1 ? lastWords[^2].ToUpperInvariant() : string.Empty;
             var thirdLastWord = lastWords.Count > 2 ? lastWords[^3].ToUpperInvariant() : string.Empty;
             
+            // Check if lastWord is a SQL keyword (to distinguish from identifiers)
+            var sqlKeywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "SELECT", "FROM", "WHERE", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "CROSS", "OUTER",
+                "ON", "AND", "OR", "ORDER", "BY", "GROUP", "HAVING", "INSERT", "INTO", "UPDATE", "SET",
+                "DELETE", "CREATE", "ALTER", "DROP", "TABLE", "VIEW", "INDEX", "AS", "DISTINCT", "VALUES",
+                "MERGE", "TRUNCATE", "RENAME", "GRANT", "REVOKE", "COMMENT", "LOCK", "UNION", "EXCEPT", "INTERSECT"
+            };
+            var lastWordIsKeyword = sqlKeywords.Contains(lastWord);
+            
             // PRIORITY 2: After FROM, JOIN, INTO, UPDATE -> show SCHEMAS first
+            // Case 1: Cursor right after keyword (e.g., "FROM |")
             if (lastWord is "FROM" or "JOIN" or "INTO" or "TABLE" or "UPDATE")
             {
                 Logger.Debug("Context: Schema (after {Keyword})", lastWord);
                 return SqlContext.Schema;
+            }
+            
+            // Case 2: Already typing identifier after FROM/JOIN (e.g., "FROM db|")
+            // lastWord is the partial identifier, secondLastWord is the keyword
+            // BUT if lastWord contains a period, it's already a complete schema.table reference
+            // In that case, user is typing after the table (likely alias or keyword context)
+            if (!lastWordIsKeyword && secondLastWord is "FROM" or "JOIN" or "INTO" or "TABLE" or "UPDATE")
+            {
+                // If lastWord contains a period, it's a complete table reference (e.g., "DBM.BANKTERM_ID")
+                // After a complete table, show keywords (WHERE, AS) or allow alias typing
+                if (lastWord.Contains('.'))
+                {
+                    Logger.Debug("Context: Keyword (after complete table reference: {Table})", lastWord);
+                    return SqlContext.Keyword;  // Show WHERE, JOIN, AS, etc.
+                }
+                
+                Logger.Debug("Context: Schema (typing after {Keyword}, partial: {Partial})", secondLastWord, lastWord);
+                return SqlContext.Schema;
+            }
+            
+            // Case 3: After comma in FROM clause (e.g., "FROM schema.table, |" or "FROM schema.table, db|")
+            // Check if we're in a FROM clause by looking back for FROM
+            if (lastWord == ",")
+            {
+                // Look back to find what clause we're in
+                if (IsInFromClause(statementBeforeCaret))
+                {
+                    Logger.Debug("Context: Schema (comma in FROM clause)");
+                    return SqlContext.Schema;
+                }
+            }
+            
+            // Typing after comma in FROM clause (e.g., "FROM schema.table, db|")
+            if (!lastWordIsKeyword && secondLastWord == "," && !lastWord.Contains('.'))
+            {
+                if (IsInFromClause(statementBeforeCaret))
+                {
+                    Logger.Debug("Context: Schema (typing after comma in FROM clause)");
+                    return SqlContext.Schema;
+                }
             }
             
             // After INNER, LEFT, RIGHT, FULL, CROSS -> likely followed by JOIN
@@ -509,6 +691,13 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 return SqlContext.JoinCondition;
             }
             
+            // After ON with partial identifier
+            if (!lastWordIsKeyword && secondLastWord == "ON")
+            {
+                Logger.Debug("Context: JoinCondition (typing after ON)");
+                return SqlContext.JoinCondition;
+            }
+            
             // PRIORITY 4: After SELECT -> show columns, *, functions
             if (lastWord == "SELECT" || (lastWord == "DISTINCT" && secondLastWord == "SELECT"))
             {
@@ -516,10 +705,25 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 return SqlContext.ColumnName;
             }
             
+            // Typing after SELECT
+            if (!lastWordIsKeyword && (secondLastWord == "SELECT" || 
+                (secondLastWord == "DISTINCT" && thirdLastWord == "SELECT")))
+            {
+                Logger.Debug("Context: ColumnName (typing in SELECT clause)");
+                return SqlContext.ColumnName;
+            }
+            
             // PRIORITY 5: After WHERE, AND, OR -> show columns
             if (lastWord is "WHERE" or "AND" or "OR" or "HAVING")
             {
                 Logger.Debug("Context: ColumnName (predicate)");
+                return SqlContext.ColumnName;
+            }
+            
+            // Typing after WHERE/AND/OR
+            if (!lastWordIsKeyword && secondLastWord is "WHERE" or "AND" or "OR" or "HAVING")
+            {
+                Logger.Debug("Context: ColumnName (typing in predicate)");
                 return SqlContext.ColumnName;
             }
             
@@ -531,10 +735,24 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 return SqlContext.OrderByColumn;
             }
             
+            // Typing after ORDER BY / GROUP BY
+            if (!lastWordIsKeyword && secondLastWord == "BY" && thirdLastWord is "ORDER" or "GROUP")
+            {
+                Logger.Debug("Context: OrderByColumn (typing)");
+                return SqlContext.OrderByColumn;
+            }
+            
             // After SET (in UPDATE) -> show columns
             if (lastWord == "SET")
             {
                 Logger.Debug("Context: ColumnName (SET clause)");
+                return SqlContext.ColumnName;
+            }
+            
+            // Typing after SET
+            if (!lastWordIsKeyword && secondLastWord == "SET")
+            {
+                Logger.Debug("Context: ColumnName (typing in SET clause)");
                 return SqlContext.ColumnName;
             }
             
@@ -555,7 +773,38 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                 return SqlContext.SystemCatalog;
         }
         
-        return SqlContext.Keyword;
+        return SqlContext.General;
+    }
+    
+    /// <summary>
+    /// Check if the current position is within a FROM clause
+    /// </summary>
+    private bool IsInFromClause(string textBeforeCaret)
+    {
+        var upper = textBeforeCaret.ToUpperInvariant();
+        
+        // Find the last FROM position
+        var fromPos = upper.LastIndexOf(" FROM ", StringComparison.Ordinal);
+        if (fromPos < 0)
+            return false;
+        
+        // Check if there's a WHERE, ORDER, GROUP, HAVING, JOIN after FROM
+        // If so, we're past the FROM clause
+        var afterFrom = upper.Substring(fromPos);
+        
+        // These keywords end the simple FROM clause (though JOIN is still table context)
+        if (afterFrom.Contains(" WHERE ") || 
+            afterFrom.Contains(" ORDER ") || 
+            afterFrom.Contains(" GROUP ") || 
+            afterFrom.Contains(" HAVING ") ||
+            afterFrom.Contains(" UNION ") ||
+            afterFrom.Contains(" EXCEPT ") ||
+            afterFrom.Contains(" INTERSECT "))
+        {
+            return false;
+        }
+        
+        return true;
     }
     
     /// <summary>
@@ -662,31 +911,147 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     private List<ICompletionData> GetColumnNameCompletions(string text, int caretPosition)
     {
         var completions = new List<ICompletionData>();
-        var tableNames = ExtractTableNamesFromQuery(text);
+        var tableRefs = ExtractTableReferencesWithAliases(text);
         
-        foreach (var tableName in tableNames)
+        Logger.Debug("Found {Count} table references in query", tableRefs.Count);
+        
+        // Check if user is typing after an alias (e.g., "t1.")
+        var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
+        var aliasMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+        
+        if (aliasMatch.Success)
         {
-            if (_tableColumns.TryGetValue(tableName, out var columns))
+            // User typed "alias." - show columns for that specific table
+            var typedAlias = aliasMatch.Groups[1].Value;
+            Logger.Debug("User typed alias: {Alias}", typedAlias);
+            
+            // Find the table reference matching this alias
+            var matchingRef = tableRefs.FirstOrDefault(t => 
+                string.Equals(t.Alias, typedAlias, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.TableName, typedAlias, StringComparison.OrdinalIgnoreCase));
+            
+            if (matchingRef != null)
             {
-                completions.AddRange(columns.Select(c => new SqlColumnCompletionData
-                {
-                    ColumnName = c.Name,
-                    DataType = c.DataType,
-                    IsNullable = c.IsNullable,
-                    IsPrimaryKey = c.IsPrimaryKey,
-                    TableName = tableName,
-                    Priority = 3.0
-                }));
+                Logger.Debug("Found table for alias '{Alias}': {Table}", typedAlias, matchingRef.FullName);
+                return GetColumnsForTable(matchingRef.FullName, typedAlias);
             }
         }
         
+        // If multiple tables with aliases, show aliases first so user can pick one
+        if (tableRefs.Count > 1 && tableRefs.Any(t => !string.IsNullOrEmpty(t.Alias)))
+        {
+            Logger.Debug("Multiple tables with aliases - showing aliases");
+            
+            foreach (var tableRef in tableRefs)
+            {
+                completions.Add(new SqlAliasCompletionData
+                {
+                    AliasName = tableRef.Identifier,
+                    TableName = tableRef.TableName,
+                    SchemaName = tableRef.SchemaName,
+                    Priority = 4.0,
+                    OnCompleted = _triggerCompletionCallback
+                });
+            }
+            
+            return completions;
+        }
+        
+        // Single table or no aliases - show columns directly
+        if (tableRefs.Count == 1)
+        {
+            Logger.Debug("Single table - showing columns for {Table}", tableRefs[0].FullName);
+            return GetColumnsForTable(tableRefs[0].FullName, null);
+        }
+        
+        // Multiple tables without aliases - show all columns with table prefixes
+        foreach (var tableRef in tableRefs)
+        {
+            var tableColumns = GetColumnsForTable(tableRef.FullName, tableRef.TableName);
+            completions.AddRange(tableColumns);
+        }
+        
+        // If still no completions, show * and try to load columns dynamically
         if (completions.Count == 0)
         {
+            Logger.Debug("No columns found - showing * and table names");
+            
             completions.Add(new SqlKeywordCompletionData
             {
                 Text = "*",
                 Description = "Select all columns",
                 Priority = 10.0
+            });
+            
+            // Show table references so user can type tablename.column
+            foreach (var tableRef in tableRefs)
+            {
+                completions.Add(new SqlAliasCompletionData
+                {
+                    AliasName = tableRef.Identifier,
+                    TableName = tableRef.TableName,
+                    SchemaName = tableRef.SchemaName,
+                    Priority = 4.0,
+                    OnCompleted = _triggerCompletionCallback
+                });
+            }
+        }
+        
+        return completions;
+    }
+    
+    /// <summary>
+    /// Get columns for a specific table, optionally prefixed with alias/table name.
+    /// </summary>
+    private List<ICompletionData> GetColumnsForTable(string fullTableName, string? prefix)
+    {
+        var completions = new List<ICompletionData>();
+        
+        // Try to load columns on-demand if not cached
+        if (!_tableColumns.ContainsKey(fullTableName) && _currentConnection != null)
+        {
+            Logger.Debug("Loading columns on-demand for {Table}", fullTableName);
+            // Fire and forget - columns will be available next time
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await LoadColumnsForTableAsync(_currentConnection, fullTableName);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "On-demand column loading failed for {Table}", fullTableName);
+                }
+            });
+        }
+        
+        if (_tableColumns.TryGetValue(fullTableName, out var columns))
+        {
+            Logger.Debug("Found {Count} columns for {Table}", columns.Count, fullTableName);
+            
+            completions.AddRange(columns.Select(c => new SqlColumnCompletionData
+            {
+                ColumnName = c.Name,
+                DataType = c.DataType,
+                IsNullable = c.IsNullable,
+                IsPrimaryKey = c.IsPrimaryKey,
+                TableName = fullTableName,
+                Priority = 3.0
+            }));
+        }
+        else
+        {
+            Logger.Debug("No cached columns for {Table} - columns will be available after loading", fullTableName);
+        }
+        
+        // Always add * at the end as fallback
+        if (completions.Count == 0)
+        {
+            completions.Add(new SqlKeywordCompletionData
+            {
+                Text = "*",
+                Description = $"Select all columns from {fullTableName}",
+                Priority = 5.0
             });
         }
         
@@ -839,31 +1204,136 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     
     private List<string> ExtractTableNamesFromQuery(string sql)
     {
-        var tableNames = new List<string>();
+        // Delegate to the new method for backward compatibility
+        return ExtractTableReferencesWithAliases(sql)
+            .Select(r => r.FullName)
+            .Distinct()
+            .ToList();
+    }
+    
+    /// <summary>
+    /// Extract table references with their aliases from SQL query.
+    /// Parses: FROM schema.table alias, schema.table AS alias
+    /// Also handles: JOIN schema.table alias ON ...
+    /// </summary>
+    private List<TableReference> ExtractTableReferencesWithAliases(string sql)
+    {
+        var tableRefs = new List<TableReference>();
         
         try
         {
-            var fromMatches = Regex.Matches(sql, @"FROM\s+([A-Z0-9_]+\.?[A-Z0-9_]+)", RegexOptions.IgnoreCase);
-            var joinMatches = Regex.Matches(sql, @"JOIN\s+([A-Z0-9_]+\.?[A-Z0-9_]+)", RegexOptions.IgnoreCase);
+            // Normalize the SQL (remove extra whitespace, keep original case for table/alias names)
+            var normalizedSql = Regex.Replace(sql, @"\s+", " ");
             
-            foreach (Match match in fromMatches)
+            // Regex explanation for table references:
+            // Pattern matches: FROM/JOIN followed by:
+            //   - schema.table (captured in group 1 & 2)
+            //   - optionally followed by AS? alias (captured in group 3 or 4)
+            // 
+            // Examples:
+            //   FROM DBM.TABLE1 t1           -> schema=DBM, table=TABLE1, alias=t1
+            //   FROM DBM.TABLE1 AS t1        -> schema=DBM, table=TABLE1, alias=t1
+            //   FROM DBM.TABLE1              -> schema=DBM, table=TABLE1, alias=null
+            //   JOIN DBM.TABLE2 t2 ON ...    -> schema=DBM, table=TABLE2, alias=t2
+            //   FROM TABLE1, TABLE2          -> tables without schema
+            
+            // Pattern for: FROM/JOIN schema.table [AS] alias
+            // Also handles comma-separated tables: FROM t1, t2
+            var tablePattern = @"(?:FROM|JOIN)\s+([A-Z0-9_]+)\.([A-Z0-9_]+)(?:\s+(?:AS\s+)?([A-Z0-9_]+))?";
+            var matches = Regex.Matches(normalizedSql, tablePattern, RegexOptions.IgnoreCase);
+            
+            foreach (Match match in matches)
             {
-                if (match.Groups.Count > 1)
-                    tableNames.Add(match.Groups[1].Value);
+                var schemaName = match.Groups[1].Value.Trim();
+                var tableName = match.Groups[2].Value.Trim();
+                var alias = match.Groups[3].Success ? match.Groups[3].Value.Trim() : null;
+                
+                // Exclude SQL keywords that might be mistaken for aliases
+                if (alias != null && IsSqlKeyword(alias))
+                {
+                    alias = null;
+                }
+                
+                tableRefs.Add(new TableReference
+                {
+                    FullName = $"{schemaName}.{tableName}",
+                    SchemaName = schemaName,
+                    TableName = tableName,
+                    Alias = alias
+                });
+                
+                Logger.Debug("Extracted table: {Schema}.{Table} AS {Alias}", schemaName, tableName, alias ?? "(none)");
             }
             
-            foreach (Match match in joinMatches)
+            // Also handle comma-separated tables in FROM clause
+            // Pattern: , schema.table [AS] alias (within FROM clause)
+            var commaPattern = @",\s*([A-Z0-9_]+)\.([A-Z0-9_]+)(?:\s+(?:AS\s+)?([A-Z0-9_]+))?";
+            var commaMatches = Regex.Matches(normalizedSql, commaPattern, RegexOptions.IgnoreCase);
+            
+            foreach (Match match in commaMatches)
             {
-                if (match.Groups.Count > 1)
-                    tableNames.Add(match.Groups[1].Value);
+                // Verify this is in a FROM clause (basic check - comma before WHERE/JOIN/ORDER etc.)
+                var matchPos = match.Index;
+                var beforeMatch = normalizedSql.Substring(0, matchPos).ToUpperInvariant();
+                
+                // Check if we're between FROM and WHERE/JOIN/ORDER/GROUP/HAVING
+                var fromPos = beforeMatch.LastIndexOf(" FROM ");
+                if (fromPos < 0) continue;
+                
+                var afterFrom = beforeMatch.Substring(fromPos);
+                if (afterFrom.Contains(" WHERE ") || afterFrom.Contains(" ORDER ") || 
+                    afterFrom.Contains(" GROUP ") || afterFrom.Contains(" HAVING ") ||
+                    afterFrom.Contains(" JOIN "))
+                    continue;
+                
+                var schemaName = match.Groups[1].Value.Trim();
+                var tableName = match.Groups[2].Value.Trim();
+                var alias = match.Groups[3].Success ? match.Groups[3].Value.Trim() : null;
+                
+                if (alias != null && IsSqlKeyword(alias))
+                {
+                    alias = null;
+                }
+                
+                // Check if we already have this table
+                var fullName = $"{schemaName}.{tableName}";
+                if (!tableRefs.Any(t => t.FullName.Equals(fullName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    tableRefs.Add(new TableReference
+                    {
+                        FullName = fullName,
+                        SchemaName = schemaName,
+                        TableName = tableName,
+                        Alias = alias
+                    });
+                    
+                    Logger.Debug("Extracted comma table: {Schema}.{Table} AS {Alias}", schemaName, tableName, alias ?? "(none)");
+                }
             }
         }
         catch (Exception ex)
         {
-            Logger.Warn(ex, "Failed to extract table names from query");
+            Logger.Warn(ex, "Failed to extract table references from query");
         }
         
-        return tableNames.Distinct().ToList();
+        return tableRefs;
+    }
+    
+    /// <summary>
+    /// Check if a word is a SQL keyword (to avoid treating keywords as aliases).
+    /// </summary>
+    private bool IsSqlKeyword(string word)
+    {
+        var keywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "WHERE", "AND", "OR", "ON", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "CROSS", "OUTER",
+            "ORDER", "BY", "GROUP", "HAVING", "UNION", "EXCEPT", "INTERSECT", "FETCH", "FIRST",
+            "ROWS", "ONLY", "FOR", "UPDATE", "OF", "SET", "VALUES", "INTO", "SELECT", "FROM",
+            "AS", "WITH", "DISTINCT", "ALL", "LIMIT", "OFFSET", "NULL", "NOT", "IN", "EXISTS",
+            "BETWEEN", "LIKE", "IS", "CASE", "WHEN", "THEN", "ELSE", "END", "ASC", "DESC"
+        };
+        
+        return keywords.Contains(word);
     }
 }
 

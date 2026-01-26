@@ -922,6 +922,17 @@ public partial class ConnectionTabControl : UserControl
             // Initialize provider with metadata
             await _newIntelliSenseManager.SetActiveProviderAsync(provider, dbVersion, _connectionManager);
             
+            // Set callback to trigger table/column completion after schema selection
+            _newIntelliSenseManager.SetCompletionCallback(() =>
+            {
+                // Use dispatcher to ensure we're on UI thread and after current completion closes
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    Logger.Debug("Schema completion callback triggered - showing table completions");
+                    ShowNewCompletionWindow();
+                }), System.Windows.Threading.DispatcherPriority.Background);
+            });
+            
             Logger.Info("IntelliSense system initialized successfully");
         }
         catch (Exception ex)
@@ -987,8 +998,9 @@ public partial class ConnectionTabControl : UserControl
                 _completionWindow = null;
             }
             
-            var currentWord = GetCurrentWord();
-            Logger.Debug("Showing new IntelliSense for word: '{Word}'", currentWord);
+            // Get current word and whether we're after a period (schema.object context)
+            var currentWord = GetCurrentWord(out bool isAfterPeriod);
+            Logger.Debug("Showing new IntelliSense for word: '{Word}', after period: {AfterPeriod}", currentWord, isAfterPeriod);
             
             var completions = _newIntelliSenseManager?.GetCompletions(
                 SqlEditor.Text,
@@ -1017,6 +1029,13 @@ public partial class ConnectionTabControl : UserControl
             
             _completionWindow.Closed += (s, args) => _completionWindow = null;
             _completionWindow.Show();
+            
+                // Auto-select if only one item - user can just press Enter
+                if (suggestions.Count == 1)
+                {
+                    _completionWindow.CompletionList.SelectedItem = _completionWindow.CompletionList.CompletionData[0];
+                    Logger.Debug("Auto-selected single fallback item");
+                }
             
                 Logger.Debug("Fallback IntelliSense shown with {Count} suggestions", suggestions.Count);
                 return;
@@ -1052,18 +1071,63 @@ public partial class ConnectionTabControl : UserControl
             
             _completionWindow = new CompletionWindow(SqlEditor.TextArea);
             
-            // Set the start offset to replace the current word
+            // Set the start offset to replace only the current word (not the schema prefix)
+            // When we're after a period (schema.object context), only replace what comes after the period
             _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+            
+            Logger.Debug("Completion StartOffset: {Offset}, CaretOffset: {Caret}, WordLength: {Len}", 
+                _completionWindow.StartOffset, SqlEditor.CaretOffset, currentWord.Length);
             
             foreach (var completion in filteredCompletions)
             {
+                // Wire up OnCompleted callback for schema completions to auto-trigger table list
+                if (completion is SqlSchemaCompletionData schemaCompletion)
+                {
+                    schemaCompletion.OnCompleted = () =>
+                    {
+                        // Schedule showing the next completion window after this one closes
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            // Small delay to let the period be inserted
+                            System.Threading.Tasks.Task.Delay(50).ContinueWith(_ =>
+                            {
+                                Dispatcher.Invoke(() => ShowNewCompletionWindow());
+                            });
+                        }), System.Windows.Threading.DispatcherPriority.Background);
+                    };
+                }
+                
                 _completionWindow.CompletionList.CompletionData.Add(completion);
             }
             
             _completionWindow.Closed += (s, args) => _completionWindow = null;
+            
+            // Add handler to auto-select when filtering reduces to one item
+            _completionWindow.CompletionList.ListBox.ItemContainerGenerator.StatusChanged += (s, args) =>
+            {
+                if (_completionWindow?.CompletionList?.ListBox != null)
+                {
+                    var listBox = _completionWindow.CompletionList.ListBox;
+                    // Check if exactly one item is visible
+                    if (listBox.Items.Count == 1 && listBox.SelectedIndex != 0)
+                    {
+                        listBox.SelectedIndex = 0;
+                        Logger.Debug("Auto-selected single remaining completion item during filtering");
+                    }
+                }
+            };
+            
             _completionWindow.Show();
             
-            Logger.Info("IntelliSense window shown with {Count} completions", filteredCompletions.Count);
+            // Auto-select if only one item - user can just press Enter
+            if (filteredCompletions.Count == 1)
+            {
+                _completionWindow.CompletionList.SelectedItem = filteredCompletions[0];
+                Logger.Debug("Auto-selected single completion item: {Item}", filteredCompletions[0].Text);
+            }
+            
+            Logger.Info("IntelliSense window shown with {Count} completions (afterPeriod: {AfterPeriod})", 
+                filteredCompletions.Count, isAfterPeriod);
         }
         catch (Exception ex)
         {
@@ -1076,19 +1140,48 @@ public partial class ConnectionTabControl : UserControl
     /// </summary>
     private string GetCurrentWord()
     {
+        return GetCurrentWord(out _);
+    }
+    
+    /// <summary>
+    /// Get the current word being typed at cursor position
+    /// Also returns whether we're after a period (schema.object context)
+    /// </summary>
+    private string GetCurrentWord(out bool isAfterPeriod)
+    {
+        isAfterPeriod = false;
         var offset = SqlEditor.CaretOffset;
         var text = SqlEditor.Text;
         
         if (offset == 0 || offset > text.Length)
             return string.Empty;
         
-        // Find start of current word
+        // Check if character before caret is a period
+        // e.g., "dbm." <- caret here, we're after period with empty word
+        if (offset > 0 && text[offset - 1] == '.')
+        {
+            isAfterPeriod = true;
+            return string.Empty;  // No word yet after the period
+        }
+        
+        // Find start of current word (stop at period, space, or start of text)
         var start = offset - 1;
-        while (start > 0 && (char.IsLetterOrDigit(text[start]) || text[start] == '_' || text[start] == '.'))
+        while (start > 0 && (char.IsLetterOrDigit(text[start]) || text[start] == '_'))
         {
             start--;
         }
-        start++;
+        
+        // Check if there's a period before the word (schema.tabl context)
+        if (start >= 0 && text[start] == '.')
+        {
+            isAfterPeriod = true;
+        }
+        
+        // If we stopped on a non-word character, move forward
+        if (start < offset - 1 && !char.IsLetterOrDigit(text[start]) && text[start] != '_')
+        {
+            start++;
+        }
         
         // Extract word
         var length = offset - start;

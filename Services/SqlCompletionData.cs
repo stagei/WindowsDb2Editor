@@ -18,14 +18,14 @@ public abstract class SqlCompletionDataBase : ICompletionData
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    public string Text { get; set; } = string.Empty;
-    public object Description { get; set; } = string.Empty;
+    public virtual string Text { get; set; } = string.Empty;
+    public virtual object Description { get; set; } = string.Empty;
     public double Priority { get; set; } = 1.0;
     public ImageSource? Image { get; set; }
     
-    public object Content => Text;
+    public virtual object Content => Text;
     
-    public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+    public virtual void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
     {
         Logger.Debug("Completing: {Text}", Text);
         textArea.Document.Replace(completionSegment, Text);
@@ -247,7 +247,7 @@ public class SqlSnippetCompletionData : SqlCompletionDataBase
         Priority = 1.5;
     }
     
-    public new void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+    public override void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
     {
         // Replace trigger with template
         textArea.Document.Replace(completionSegment, Template);
@@ -255,7 +255,7 @@ public class SqlSnippetCompletionData : SqlCompletionDataBase
         // Future: Add placeholder navigation with TAB
     }
     
-    public new object Content
+    public override object Content
     {
         get
         {
@@ -360,15 +360,34 @@ public class SqlSystemTableCompletionData : SqlCompletionDataBase
 
 /// <summary>
 /// Completion data for schema names.
+/// Auto-adds period after selection and triggers table completion.
 /// </summary>
 public class SqlSchemaCompletionData : SqlCompletionDataBase
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    /// <summary>
+    /// Action to trigger after completion (e.g., show tables)
+    /// </summary>
+    public Action? OnCompleted { get; set; }
+    
     public SqlSchemaCompletionData()
     {
         Priority = 3.0; // High priority - schemas shown at top
     }
     
-    public new object Content
+    public override void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+    {
+        Logger.Debug("Schema completion: inserting '{Text}.' with auto-period", Text);
+        
+        // Insert schema name WITH period (so user can immediately type table name)
+        textArea.Document.Replace(completionSegment, Text + ".");
+        
+        // Trigger the callback to show table completions
+        OnCompleted?.Invoke();
+    }
+    
+    public override object Content
     {
         get
         {
@@ -386,6 +405,82 @@ public class SqlSchemaCompletionData : SqlCompletionDataBase
                 Foreground = Brushes.DarkBlue,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center
             });
+            
+            return panel;
+        }
+    }
+}
+
+/// <summary>
+/// Completion data for table/view alias names.
+/// Used in WHERE clause to show aliases, then columns after period.
+/// </summary>
+public class SqlAliasCompletionData : SqlCompletionDataBase
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    public string AliasName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
+    public string SchemaName { get; set; } = string.Empty;
+    public bool IsSubselectAlias { get; set; }
+    
+    /// <summary>
+    /// Action to trigger after completion (e.g., show columns)
+    /// </summary>
+    public Action? OnCompleted { get; set; }
+    
+    public SqlAliasCompletionData()
+    {
+        Priority = 4.0; // Higher priority than columns
+    }
+    
+    public override string Text => AliasName;
+    
+    public override object Description => IsSubselectAlias 
+        ? $"Subquery alias" 
+        : $"Alias for {SchemaName}.{TableName}";
+    
+    public override void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+    {
+        Logger.Debug("Alias completion: inserting '{Alias}.' with auto-period", AliasName);
+        
+        // Insert alias name WITH period
+        textArea.Document.Replace(completionSegment, AliasName + ".");
+        
+        // Trigger the callback to show column completions
+        OnCompleted?.Invoke();
+    }
+    
+    public override object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = IsSubselectAlias ? "🔗 " : "🏷️ ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = AliasName,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.DarkGreen,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            
+            if (!IsSubselectAlias && !string.IsNullOrEmpty(TableName))
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = $" → {TableName}",
+                    FontSize = 10,
+                    Foreground = Brushes.Gray,
+                    Margin = new System.Windows.Thickness(5, 0, 0, 0),
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                });
+            }
             
             return panel;
         }

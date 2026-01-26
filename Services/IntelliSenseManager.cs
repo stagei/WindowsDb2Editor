@@ -126,6 +126,18 @@ public class IntelliSenseManager
         
         return await _activeProvider.GetSignatureHintAsync(functionName);
     }
+    
+    /// <summary>
+    /// Set a callback to trigger after schema/alias completion (to show tables/columns).
+    /// </summary>
+    public void SetCompletionCallback(Action? callback)
+    {
+        if (_activeProvider is SqlIntelliSenseProvider sqlProvider)
+        {
+            sqlProvider.SetCompletionCallback(callback);
+            Logger.Debug("Completion callback set on SqlIntelliSenseProvider");
+        }
+    }
 }
 
 /// <summary>
