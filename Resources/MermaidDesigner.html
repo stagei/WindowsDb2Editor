@@ -191,19 +191,8 @@
     </style>
 </head>
 <body>
-    <div id="toolbar">
-        <button onclick="refreshPreview()">🔄 Refresh</button>
-        <button onclick="autoRefresh()">⚡ Auto-Refresh</button>
-        <button onclick="generateFromDB()">🔽 Load from DB</button>
-        <button onclick="showDiff()">📊 Show Diff</button>
-        <button onclick="generateDDL()">📝 Generate DDL</button>
-        <button onclick="exportDiagram()">💾 Export</button>
-        <!-- NEW SqlMermaidErdTools Features -->
-        <button onclick="generateSqlFromMermaid()">🔧 Mermaid → SQL</button>
-        <button onclick="translateSqlDialog()">🌐 Translate SQL</button>
-        <button onclick="generateMigrationAdvanced()">⚙️ Advanced Migration</button>
-        <button onclick="toggleHelp()">❓ Help</button>
-        <span style="margin-left: auto; color: #d4d4d4;">Mermaid ER Diagram Designer (SqlMermaidErdTools)</span>
+    <!-- Toolbar is now in WPF, hidden here -->
+    <div id="toolbar" style="display: none;">
     </div>
 
     <div id="container">
@@ -667,10 +656,23 @@
             refreshPreview();
         }
 
+        let editorChangeTimer;
         editor.addEventListener('input', () => {
             if (autoRefreshEnabled) {
                 // Debounced - will refresh via timer
             }
+            
+            // Send current content to C# for diff detection (debounced)
+            clearTimeout(editorChangeTimer);
+            editorChangeTimer = setTimeout(() => {
+                const currentContent = editor.value;
+                if (window.chrome?.webview?.postMessage) {
+                    window.chrome.webview.postMessage({
+                        action: 'editorContentChanged',
+                        diagram: currentContent
+                    });
+                }
+            }, 1000); // 1 second debounce
         });
 
         // Initialize

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Dialogs;
@@ -19,6 +20,7 @@ public partial class SchemaTableSelectionDialog : Window
     private readonly MetadataHandler _metadataHandler;
     private readonly string _defaultSchema;
     private readonly Dictionary<string, List<string>> _schemaTableDict = new();
+    private readonly Dictionary<string, TableSelectionItem> _tableItems = new();
     
     public List<string> SelectedTables { get; private set; } = new();
     
@@ -105,10 +107,20 @@ public partial class SchemaTableSelectionDialog : Window
             
             foreach (var table in tables.OrderBy(t => t))
             {
+                var fullName = $"{schema}.{table}";
+                if (!_tableItems.ContainsKey(fullName))
+                {
+                    _tableItems[fullName] = new TableSelectionItem
+                    {
+                        Schema = schema,
+                        TableName = table
+                    };
+                }
+                
                 var tableItem = new TreeViewItem
                 {
-                    Header = CreateTableHeader(table),
-                    Tag = $"{schema}.{table}"
+                    Header = CreateTableHeader(schema, table),
+                    Tag = fullName
                 };
                 
                 schemaItem.Items.Add(tableItem);
@@ -141,12 +153,17 @@ public partial class SchemaTableSelectionDialog : Window
         return panel;
     }
     
-    private CheckBox CreateTableHeader(string table)
+    private CheckBox CreateTableHeader(string schema, string table)
     {
+        var fullName = $"{schema}.{table}";
+        var item = _tableItems.GetValueOrDefault(fullName);
+        var fkInfo = item != null ? $" [FK: {item.OutgoingFKCount} outgoing, {item.IncomingFKCount} incoming]" : "";
+        
         return new CheckBox
         {
-            Content = $"📄 {table}",
-            Margin = new Thickness(20, 2, 0, 2)
+            Content = $"📄 {table}{fkInfo}",
+            Margin = new Thickness(20, 2, 0, 2),
+            Tag = fullName
         };
     }
     
@@ -267,6 +284,363 @@ public partial class SchemaTableSelectionDialog : Window
         Logger.Info("User selected {Count} tables", SelectedTables.Count);
         DialogResult = true;
         Close();
+    }
+    
+    /// <summary>
+    /// Follow foreign keys from selected tables (forward direction).
+    /// Adds tables that are referenced by selected tables' FKs.
+    /// </summary>
+    private async void FollowFK_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            FollowFKButton.IsEnabled = false;
+            FKStatusText.Text = "Following foreign keys...";
+            
+            var selectedTableNames = GetSelectedTableNames();
+            if (selectedTableNames.Count == 0)
+            {
+                MessageBox.Show("Please select at least one table first.", "No Selection", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
+            Logger.Debug("Following foreign keys from {Count} selected tables", selectedTableNames.Count);
+            
+            var relatedTables = new HashSet<string>();
+            var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1";
+            
+            foreach (var fullTableName in selectedTableNames)
+            {
+                var parts = fullTableName.Split('.');
+                if (parts.Length != 2) continue;
+                
+                var schema = parts[0].Trim();
+                var tableName = parts[1].Trim();
+                
+                Logger.Debug("Querying outgoing FKs for {Schema}.{Table}", schema, tableName);
+                
+                // Query SYSCAT.REFERENCES for outgoing FKs
+                var fkQuery = _metadataHandler.GetQuery(provider, version, "GetForeignKeysForTable");
+                fkQuery = ReplaceSqlParameters(fkQuery, schema, tableName);
+                var fkResults = await _connectionManager.ExecuteQueryAsync(fkQuery);
+                
+                foreach (DataRow row in fkResults.Rows)
+                {
+                    var refSchema = row["REF_SCHEMA"]?.ToString()?.Trim() ?? string.Empty;
+                    var refTable = row["REF_TABLE"]?.ToString()?.Trim() ?? string.Empty;
+                    var key = $"{refSchema}.{refTable}";
+                    
+                    if (!string.IsNullOrEmpty(refSchema) && !string.IsNullOrEmpty(refTable) && 
+                        !relatedTables.Contains(key) && !selectedTableNames.Contains(key))
+                    {
+                        relatedTables.Add(key);
+                        Logger.Debug("Found related table via FK: {Schema}.{Table}", refSchema, refTable);
+                    }
+                }
+            }
+            
+            // Add related tables to selection
+            var addedCount = 0;
+            foreach (var relatedKey in relatedTables)
+            {
+                if (SelectTableInTreeView(relatedKey))
+                {
+                    addedCount++;
+                    Logger.Info("Added table to selection via FK: {Table}", relatedKey);
+                }
+            }
+            
+            BuildTreeView(); // Refresh to show FK counts
+            UpdateSelectionCount();
+            
+            FKStatusText.Text = addedCount > 0 
+                ? $"Added {addedCount} table(s) via foreign key relationships"
+                : "No additional tables found via foreign keys";
+            
+            Logger.Info("FK navigation complete - Added {Count} tables", addedCount);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to follow foreign keys");
+            MessageBox.Show($"Error following foreign keys:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            FKStatusText.Text = "Error following foreign keys";
+        }
+        finally
+        {
+            FollowFKButton.IsEnabled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Follow incoming foreign keys (backward direction).
+    /// Adds tables that have FKs pointing to selected tables.
+    /// </summary>
+    private async void FollowIncomingFK_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            FollowIncomingFKButton.IsEnabled = false;
+            FKStatusText.Text = "Following incoming foreign keys...";
+            
+            var selectedTableNames = GetSelectedTableNames();
+            if (selectedTableNames.Count == 0)
+            {
+                MessageBox.Show("Please select at least one table first.", "No Selection",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
+            Logger.Debug("Following incoming foreign keys for {Count} selected tables", selectedTableNames.Count);
+            
+            var relatedTables = new HashSet<string>();
+            var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+            var version = "12.1";
+            
+            foreach (var fullTableName in selectedTableNames)
+            {
+                var parts = fullTableName.Split('.');
+                if (parts.Length != 2) continue;
+                
+                var schema = parts[0].Trim();
+                var tableName = parts[1].Trim();
+                
+                Logger.Debug("Querying incoming FKs for {Schema}.{Table}", schema, tableName);
+                
+                // Query SYSCAT.REFERENCES for incoming FKs
+                var incomingFkQuery = _metadataHandler.GetQuery(provider, version, "GetIncomingForeignKeys");
+                incomingFkQuery = ReplaceSqlParameters(incomingFkQuery, schema, tableName);
+                var fkResults = await _connectionManager.ExecuteQueryAsync(incomingFkQuery);
+                
+                foreach (DataRow row in fkResults.Rows)
+                {
+                    var fromSchema = row["REFERENCING_SCHEMA"]?.ToString()?.Trim() ?? string.Empty;
+                    var fromTable = row["REFERENCING_TABLE"]?.ToString()?.Trim() ?? string.Empty;
+                    var key = $"{fromSchema}.{fromTable}";
+                    
+                    if (!string.IsNullOrEmpty(fromSchema) && !string.IsNullOrEmpty(fromTable) &&
+                        !relatedTables.Contains(key) && !selectedTableNames.Contains(key))
+                    {
+                        relatedTables.Add(key);
+                        Logger.Debug("Found table with incoming FK: {Schema}.{Table}", fromSchema, fromTable);
+                    }
+                }
+            }
+            
+            // Add related tables to selection
+            var addedCount = 0;
+            foreach (var relatedKey in relatedTables)
+            {
+                if (SelectTableInTreeView(relatedKey))
+                {
+                    addedCount++;
+                    Logger.Info("Added table to selection via incoming FK: {Table}", relatedKey);
+                }
+            }
+            
+            BuildTreeView(); // Refresh to show FK counts
+            UpdateSelectionCount();
+            
+            FKStatusText.Text = addedCount > 0
+                ? $"Added {addedCount} table(s) via incoming foreign key relationships"
+                : "No additional tables found via incoming foreign keys";
+            
+            Logger.Info("Incoming FK navigation complete - Added {Count} tables", addedCount);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to follow incoming foreign keys");
+            MessageBox.Show($"Error following incoming foreign keys:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            FKStatusText.Text = "Error following incoming foreign keys";
+        }
+        finally
+        {
+            FollowIncomingFKButton.IsEnabled = true;
+        }
+    }
+    
+    /// <summary>
+    /// Expand all related tables (both directions, recursively).
+    /// </summary>
+    private async void ExpandAllRelated_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ExpandAllRelatedButton.IsEnabled = false;
+            FKStatusText.Text = "Expanding all related tables...";
+            
+            Logger.Info("Expanding all related tables");
+            
+            var processed = new HashSet<string>();
+            var toProcess = new Queue<string>(GetSelectedTableNames());
+            var totalAdded = 0;
+            
+            while (toProcess.Count > 0)
+            {
+                var current = toProcess.Dequeue();
+                
+                if (processed.Contains(current))
+                    continue;
+                
+                processed.Add(current);
+                
+                var parts = current.Split('.');
+                if (parts.Length != 2) continue;
+                
+                var schema = parts[0].Trim();
+                var tableName = parts[1].Trim();
+                
+                Logger.Debug("Processing table: {Schema}.{Table}", schema, tableName);
+                
+                // Follow outgoing FKs
+                var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+                var version = "12.1";
+                
+                var fkQuery = _metadataHandler.GetQuery(provider, version, "GetForeignKeysForTable");
+                fkQuery = ReplaceSqlParameters(fkQuery, schema, tableName);
+                var fkResults = await _connectionManager.ExecuteQueryAsync(fkQuery);
+                
+                foreach (DataRow row in fkResults.Rows)
+                {
+                    var refSchema = row["REF_SCHEMA"]?.ToString()?.Trim() ?? string.Empty;
+                    var refTable = row["REF_TABLE"]?.ToString()?.Trim() ?? string.Empty;
+                    var key = $"{refSchema}.{refTable}";
+                    
+                    if (!string.IsNullOrEmpty(refSchema) && !string.IsNullOrEmpty(refTable) &&
+                        !processed.Contains(key) && !toProcess.Contains(key))
+                    {
+                        toProcess.Enqueue(key);
+                        if (SelectTableInTreeView(key))
+                        {
+                            totalAdded++;
+                        }
+                    }
+                }
+                
+                // Follow incoming FKs
+                var incomingFkQuery = _metadataHandler.GetQuery(provider, version, "GetIncomingForeignKeys");
+                incomingFkQuery = ReplaceSqlParameters(incomingFkQuery, schema, tableName);
+                var incomingFkResults = await _connectionManager.ExecuteQueryAsync(incomingFkQuery);
+                
+                foreach (DataRow row in incomingFkResults.Rows)
+                {
+                    var fromSchema = row["REFERENCING_SCHEMA"]?.ToString()?.Trim() ?? string.Empty;
+                    var fromTable = row["REFERENCING_TABLE"]?.ToString()?.Trim() ?? string.Empty;
+                    var key = $"{fromSchema}.{fromTable}";
+                    
+                    if (!string.IsNullOrEmpty(fromSchema) && !string.IsNullOrEmpty(fromTable) &&
+                        !processed.Contains(key) && !toProcess.Contains(key))
+                    {
+                        toProcess.Enqueue(key);
+                        if (SelectTableInTreeView(key))
+                        {
+                            totalAdded++;
+                        }
+                    }
+                }
+            }
+            
+            BuildTreeView(); // Refresh to show FK counts
+            UpdateSelectionCount();
+            
+            FKStatusText.Text = $"Expansion complete - {totalAdded} table(s) added. Total: {GetSelectedTableNames().Count} table(s)";
+            
+            Logger.Info("Expansion complete - {Count} tables in model", GetSelectedTableNames().Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to expand all related tables");
+            MessageBox.Show($"Error expanding related tables:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            FKStatusText.Text = "Error expanding related tables";
+        }
+        finally
+        {
+            ExpandAllRelatedButton.IsEnabled = true;
+        }
+    }
+    
+    private List<string> GetSelectedTableNames()
+    {
+        var selected = new List<string>();
+        
+        foreach (TreeViewItem schemaItem in SchemaTreeView.Items)
+        {
+            foreach (TreeViewItem tableItem in schemaItem.Items)
+            {
+                var header = tableItem.Header as CheckBox;
+                if (header?.IsChecked == true)
+                {
+                    var fullName = tableItem.Tag?.ToString();
+                    if (!string.IsNullOrEmpty(fullName))
+                    {
+                        selected.Add(fullName);
+                    }
+                }
+            }
+        }
+        
+        return selected;
+    }
+    
+    /// <summary>
+    /// Helper method to replace SQL parameter placeholders with values.
+    /// </summary>
+    private string ReplaceSqlParameters(string sql, params string[] values)
+    {
+        var result = sql;
+        foreach (var value in values)
+        {
+            var index = result.IndexOf('?');
+            if (index >= 0)
+            {
+                result = result.Substring(0, index) + $"'{value}'" + result.Substring(index + 1);
+            }
+        }
+        return result;
+    }
+    
+    private bool SelectTableInTreeView(string fullTableName)
+    {
+        var parts = fullTableName.Split('.');
+        if (parts.Length != 2) return false;
+        
+        var schema = parts[0].Trim();
+        var tableName = parts[1].Trim();
+        
+        // Find schema item
+        var schemaItem = SchemaTreeView.Items.Cast<TreeViewItem>()
+            .FirstOrDefault(item => item.Tag?.ToString() == schema);
+        
+        if (schemaItem == null)
+        {
+            // Schema not in tree - might need to add it
+            Logger.Debug("Schema {Schema} not found in tree view", schema);
+            return false;
+        }
+        
+        // Find table item
+        var tableItem = schemaItem.Items.Cast<TreeViewItem>()
+            .FirstOrDefault(item => item.Tag?.ToString() == fullTableName);
+        
+        if (tableItem == null)
+        {
+            Logger.Debug("Table {Table} not found in schema {Schema}", tableName, schema);
+            return false;
+        }
+        
+        // Select the table
+        var header = tableItem.Header as CheckBox;
+        if (header != null)
+        {
+            header.IsChecked = true;
+            return true;
+        }
+        
+        return false;
     }
 }
 

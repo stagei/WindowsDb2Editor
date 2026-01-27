@@ -43,10 +43,16 @@ public partial class LockMonitorPanel : UserControl
         
         try
         {
-            // Initialize filters
+            // Initialize filters - load schemas from database
+            SchemaComboBox.Items.Clear();
             SchemaComboBox.Items.Add("*");
+            
+            // Load schemas from database
+            await LoadSchemasAsync();
+            
             SchemaComboBox.SelectedIndex = 0;
             
+            TableComboBox.Items.Clear();
             TableComboBox.Items.Add("*");
             TableComboBox.SelectedIndex = 0;
             
@@ -60,6 +66,96 @@ public partial class LockMonitorPanel : UserControl
             Logger.Error(ex, "Failed to initialize Lock Monitor");
             MessageBox.Show($"Failed to initialize lock monitor:\n\n{ex.Message}",
                 "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private async Task LoadSchemasAsync()
+    {
+        if (_connectionManager == null) return;
+        
+        try
+        {
+            Logger.Debug("Loading schemas from database");
+            var metadataHandler = new MetadataHandler();
+            var sql = metadataHandler.GetStatement("GetSchemasStatement");
+            
+            var result = await _connectionManager.ExecuteQueryAsync(sql);
+            
+            foreach (System.Data.DataRow row in result.Rows)
+            {
+                var schemaName = row["SCHEMANAME"]?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(schemaName))
+                {
+                    SchemaComboBox.Items.Add(schemaName);
+                }
+            }
+            
+            Logger.Debug("Loaded {Count} schemas", result.Rows.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load schemas");
+        }
+    }
+    
+    private async void SchemaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_connectionManager == null) return;
+        
+        var selectedSchema = SchemaComboBox.SelectedItem?.ToString();
+        Logger.Debug("Schema selection changed to: {Schema}", selectedSchema);
+        
+        // Clear and reset table combo
+        TableComboBox.Items.Clear();
+        TableComboBox.Items.Add("*");
+        
+        if (string.IsNullOrEmpty(selectedSchema) || selectedSchema == "*")
+        {
+            TableComboBox.SelectedIndex = 0;
+            return;
+        }
+        
+        try
+        {
+            // Load tables for selected schema
+            await LoadTablesForSchemaAsync(selectedSchema);
+            TableComboBox.SelectedIndex = 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load tables for schema {Schema}", selectedSchema);
+        }
+    }
+    
+    private async Task LoadTablesForSchemaAsync(string schema)
+    {
+        if (_connectionManager == null) return;
+        
+        try
+        {
+            Logger.Debug("Loading tables for schema: {Schema}", schema);
+            var metadataHandler = new MetadataHandler();
+            var sqlTemplate = metadataHandler.GetStatement("GetTablesForSchema");
+            
+            // Replace parameter placeholder with actual value (properly escaped)
+            var sql = sqlTemplate.Replace("?", $"'{schema.Replace("'", "''")}'");
+            
+            var result = await _connectionManager.ExecuteQueryAsync(sql);
+            
+            foreach (System.Data.DataRow row in result.Rows)
+            {
+                var tableName = row["TABNAME"]?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    TableComboBox.Items.Add(tableName);
+                }
+            }
+            
+            Logger.Debug("Loaded {Count} tables for schema {Schema}", result.Rows.Count, schema);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load tables for schema {Schema}", schema);
         }
     }
     

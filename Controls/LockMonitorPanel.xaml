@@ -20,7 +20,7 @@
                     <ColumnDefinition Width="200"/>
                     <ColumnDefinition Width="20"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="800"/>
                     <ColumnDefinition Width="20"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
@@ -33,6 +33,7 @@
                 <ComboBox Grid.Column="1" 
                           x:Name="SchemaComboBox"
                           SelectedIndex="0"
+                          SelectionChanged="SchemaComboBox_SelectionChanged"
                           ToolTip="Filter by schema (* = all)"/>
                 
                 <!-- Table Filter -->
@@ -42,6 +43,7 @@
                            Margin="0,0,10,0"/>
                 <ComboBox Grid.Column="4" 
                           x:Name="TableComboBox"
+                          Width="800"
                           SelectedIndex="0"
                           ToolTip="Filter by table (* = all)"/>
                 

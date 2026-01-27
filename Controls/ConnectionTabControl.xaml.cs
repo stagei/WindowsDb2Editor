@@ -3344,6 +3344,53 @@ public partial class ConnectionTabControl : UserControl
         
         StatusText.Text = $"Query generated for {fullTableName}";
     }
+    
+    /// <summary>
+    /// Loads a SQL script into the editor with optional title.
+    /// Used for loading migration scripts from Mermaid diff.
+    /// </summary>
+    public void LoadScriptIntoEditor(string sqlScript, string? title = null)
+    {
+        Logger.Info("Loading script into SQL editor - {Length} characters", sqlScript.Length);
+        
+        // Clear existing content
+        SqlEditor.Text = sqlScript;
+        SqlEditor.Focus();
+        
+        // Move cursor to top
+        SqlEditor.CaretOffset = 0;
+        SqlEditor.ScrollToHome();
+        
+        // Update status bar
+        if (!string.IsNullOrEmpty(title))
+        {
+            StatusText.Text = $"📝 {title} - REVIEW before executing (F5)";
+        }
+        else
+        {
+            StatusText.Text = "📝 Migration script loaded - REVIEW before executing (F5)";
+        }
+        StatusText.Foreground = new SolidColorBrush(Colors.Orange);
+        
+        // Highlight the editor to draw attention (light orange background)
+        var originalBackground = SqlEditor.Background;
+        SqlEditor.Background = new SolidColorBrush(Color.FromArgb(20, 255, 165, 0));
+        
+        // Reset background after 3 seconds
+        var timer = new System.Timers.Timer(3000);
+        timer.Elapsed += (s, e) =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                SqlEditor.Background = originalBackground;
+                timer.Stop();
+                timer.Dispose();
+            });
+        };
+        timer.Start();
+        
+        Logger.Debug("Script loaded into editor with title: {Title}", title ?? "Migration Script");
+    }
 
     private void ViewForeignKeys(string fullTableName)
     {
@@ -3796,7 +3843,8 @@ public partial class ConnectionTabControl : UserControl
             try
             {
                 Logger.Info($"Opening script: {openFileDialog.FileName}");
-                var content = File.ReadAllText(openFileDialog.FileName);
+                // Use UTF-8 encoding to properly handle Norwegian/special characters (ÆØÅ)
+                var content = File.ReadAllText(openFileDialog.FileName, System.Text.Encoding.UTF8);
                 SqlEditor.Text = content;
                 StatusText.Text = $"Loaded: {Path.GetFileName(openFileDialog.FileName)}";
                 Logger.Info($"Script loaded successfully: {content.Length} characters");
@@ -3834,11 +3882,12 @@ public partial class ConnectionTabControl : UserControl
             try
             {
                 Logger.Info($"Saving script: {saveFileDialog.FileName}");
-                File.WriteAllText(saveFileDialog.FileName, SqlEditor.Text);
-                StatusText.Text = $"Saved: {Path.GetFileName(saveFileDialog.FileName)}";
-                Logger.Info($"Script saved successfully: {SqlEditor.Text.Length} characters");
+                // Use UTF-8 encoding with BOM to properly save Norwegian/special characters (ÆØÅ)
+                File.WriteAllText(saveFileDialog.FileName, SqlEditor.Text, new System.Text.UTF8Encoding(true));
+                StatusText.Text = $"Saved: {Path.GetFileName(saveFileDialog.FileName)} (UTF-8)";
+                Logger.Info($"Script saved successfully: {SqlEditor.Text.Length} characters (UTF-8 with BOM)");
 
-                MessageBox.Show($"Script saved successfully:\n{saveFileDialog.FileName}",
+                MessageBox.Show($"Script saved successfully (UTF-8 encoding):\n{saveFileDialog.FileName}",
                     "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)

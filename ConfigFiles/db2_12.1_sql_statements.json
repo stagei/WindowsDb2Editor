@@ -858,8 +858,8 @@
       "source": "SourceCodeService:GetTriggersAsync"
     },
     "GetIncomingForeignKeys": {
-      "sql": "SELECT TABSCHEMA AS REFERENCING_SCHEMA, TABNAME AS REFERENCING_TABLE, CONSTNAME, FK_COLNAMES, PK_COLNAMES, DELETERULE, UPDATERULE FROM SYSCAT.REFERENCES WHERE REFTABSCHEMA = ? AND REFTABNAME = ? ORDER BY TABSCHEMA, TABNAME",
-      "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema/table, constraint name, column names, and rules.",
+      "sql": "SELECT TRIM(TABSCHEMA) AS REFERENCING_SCHEMA, TRIM(TABNAME) AS REFERENCING_TABLE, TRIM(CONSTNAME) AS CONSTNAME, TRIM(FK_COLNAMES) AS FK_COLNAMES, TRIM(PK_COLNAMES) AS PK_COLNAMES, TRIM(DELETERULE) AS DELETERULE, TRIM(UPDATERULE) AS UPDATERULE FROM SYSCAT.REFERENCES WHERE TRIM(REFTABSCHEMA) = ? AND TRIM(REFTABNAME) = ? ORDER BY TABSCHEMA, TABNAME",
+      "description": "Get all incoming foreign keys (tables that reference this table). Returns referencing schema/table, constraint name, column names, and rules. TRIM() applied to all CHAR columns for consistent matching.",
       "parameters": ["REFTABSCHEMA", "REFTABNAME"],
       "returns": "Incoming foreign keys with full details",
       "source": "TableRelationshipService:GetIncomingForeignKeysAsync"

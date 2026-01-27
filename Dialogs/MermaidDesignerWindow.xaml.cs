@@ -22,9 +22,14 @@ public partial class MermaidDesignerWindow : Window
     private readonly SchemaDiffAnalyzerService _diffAnalyzer;
     private readonly DiffBasedDdlGeneratorService _ddlGenerator;
     private readonly SqlMermaidIntegrationService _sqlMermaidService;
+    private readonly MermaidBaselineSnapshotService _baselineService;
+    private readonly MermaidDiffComparisonService _diffComparisonService;
+    private readonly MermaidChangeTracker _changeTracker;
     private string _targetSchema;
     private string? _lastGeneratedMermaid;
     private List<string>? _lastSelectedTables;
+    private string? _currentDiffDdl;
+    private MermaidPreviewWindow? _previewWindow;
     
     // Public properties for testing automation
     public bool IsDesignerLoaded { get; private set; }
@@ -42,8 +47,25 @@ public partial class MermaidDesignerWindow : Window
         _diffAnalyzer = new SchemaDiffAnalyzerService();
         _ddlGenerator = new DiffBasedDdlGeneratorService();
         _sqlMermaidService = new SqlMermaidIntegrationService();
+        _baselineService = new MermaidBaselineSnapshotService();
+        _diffComparisonService = new MermaidDiffComparisonService(_sqlMermaidService, _baselineService);
+        _changeTracker = new MermaidChangeTracker();
+        
+        // Wire up diff detection event
+        _diffComparisonService.DiffDetected += DiffComparisonService_DiffDetected;
+        
+        // Wire up change tracker events for button enable/disable
+        _changeTracker.ChangeStatusChanged += ChangeTracker_ChangeStatusChanged;
         
         Loaded += MermaidDesignerWindow_Loaded;
+        Closed += MermaidDesignerWindow_Closed;
+    }
+    
+    private void MermaidDesignerWindow_Closed(object? sender, EventArgs e)
+    {
+        // Close preview window if open
+        _previewWindow?.Close();
+        _previewWindow = null;
     }
     
     private async void MermaidDesignerWindow_Loaded(object sender, RoutedEventArgs e)
@@ -127,6 +149,225 @@ public partial class MermaidDesignerWindow : Window
         }
     }
     
+    #region WPF Toolbar Button Handlers
+    
+    private async void Refresh_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Refresh button clicked");
+        await MermaidWebView.ExecuteScriptAsync("refreshPreview();");
+    }
+    
+    private async void AutoRefresh_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Auto-Refresh button clicked");
+        await MermaidWebView.ExecuteScriptAsync("autoRefresh();");
+    }
+    
+    private async void LoadFromDB_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Load from DB button clicked (WPF)");
+        await HandleGenerateFromDB();
+    }
+    
+    private async void ShowDiff_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Show Diff button clicked");
+        await MermaidWebView.ExecuteScriptAsync("showDiff();");
+    }
+    
+    private async void GenerateDDL_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Generate DDL button clicked");
+        await MermaidWebView.ExecuteScriptAsync("generateDDL();");
+    }
+    
+    private async void Export_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Export button clicked");
+        await MermaidWebView.ExecuteScriptAsync("exportDiagram();");
+    }
+    
+    private async void MermaidToSql_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Mermaid to SQL button clicked");
+        await MermaidWebView.ExecuteScriptAsync("generateSqlFromMermaid();");
+    }
+    
+    private async void TranslateSql_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Translate SQL button clicked");
+        await MermaidWebView.ExecuteScriptAsync("translateSql();");
+    }
+    
+    private async void AdvancedMigration_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Advanced Migration button clicked");
+        await MermaidWebView.ExecuteScriptAsync("advancedMigration();");
+    }
+    
+    private void Help_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Debug("Help button clicked");
+        MessageBox.Show(
+            "Mermaid ER Diagram Designer\n\n" +
+            "• Load from DB: Select tables to generate an ER diagram\n" +
+            "• Add Tables: Add more tables to existing diagram\n" +
+            "• Show Diff: Compare current diagram with baseline (enabled when changes detected)\n" +
+            "• Generate DDL: Create ALTER statements from changes\n" +
+            "• Preview Window: Open diagram preview in separate window\n\n" +
+            "Change Tracking:\n" +
+            "• Each table's Mermaid code is tracked with a hash\n" +
+            "• Diff buttons enable when changes are detected\n" +
+            "• Buttons disable when you revert changes\n\n" +
+            "Click on table names in the preview to view properties.\n\n" +
+            "Powered by SqlMermaidErdTools",
+            "Mermaid Designer Help",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+    
+    private void OpenPreviewWindow_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Open Preview Window button clicked");
+        
+        if (_previewWindow != null && _previewWindow.IsVisible)
+        {
+            // Bring existing window to front
+            _previewWindow.Activate();
+            return;
+        }
+        
+        // Create new preview window
+        _previewWindow = new MermaidPreviewWindow();
+        _previewWindow.SetConnectionInfo(_connectionManager.ConnectionInfo.Name);
+        _previewWindow.PreviewWindowClosed += (s, args) => _previewWindow = null;
+        _previewWindow.Show();
+        
+        // If we have a diagram, send it to preview
+        if (!string.IsNullOrEmpty(_lastGeneratedMermaid))
+        {
+            _previewWindow.UpdatePreview(_lastGeneratedMermaid, _lastSelectedTables?.Count ?? 0);
+        }
+        
+        Logger.Info("Preview window opened");
+    }
+    
+    private async void AddMoreTables_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Add More Tables button clicked");
+        
+        try
+        {
+            var dialog = new TableSelectionWithFKNavigationDialog(_connectionManager, _targetSchema);
+            
+            // Pre-select already included tables
+            // This would need enhancement in the dialog to support pre-selection
+            
+            if (dialog.ShowDialog() != true)
+            {
+                Logger.Debug("User cancelled table selection");
+                return;
+            }
+            
+            var newTables = dialog.SelectedTables
+                .Where(t => _lastSelectedTables == null || !_lastSelectedTables.Contains(t))
+                .ToList();
+            
+            if (newTables.Count == 0)
+            {
+                MessageBox.Show("No new tables selected.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
+            Logger.Info("Adding {Count} new tables to diagram", newTables.Count);
+            
+            // Add new tables to selection
+            _lastSelectedTables ??= new List<string>();
+            _lastSelectedTables.AddRange(newTables);
+            
+            // Regenerate diagram with all tables
+            var mermaid = await _generatorService.GenerateMermaidDiagramAsync(_connectionManager, _lastSelectedTables);
+            _lastGeneratedMermaid = mermaid;
+            
+            // Update change tracker with new tables
+            _changeTracker.AddNewTables(mermaid, newTables);
+            
+            // Update editor
+            var escapedMermaid = EscapeForJavaScript(mermaid);
+            await MermaidWebView.ExecuteScriptAsync($"setEditorContent(`{escapedMermaid}`);");
+            
+            // Update preview window if open
+            _previewWindow?.UpdatePreview(mermaid, _lastSelectedTables.Count);
+            
+            // Update status
+            UpdateStatusBar();
+            
+            Logger.Info("Added {Count} new tables - Total: {Total} tables", newTables.Count, _lastSelectedTables.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to add more tables");
+            MessageBox.Show($"Failed to add tables: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Handler for change tracker status changes.
+    /// Enables/disables Show Diff and Generate DDL buttons based on detected changes.
+    /// </summary>
+    private void ChangeTracker_ChangeStatusChanged(object? sender, MermaidChangeEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            Logger.Debug("Change status updated: HasChanges={HasChanges}, Changed={Changed}, New={New}, Removed={Removed}",
+                e.HasChanges, e.ChangedTableCount, e.NewTableCount, e.RemovedTableCount);
+            
+            // Enable/disable diff buttons based on change status
+            ShowDiffButton.IsEnabled = e.HasChanges;
+            GenerateDDLButton.IsEnabled = e.HasChanges;
+            
+            // Update change count in status bar
+            var totalChanges = e.ChangedTableCount + e.NewTableCount + e.RemovedTableCount;
+            ChangeCountStatus.Content = $"Changes: {totalChanges}";
+            
+            if (e.HasChanges)
+            {
+                StatusText.Content = $"⚠️ {totalChanges} change(s) detected - Use 'Show Diff' or 'Generate DDL'";
+            }
+            else if (_lastSelectedTables?.Count > 0)
+            {
+                StatusText.Content = $"✓ No changes - {_lastSelectedTables.Count} tables in diagram";
+            }
+        });
+    }
+    
+    private void UpdateStatusBar()
+    {
+        try
+        {
+            TableCountStatus.Content = $"Tables: {_lastSelectedTables?.Count ?? 0}";
+            
+            if (_changeTracker != null)
+            {
+                var changeStatus = _changeTracker.GetChangeStatus();
+                ChangeCountStatus.Content = $"Changes: {changeStatus?.ChangedTableCount ?? 0 + changeStatus?.NewTableCount ?? 0 + changeStatus?.RemovedTableCount ?? 0}";
+            }
+            else
+            {
+                ChangeCountStatus.Content = "Changes: 0";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug("UpdateStatusBar error: {Message}", ex.Message);
+            // Don't throw - just set defaults
+            TableCountStatus.Content = "Tables: ?";
+            ChangeCountStatus.Content = "Changes: ?";
+        }
+    }
+    
+    #endregion
+    
     private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         try
@@ -195,6 +436,21 @@ public partial class MermaidDesignerWindow : Window
                     await HandleGenerateMigrationAdvanced(message.Original, message.Edited, message.Dialect);
                     break;
                     
+                case "editorContentChanged":
+                    Logger.Debug("Handling editorContentChanged action - triggering diff check");
+                    if (!string.IsNullOrEmpty(message.Diagram))
+                    {
+                        // Update change tracker with current editor content
+                        _changeTracker.UpdateFromEditor(message.Diagram);
+                        
+                        // Update preview window if open
+                        _previewWindow?.UpdatePreview(message.Diagram, _lastSelectedTables?.Count ?? 0);
+                        
+                        // Also trigger baseline comparison
+                        _diffComparisonService.CheckForDifferences(message.Diagram);
+                    }
+                    break;
+                    
                 default:
                     Logger.Warn("Unknown web message action: {Action}", message.Action);
                     break;
@@ -225,10 +481,14 @@ public partial class MermaidDesignerWindow : Window
     {
         try
         {
-            Logger.Info("Generating Mermaid diagram from database - Target schema: {Schema}", _targetSchema);
-            Logger.Debug("Step 1: Opening SchemaTableSelectionDialog");
+            Logger.Info("========================================");
+            Logger.Info("=== HandleGenerateFromDB START ===");
+            Logger.Info("========================================");
+            Logger.Info("Target schema: {Schema}", _targetSchema);
+            Logger.Debug("Connection: {Connection}", _connectionManager.ConnectionInfo.Name);
+            Logger.Debug("Step 1: Opening TableSelectionWithFKNavigationDialog");
             
-            var dialog = new SchemaTableSelectionDialog(_connectionManager, _targetSchema);
+            var dialog = new TableSelectionWithFKNavigationDialog(_connectionManager, _targetSchema);
             Logger.Debug("SchemaTableSelectionDialog created");
             
             var dialogResult = dialog.ShowDialog();
@@ -256,12 +516,83 @@ public partial class MermaidDesignerWindow : Window
                 Logger.Debug("  - Selected table: {Table}", table);
             }
             
-            var mermaid = await _generatorService.GenerateMermaidDiagramAsync(_connectionManager, selectedTables);
-            Logger.Info("Mermaid diagram generated: {Length} characters", mermaid.Length);
-            Logger.Debug("First 200 chars of Mermaid: {Preview}", mermaid.Substring(0, Math.Min(200, mermaid.Length)));
+            string mermaid;
+            try
+            {
+                Logger.Debug(">>> Calling _generatorService.GenerateMermaidDiagramAsync...");
+                mermaid = await _generatorService.GenerateMermaidDiagramAsync(_connectionManager, selectedTables);
+                Logger.Info("Generator returned Mermaid: {Length} characters", mermaid?.Length ?? 0);
+            }
+            catch (Exception genEx)
+            {
+                Logger.Error(genEx, "GenerateMermaidDiagramAsync threw exception: {Type} - {Message}", 
+                    genEx.GetType().Name, genEx.Message);
+                throw;
+            }
+            
+            if (string.IsNullOrEmpty(mermaid))
+            {
+                Logger.Error("GenerateMermaidDiagramAsync returned NULL or EMPTY!");
+                throw new InvalidOperationException("Mermaid generator returned empty result");
+            }
+            
+            Logger.Debug("First 300 chars of returned Mermaid:\n{Preview}", 
+                mermaid.Length > 300 ? mermaid.Substring(0, 300) : mermaid);
+            
+            // CHECK FOR PROBLEMATIC TYPES IMMEDIATELY
+            bool hasDecimal = mermaid.Contains("DECIMAL(");
+            bool hasVarchar = mermaid.Contains("VARCHAR(");
+            bool hasChar = mermaid.Contains("CHAR(");
+            
+            Logger.Debug("Checking returned Mermaid - DECIMAL(: {D}, VARCHAR(: {V}, CHAR(: {C}", 
+                hasDecimal, hasVarchar, hasChar);
+            
+            // EMERGENCY FIX: Strip types right here if generator failed to do so
+            if (hasDecimal || hasVarchar || hasChar)
+            {
+                Logger.Warn("!!! EMERGENCY: Generator FAILED to strip types - doing it NOW !!!");
+                mermaid = EmergencyStripDataTypes(mermaid);
+                Logger.Debug("After emergency strip: DECIMAL(: {D}, VARCHAR(: {V}", 
+                    mermaid.Contains("DECIMAL("), mermaid.Contains("VARCHAR("));
+            }
             
             _lastGeneratedMermaid = mermaid;
             _lastSelectedTables = selectedTables;
+            
+            // CRITICAL: Capture baseline snapshot
+            try
+            {
+                await _baselineService.CaptureBaselineAsync(_connectionManager, selectedTables, mermaid);
+                Logger.Info("Baseline snapshot captured for {Count} tables", selectedTables.Count);
+            }
+            catch (Exception baselineEx)
+            {
+                Logger.Error(baselineEx, "Failed to capture baseline - continuing anyway");
+            }
+            
+            // Initialize change tracker with per-table hashing
+            try
+            {
+                _changeTracker.InitializeFromOriginal(mermaid, selectedTables);
+                Logger.Info("Change tracker initialized with {Count} tables", selectedTables.Count);
+            }
+            catch (Exception trackerEx)
+            {
+                Logger.Error(trackerEx, "Failed to initialize change tracker - continuing anyway");
+            }
+            
+            // Enable Add Tables button after initial load
+            AddMoreTablesButton.IsEnabled = true;
+            
+            // Update status bar safely
+            try
+            {
+                UpdateStatusBar();
+            }
+            catch (Exception statusEx)
+            {
+                Logger.Error(statusEx, "Failed to update status bar");
+            }
             
             Logger.Debug("Step 3: Injecting diagram into WebView2 editor");
             var escapedMermaid = EscapeForJavaScript(mermaid);
@@ -271,31 +602,71 @@ public partial class MermaidDesignerWindow : Window
             Logger.Debug("Executing JavaScript: setEditorContent (length: {Length})", script.Length);
             
             await MermaidWebView.ExecuteScriptAsync(script);
-            Logger.Debug("JavaScript executed successfully");
+            Logger.Debug("JavaScript setEditorContent executed successfully");
             
-            Logger.Info("Mermaid diagram generated and displayed successfully ({Length} chars for {Count} tables)", 
-                mermaid.Length, selectedTables.Count);
+            // Final validation - check if any problematic types slipped through
+            if (mermaid.Contains("DECIMAL(") || mermaid.Contains("VARCHAR(") || mermaid.Contains("CHAR("))
+            {
+                Logger.Warn("!!! WARNING: Final Mermaid STILL contains parameterized types !!!");
+                Logger.Warn("This WILL cause Mermaid parse errors like 'Expecting ATTRIBUTE_WORD, got COMMA'");
+                // Find and log problematic lines
+                var lines = mermaid.Split('\n');
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (System.Text.RegularExpressions.Regex.IsMatch(lines[i], @"\w+\(\d"))
+                    {
+                        Logger.Warn("Problematic line {Num}: {Line}", i + 1, lines[i].Trim());
+                    }
+                }
+            }
+            else
+            {
+                Logger.Info("✓ Final Mermaid validation passed - no parameterized types detected");
+            }
+            
+            Logger.Info("========================================");
+            Logger.Info("=== HandleGenerateFromDB COMPLETE ===");
+            Logger.Info("========================================");
+            Logger.Info("Result: {Length} chars for {Count} tables", mermaid.Length, selectedTables.Count);
         }
         catch (InvalidOperationException invOpEx)
         {
-            Logger.Error(invOpEx, "Invalid operation during diagram generation");
-            Logger.Debug("InvalidOperationException details: {Message}", invOpEx.Message);
+            Logger.Error(invOpEx, "!!! InvalidOperationException in HandleGenerateFromDB !!!");
+            Logger.Debug("Message: {Message}", invOpEx.Message);
+            Logger.Debug("Stack: {Stack}", invOpEx.StackTrace);
+            if (invOpEx.InnerException != null)
+            {
+                Logger.Error(invOpEx.InnerException, "Inner exception");
+            }
             MessageBox.Show(
                 $"Invalid operation: {invOpEx.Message}",
                 "Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+        catch (NullReferenceException nullEx)
+        {
+            Logger.Error(nullEx, "!!! NullReferenceException in HandleGenerateFromDB !!!");
+            Logger.Debug("Message: {Message}", nullEx.Message);
+            Logger.Debug("Stack: {Stack}", nullEx.StackTrace);
+            MessageBox.Show(
+                $"Null reference error: {nullEx.Message}\n\nCheck logs for details.",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to generate Mermaid diagram");
+            Logger.Error(ex, "!!! Unexpected exception in HandleGenerateFromDB !!!");
             Logger.Debug("Exception type: {Type}", ex.GetType().Name);
             Logger.Debug("Exception message: {Message}", ex.Message);
             Logger.Debug("Stack trace: {StackTrace}", ex.StackTrace);
             
             if (ex.InnerException != null)
             {
-                Logger.Error(ex.InnerException, "Inner exception during diagram generation");
+                Logger.Error(ex.InnerException, "Inner exception");
+                Logger.Debug("Inner type: {Type}, Message: {Msg}", 
+                    ex.InnerException.GetType().Name, ex.InnerException.Message);
             }
             
             MessageBox.Show(
@@ -484,7 +855,13 @@ public partial class MermaidDesignerWindow : Window
             
             Logger.Info("Parsed {Count} ALTER statements from DDL", alterStatements.Count);
             
-            // Open ALTER statement review dialog
+            // Store diff DDL for opening in editor
+            _currentDiffDdl = ddl;
+            
+            // Open diff script in SQL editor
+            await OpenDiffScriptInEditorAsync(ddl);
+            
+            // Also open ALTER statement review dialog (optional - user can use either)
             var reviewDialog = new AlterStatementReviewDialog(alterStatements, _connectionManager);
             reviewDialog.Owner = this;
             
@@ -662,6 +1039,64 @@ public partial class MermaidDesignerWindow : Window
     }
     
     /// <summary>
+    /// EMERGENCY fallback to strip data type parameters if all other methods fail.
+    /// This is the last line of defense against Mermaid parse errors.
+    /// </summary>
+    private string EmergencyStripDataTypes(string mermaid)
+    {
+        Logger.Info("=== EMERGENCY STRIP DATA TYPES ===");
+        Logger.Debug("Input length: {Len} chars", mermaid.Length);
+        
+        var result = mermaid;
+        int totalChanges = 0;
+        
+        // List of all known types that might have parameters
+        var knownTypes = new[] { 
+            "VARCHAR", "CHAR", "CHARACTER", "NVARCHAR", "NCHAR",
+            "DECIMAL", "NUMERIC", "DEC", "NUMBER", "MONEY",
+            "INTEGER", "INT", "BIGINT", "SMALLINT", "TINYINT",
+            "FLOAT", "DOUBLE", "REAL",
+            "TIMESTAMP", "DATETIME", "DATE", "TIME",
+            "BLOB", "CLOB", "TEXT", "BINARY", "VARBINARY"
+        };
+        
+        // For each known type, strip any parentheses that follow
+        foreach (var typeName in knownTypes)
+        {
+            // Pattern: TYPE followed by optional whitespace and parentheses with anything inside
+            var pattern = $@"\b{typeName}\s*\([^)]*\)";
+            var matches = System.Text.RegularExpressions.Regex.Matches(result, pattern, 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            
+            if (matches.Count > 0)
+            {
+                Logger.Debug("Stripping {Count} instances of {Type}(...)", matches.Count, typeName);
+                result = System.Text.RegularExpressions.Regex.Replace(result, pattern, typeName, 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                totalChanges += matches.Count;
+            }
+        }
+        
+        // Also catch any generic WORD(number...) patterns we might have missed
+        var genericPattern = @"\b([A-Z_][A-Z0-9_]*)\s*\(\s*\d[^)]*\)";
+        var genericMatches = System.Text.RegularExpressions.Regex.Matches(result, genericPattern,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        
+        if (genericMatches.Count > 0)
+        {
+            Logger.Debug("Generic pattern found {Count} additional matches", genericMatches.Count);
+            result = System.Text.RegularExpressions.Regex.Replace(result, genericPattern, "$1",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            totalChanges += genericMatches.Count;
+        }
+        
+        Logger.Info("Emergency strip complete: {Count} total replacements", totalChanges);
+        Logger.Debug("Output length: {Len} chars", result.Length);
+        
+        return result;
+    }
+    
+    /// <summary>
     /// NEW: Generates SQL DDL from Mermaid ERD using SqlMermaidErdTools.
     /// Supports multiple SQL dialects (ANSI, SQL Server, PostgreSQL, MySQL).
     /// </summary>
@@ -815,6 +1250,168 @@ public partial class MermaidDesignerWindow : Window
     private int CountSqlStatements(string sql)
     {
         return sql.Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+    
+    /// <summary>
+    /// Handler for diff detection events from MermaidDiffComparisonService.
+    /// </summary>
+    private void DiffComparisonService_DiffDetected(object? sender, DiffDetectedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (e.HasChanges)
+            {
+                Logger.Info("Diff detected: {Message}", e.Message);
+                _currentDiffDdl = e.DiffDdl;
+                
+                // Update status (would need to add status text block to XAML)
+                // For now, we'll just log it
+                Logger.Debug("Changes detected - {Count} change(s), DDL length: {Length}", 
+                    e.ChangeCount, e.DiffDdl?.Length ?? 0);
+            }
+            else
+            {
+                Logger.Debug("No changes detected: {Message}", e.Message);
+                _currentDiffDdl = null;
+            }
+        });
+    }
+    
+    /// <summary>
+    /// Opens generated diff script in SQL editor with same connection.
+    /// Adds encoding header for proper character handling (Norwegian/special chars).
+    /// </summary>
+    private async Task OpenDiffScriptInEditorAsync(string diffDdl)
+    {
+        try
+        {
+            Logger.Info("Opening diff script in SQL editor - {Length} characters", diffDdl.Length);
+            
+            // Add header with encoding information and warnings
+            var scriptWithHeader = new StringBuilder();
+            scriptWithHeader.AppendLine("-- =============================================================================");
+            scriptWithHeader.AppendLine("-- MIGRATION SCRIPT - Generated from Mermaid ERD Diff");
+            scriptWithHeader.AppendLine($"-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            scriptWithHeader.AppendLine($"-- Connection: {_connectionManager.ConnectionInfo.Name}");
+            scriptWithHeader.AppendLine("-- ");
+            scriptWithHeader.AppendLine("-- ENCODING: UTF-8 (ensure database supports Unicode/CCSID 1208 for special chars)");
+            scriptWithHeader.AppendLine("-- WARNING: Review all statements carefully before executing!");
+            scriptWithHeader.AppendLine("-- Norwegian chars (ÆØÅ) require proper database CCSID configuration.");
+            scriptWithHeader.AppendLine("-- =============================================================================");
+            scriptWithHeader.AppendLine();
+            scriptWithHeader.Append(diffDdl);
+            
+            var finalScript = scriptWithHeader.ToString();
+            
+            // Find or create connection tab with same connection
+            var connectionInfo = _connectionManager.ConnectionInfo;
+            var connectionTab = FindOrCreateConnectionTab(connectionInfo);
+            
+            if (connectionTab == null)
+            {
+                Logger.Error("Could not find or create connection tab");
+                MessageBox.Show(
+                    "Could not open SQL editor. Please ensure a connection tab is available.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+            
+            // Load diff script into SQL editor (with encoding header)
+            connectionTab.LoadScriptIntoEditor(finalScript, "Migration Script from Mermaid Diff");
+            
+            // Switch to the connection tab
+            SwitchToConnectionTab(connectionTab);
+            
+            // Show confirmation
+            MessageBox.Show(
+                $"Migration script loaded into SQL editor.\n\n" +
+                $"Connection: {connectionInfo.Name}\n" +
+                $"Script length: {finalScript.Length} characters\n\n" +
+                $"⚠️ REVIEW CAREFULLY before executing (F5)",
+                "Diff Script Loaded",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            
+            Logger.Info("Diff script successfully loaded into SQL editor");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to open diff script in editor");
+            MessageBox.Show(
+                $"Failed to open diff script in editor:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Finds or creates a connection tab for the specified connection.
+    /// </summary>
+    private Controls.ConnectionTabControl? FindOrCreateConnectionTab(Models.IConnectionInfo connectionInfo)
+    {
+        // Try to find MainWindow instance
+        var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+        if (mainWindow == null)
+        {
+            Logger.Warn("MainWindow not found");
+            return null;
+        }
+        
+        // Check if tab already exists for this connection
+        foreach (System.Windows.Controls.TabItem tabItem in mainWindow.ConnectionTabs.Items)
+        {
+            if (tabItem.Content is Controls.ConnectionTabControl tab)
+            {
+                if (tab.ConnectionManager.ConnectionInfo.Name == connectionInfo.Name)
+                {
+                    Logger.Debug("Found existing connection tab: {Connection}", connectionInfo.Name);
+                    return tab;
+                }
+            }
+        }
+        
+        // Use the currently selected tab if available
+        if (mainWindow.ConnectionTabs.SelectedItem is System.Windows.Controls.TabItem selectedItem &&
+            selectedItem.Content is Controls.ConnectionTabControl selectedTab)
+        {
+            Logger.Info("No exact match found for {Connection}, using currently selected tab", connectionInfo.Name);
+            return selectedTab;
+        }
+        
+        // Use the first available tab
+        if (mainWindow.ConnectionTabs.Items.Count > 0 &&
+            mainWindow.ConnectionTabs.Items[0] is System.Windows.Controls.TabItem firstItem &&
+            firstItem.Content is Controls.ConnectionTabControl firstTab)
+        {
+            Logger.Info("Using first available connection tab");
+            return firstTab;
+        }
+        
+        Logger.Warn("No connection tabs available");
+        return null;
+    }
+    
+    /// <summary>
+    /// Switches to the specified connection tab.
+    /// </summary>
+    private void SwitchToConnectionTab(Controls.ConnectionTabControl tab)
+    {
+        var mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+        if (mainWindow == null) return;
+        
+        // Find tab item containing this control
+        foreach (System.Windows.Controls.TabItem item in mainWindow.ConnectionTabs.Items)
+        {
+            if (item.Content == tab)
+            {
+                mainWindow.ConnectionTabs.SelectedItem = item;
+                Logger.Debug("Switched to connection tab");
+                break;
+            }
+        }
     }
     
     private class WebMessage
