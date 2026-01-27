@@ -62,6 +62,9 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     // Current connection for on-demand column loading
     private IConnectionManager? _currentConnection;
     
+    // Scope-aware parser for nested subselects
+    private readonly SqlScopeParser _scopeParser = new();
+    
     /// <summary>
     /// Set the callback to trigger completion window (called after schema/alias selection)
     /// </summary>
@@ -588,21 +591,28 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
         var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
         
         // PRIORITY 1: Check if we're typing after a schema/table alias followed by a period
-        // e.g., "MYSCHEMA." or "t." <- caret here
-        var dotMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
-        if (dotMatch.Success)
+        // Case A: "MYSCHEMA." <- caret right after period, or
+        // Case B: "MYSCHEMA.par" <- typing partial table name after schema
+        
+        // Regex to match: "word." at end OR "word.partial" at end
+        // Pattern: word followed by period, optionally followed by more word chars (partial name)
+        var schemaObjectMatch = Regex.Match(textBeforeCaret, @"(\w+)\.(\w*)$");
+        if (schemaObjectMatch.Success)
         {
-            var identifier = dotMatch.Groups[1].Value;
+            var identifier = schemaObjectMatch.Groups[1].Value;
+            var partialName = schemaObjectMatch.Groups[2].Value;
             
-            // Check if this is a known schema -> show tables/views
+            // Check if this is a known schema -> show tables/views from that schema
             if (_schemaNames.Contains(identifier, StringComparer.OrdinalIgnoreCase))
             {
-                Logger.Debug("Detected schema.object context for schema: {Schema}", identifier);
+                Logger.Debug("Detected schema.object context for schema: {Schema}, partial: {Partial}", 
+                    identifier, partialName);
                 return SqlContext.SchemaObject;
             }
             
-            // Could be a table alias -> show columns
-            Logger.Debug("Detected alias.column context for alias: {Alias}", identifier);
+            // Could be a table alias -> show columns (alias.column)
+            Logger.Debug("Detected alias.column context for alias: {Alias}, partial: {Partial}", 
+                identifier, partialName);
             return SqlContext.ColumnName;
         }
         
@@ -911,45 +921,123 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
     private List<ICompletionData> GetColumnNameCompletions(string text, int caretPosition)
     {
         var completions = new List<ICompletionData>();
-        var tableRefs = ExtractTableReferencesWithAliases(text);
         
-        Logger.Debug("Found {Count} table references in query", tableRefs.Count);
+        Logger.Debug("=== GetColumnNameCompletions START ===");
+        Logger.Debug("Text length: {Length}, CaretPosition: {Position}", text.Length, caretPosition);
+        
+        // Use scope-aware parsing for nested subselect support
+        var scopes = _scopeParser.Parse(text);
+        Logger.Debug("Parsed {Count} scopes from SQL", scopes.Count);
+        
+        var currentScope = _scopeParser.GetScopeAtPosition(scopes, caretPosition);
+        
+        if (currentScope == null)
+        {
+            Logger.Debug("No scope found at position {Position} - using fallback", caretPosition);
+            return GetFallbackColumnCompletions(text, caretPosition);
+        }
+        
+        Logger.Debug("Current scope: Level={Level}, Index={Index}, Tables={TableCount}, FromPart='{From}'", 
+            currentScope.Level, currentScope.Index, currentScope.Tables.Count,
+            currentScope.FromPart?.Substring(0, Math.Min(50, currentScope.FromPart?.Length ?? 0)) ?? "(null)");
+        
+        // Get visibility for current scope
+        var visibility = _scopeParser.GetVisibleItems(scopes, currentScope);
+        Logger.Debug("Visibility: {Aliases} aliases, {ParentAliases} parent aliases, {DerivedColumns} derived table column sets",
+            visibility.Aliases.Count, visibility.ParentAliases.Count, visibility.DerivedTableColumns.Count);
+        
+        foreach (var alias in visibility.Aliases)
+        {
+            Logger.Debug("  Visible alias: '{Name}' -> {FullTableName} (IsDerived={IsDerived})", 
+                alias.Name, alias.FullTableName, alias.IsDerivedTable);
+        }
         
         // Check if user is typing after an alias (e.g., "t1.")
         var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
-        var aliasMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+        var aliasMatch = Regex.Match(textBeforeCaret, @"(\w+)\.\w*$");  // Match "alias." or "alias.partial"
         
         if (aliasMatch.Success)
         {
-            // User typed "alias." - show columns for that specific table
             var typedAlias = aliasMatch.Groups[1].Value;
-            Logger.Debug("User typed alias: {Alias}", typedAlias);
+            Logger.Debug("User typed alias: '{Alias}' at scope level {Level}", typedAlias, currentScope.Level);
             
-            // Find the table reference matching this alias
-            var matchingRef = tableRefs.FirstOrDefault(t => 
-                string.Equals(t.Alias, typedAlias, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(t.TableName, typedAlias, StringComparison.OrdinalIgnoreCase));
+            // Check if this is a regular table alias
+            var tableAlias = visibility.Aliases.FirstOrDefault(a => 
+                string.Equals(a.Name, typedAlias, StringComparison.OrdinalIgnoreCase));
             
-            if (matchingRef != null)
+            if (tableAlias != null)
             {
-                Logger.Debug("Found table for alias '{Alias}': {Table}", typedAlias, matchingRef.FullName);
-                return GetColumnsForTable(matchingRef.FullName, typedAlias);
+                if (tableAlias.IsDerivedTable)
+                {
+                    // Derived table - show only exposed columns from subselect
+                    var derivedColumns = visibility.DerivedTableColumns
+                        .FirstOrDefault(d => string.Equals(d.Alias, typedAlias, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (derivedColumns != null)
+                    {
+                        Logger.Debug("Showing {Count} exposed columns from derived table '{Alias}'", 
+                            derivedColumns.ExposedColumns.Count, typedAlias);
+                        
+                        foreach (var col in derivedColumns.ExposedColumns)
+                        {
+                            completions.Add(new SqlColumnCompletionData
+                            {
+                                ColumnName = col,
+                                DataType = "EXPOSED",
+                                TableName = $"(subselect {typedAlias})",
+                                Priority = 3.0
+                            });
+                        }
+                        return completions;
+                    }
+                }
+                else
+                {
+                    // Regular table - show columns from database
+                    return GetColumnsForTable(tableAlias.FullTableName, typedAlias);
+                }
+            }
+            
+            // Check parent aliases (for correlated subqueries)
+            var parentAlias = visibility.ParentAliases.FirstOrDefault(a =>
+                string.Equals(a.Name, typedAlias, StringComparison.OrdinalIgnoreCase));
+            
+            if (parentAlias != null)
+            {
+                Logger.Debug("Using parent scope alias: {Alias} -> {Table}", typedAlias, parentAlias.FullTableName);
+                return GetColumnsForTable(parentAlias.FullTableName, typedAlias);
             }
         }
         
-        // If multiple tables with aliases, show aliases first so user can pick one
-        if (tableRefs.Count > 1 && tableRefs.Any(t => !string.IsNullOrEmpty(t.Alias)))
+        // No alias typed - show available aliases if multiple tables/derived tables
+        var allAliases = visibility.Aliases.Concat(visibility.ParentAliases).ToList();
+        
+        if (allAliases.Count > 1 || visibility.DerivedTableColumns.Any())
         {
-            Logger.Debug("Multiple tables with aliases - showing aliases");
+            Logger.Debug("Multiple sources - showing {Count} aliases", allAliases.Count);
             
-            foreach (var tableRef in tableRefs)
+            foreach (var alias in visibility.Aliases)
             {
                 completions.Add(new SqlAliasCompletionData
                 {
-                    AliasName = tableRef.Identifier,
-                    TableName = tableRef.TableName,
-                    SchemaName = tableRef.SchemaName,
+                    AliasName = alias.Name,
+                    TableName = alias.IsDerivedTable ? "(subselect)" : alias.FullTableName.Split('.').LastOrDefault() ?? "",
+                    SchemaName = alias.IsDerivedTable ? "" : alias.FullTableName.Split('.').FirstOrDefault() ?? "",
+                    IsSubselectAlias = alias.IsDerivedTable,
                     Priority = 4.0,
+                    OnCompleted = _triggerCompletionCallback
+                });
+            }
+            
+            // Show parent aliases for correlated subqueries (marked differently)
+            foreach (var parentAlias in visibility.ParentAliases)
+            {
+                completions.Add(new SqlAliasCompletionData
+                {
+                    AliasName = parentAlias.Name,
+                    TableName = parentAlias.FullTableName.Split('.').LastOrDefault() ?? "",
+                    SchemaName = $"↑ {parentAlias.FullTableName.Split('.').FirstOrDefault() ?? ""}",
+                    Priority = 3.5,  // Slightly lower priority than current scope
                     OnCompleted = _triggerCompletionCallback
                 });
             }
@@ -957,33 +1045,48 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
             return completions;
         }
         
-        // Single table or no aliases - show columns directly
-        if (tableRefs.Count == 1)
+        // Single table - show columns directly
+        if (visibility.Aliases.Count == 1 && !visibility.Aliases[0].IsDerivedTable)
         {
-            Logger.Debug("Single table - showing columns for {Table}", tableRefs[0].FullName);
-            return GetColumnsForTable(tableRefs[0].FullName, null);
+            var singleTable = visibility.Aliases[0];
+            Logger.Debug("Single table at scope - showing columns for {Table}", singleTable.FullTableName);
+            return GetColumnsForTable(singleTable.FullTableName, null);
         }
         
-        // Multiple tables without aliases - show all columns with table prefixes
-        foreach (var tableRef in tableRefs)
-        {
-            var tableColumns = GetColumnsForTable(tableRef.FullName, tableRef.TableName);
-            completions.AddRange(tableColumns);
-        }
+        // Fallback
+        return GetFallbackColumnCompletions(text, caretPosition);
+    }
+    
+    /// <summary>
+    /// Fallback column completions when scope parsing doesn't find tables.
+    /// </summary>
+    private List<ICompletionData> GetFallbackColumnCompletions(string text, int caretPosition)
+    {
+        var completions = new List<ICompletionData>();
+        var tableRefs = ExtractTableReferencesWithAliases(text);
         
-        // If still no completions, show * and try to load columns dynamically
-        if (completions.Count == 0)
+        Logger.Debug("Fallback: Found {Count} table references in query", tableRefs.Count);
+        
+        // Check if user is typing after an alias (e.g., "t1.")
+        var textBeforeCaret = text.Substring(0, Math.Min(caretPosition, text.Length));
+        var aliasMatch = Regex.Match(textBeforeCaret, @"(\w+)\.$");
+        
+        if (aliasMatch.Success)
         {
-            Logger.Debug("No columns found - showing * and table names");
+            var typedAlias = aliasMatch.Groups[1].Value;
+            var matchingRef = tableRefs.FirstOrDefault(t => 
+                string.Equals(t.Alias, typedAlias, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.TableName, typedAlias, StringComparison.OrdinalIgnoreCase));
             
-            completions.Add(new SqlKeywordCompletionData
+            if (matchingRef != null)
             {
-                Text = "*",
-                Description = "Select all columns",
-                Priority = 10.0
-            });
-            
-            // Show table references so user can type tablename.column
+                return GetColumnsForTable(matchingRef.FullName, typedAlias);
+            }
+        }
+        
+        // Multiple tables - show aliases
+        if (tableRefs.Count > 1 && tableRefs.Any(t => !string.IsNullOrEmpty(t.Alias)))
+        {
             foreach (var tableRef in tableRefs)
             {
                 completions.Add(new SqlAliasCompletionData
@@ -995,34 +1098,51 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
                     OnCompleted = _triggerCompletionCallback
                 });
             }
+            return completions;
         }
+        
+        // Single table - show columns
+        if (tableRefs.Count == 1)
+        {
+            return GetColumnsForTable(tableRefs[0].FullName, null);
+        }
+        
+        // Default: show * 
+        completions.Add(new SqlStarCompletionData());
         
         return completions;
     }
     
     /// <summary>
     /// Get columns for a specific table, optionally prefixed with alias/table name.
+    /// Loads columns synchronously if not cached (with timeout).
     /// </summary>
     private List<ICompletionData> GetColumnsForTable(string fullTableName, string? prefix)
     {
         var completions = new List<ICompletionData>();
         
-        // Try to load columns on-demand if not cached
+        // Try to load columns on-demand if not cached - wait for it to complete
         if (!_tableColumns.ContainsKey(fullTableName) && _currentConnection != null)
         {
-            Logger.Debug("Loading columns on-demand for {Table}", fullTableName);
-            // Fire and forget - columns will be available next time
-            _ = Task.Run(async () =>
+            Logger.Debug("Loading columns on-demand (sync) for {Table}", fullTableName);
+            
+            try
             {
-                try
+                // Wait for column loading with a reasonable timeout (2 seconds)
+                var loadTask = LoadColumnsForTableAsync(_currentConnection, fullTableName);
+                if (loadTask.Wait(TimeSpan.FromSeconds(2)))
                 {
-                    await LoadColumnsForTableAsync(_currentConnection, fullTableName);
+                    Logger.Debug("Column loading completed for {Table}", fullTableName);
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Warn(ex, "On-demand column loading failed for {Table}", fullTableName);
+                    Logger.Warn("Column loading timed out for {Table}", fullTableName);
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "On-demand column loading failed for {Table}", fullTableName);
+            }
         }
         
         if (_tableColumns.TryGetValue(fullTableName, out var columns))
@@ -1041,18 +1161,13 @@ public class SqlIntelliSenseProvider : IIntelliSenseProvider
         }
         else
         {
-            Logger.Debug("No cached columns for {Table} - columns will be available after loading", fullTableName);
+            Logger.Debug("No columns available for {Table}", fullTableName);
         }
         
         // Always add * at the end as fallback
         if (completions.Count == 0)
         {
-            completions.Add(new SqlKeywordCompletionData
-            {
-                Text = "*",
-                Description = $"Select all columns from {fullTableName}",
-                Priority = 5.0
-            });
+            completions.Add(new SqlStarCompletionData());
         }
         
         return completions;

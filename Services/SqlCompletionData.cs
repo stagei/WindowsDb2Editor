@@ -45,6 +45,57 @@ public class SqlKeywordCompletionData : SqlCompletionDataBase
 }
 
 /// <summary>
+/// Completion data for SELECT * - adds trailing space after insertion.
+/// </summary>
+public class SqlStarCompletionData : SqlCompletionDataBase
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    public SqlStarCompletionData()
+    {
+        Text = "*";
+        Description = "Select all columns";
+        Priority = 10.0;
+    }
+    
+    public override void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+    {
+        Logger.Debug("Completing * with trailing space");
+        // Insert "* " (with trailing space)
+        textArea.Document.Replace(completionSegment, "* ");
+    }
+    
+    public override object Content
+    {
+        get
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            panel.Children.Add(new TextBlock
+            {
+                Text = "⭐ ",
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = "*",
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            panel.Children.Add(new TextBlock
+            {
+                Text = " (all columns)",
+                FontSize = 10,
+                Foreground = Brushes.Gray,
+                Margin = new System.Windows.Thickness(5, 0, 0, 0),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            });
+            return panel;
+        }
+    }
+}
+
+/// <summary>
 /// Completion data for table names.
 /// </summary>
 public class SqlTableCompletionData : SqlCompletionDataBase

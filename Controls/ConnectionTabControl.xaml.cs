@@ -749,8 +749,33 @@ public partial class ConnectionTabControl : UserControl
     /// </summary>
     private void TextEditor_TextEntered(object? sender, TextCompositionEventArgs e)
     {
-        // Show completion after space (for keywords) or dot (for schema.table)
-        if (e.Text == " " || e.Text == ".")
+        // Handle period entry - remove duplicate periods
+        if (e.Text == ".")
+        {
+            var caretOffset = SqlEditor.CaretOffset;
+            
+            // Check if there's a double period (previous character is also a period)
+            // Caret is now AFTER the newly typed period, so check 2 chars back
+            if (caretOffset >= 2)
+            {
+                var twoCharsBack = SqlEditor.Document.GetText(caretOffset - 2, 1);
+                if (twoCharsBack == ".")
+                {
+                    // Remove the duplicate period (the one we just typed)
+                    Logger.Debug("Removing duplicate period at position {Position}", caretOffset);
+                    SqlEditor.Document.Remove(caretOffset - 1, 1);
+                    // Don't show completion window since we're cleaning up
+                    return;
+                }
+            }
+            
+            // No duplicate - show completion window for schema.table
+            ShowCompletionWindow();
+            return;
+        }
+        
+        // Show completion after space (for keywords)
+        if (e.Text == " ")
         {
             ShowCompletionWindow();
         }
@@ -1162,6 +1187,12 @@ public partial class ConnectionTabControl : UserControl
         {
             isAfterPeriod = true;
             return string.Empty;  // No word yet after the period
+        }
+        
+        // Special handling for * - treat it as a word by itself
+        if (offset > 0 && text[offset - 1] == '*')
+        {
+            return "*";
         }
         
         // Find start of current word (stop at period, space, or start of text)

@@ -35,6 +35,10 @@
     <EmbeddedResource Remove="WindowsDb2Editor.AutoTests\**" />
     <None Remove="WindowsDb2Editor.AutoTests\**" />
     <Page Remove="WindowsDb2Editor.AutoTests\**" />
+    <Compile Remove="Tests\**" />
+    <EmbeddedResource Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <Page Remove="Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
