@@ -89,4 +89,15 @@
   
   <!-- SqlMermaidErdTools v0.3.1+ auto-deploys Python scripts via build targets -->
 
+  <!-- Copy WindowsDb2EditorTray.exe to output directory after build -->
+  <Target Name="CopyTrayApp" AfterTargets="Build">
+    <PropertyGroup>
+      <TrayAppSource>$(MSBuildProjectDirectory)\WindowsDb2EditorTray\bin\$(Configuration)\$(TargetFramework)\WindowsDb2EditorTray.exe</TrayAppSource>
+      <TrayAppDest>$(OutputPath)WindowsDb2EditorTray.exe</TrayAppDest>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TrayAppSource)" DestinationFiles="$(TrayAppDest)" Condition="Exists('$(TrayAppSource)')" SkipUnchangedFiles="true" />
+    <Message Text="Copied WindowsDb2EditorTray.exe to output directory" Importance="high" Condition="Exists('$(TrayAppSource)')" />
+    <Warning Text="WindowsDb2EditorTray.exe not found at $(TrayAppSource) - tray icon will not work" Condition="!Exists('$(TrayAppSource)')" />
+  </Target>
+
 </Project>
