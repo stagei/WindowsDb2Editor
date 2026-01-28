@@ -40,6 +40,7 @@ public partial class MissingFKDiscoveryDialog : Window
     private List<TableSelectionItem> _selectedTables = new();
     private string _outputFolder = string.Empty;
     private string _ignoreJsonPath = string.Empty;
+    private string _ignoreFilesFolder = string.Empty;
     private string _jobId = string.Empty;
     private Process? _runningJobProcess;
     private FileSystemWatcher? _statusFileWatcher;
@@ -76,6 +77,10 @@ public partial class MissingFKDiscoveryDialog : Window
         }
         
         OutputFolderTextBox.Text = _outputFolder;
+        
+        // Create dedicated folder for ignore files
+        _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
+        Logger.Info("Ignore files folder: {Path}", _ignoreFilesFolder);
         
         // Initialize ignore model summary
         UpdateIgnoreRulesSummary();
@@ -585,16 +590,25 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private void BrowseIgnoreJson_Click(object sender, RoutedEventArgs e)
     {
+        // Ensure ignore files folder exists
+        if (string.IsNullOrEmpty(_ignoreFilesFolder))
+        {
+            _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
+        }
+        
         var dialog = new OpenFileDialog
         {
             Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-            Title = "Select Ignore JSON File"
+            Title = "Select Ignore JSON File",
+            InitialDirectory = _ignoreFilesFolder,
+            RestoreDirectory = true
         };
         
         if (dialog.ShowDialog() == true)
         {
             _ignoreJsonPath = dialog.FileName;
             IgnoreJsonTextBox.Text = _ignoreJsonPath;
+            Logger.Info("Selected ignore JSON file: {Path}", _ignoreJsonPath);
         }
     }
     
