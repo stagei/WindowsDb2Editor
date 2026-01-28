@@ -33,6 +33,7 @@ public partial class MissingFKDiscoveryDialog : Window
     private readonly MissingFKIgnoreService _ignoreService;
     private readonly MissingFKIgnoreHistoryService _ignoreHistoryService;
     private readonly MissingFKJobStatusService _jobStatusService;
+    private readonly MissingFKSearchHistoryService _searchHistoryService;
     private readonly string _connectionProfile;
     
     private List<string> _availableSchemas = new();
@@ -64,6 +65,7 @@ public partial class MissingFKDiscoveryDialog : Window
         _ignoreService = new MissingFKIgnoreService();
         _ignoreHistoryService = new MissingFKIgnoreHistoryService();
         _jobStatusService = new MissingFKJobStatusService();
+        _searchHistoryService = new MissingFKSearchHistoryService();
         
         // Set default output folder
         _outputFolder = Path.Combine(
@@ -220,22 +222,172 @@ public partial class MissingFKDiscoveryDialog : Window
         SchemaComboBox.SelectedIndex = 0;
     }
     
-    private void RefreshTableList()
+    private async void RefreshTableList()
     {
-        var searchText = SearchTextBox.Text?.ToLowerInvariant() ?? string.Empty;
+        var searchText = SearchTextBox.Text?.Trim() ?? string.Empty;
         var selectedSchema = SchemaComboBox.SelectedItem?.ToString() ?? "All";
+        var searchType = (SearchTypeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TableName";
+        var patternType = (PatternTypeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "Standard";
         
-        var filtered = _allTables.Where(t =>
-            (string.IsNullOrEmpty(searchText) || t.TableName.ToLowerInvariant().Contains(searchText) || t.Schema.ToLowerInvariant().Contains(searchText)) &&
-            (selectedSchema == "All" || t.Schema == selectedSchema)
-        ).ToList();
+        List<TableSelectionItem> filtered;
+        
+        if (string.IsNullOrEmpty(searchText))
+        {
+            // No search - show all tables in selected schema
+            filtered = _allTables.Where(t =>
+                selectedSchema == "All" || t.Schema == selectedSchema
+            ).ToList();
+        }
+        else if (searchType == "ColumnName")
+        {
+            // Search by column name - need to query database
+            filtered = await SearchTablesByColumnNameAsync(searchText, selectedSchema, patternType);
+        }
+        else
+        {
+            // Search by table name
+            if (patternType == "Regex")
+            {
+                try
+                {
+                    var regex = new System.Text.RegularExpressions.Regex(searchText, 
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    filtered = _allTables.Where(t =>
+                        (regex.IsMatch(t.TableName) || regex.IsMatch(t.Schema)) &&
+                        (selectedSchema == "All" || t.Schema == selectedSchema)
+                    ).ToList();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Invalid regex pattern: {Pattern}", searchText);
+                    MessageBox.Show($"Invalid regex pattern: {ex.Message}", "Regex Error",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    filtered = _allTables.Where(t =>
+                        selectedSchema == "All" || t.Schema == selectedSchema
+                    ).ToList();
+                }
+            }
+            else
+            {
+                // Standard search
+                var searchLower = searchText.ToLowerInvariant();
+                filtered = _allTables.Where(t =>
+                    (t.TableName.ToLowerInvariant().Contains(searchLower) || t.Schema.ToLowerInvariant().Contains(searchLower)) &&
+                    (selectedSchema == "All" || t.Schema == selectedSchema)
+                ).ToList();
+            }
+        }
         
         TablesList.ItemsSource = filtered;
         
         // Enable/disable "Add All from Search" button based on whether search is active
         AddAllFromSearchButton.IsEnabled = !string.IsNullOrWhiteSpace(searchText) && filtered.Count > 0;
         
+        // Auto-save search pattern to history
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            try
+            {
+                _searchHistoryService.SaveSearchPattern(searchText, searchType, patternType);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to save search pattern to history");
+            }
+        }
+        
         UpdateSelectionCounts();
+    }
+    
+    private async Task<List<TableSelectionItem>> SearchTablesByColumnNameAsync(string searchPattern, string selectedSchema, string patternType)
+    {
+        try
+        {
+            Logger.Debug("Searching tables by column name: {Pattern}, Schema: {Schema}, Type: {Type}", 
+                searchPattern, selectedSchema, patternType);
+            
+            var matchingTables = new HashSet<TableSelectionItem>();
+            var schemasToSearch = selectedSchema == "All" 
+                ? _availableSchemas 
+                : new List<string> { selectedSchema };
+            
+            foreach (var schema in schemasToSearch)
+            {
+                // Get all tables in this schema
+                var schemaTables = _allTables.Where(t => t.Schema == schema).ToList();
+                
+                foreach (var table in schemaTables)
+                {
+                    try
+                    {
+                        // Get columns for this table
+                        var sqlTemplate = await _sqlTranslationService.GetTranslatedStatementAsync(_connectionManager, "GetTableColumnsForMissingFK");
+                        // Replace parameters - need to handle multiple ? placeholders
+                        var parts = sqlTemplate.Split('?');
+                        if (parts.Length >= 3)
+                        {
+                            var sql = $"{parts[0]}'{schema}'{parts[1]}'{table.TableName}'{parts[2]}";
+                            if (parts.Length > 3)
+                                sql += string.Join("", parts.Skip(3));
+                            
+                            var columnsResult = await _connectionManager.ExecuteQueryAsync(sql);
+                            
+                            var columnNames = new List<string>();
+                            
+                            foreach (DataRow row in columnsResult.Rows)
+                            {
+                                var colName = row["COLUMN_NAME"]?.ToString()?.Trim() ?? 
+                                             row["COLNAME"]?.ToString()?.Trim() ?? string.Empty;
+                                if (!string.IsNullOrEmpty(colName))
+                                    columnNames.Add(colName);
+                            }
+                            
+                            // Check if any column matches the pattern
+                            bool matches = false;
+                            if (patternType == "Regex")
+                            {
+                                try
+                                {
+                                    var regex = new System.Text.RegularExpressions.Regex(searchPattern, 
+                                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                    matches = columnNames.Any(col => regex.IsMatch(col));
+                                }
+                                catch
+                                {
+                                    // Invalid regex - skip this table
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                var patternLower = searchPattern.ToLowerInvariant();
+                                matches = columnNames.Any(col => col.ToLowerInvariant().Contains(patternLower));
+                            }
+                            
+                            if (matches)
+                            {
+                                matchingTables.Add(table);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Debug(ex, "Failed to get columns for {Schema}.{Table}", schema, table.TableName);
+                        // Continue with next table
+                    }
+                }
+            }
+            
+            Logger.Info("Found {Count} tables matching column name pattern '{Pattern}'", matchingTables.Count, searchPattern);
+            return matchingTables.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to search tables by column name");
+            MessageBox.Show($"Failed to search by column name:\n{ex.Message}", "Search Error",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return _allTables.Where(t => selectedSchema == "All" || t.Schema == selectedSchema).ToList();
+        }
     }
     
     private void UpdateSelectionCounts()
@@ -251,9 +403,137 @@ public partial class MissingFKDiscoveryDialog : Window
         }).ToList();
     }
     
-    private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    private async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         RefreshTableList();
+    }
+    
+    private void SearchTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Update placeholder text based on search type
+        var searchType = (SearchTypeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TableName";
+        var placeholderText = searchType == "ColumnName" 
+            ? "Enter column name pattern..." 
+            : "Enter table name pattern...";
+        
+        // Use ControlHelper extension for placeholder
+        ModernWpf.UI.ControlHelper.SetPlaceholderText(SearchTextBox, placeholderText);
+        
+        // Refresh search if there's already text
+        if (!string.IsNullOrWhiteSpace(SearchTextBox.Text))
+        {
+            RefreshTableList();
+        }
+    }
+    
+    private void SearchHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var history = _searchHistoryService.GetHistory();
+            if (history.Count == 0)
+            {
+                MessageBox.Show("No previous search patterns found.", "No History",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
+            // Create simple selection dialog
+            var dialog = new Window
+            {
+                Title = "Select Previous Search Pattern",
+                Width = 600,
+                Height = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this
+            };
+            
+            var listBox = new ListBox
+            {
+                Margin = new Thickness(10)
+            };
+            
+            listBox.ItemsSource = history.Select(h => new
+            {
+                Display = $"{h.Pattern} ({h.SearchType}, {h.PatternType}) - {h.SavedAt:yyyy-MM-dd HH:mm}",
+                Item = h
+            });
+            
+            var okButton = new Button
+            {
+                Content = "Load",
+                Width = 75,
+                Height = 25,
+                Margin = new Thickness(5),
+                IsDefault = true
+            };
+            
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Width = 75,
+                Height = 25,
+                Margin = new Thickness(5),
+                IsCancel = true
+            };
+            
+            okButton.Click += (s, args) =>
+            {
+                if (listBox.SelectedItem != null)
+                {
+                    var selected = ((dynamic)listBox.SelectedItem).Item;
+                    SearchTextBox.Text = selected.Pattern;
+                    
+                    // Set search type
+                    var searchTypeItem = SearchTypeComboBox.Items.Cast<ComboBoxItem>()
+                        .FirstOrDefault(item => item.Tag?.ToString() == selected.SearchType);
+                    if (searchTypeItem != null)
+                        SearchTypeComboBox.SelectedItem = searchTypeItem;
+                    
+                    // Set pattern type
+                    var patternTypeItem = PatternTypeComboBox.Items.Cast<ComboBoxItem>()
+                        .FirstOrDefault(item => item.Tag?.ToString() == selected.PatternType);
+                    if (patternTypeItem != null)
+                        PatternTypeComboBox.SelectedItem = patternTypeItem;
+                    
+                    dialog.DialogResult = true;
+                    dialog.Close();
+                }
+            };
+            
+            var buttonPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(10)
+            };
+            buttonPanel.Children.Add(okButton);
+            buttonPanel.Children.Add(cancelButton);
+            
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            
+            Grid.SetRow(listBox, 0);
+            Grid.SetRow(buttonPanel, 1);
+            grid.Children.Add(listBox);
+            grid.Children.Add(buttonPanel);
+            
+            dialog.Content = grid;
+            listBox.Focus();
+            
+            if (dialog.ShowDialog() == true)
+            {
+                // Trigger search refresh
+                RefreshTableList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to show search history");
+            MessageBox.Show($"Failed to load search history:\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
     
     private async void SchemaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -327,9 +607,9 @@ public partial class MissingFKDiscoveryDialog : Window
         UpdateSelectionCounts();
     }
     
-    private void AddAllFromSearch_Click(object sender, RoutedEventArgs e)
+    private async void AddAllFromSearch_Click(object sender, RoutedEventArgs e)
     {
-        var searchText = SearchTextBox.Text?.ToLowerInvariant() ?? string.Empty;
+        var searchText = SearchTextBox.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(searchText))
         {
             MessageBox.Show("Please enter a search term first.", "No Search Term",
@@ -337,13 +617,10 @@ public partial class MissingFKDiscoveryDialog : Window
             return;
         }
         
-        var selectedSchema = SchemaComboBox.SelectedItem?.ToString() ?? "All";
-        
-        // Get all tables matching the search filter
-        var matchingTables = _allTables.Where(t =>
-            (t.TableName.ToLowerInvariant().Contains(searchText) || t.Schema.ToLowerInvariant().Contains(searchText)) &&
-            (selectedSchema == "All" || t.Schema == selectedSchema)
-        ).ToList();
+        // Get currently filtered tables (from RefreshTableList result)
+        var filteredTables = TablesList.ItemsSource as IEnumerable<TableSelectionItem> ?? 
+                            Enumerable.Empty<TableSelectionItem>();
+        var matchingTables = filteredTables.ToList();
         
         if (matchingTables.Count == 0)
         {
@@ -355,19 +632,24 @@ public partial class MissingFKDiscoveryDialog : Window
         var addedCount = 0;
         foreach (var table in matchingTables)
         {
-            if (!_selectedTables.Contains(table))
+            // Mark as selected in _allTables (this is what UpdateSelectionCounts uses)
+            if (!table.IsSelected)
             {
-                _selectedTables.Add(table);
+                table.IsSelected = true;
                 addedCount++;
             }
         }
         
+        // Refresh the table list to show checkboxes as checked
+        RefreshTableList();
         UpdateSelectionCounts();
+        
         Logger.Info("Added {AddedCount} tables from search '{SearchText}' (total matching: {TotalCount})", 
             addedCount, searchText, matchingTables.Count);
         
         StatusText.Text = $"Added {addedCount} table(s) matching '{SearchTextBox.Text}'";
     }
+    
     
     private void RemoveSelected_Click(object sender, RoutedEventArgs e)
     {

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    
+    <!-- EXE icon -->
+    <ApplicationIcon>..\Resources\dEdge.ico</ApplicationIcon>
+    
+    <!-- Assembly Information -->
+    <AssemblyName>WindowsDb2EditorTray</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
+    <Copyright>Copyright © 2025</Copyright>
+    <Company>Internal Use</Company>
+    <Product>WindowsDb2Editor Tray Icon</Product>
+    <Description>System tray icon for WindowsDb2Editor notifications</Description>
+    <Authors>Development Team</Authors>
+    
+    <!-- Application Information -->
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="..\Resources\dEdge.ico">
+      <Link>Resources\dEdge.ico</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

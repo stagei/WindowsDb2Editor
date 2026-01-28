@@ -174,6 +174,18 @@ namespace WindowsDb2Editor.Models
         /// </summary>
         [JsonPropertyName("disableObjectBrowserAutoResize")]
         public bool DisableObjectBrowserAutoResize { get; set; } = false;
+
+        /// <summary>
+        /// Start WindowsDb2Editor when Windows starts (default: true)
+        /// </summary>
+        [JsonPropertyName("startupEnabled")]
+        public bool StartupEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Show system tray icon (default: true)
+        /// </summary>
+        [JsonPropertyName("showTrayIcon")]
+        public bool ShowTrayIcon { get; set; } = true;
     }
 }
 

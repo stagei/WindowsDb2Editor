@@ -41,10 +41,24 @@
                     </Grid.RowDefinitions>
                     
                     <!-- Schema Dropdown and Search -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="Schema:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="SchemaComboBox" Width="150" Margin="0,0,20,0" SelectionChanged="SchemaComboBox_SelectionChanged"/>
-                        <TextBox x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="Search tables in selected schema..." Width="200" TextChanged="SearchTextBox_TextChanged"/>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Schema:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="SchemaComboBox" Width="150" Margin="0,0,20,0" SelectionChanged="SchemaComboBox_SelectionChanged"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="SearchTypeComboBox" Width="120" Margin="0,0,5,0" SelectionChanged="SearchTypeComboBox_SelectionChanged">
+                                <ComboBoxItem Content="Table Name" Tag="TableName" IsSelected="True"/>
+                                <ComboBoxItem Content="Column Name" Tag="ColumnName"/>
+                            </ComboBox>
+                            <ComboBox x:Name="PatternTypeComboBox" Width="100" Margin="0,0,5,0">
+                                <ComboBoxItem Content="Standard" Tag="Standard" IsSelected="True"/>
+                                <ComboBoxItem Content="Regex" Tag="Regex"/>
+                            </ComboBox>
+                            <TextBox x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="Enter search pattern..." Width="200" Margin="0,0,5,0" TextChanged="SearchTextBox_TextChanged"/>
+                            <Button x:Name="SearchHistoryButton" Content="📋" Width="30" ToolTip="Load previous search pattern" Click="SearchHistoryButton_Click"/>
+                        </StackPanel>
                     </StackPanel>
                     
                     <!-- Action Buttons -->

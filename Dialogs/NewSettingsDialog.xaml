@@ -58,6 +58,11 @@
                         </Style>
                     </TreeView.ItemContainerStyle>
                     
+                    <!-- General -->
+                    <TreeViewItem Header="General" Tag="General" IsExpanded="True">
+                        <TreeViewItem Header="Startup" Tag="Startup"/>
+                    </TreeViewItem>
+                    
                     <!-- Appearance -->
                     <TreeViewItem Header="Appearance" Tag="Appearance" IsExpanded="True">
                         <TreeViewItem Header="Theme" Tag="Theme"/>

@@ -127,6 +127,8 @@ public partial class NewSettingsDialog : Window
 
     private void BuildContentPanels()
     {
+        _contentPanels["General"] = BuildGeneralPanel();
+        _contentPanels["Startup"] = BuildStartupPanel();
         _contentPanels["Appearance"] = BuildAppearancePanel();
         _contentPanels["Theme"] = BuildThemePanel();
         _contentPanels["ColorsAndFonts"] = BuildColorsAndFontsPanel();
@@ -1206,6 +1208,8 @@ public partial class NewSettingsDialog : Window
         _preferencesService.Preferences.MaxRowsPerQuery = _workingPreferences.MaxRowsPerQuery;
         _preferencesService.Preferences.CommandTimeout = _workingPreferences.CommandTimeout;
         _preferencesService.Preferences.HandleDecimalErrorsGracefully = _workingPreferences.HandleDecimalErrorsGracefully;
+        _preferencesService.Preferences.StartupEnabled = _workingPreferences.StartupEnabled;
+        _preferencesService.Preferences.ShowTrayIcon = _workingPreferences.ShowTrayIcon;
         _preferencesService.Preferences.AutoRefreshObjectsOnConnect = _workingPreferences.AutoRefreshObjectsOnConnect;
         _preferencesService.Preferences.LogLevel = _workingPreferences.LogLevel;
         _preferencesService.Preferences.GridBackgroundColor = _workingPreferences.GridBackgroundColor;

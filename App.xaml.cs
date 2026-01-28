@@ -39,6 +39,27 @@ public partial class App : Application
             PreferencesService = new PreferencesService();
             Logger.Info("PreferencesService initialized successfully");
             
+            // Check and manage Windows startup registry entry
+            Logger.Debug("Checking Windows startup configuration");
+            var startupManager = new StartupManagerService();
+            var isStartupInRegistry = startupManager.IsStartupEnabled();
+            var isStartupInPreferences = PreferencesService.Preferences.StartupEnabled;
+            
+            if (isStartupInPreferences && !isStartupInRegistry)
+            {
+                Logger.Info("Startup enabled in preferences but not in registry - adding to startup");
+                startupManager.EnableStartup();
+            }
+            else if (!isStartupInPreferences && isStartupInRegistry)
+            {
+                Logger.Info("Startup disabled in preferences but present in registry - removing from startup");
+                startupManager.DisableStartup();
+            }
+            else
+            {
+                Logger.Debug("Startup configuration matches preferences: {Enabled}", isStartupInPreferences);
+            }
+            
             // Initialize theme before GUI mode
             Logger.Debug("Initializing application theme");
             var configService = new ConfigurationService();
