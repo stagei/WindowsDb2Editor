@@ -1,7 +1,7 @@
 # WindowsDb2Editor - Implementation Tasklist
 
-**Last Updated:** November 19, 2025  
-**Total Features:** 19  
+**Last Updated:** January 28, 2026  
+**Total Features:** 20  
 **Completion Status:** See summary at bottom
 
 ---
@@ -645,11 +645,28 @@
 
 ---
 
+## Feature #20: Missing Foreign Key Discovery Batch Job
+
+### 20.1 Specification
+- [x] Create specification for table selection screen, JSON inputs, and detached job
+
+### 20.2 Implementation (Pending)
+- [ ] Create Mermaid-like table selection screen for missing FK discovery
+- [ ] Export missing_fk_input.json with tables and FK metadata
+- [ ] Support missing_fk_ignore.json in UI and batch job
+- [ ] Implement detached CLI batch job runner (missing-fk-scan)
+- [ ] Implement data extraction to CSV and missing FK analysis
+- [ ] Add results JSON output and CLI/WPF parity tests
+
+**Status:** ❌ NOT STARTED (Specification complete)
+
+---
+
 ## 📈 SUMMARY STATISTICS
 
-### Total Tasks: 319 (275 feature tasks + 44 bug tasks)
-- **Completed:** 258 ✅
-- **Not Implemented:** 61 ❌
+### Total Tasks: 325 (281 feature tasks + 44 bug tasks)
+- **Completed:** 259 ✅
+- **Not Implemented:** 66 ❌
 
 ### Breakdown by Category:
 - **Issue #1:** 7/7 (100%) ✅
@@ -671,6 +688,7 @@
 - **Feature #17:** 15/16 (94%) ✅ Service + UI complete
 - **Feature #18:** 11/12 (92%) ✅ Service + UI complete
 - **Feature #19:** 27/47 (57%) ✅ UI working, snapshot enhancement pending
+- **Feature #20:** 1/6 (17%) ❌ Specification complete, implementation pending
 - **BUG #1 (RBAC):** 38/48 (79%) ✅ Core implemented, testing pending
 - **BUG #2 (TableDetails):** 11/22 (50%) ✅ Service ready, UI tabs pending
 
@@ -678,7 +696,7 @@
 - **Service Layer (Business Logic):** 152/152 tasks = **100%** ✅
 - **UI Panels:** 98/123 tasks = **80%** ✅
 - **Security (RBAC):** 38/48 tasks = **79%** ✅
-- **Combined Total:** 258/319 tasks = **81%** ✅
+- **Combined Total:** 259/325 tasks = **80%** ✅
 - **Bugs:** BUG #1 79% complete, BUG #2 50% complete
 
 ---
@@ -1008,6 +1026,6 @@ All services for features #1-#20 plus RBAC and TableRelationshipService.
 
 ---
 
-**Last Updated:** November 19, 2025 22:00  
-**Implementation Status:** ✅ 81% COMPLETE (Production-Ready)  
+**Last Updated:** January 28, 2026 12:00  
+**Implementation Status:** ✅ 80% COMPLETE (Production-Ready)  
 **Next Action:** Test with real DB2 connection and use the DBA toolkit!
