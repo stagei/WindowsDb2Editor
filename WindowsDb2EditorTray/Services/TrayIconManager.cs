@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using NLog;
 using WindowsDb2EditorTray.Models;
 
@@ -19,6 +21,7 @@ public class TrayIconManager : IDisposable
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private NotifyIcon? _notifyIcon;
     private bool _disposed = false;
+    private bool _isDarkMode = false;
 
     public void Initialize()
     {
@@ -28,6 +31,10 @@ public class TrayIconManager : IDisposable
         try
         {
             Logger.Debug("Initializing tray icon manager");
+
+            // Detect system theme
+            _isDarkMode = IsSystemDarkMode();
+            Logger.Debug("System dark mode detected: {IsDarkMode}", _isDarkMode);
 
             // Create notify icon
             _notifyIcon = new NotifyIcon
@@ -43,6 +50,9 @@ public class TrayIconManager : IDisposable
             // Handle double-click to show main window
             _notifyIcon.DoubleClick += (s, e) => ShowMainWindow();
 
+            // Listen for theme changes
+            SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
+
             Logger.Info("Tray icon manager initialized successfully");
         }
         catch (Exception ex)
@@ -50,6 +60,41 @@ public class TrayIconManager : IDisposable
             Logger.Error(ex, "Failed to initialize tray icon manager");
             throw;
         }
+    }
+
+    private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == UserPreferenceCategory.General)
+        {
+            var newDarkMode = IsSystemDarkMode();
+            if (newDarkMode != _isDarkMode)
+            {
+                Logger.Debug("System theme changed, rebuilding context menu");
+                _isDarkMode = newDarkMode;
+                BuildContextMenu();
+            }
+        }
+    }
+
+    private static bool IsSystemDarkMode()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            if (key != null)
+            {
+                var value = key.GetValue("AppsUseLightTheme");
+                if (value is int intValue)
+                {
+                    return intValue == 0; // 0 = dark mode, 1 = light mode
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Failed to detect system theme, defaulting to light mode");
+        }
+        return false;
     }
 
     private Icon GetApplicationIcon()
@@ -97,6 +142,9 @@ public class TrayIconManager : IDisposable
             Logger.Debug("Building context menu");
 
             var menu = new ContextMenuStrip();
+            
+            // Apply theme-aware renderer
+            menu.Renderer = new ThemeAwareToolStripRenderer(_isDarkMode);
 
             // Connections submenu
             var connectionsMenu = new ToolStripMenuItem("Connections");
@@ -329,6 +377,8 @@ public class TrayIconManager : IDisposable
     {
         if (!_disposed)
         {
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+            
             if (_notifyIcon != null)
             {
                 _notifyIcon.Visible = false;
@@ -339,4 +389,111 @@ public class TrayIconManager : IDisposable
             Logger.Info("Tray icon manager disposed");
         }
     }
+}
+
+/// <summary>
+/// Custom renderer that applies dark or light theme to ToolStrip menus
+/// </summary>
+internal class ThemeAwareToolStripRenderer : ToolStripProfessionalRenderer
+{
+    private readonly bool _isDarkMode;
+    private readonly Color _backgroundColor;
+    private readonly Color _foregroundColor;
+    private readonly Color _highlightColor;
+    private readonly Color _borderColor;
+
+    public ThemeAwareToolStripRenderer(bool isDarkMode) : base(new ThemeAwareColorTable(isDarkMode))
+    {
+        _isDarkMode = isDarkMode;
+        
+        if (_isDarkMode)
+        {
+            _backgroundColor = Color.FromArgb(43, 43, 43);
+            _foregroundColor = Color.FromArgb(241, 241, 241);
+            _highlightColor = Color.FromArgb(62, 62, 64);
+            _borderColor = Color.FromArgb(51, 51, 51);
+        }
+        else
+        {
+            _backgroundColor = Color.FromArgb(249, 249, 249);
+            _foregroundColor = Color.FromArgb(0, 0, 0);
+            _highlightColor = Color.FromArgb(229, 243, 255);
+            _borderColor = Color.FromArgb(204, 204, 204);
+        }
+    }
+
+    protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+    {
+        e.TextColor = _foregroundColor;
+        base.OnRenderItemText(e);
+    }
+
+    protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
+    {
+        using var brush = new SolidBrush(_backgroundColor);
+        e.Graphics.FillRectangle(brush, e.AffectedBounds);
+    }
+
+    protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+    {
+        using var pen = new Pen(_borderColor);
+        var rect = new Rectangle(0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
+        e.Graphics.DrawRectangle(pen, rect);
+    }
+
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+    {
+        if (e.Item.Selected || e.Item.Pressed)
+        {
+            using var brush = new SolidBrush(_highlightColor);
+            e.Graphics.FillRectangle(brush, new Rectangle(Point.Empty, e.Item.Size));
+        }
+        else
+        {
+            using var brush = new SolidBrush(_backgroundColor);
+            e.Graphics.FillRectangle(brush, new Rectangle(Point.Empty, e.Item.Size));
+        }
+    }
+
+    protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+    {
+        var bounds = new Rectangle(Point.Empty, e.Item.Size);
+        using var pen = new Pen(_borderColor);
+        int y = bounds.Height / 2;
+        e.Graphics.DrawLine(pen, bounds.Left + 4, y, bounds.Right - 4, y);
+    }
+
+    protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+    {
+        e.ArrowColor = _foregroundColor;
+        base.OnRenderArrow(e);
+    }
+}
+
+/// <summary>
+/// Custom color table for theme-aware rendering
+/// </summary>
+internal class ThemeAwareColorTable : ProfessionalColorTable
+{
+    private readonly bool _isDarkMode;
+
+    public ThemeAwareColorTable(bool isDarkMode)
+    {
+        _isDarkMode = isDarkMode;
+        UseSystemColors = false;
+    }
+
+    public override Color MenuBorder => _isDarkMode ? Color.FromArgb(51, 51, 51) : Color.FromArgb(204, 204, 204);
+    public override Color MenuItemBorder => _isDarkMode ? Color.FromArgb(62, 62, 64) : Color.FromArgb(229, 243, 255);
+    public override Color MenuItemSelected => _isDarkMode ? Color.FromArgb(62, 62, 64) : Color.FromArgb(229, 243, 255);
+    public override Color MenuItemSelectedGradientBegin => _isDarkMode ? Color.FromArgb(62, 62, 64) : Color.FromArgb(229, 243, 255);
+    public override Color MenuItemSelectedGradientEnd => _isDarkMode ? Color.FromArgb(62, 62, 64) : Color.FromArgb(229, 243, 255);
+    public override Color MenuStripGradientBegin => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color MenuStripGradientEnd => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color ToolStripDropDownBackground => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color ImageMarginGradientBegin => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color ImageMarginGradientMiddle => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color ImageMarginGradientEnd => _isDarkMode ? Color.FromArgb(43, 43, 43) : Color.FromArgb(249, 249, 249);
+    public override Color SeparatorDark => _isDarkMode ? Color.FromArgb(51, 51, 51) : Color.FromArgb(204, 204, 204);
+    public override Color SeparatorLight => _isDarkMode ? Color.FromArgb(62, 62, 64) : Color.FromArgb(255, 255, 255);
 }
