@@ -21,15 +21,18 @@ public class MissingFKScanService
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly MissingFKSqlTranslationService _sqlTranslationService;
     private readonly MissingFKIgnoreService _ignoreService;
+    private readonly MissingFKJobStatusService _statusService;
     private readonly IConnectionManager _connectionManager;
     private readonly string _outputFolder;
     private readonly string _jobId;
     private readonly MissingFKInputModel _inputModel;
     private readonly MissingFKResultsModel _resultsModel;
+    private readonly string _logFilePath;
     
     public MissingFKScanService(
         MissingFKSqlTranslationService sqlTranslationService,
         MissingFKIgnoreService ignoreService,
+        MissingFKJobStatusService statusService,
         IConnectionManager connectionManager,
         string outputFolder,
         string jobId,
@@ -37,10 +40,13 @@ public class MissingFKScanService
     {
         _sqlTranslationService = sqlTranslationService ?? throw new ArgumentNullException(nameof(sqlTranslationService));
         _ignoreService = ignoreService ?? throw new ArgumentNullException(nameof(ignoreService));
+        _statusService = statusService ?? throw new ArgumentNullException(nameof(statusService));
         _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
         _outputFolder = outputFolder ?? throw new ArgumentNullException(nameof(outputFolder));
         _jobId = jobId ?? throw new ArgumentNullException(nameof(jobId));
         _inputModel = inputModel ?? throw new ArgumentNullException(nameof(inputModel));
+        
+        _logFilePath = MissingFKJobStatusService.GetLogFilePath(outputFolder, jobId);
         
         _resultsModel = new MissingFKResultsModel
         {
@@ -64,25 +70,70 @@ public class MissingFKScanService
         
         try
         {
+            // Delete existing status file if present (from previous run)
+            _statusService.DeleteStatusFile(_outputFolder, _jobId);
+            
+            // Create status file with "running" status
+            _statusService.CreateStatusFile(_outputFolder, _jobId);
+            await WriteLogLineAsync("Missing FK Discovery batch job started");
+            await WriteLogLineAsync($"Job ID: {_jobId}");
+            await WriteLogLineAsync($"Started: {startTime:yyyy-MM-dd HH:mm:ss} UTC");
+            await WriteLogLineAsync($"Output folder: {_outputFolder}");
+            await WriteLogLineAsync($"Tables to scan: {_inputModel.Tables.Count}");
+            await WriteLogLineAsync(string.Empty);
+            
             // Step 1: Extract table data to CSV files
             Logger.Info("Step 1: Extracting table data to CSV files");
+            await WriteLogLineAsync("Step 1: Extracting table data to CSV files");
+            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
+            {
+                Phase = "extracting",
+                TotalTables = _inputModel.Tables.Count,
+                TablesScanned = 0,
+                CurrentTable = string.Empty
+            });
+            
             await ExtractTableDataAsync();
             
             // Step 2: Analyze data to find missing FK candidates
             Logger.Info("Step 2: Analyzing data for missing FK candidates");
+            await WriteLogLineAsync("Step 2: Analyzing data for missing FK candidates");
+            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
+            {
+                Phase = "analyzing",
+                TotalTables = _inputModel.Tables.Count,
+                TablesScanned = _inputModel.Tables.Count,
+                CurrentTable = string.Empty
+            });
+            
             await AnalyzeMissingFKsAsync();
             
             // Step 3: Generate results JSON
             Logger.Info("Step 3: Generating results JSON");
+            await WriteLogLineAsync("Step 3: Generating results JSON");
+            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
+            {
+                Phase = "generating",
+                TotalTables = _inputModel.Tables.Count,
+                TablesScanned = _inputModel.Tables.Count,
+                CurrentTable = string.Empty
+            });
+            
             _resultsModel.CompletedAtUtc = DateTime.UtcNow;
             var resultsPath = Path.Combine(_outputFolder, "missing_fk_results.json");
             await SaveResultsJsonAsync(resultsPath);
             
-            // Step 4: Write job log
-            Logger.Info("Step 4: Writing job log");
-            await WriteJobLogAsync(startTime);
+            // Step 4: Write job log summary
+            Logger.Info("Step 4: Writing job log summary");
+            await WriteJobLogSummaryAsync(startTime);
+            
+            // Delete status file on successful completion
+            _statusService.DeleteStatusFile(_outputFolder, _jobId);
             
             var duration = DateTime.UtcNow - startTime;
+            await WriteLogLineAsync($"Job completed successfully in {duration:g}");
+            await WriteLogLineAsync($"Candidates found: {_resultsModel.Candidates.Count}");
+            
             Logger.Info("Missing FK Discovery batch job completed: {JobId} in {Duration}ms. Found {CandidateCount} candidates.",
                 _jobId, duration.TotalMilliseconds, _resultsModel.Candidates.Count);
             
@@ -91,7 +142,22 @@ public class MissingFKScanService
         catch (Exception ex)
         {
             Logger.Error(ex, "Missing FK Discovery batch job failed: {JobId}", _jobId);
-            await WriteJobLogAsync(startTime, ex);
+            await WriteLogLineAsync($"ERROR: {ex.Message}");
+            await WriteLogLineAsync($"Stack Trace: {ex.StackTrace}");
+            await WriteJobLogSummaryAsync(startTime, ex);
+            
+            // Create error file
+            _statusService.CreateErrorFile(_outputFolder, _jobId, ex);
+            
+            // Update status file with error
+            _statusService.UpdateStatusFile(_outputFolder, _jobId, "error", new MissingFKJobProgress
+            {
+                Phase = "error",
+                TotalTables = _inputModel.Tables.Count,
+                TablesScanned = 0,
+                CurrentTable = string.Empty
+            });
+            
             throw;
         }
     }
@@ -103,33 +169,36 @@ public class MissingFKScanService
     {
         Logger.Info("Extracting data for {Count} tables", _inputModel.Tables.Count);
         
+        var tablesToProcess = _inputModel.Tables.Where(t => 
+            !_ignoreService.ShouldIgnoreTable(t.Schema, t.Name) &&
+            t.RowCount >= _inputModel.Options.MinRowCount).ToList();
+        
         var parallelLimit = _inputModel.Options.MaxParallelTables;
         var semaphore = new SemaphoreSlim(parallelLimit);
         var tasks = new List<Task>();
+        var processedCount = 0;
+        var lockObj = new object();
         
-        foreach (var table in _inputModel.Tables)
+        foreach (var table in tablesToProcess)
         {
-            // Skip if table should be ignored
-            if (_ignoreService.ShouldIgnoreTable(table.Schema, table.Name))
-            {
-                Logger.Debug("Skipping ignored table: {Schema}.{Table}", table.Schema, table.Name);
-                continue;
-            }
-            
-            // Skip if row count is too low
-            if (table.RowCount < _inputModel.Options.MinRowCount)
-            {
-                Logger.Debug("Skipping table {Schema}.{Table}: row count {Count} < min {Min}",
-                    table.Schema, table.Name, table.RowCount, _inputModel.Options.MinRowCount);
-                continue;
-            }
-            
             await semaphore.WaitAsync();
             tasks.Add(Task.Run(async () =>
             {
                 try
                 {
                     await ExtractSingleTableAsync(table);
+                    
+                    lock (lockObj)
+                    {
+                        processedCount++;
+                        _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
+                        {
+                            Phase = "extracting",
+                            TotalTables = tablesToProcess.Count,
+                            TablesScanned = processedCount,
+                            CurrentTable = $"{table.Schema}.{table.Name}"
+                        });
+                    }
                 }
                 finally
                 {
@@ -140,6 +209,7 @@ public class MissingFKScanService
         
         await Task.WhenAll(tasks);
         Logger.Info("Data extraction complete for all tables");
+        await WriteLogLineAsync($"Extracted data from {processedCount} tables");
     }
     
     /// <summary>
@@ -644,39 +714,52 @@ public class MissingFKScanService
     }
     
     /// <summary>
-    /// Write job log file.
+    /// Write a line to the job log file (append mode).
     /// </summary>
-    private async Task WriteJobLogAsync(DateTime startTime, Exception? error = null)
+    private async Task WriteLogLineAsync(string line)
     {
-        var logPath = Path.Combine(_outputFolder, $"job_{_jobId}_log.txt");
-        Logger.Debug("Writing job log to: {Path}", logPath);
-        
-        var log = new StringBuilder();
-        log.AppendLine($"Missing FK Discovery Batch Job Log");
-        log.AppendLine($"Job ID: {_jobId}");
-        log.AppendLine($"Started: {startTime:yyyy-MM-dd HH:mm:ss} UTC");
-        log.AppendLine($"Completed: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
-        log.AppendLine($"Duration: {DateTime.UtcNow - startTime:g}");
-        log.AppendLine();
-        log.AppendLine($"Summary:");
-        log.AppendLine($"  Tables Scanned: {_resultsModel.Summary.TablesScanned}");
-        log.AppendLine($"  Candidates Found: {_resultsModel.Summary.CandidatesFound}");
-        log.AppendLine($"  Strong Candidates: {_resultsModel.Summary.StrongCandidates}");
-        log.AppendLine($"  Tables Without Keys: {_resultsModel.Summary.TablesWithoutKeys}");
-        log.AppendLine();
+        try
+        {
+            await File.AppendAllTextAsync(_logFilePath, line + Environment.NewLine, Encoding.UTF8);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to write log line: {Line}", line);
+        }
+    }
+    
+    /// <summary>
+    /// Write job log summary at the end.
+    /// </summary>
+    private async Task WriteJobLogSummaryAsync(DateTime startTime, Exception? error = null)
+    {
+        await WriteLogLineAsync(string.Empty);
+        await WriteLogLineAsync("=== JOB SUMMARY ===");
+        await WriteLogLineAsync($"Completed: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+        await WriteLogLineAsync($"Duration: {DateTime.UtcNow - startTime:g}");
+        await WriteLogLineAsync(string.Empty);
+        await WriteLogLineAsync("Summary:");
+        await WriteLogLineAsync($"  Tables Scanned: {_resultsModel.Summary.TablesScanned}");
+        await WriteLogLineAsync($"  Candidates Found: {_resultsModel.Summary.CandidatesFound}");
+        await WriteLogLineAsync($"  Strong Candidates: {_resultsModel.Summary.StrongCandidates}");
+        await WriteLogLineAsync($"  Tables Without Keys: {_resultsModel.Summary.TablesWithoutKeys}");
+        await WriteLogLineAsync(string.Empty);
         
         if (error != null)
         {
-            log.AppendLine($"ERROR: {error.Message}");
-            log.AppendLine($"Stack Trace: {error.StackTrace}");
+            await WriteLogLineAsync($"Status: ERROR");
+            await WriteLogLineAsync($"ERROR: {error.Message}");
+            if (!string.IsNullOrEmpty(error.StackTrace))
+            {
+                await WriteLogLineAsync($"Stack Trace: {error.StackTrace}");
+            }
         }
         else
         {
-            log.AppendLine("Status: SUCCESS");
+            await WriteLogLineAsync("Status: SUCCESS");
         }
         
-        await File.WriteAllTextAsync(logPath, log.ToString(), Encoding.UTF8);
-        Logger.Info("Job log written: {Path}", logPath);
+        Logger.Info("Job log summary written: {Path}", _logFilePath);
     }
     
     /// <summary>

@@ -139,6 +139,11 @@
                         <TextBlock Text="🔗" FontSize="16"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Header="Missing FK _Job Log..." Click="MissingFKJobLog_Click" Tag="AccessLevel:Middle">
+                    <MenuItem.Icon>
+                        <TextBlock Text="📋" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="_Unused Objects..." Click="UnusedObjects_Click" Tag="AccessLevel:DBA">
                     <MenuItem.Icon>
                         <TextBlock Text="🗑️" FontSize="16"/>

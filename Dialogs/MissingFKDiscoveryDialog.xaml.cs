@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +31,8 @@ public partial class MissingFKDiscoveryDialog : Window
     private readonly MissingFKSqlTranslationService _sqlTranslationService;
     private readonly MissingFKMetadataService _metadataService;
     private readonly MissingFKIgnoreService _ignoreService;
+    private readonly MissingFKIgnoreHistoryService _ignoreHistoryService;
+    private readonly MissingFKJobStatusService _jobStatusService;
     private readonly string _connectionProfile;
     
     private List<TableSelectionItem> _allTables = new();
@@ -36,6 +40,11 @@ public partial class MissingFKDiscoveryDialog : Window
     private string _outputFolder = string.Empty;
     private string _ignoreJsonPath = string.Empty;
     private string _jobId = string.Empty;
+    private Process? _runningJobProcess;
+    private FileSystemWatcher? _statusFileWatcher;
+    private Timer? _statusPollTimer;
+    private MissingFKIgnoreModel _currentIgnoreModel = new();
+    private ObservableCollection<MissingFKIgnoreColumn> _ignoreColumnsCollection = new();
     
     public MissingFKDiscoveryDialog(IConnectionManager connectionManager, string connectionProfile)
     {
@@ -49,6 +58,8 @@ public partial class MissingFKDiscoveryDialog : Window
         _sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
         _metadataService = new MissingFKMetadataService(_sqlTranslationService, _connectionManager);
         _ignoreService = new MissingFKIgnoreService();
+        _ignoreHistoryService = new MissingFKIgnoreHistoryService();
+        _jobStatusService = new MissingFKJobStatusService();
         
         // Set default output folder
         _outputFolder = Path.Combine(
@@ -63,7 +74,16 @@ public partial class MissingFKDiscoveryDialog : Window
         
         OutputFolderTextBox.Text = _outputFolder;
         
+        // Initialize ignore columns grid
+        IgnoreColumnsGrid.ItemsSource = _ignoreColumnsCollection;
+        
         Loaded += MissingFKDiscoveryDialog_Loaded;
+        Closing += MissingFKDiscoveryDialog_Closing;
+    }
+    
+    private void MissingFKDiscoveryDialog_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        StopJobStatusMonitoring();
     }
     
     private async void MissingFKDiscoveryDialog_Loaded(object sender, RoutedEventArgs e)
@@ -76,6 +96,7 @@ public partial class MissingFKDiscoveryDialog : Window
             await LoadTablesAsync();
             PopulateSchemaComboBox();
             RefreshTableList();
+            await LoadIgnoreHistoryAsync();
             
             HideLoading();
             StatusText.Text = $"Ready - {_allTables.Count} tables loaded";
@@ -564,11 +585,62 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
+            // Check if job is already running (via lock file)
+            if (_jobStatusService.IsJobLocked(_outputFolder))
+            {
+                MessageBox.Show(
+                    "A Missing FK Discovery job is already running. Please wait for it to complete before starting another job.",
+                    "Job Already Running",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+            
             var inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
             if (!File.Exists(inputPath))
             {
                 MessageBox.Show("Please generate input JSON first.", "Input JSON Not Found",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            // Save ignore JSON if editor has been used
+            if (IgnoreColumnEditorExpander.IsExpanded)
+            {
+                _currentIgnoreModel.IgnoreColumns = _ignoreColumnsCollection.ToList();
+                _currentIgnoreModel.IgnoreColumnPatterns = IgnorePatternsTextBox.Text
+                    .Split(new[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .ToList();
+                _currentIgnoreModel.IgnoreDataTypes = IgnoreDataTypesTextBox.Text
+                    .Split(',')
+                    .Select(d => d.Trim())
+                    .Where(d => !string.IsNullOrEmpty(d))
+                    .ToList();
+                
+                // Save to ignore JSON file
+                if (string.IsNullOrEmpty(_ignoreJsonPath))
+                {
+                    _ignoreJsonPath = Path.Combine(_outputFolder, "missing_fk_ignore.json");
+                }
+                
+                var ignoreJson = JsonSerializer.Serialize(_currentIgnoreModel, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                File.WriteAllText(_ignoreJsonPath, ignoreJson, Encoding.UTF8);
+                IgnoreJsonTextBox.Text = _ignoreJsonPath;
+            }
+            
+            // Acquire job lock
+            if (!_jobStatusService.AcquireJobLock(_outputFolder, _jobId))
+            {
+                MessageBox.Show(
+                    "Failed to acquire job lock. Another job may be running.",
+                    "Job Lock Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
             
@@ -606,28 +678,32 @@ public partial class MissingFKDiscoveryDialog : Window
                 RedirectStandardError = true
             };
             
-            var process = Process.Start(processInfo);
-            if (process != null)
+            _runningJobProcess = Process.Start(processInfo);
+            if (_runningJobProcess != null)
             {
-                Logger.Info("Batch job started with PID: {Pid}", process.Id);
-                StatusText.Text = $"Batch job started (Job ID: {_jobId}, PID: {process.Id}). Log: {Path.Combine(_outputFolder, $"job_{_jobId}_log.txt")}";
+                Logger.Info("Batch job started with PID: {Pid}", _runningJobProcess.Id);
+                StatusText.Text = $"Batch job started (Job ID: {_jobId}, PID: {_runningJobProcess.Id})";
                 
-                MessageBox.Show(
-                    $"Batch job started successfully.\n\nJob ID: {_jobId}\nProcess ID: {process.Id}\n\n" +
-                    $"The job will continue running in the background even if you close this dialog.\n" +
-                    $"Check the job log for progress: {Path.Combine(_outputFolder, $"job_{_jobId}_log.txt")}",
-                    "Batch Job Started",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                // Start status monitoring
+                StartJobStatusMonitoring(_jobId, _outputFolder);
+                
+                // Update UI
+                StartBatchJobButton.IsEnabled = false;
+                ViewJobLogButton.IsEnabled = true;
+                JobStatusText.Text = "Job starting...";
+                
+                Logger.Info("Job status monitoring started");
             }
             else
             {
+                _jobStatusService.ReleaseJobLock(_outputFolder);
                 throw new InvalidOperationException("Failed to start batch job process");
             }
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to start batch job");
+            _jobStatusService.ReleaseJobLock(_outputFolder);
             MessageBox.Show($"Failed to start batch job:\n{ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -659,7 +735,7 @@ public partial class MissingFKDiscoveryDialog : Window
             return;
         }
         
-        var logPath = Path.Combine(_outputFolder, $"job_{_jobId}_log.txt");
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
         if (File.Exists(logPath))
         {
             Process.Start(new ProcessStartInfo
@@ -673,6 +749,327 @@ public partial class MissingFKDiscoveryDialog : Window
             MessageBox.Show($"Job log not found:\n{logPath}", "Log Not Found",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+    
+    private async Task LoadIgnoreHistoryAsync()
+    {
+        try
+        {
+            var history = _ignoreHistoryService.GetHistory();
+            IgnoreHistoryComboBox.Items.Clear();
+            foreach (var item in history)
+            {
+                IgnoreHistoryComboBox.Items.Add($"{item.Name} ({item.SavedAt:yyyy-MM-dd HH:mm})");
+            }
+            Logger.Debug("Loaded {Count} ignore configurations from history", history.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load ignore history");
+        }
+    }
+    
+    private void IgnoreHistoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IgnoreHistoryComboBox.SelectedIndex < 0) return;
+        
+        try
+        {
+            var history = _ignoreHistoryService.GetHistory();
+            if (IgnoreHistoryComboBox.SelectedIndex >= history.Count) return;
+            
+            var selectedItem = history[IgnoreHistoryComboBox.SelectedIndex];
+            var ignoreModel = _ignoreHistoryService.LoadIgnoreConfig(selectedItem.Name);
+            
+            if (ignoreModel != null)
+            {
+                _currentIgnoreModel = ignoreModel;
+                UpdateIgnoreColumnsGrid();
+                IgnorePatternsTextBox.Text = string.Join(Environment.NewLine, ignoreModel.IgnoreColumnPatterns);
+                IgnoreDataTypesTextBox.Text = string.Join(", ", ignoreModel.IgnoreDataTypes);
+                Logger.Info("Loaded ignore configuration from history: {Name}", selectedItem.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to load ignore configuration from history");
+            MessageBox.Show($"Failed to load ignore configuration:\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+    
+    private async void SaveIgnoreConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Get current ignore model from UI
+            _currentIgnoreModel.IgnoreColumns = _ignoreColumnsCollection.ToList();
+            _currentIgnoreModel.IgnoreColumnPatterns = IgnorePatternsTextBox.Text
+                .Split(new[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+            _currentIgnoreModel.IgnoreDataTypes = IgnoreDataTypesTextBox.Text
+                .Split(',')
+                .Select(d => d.Trim())
+                .Where(d => !string.IsNullOrEmpty(d))
+                .ToList();
+            
+            // Prompt for name using simple input dialog
+            var inputDialog = new Window
+            {
+                Title = "Save Ignore Configuration",
+                Width = 400,
+                Height = 150,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this
+            };
+            
+            var textBox = new TextBox
+            {
+                Text = $"Ignore_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}",
+                Margin = new Thickness(10),
+                VerticalContentAlignment = VerticalAlignment.Center
+            };
+            
+            var okButton = new Button
+            {
+                Content = "OK",
+                Width = 75,
+                Height = 25,
+                Margin = new Thickness(5),
+                IsDefault = true
+            };
+            
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Width = 75,
+                Height = 25,
+                Margin = new Thickness(5),
+                IsCancel = true
+            };
+            
+            var stackPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(10)
+            };
+            stackPanel.Children.Add(okButton);
+            stackPanel.Children.Add(cancelButton);
+            
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            
+            Grid.SetRow(textBox, 0);
+            Grid.SetRow(stackPanel, 1);
+            grid.Children.Add(textBox);
+            grid.Children.Add(stackPanel);
+            
+            inputDialog.Content = grid;
+            
+            bool? result = null;
+            okButton.Click += (s, args) => { result = true; inputDialog.Close(); };
+            cancelButton.Click += (s, args) => { result = false; inputDialog.Close(); };
+            
+            inputDialog.ShowDialog();
+            
+            if (result != true || string.IsNullOrWhiteSpace(textBox.Text))
+                return;
+            
+            var name = textBox.Text.Trim();
+            _ignoreHistoryService.SaveIgnoreConfig(_currentIgnoreModel, name);
+            await LoadIgnoreHistoryAsync();
+            
+            MessageBox.Show($"Ignore configuration saved: {name}", "Success",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to save ignore configuration");
+            MessageBox.Show($"Failed to save ignore configuration:\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    private void UpdateIgnoreColumnsGrid()
+    {
+        _ignoreColumnsCollection.Clear();
+        foreach (var col in _currentIgnoreModel.IgnoreColumns)
+        {
+            _ignoreColumnsCollection.Add(col);
+        }
+    }
+    
+    private void ViewJobLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_jobId))
+        {
+            MessageBox.Show("No job has been started yet.", "No Job",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        if (!File.Exists(logPath))
+        {
+            MessageBox.Show($"Job log not found:\n{logPath}", "Log Not Found",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        
+        var logViewer = new MissingFKJobLogViewerDialog(logPath, _jobId);
+        logViewer.Owner = this;
+        logViewer.Show();
+    }
+    
+    private void StartJobStatusMonitoring(string jobId, string outputFolder)
+    {
+        try
+        {
+            Logger.Debug("Starting job status monitoring for job: {JobId}", jobId);
+            
+            // Create FileSystemWatcher for status file
+            _statusFileWatcher = new FileSystemWatcher(outputFolder)
+            {
+                Filter = $"missing_fk_status_{jobId}.json",
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime | NotifyFilters.Size
+            };
+            
+            _statusFileWatcher.Created += OnStatusFileChanged;
+            _statusFileWatcher.Changed += OnStatusFileChanged;
+            _statusFileWatcher.Deleted += OnStatusFileDeleted;
+            _statusFileWatcher.EnableRaisingEvents = true;
+            
+            // Also start polling timer as fallback (every 2 seconds)
+            _statusPollTimer = new Timer(CheckJobStatus, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+            
+            Logger.Info("Job status monitoring started for job: {JobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to start job status monitoring");
+        }
+    }
+    
+    private void StopJobStatusMonitoring()
+    {
+        try
+        {
+            if (_statusFileWatcher != null)
+            {
+                _statusFileWatcher.EnableRaisingEvents = false;
+                _statusFileWatcher.Dispose();
+                _statusFileWatcher = null;
+            }
+            
+            if (_statusPollTimer != null)
+            {
+                _statusPollTimer.Dispose();
+                _statusPollTimer = null;
+            }
+            
+            Logger.Debug("Job status monitoring stopped");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error stopping job status monitoring");
+        }
+    }
+    
+    private void OnStatusFileChanged(object sender, FileSystemEventArgs e)
+    {
+        Dispatcher.Invoke(() => CheckJobStatus(null));
+    }
+    
+    private void OnStatusFileDeleted(object sender, FileSystemEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            Logger.Info("Status file deleted - job completed");
+            JobStatusText.Text = "Job completed";
+            StartBatchJobButton.IsEnabled = true;
+            ViewJobLogButton.IsEnabled = false;
+            
+            // Show completion notification
+            ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
+            
+            StopJobStatusMonitoring();
+        });
+    }
+    
+    private void CheckJobStatus(object? state)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_jobId)) return;
+            
+            var status = _jobStatusService.ReadStatusFile(_outputFolder, _jobId);
+            if (status == null)
+            {
+                // Status file doesn't exist - job may have completed
+                if (_jobStatusService.IsJobRunning(_outputFolder, _jobId))
+                {
+                    // Still running, just no status file yet
+                    return;
+                }
+                
+                // Job completed
+                Dispatcher.Invoke(() =>
+                {
+                    JobStatusText.Text = "Job completed";
+                    StartBatchJobButton.IsEnabled = true;
+                    ViewJobLogButton.IsEnabled = false;
+                    StopJobStatusMonitoring();
+                });
+                return;
+            }
+            
+            Dispatcher.Invoke(() =>
+            {
+                var progress = status.Progress;
+                var statusText = $"Job {status.Status} - {progress.Phase}";
+                if (progress.TotalTables > 0)
+                {
+                    statusText += $" ({progress.TablesScanned}/{progress.TotalTables} tables)";
+                }
+                if (!string.IsNullOrEmpty(progress.CurrentTable))
+                {
+                    statusText += $" - {progress.CurrentTable}";
+                }
+                
+                JobStatusText.Text = statusText;
+                StartBatchJobButton.IsEnabled = false;
+                ViewJobLogButton.IsEnabled = true;
+                
+                if (status.Status == "error")
+                {
+                    JobStatusText.Text = $"Job ERROR: {status.Error ?? "Unknown error"}";
+                    StartBatchJobButton.IsEnabled = true;
+                    ViewJobLogButton.IsEnabled = true;
+                    ShowJobCompletionNotification(false, status.Error ?? "Job failed with unknown error.");
+                    StopJobStatusMonitoring();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error checking job status");
+        }
+    }
+    
+    private void ShowJobCompletionNotification(bool success, string message)
+    {
+        var title = success ? "Job Completed" : "Job Failed";
+        var icon = success ? MessageBoxImage.Information : MessageBoxImage.Error;
+        
+        MessageBox.Show(
+            $"{message}\n\nJob ID: {_jobId}\nOutput folder: {_outputFolder}",
+            title,
+            MessageBoxButton.OK,
+            icon);
     }
     
     private string ReplaceParameters(string sql, params string[] values)

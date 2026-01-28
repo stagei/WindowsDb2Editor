@@ -1131,6 +1131,48 @@ public partial class MainWindow : Window
         }
     }
     
+    private void MissingFKJobLog_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Missing FK Job Log viewer");
+        
+        // Show dialog to select job output folder
+        var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "Select Missing FK Discovery job output folder",
+            ShowNewFolderButton = false
+        };
+        
+        if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var outputFolder = folderDialog.SelectedPath;
+            
+            // Look for log files in the folder
+            var logFiles = Directory.GetFiles(outputFolder, "missing_fk_job_*.log");
+            if (logFiles.Length == 0)
+            {
+                MessageBox.Show(
+                    "No job log files found in the selected folder.",
+                    "No Log Files",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+            
+            // If multiple log files, let user choose (for now, use the most recent)
+            var latestLog = logFiles
+                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
+                .First();
+            
+            // Extract job ID from filename
+            var fileName = Path.GetFileNameWithoutExtension(latestLog);
+            var jobId = fileName.Replace("missing_fk_job_", "");
+            
+            var logViewer = new MissingFKJobLogViewerDialog(latestLog, jobId);
+            logViewer.Owner = this;
+            logViewer.Show();
+        }
+    }
+    
     private void UnusedObjects_Click(object sender, RoutedEventArgs e)
     {
         OpenToolWindow<UnusedObjectsPanel>("Unused Objects", "🗑️");

@@ -5137,39 +5137,51 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         // Initialize services
         var sqlMermaidService = new SqlMermaidIntegrationService();
         var sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
-        var scanService = new MissingFKScanService(
-            sqlTranslationService,
-            ignoreService,
-            connectionManager,
-            args.OutFile,
-            inputModel.JobId,
-            inputModel
-        );
+        var jobStatusService = new MissingFKJobStatusService();
         
-        // Execute batch job
-        Logger.Info("Starting Missing FK Discovery batch job: {JobId}", inputModel.JobId);
-        var results = await scanService.ExecuteAsync();
-        
-        Logger.Info("Missing FK Discovery batch job completed: {JobId}, Found {CandidateCount} candidates",
-            inputModel.JobId, results.Candidates.Count);
-        
-        return new
+        // Release job lock on completion/error
+        try
         {
-            command = "missing-fk-scan",
-            jobId = results.JobId,
-            completedAt = results.CompletedAtUtc,
-            summary = new
+            var scanService = new MissingFKScanService(
+                sqlTranslationService,
+                ignoreService,
+                jobStatusService,
+                connectionManager,
+                args.OutFile,
+                inputModel.JobId,
+                inputModel
+            );
+            
+            // Execute batch job
+            Logger.Info("Starting Missing FK Discovery batch job: {JobId}", inputModel.JobId);
+            var results = await scanService.ExecuteAsync();
+            
+            Logger.Info("Missing FK Discovery batch job completed: {JobId}, Found {CandidateCount} candidates",
+                inputModel.JobId, results.Candidates.Count);
+            
+            return new
             {
-                tablesScanned = results.Summary.TablesScanned,
-                candidatesFound = results.Summary.CandidatesFound,
-                strongCandidates = results.Summary.StrongCandidates,
-                tablesWithoutKeys = results.Summary.TablesWithoutKeys
-            },
-            candidatesCount = results.Candidates.Count,
-            resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json"),
-            logPath = Path.Combine(args.OutFile, $"job_{inputModel.JobId}_log.txt"),
-            status = "SUCCESS"
-        };
+                command = "missing-fk-scan",
+                jobId = results.JobId,
+                completedAt = results.CompletedAtUtc,
+                summary = new
+                {
+                    tablesScanned = results.Summary.TablesScanned,
+                    candidatesFound = results.Summary.CandidatesFound,
+                    strongCandidates = results.Summary.StrongCandidates,
+                    tablesWithoutKeys = results.Summary.TablesWithoutKeys
+                },
+                candidatesCount = results.Candidates.Count,
+                resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json"),
+                logPath = MissingFKJobStatusService.GetLogFilePath(args.OutFile, inputModel.JobId),
+                status = "SUCCESS"
+            };
+        }
+        finally
+        {
+            // Always release job lock
+            jobStatusService.ReleaseJobLock(args.OutFile);
+        }
     }
     
     /// <summary>
