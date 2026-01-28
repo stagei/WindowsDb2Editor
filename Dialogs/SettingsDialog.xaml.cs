@@ -68,6 +68,12 @@ namespace WindowsDb2Editor.Dialogs
 
                 // Logging settings
                 SetComboBoxValue(LogLevelComboBox, prefs.LogLevel);
+                
+                // Update current log level display
+                if (CurrentLogLevelText != null)
+                {
+                    CurrentLogLevelText.Text = $"Current level: {LoggingService.GetCurrentLogLevel()}";
+                }
 
                 // Grid settings
                 GridBackgroundColorTextBox.Text = prefs.GridBackgroundColor;
@@ -415,6 +421,11 @@ namespace WindowsDb2Editor.Dialogs
 
                 // Save to file
                 _preferencesService.SavePreferences();
+
+                // Apply log level change immediately (no restart required)
+                var newLogLevel = GetComboBoxValue(LogLevelComboBox);
+                LoggingService.SetLogLevel(newLogLevel);
+                Logger.Debug("Log level applied immediately: {Level}", newLogLevel);
 
                 // Refresh all existing UI with new preferences
                 UIStyleService.RefreshAllStyles();

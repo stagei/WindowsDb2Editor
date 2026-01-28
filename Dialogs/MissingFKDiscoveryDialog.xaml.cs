@@ -53,42 +53,75 @@ public partial class MissingFKDiscoveryDialog : Window
     
     public MissingFKDiscoveryDialog(IConnectionManager connectionManager, string connectionProfile)
     {
-        InitializeComponent();
+        Logger.Debug("MissingFKDiscoveryDialog constructor started");
         
-        _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-        _connectionProfile = connectionProfile ?? throw new ArgumentNullException(nameof(connectionProfile));
-        
-        // Initialize services
-        var sqlMermaidService = new SqlMermaidIntegrationService();
-        _sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
-        _metadataService = new MissingFKMetadataService(_sqlTranslationService, _connectionManager);
-        _ignoreService = new MissingFKIgnoreService();
-        _ignoreHistoryService = new MissingFKIgnoreHistoryService();
-        _jobStatusService = new MissingFKJobStatusService();
-        _searchHistoryService = new MissingFKSearchHistoryService();
-        
-        // Set default output folder
-        _outputFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "WindowsDb2Editor",
-            "MissingFK");
-        
-        if (!Directory.Exists(_outputFolder))
+        try
         {
-            Directory.CreateDirectory(_outputFolder);
+            InitializeComponent();
+            Logger.Debug("InitializeComponent completed");
+            
+            _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            _connectionProfile = connectionProfile ?? throw new ArgumentNullException(nameof(connectionProfile));
+            Logger.Debug("Connection manager and profile set: {Profile}", _connectionProfile);
+            
+            // Initialize services
+            Logger.Debug("Initializing services...");
+            var sqlMermaidService = new SqlMermaidIntegrationService();
+            Logger.Debug("SqlMermaidIntegrationService created");
+            
+            _sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
+            Logger.Debug("MissingFKSqlTranslationService created");
+            
+            _metadataService = new MissingFKMetadataService(_sqlTranslationService, _connectionManager);
+            Logger.Debug("MissingFKMetadataService created");
+            
+            _ignoreService = new MissingFKIgnoreService();
+            Logger.Debug("MissingFKIgnoreService created");
+            
+            _ignoreHistoryService = new MissingFKIgnoreHistoryService();
+            Logger.Debug("MissingFKIgnoreHistoryService created");
+            
+            _jobStatusService = new MissingFKJobStatusService();
+            Logger.Debug("MissingFKJobStatusService created");
+            
+            _searchHistoryService = new MissingFKSearchHistoryService();
+            Logger.Debug("MissingFKSearchHistoryService created");
+            
+            // Set default output folder
+            _outputFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "WindowsDb2Editor",
+                "MissingFK");
+            Logger.Debug("Output folder path: {Path}", _outputFolder);
+            
+            if (!Directory.Exists(_outputFolder))
+            {
+                Directory.CreateDirectory(_outputFolder);
+                Logger.Debug("Created output folder");
+            }
+            
+            OutputFolderTextBox.Text = _outputFolder;
+            Logger.Debug("Output folder textbox set");
+            
+            // Create dedicated folder for ignore files
+            _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
+            Logger.Info("Ignore files folder: {Path}", _ignoreFilesFolder);
+            
+            // Initialize ignore model summary
+            Logger.Debug("Updating ignore rules summary...");
+            UpdateIgnoreRulesSummary();
+            Logger.Debug("Ignore rules summary updated");
+            
+            Loaded += MissingFKDiscoveryDialog_Loaded;
+            Closing += MissingFKDiscoveryDialog_Closing;
+            
+            Logger.Info("MissingFKDiscoveryDialog constructor completed successfully");
         }
-        
-        OutputFolderTextBox.Text = _outputFolder;
-        
-        // Create dedicated folder for ignore files
-        _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
-        Logger.Info("Ignore files folder: {Path}", _ignoreFilesFolder);
-        
-        // Initialize ignore model summary
-        UpdateIgnoreRulesSummary();
-        
-        Loaded += MissingFKDiscoveryDialog_Loaded;
-        Closing += MissingFKDiscoveryDialog_Closing;
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Exception in MissingFKDiscoveryDialog constructor");
+            throw;
+        }
     }
     
     private void MissingFKDiscoveryDialog_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -99,25 +132,37 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private async void MissingFKDiscoveryDialog_Loaded(object sender, RoutedEventArgs e)
     {
+        Logger.Debug("MissingFKDiscoveryDialog_Loaded event started");
+        
         try
         {
             Logger.Info("Loading schemas for Missing FK Discovery");
             ShowLoading("Loading schemas from database...");
             
+            // Apply UI styles
+            Logger.Debug("Applying UI styles");
+            UIStyleService.ApplyStyles(this);
+            
             // Only load schemas initially, not tables
+            Logger.Debug("Calling LoadSchemasAsync");
             await LoadSchemasAsync();
+            Logger.Debug("LoadSchemasAsync completed, populating schema combobox");
+            
             PopulateSchemaComboBox();
+            Logger.Debug("PopulateSchemaComboBox completed");
             
             HideLoading();
             StatusText.Text = "Ready - Please select a schema to load tables";
             TablesList.ItemsSource = new List<TableSelectionItem>(); // Empty list until schema selected
+            
+            Logger.Info("MissingFKDiscoveryDialog loaded successfully");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load schemas");
+            Logger.Error(ex, "Failed to load schemas in MissingFKDiscoveryDialog_Loaded");
             HideLoading();
             MessageBox.Show(
-                $"Failed to load schemas: {ex.Message}",
+                $"An error occurred:\n{ex.Message}",
                 "Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -410,14 +455,24 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private void SearchTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Guard against event firing during InitializeComponent before controls are ready
+        if (SearchTextBox == null || SearchTypeComboBox == null)
+        {
+            Logger.Debug("SearchTypeComboBox_SelectionChanged called before controls initialized - ignoring");
+            return;
+        }
+        
         // Update placeholder text based on search type
         var searchType = (SearchTypeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "TableName";
         var placeholderText = searchType == "ColumnName" 
             ? "Enter column name pattern..." 
             : "Enter table name pattern...";
         
-        // Use ControlHelper extension for placeholder
-        ModernWpf.UI.ControlHelper.SetPlaceholderText(SearchTextBox, placeholderText);
+        // Update placeholder - ModernWpf ControlHelper is an attached property set in XAML
+        // We can't easily change it programmatically, so we'll just update the tooltip
+        // The XAML already has a default placeholder, and users will see the tooltip on hover
+        SearchTextBox.ToolTip = placeholderText;
+        Logger.Debug("Search type changed to: {SearchType}", searchType);
         
         // Refresh search if there's already text
         if (!string.IsNullOrWhiteSpace(SearchTextBox.Text))

@@ -188,7 +188,7 @@ public class TrayIconManager : IDisposable
             if (string.IsNullOrEmpty(mainAppPath) || !File.Exists(mainAppPath))
             {
                 Logger.Error("Main application not found: {Path}", mainAppPath);
-                ShowNotification("Error", $"Could not find WindowsDb2Editor.exe", ToolTipIcon.Error);
+                ShowNotification("ERROR", "Error", $"Could not find WindowsDb2Editor.exe");
                 return;
             }
 
@@ -205,7 +205,7 @@ public class TrayIconManager : IDisposable
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to launch connection: {ProfileName}", profile.Name);
-            ShowNotification("Error", $"Failed to launch connection: {ex.Message}", ToolTipIcon.Error);
+            ShowNotification("ERROR", "Error", $"Failed to launch connection: {ex.Message}");
         }
     }
 
@@ -284,7 +284,7 @@ public class TrayIconManager : IDisposable
     private void ExitApplication()
     {
         Logger.Info("Exit requested from tray icon");
-        Application.Exit();
+        System.Windows.Forms.Application.Exit();
     }
 
     public void ShowNotification(string iconType, string title, string message, int timeout = 5000)

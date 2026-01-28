@@ -150,6 +150,62 @@ public partial class NewSettingsDialog : Window
         _contentPanels["AIModels"] = BuildAIModelsPanel();
     }
 
+    private StackPanel BuildGeneralPanel()
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 20, 0) };
+        panel.Children.Add(CreateDescription("General application settings including startup and system tray options."));
+        panel.Children.Add(CreateSubcategoryLink("Startup", "Configure Windows startup and system tray icon"));
+        return panel;
+    }
+
+    private StackPanel BuildStartupPanel()
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 20, 0) };
+        panel.Children.Add(CreateDescription("Configure whether WindowsDb2Editor starts automatically with Windows and whether to show the system tray icon."));
+        
+        panel.Children.Add(CreateSectionHeader("Windows Startup"));
+        
+        var startupManager = new StartupManagerService();
+        var isStartupEnabled = startupManager.IsStartupEnabled();
+        var startupCheck = new CheckBox { 
+            Content = "Start WindowsDb2Editor when Windows starts", 
+            IsChecked = _workingPreferences.StartupEnabled || isStartupEnabled,
+            Margin = new Thickness(0, 10, 0, 5)
+        };
+        startupCheck.Checked += (s, e) => { 
+            _workingPreferences.StartupEnabled = true;
+            _isDirty = true;
+        };
+        startupCheck.Unchecked += (s, e) => { 
+            _workingPreferences.StartupEnabled = false;
+            _isDirty = true;
+        };
+        panel.Children.Add(startupCheck);
+        
+        panel.Children.Add(CreateTip("When enabled, WindowsDb2Editor will automatically start when you log in to Windows. The application will be added to the Windows startup registry."));
+        
+        panel.Children.Add(CreateSectionHeader("System Tray Icon"));
+        
+        var trayIconCheck = new CheckBox { 
+            Content = "Show system tray icon", 
+            IsChecked = _workingPreferences.ShowTrayIcon,
+            Margin = new Thickness(0, 10, 0, 5)
+        };
+        trayIconCheck.Checked += (s, e) => { 
+            _workingPreferences.ShowTrayIcon = true;
+            _isDirty = true;
+        };
+        trayIconCheck.Unchecked += (s, e) => { 
+            _workingPreferences.ShowTrayIcon = false;
+            _isDirty = true;
+        };
+        panel.Children.Add(trayIconCheck);
+        
+        panel.Children.Add(CreateTip("When enabled, a system tray icon will be available to quickly launch connections and receive notifications. The tray icon app (WindowsDb2EditorTray.exe) must be running separately."));
+        
+        return panel;
+    }
+
     private StackPanel BuildAppearancePanel()
     {
         var panel = new StackPanel { Margin = new Thickness(0, 0, 20, 0) };

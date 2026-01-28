@@ -27,6 +27,36 @@ public partial class MainWindow : Window
         InitializeComponent();
         Logger.Info("MainWindow initializing");
 
+        // Set window icon explicitly for taskbar
+        try
+        {
+            var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "dEdge.ico");
+            if (System.IO.File.Exists(iconPath))
+            {
+                using var stream = new System.IO.FileStream(iconPath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(
+                    stream, 
+                    System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat, 
+                    System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+                if (decoder.Frames.Count > 0)
+                {
+                    Icon = decoder.Frames[0];
+                    Logger.Debug("Window icon set from file: {Path}", iconPath);
+                }
+            }
+            else
+            {
+                // Fallback to pack URI
+                var iconUri = new Uri("pack://application:,,,/Resources/dEdge.ico", UriKind.Absolute);
+                Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
+                Logger.Debug("Window icon set from pack URI");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to set window icon");
+        }
+
         // Initialize services
         var configService = new ConfigurationService();
         _themeService = new ThemeService(configService);
@@ -1100,17 +1130,31 @@ public partial class MainWindow : Window
     {
         Logger.Info("Opening Missing FK Discovery dialog");
         
-        // Get current connection
-        var currentTab = ConnectionTabs.SelectedItem as TabItem;
-        if (currentTab?.Content is ConnectionTabControl connectionTab)
+        try
         {
-            var connectionManager = connectionTab.ConnectionManager;
-            if (connectionManager != null)
+            // Get current connection
+            var currentTab = ConnectionTabs.SelectedItem as TabItem;
+            if (currentTab?.Content is ConnectionTabControl connectionTab)
             {
-                var connectionProfile = connectionManager.ConnectionInfo.Name ?? "Unknown";
-                var dialog = new MissingFKDiscoveryDialog(connectionManager, connectionProfile);
-                dialog.Owner = this;
-                dialog.ShowDialog();
+                var connectionManager = connectionTab.ConnectionManager;
+                if (connectionManager != null)
+                {
+                    Logger.Debug("Creating MissingFKDiscoveryDialog with connection: {Profile}", 
+                        connectionManager.ConnectionInfo?.Name ?? "Unknown");
+                    
+                    var connectionProfile = connectionManager.ConnectionInfo?.Name ?? "Unknown";
+                    var dialog = new MissingFKDiscoveryDialog(connectionManager, connectionProfile);
+                    dialog.Owner = this;
+                    dialog.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "No active database connection. Please connect to a database first.",
+                        "No Connection",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             }
             else
             {
@@ -1121,13 +1165,14 @@ public partial class MainWindow : Window
                     MessageBoxImage.Warning);
             }
         }
-        else
+        catch (Exception ex)
         {
+            Logger.Error(ex, "Failed to open Missing FK Discovery dialog");
             MessageBox.Show(
-                "No active database connection. Please connect to a database first.",
-                "No Connection",
+                $"An error occurred:\n{ex.Message}\n\nStack trace:\n{ex.StackTrace}",
+                "Error",
                 MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+                MessageBoxImage.Error);
         }
     }
     

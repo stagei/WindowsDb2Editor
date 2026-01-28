@@ -29,7 +29,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
-  <!-- Exclude test projects from compilation -->
+  <!-- Exclude test projects and tray project from compilation -->
   <ItemGroup>
     <Compile Remove="WindowsDb2Editor.AutoTests\**" />
     <EmbeddedResource Remove="WindowsDb2Editor.AutoTests\**" />
@@ -39,6 +39,10 @@
     <EmbeddedResource Remove="Tests\**" />
     <None Remove="Tests\**" />
     <Page Remove="Tests\**" />
+    <Compile Remove="WindowsDb2EditorTray\**" />
+    <EmbeddedResource Remove="WindowsDb2EditorTray\**" />
+    <None Remove="WindowsDb2EditorTray\**" />
+    <Page Remove="WindowsDb2EditorTray\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,8 +62,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Drawing" />
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
 
   <ItemGroup>
@@ -76,6 +79,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Resource Include="Resources\dEdge.ico" />
+    <None Include="Resources\dEdge.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="ConfigFiles\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

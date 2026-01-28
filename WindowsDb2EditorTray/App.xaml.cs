@@ -10,7 +10,7 @@ namespace WindowsDb2EditorTray;
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private static Mutex? _mutex;
@@ -80,11 +80,11 @@ public partial class App : Application
         catch (Exception ex)
         {
             Logger.Fatal(ex, "Fatal error during application startup");
-            MessageBox.Show(
+            System.Windows.MessageBox.Show(
                 $"Fatal error during application startup:\n\n{ex.Message}\n\nThe application will now close.",
                 "Fatal Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
             Shutdown(1);
         }
     }

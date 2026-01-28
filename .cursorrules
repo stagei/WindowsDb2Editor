@@ -783,18 +783,21 @@ This ensures the user is immediately aware of implementation status and protects
 
 ### Build, Kill, and Run Workflow
 **MANDATORY**: After EVERY code change, follow this exact sequence:
-1. **Kill existing processes**: `taskkill /F /IM WindowsDb2Editor.exe 2>$null`
-2. **Build the project**: `dotnet build`
-3. **Run the project**: `Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"`
+1. **Git add and commit**: `git add -A; git commit -m "Description of what changed"`
+2. **Kill existing processes**: `taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null`
+3. **Build the project**: `dotnet build`
+4. **Run the project**: `Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"`
 
 **PowerShell one-liner**:
 ```powershell
-taskkill /F /IM WindowsDb2Editor.exe 2>$null; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
+git add -A; git commit -m "Description of changes"; taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
 ```
 
 **Why this is critical**:
+- Git commit ensures all changes are saved and tracked before testing
 - The executable is locked when running, preventing builds from succeeding
-- Always kill the process BEFORE building to avoid file lock errors
+- Kill BOTH main app AND tray app to avoid file lock errors
+- Always kill the processes BEFORE building to avoid file lock errors
 - Only run the application if the build succeeds (check exit code)
 - This ensures you're always testing the latest code changes
 
@@ -804,6 +807,34 @@ taskkill /F /IM WindowsDb2Editor.exe 2>$null; dotnet build; if ($LASTEXITCODE -e
 - After modifying any dialog or control
 - After adding new files to the project
 - Essentially: AFTER EVERY CHANGE that affects the compiled code
+
+### Log File Investigation (MANDATORY for Error Reports)
+**CRITICAL**: When user reports ANY error, ALWAYS check the log file FIRST before asking questions or making assumptions.
+
+**Log file location**: `logs\db2editor-YYYY-MM-DD.log`
+
+**Steps when user reports an error:**
+1. Read the log file for today's date: `Get-Content "logs\db2editor-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 100`
+2. Search for ERROR or FATAL entries: `Select-String -Path "logs\db2editor-*.log" -Pattern "ERROR|FATAL" | Select-Object -Last 20`
+3. Look for stack traces and exception details
+4. Use the log information to diagnose and fix the issue
+5. NEVER ask "what error did you see?" - check the logs instead
+
+**The log file contains:**
+- Full exception stack traces
+- SQL queries that failed
+- Connection issues
+- All ERROR and FATAL level messages
+- Timestamps to correlate with user actions
+
+**Example investigation:**
+```powershell
+# Get last 50 lines of today's log
+Get-Content "logs\db2editor-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 50
+
+# Search for errors in all recent logs
+Get-ChildItem "logs\db2editor-*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Select-String -Path $_.FullName -Pattern "ERROR|FATAL" }
+```
 
 ## 🏭 Factory Pattern Usage (CRITICAL - DATABASE AGNOSTIC)
 
@@ -960,8 +991,9 @@ When generating code for this project:
 6. **Use Net.IBM.Data.Db2 9.0.0.400** - The DB2 package with real connectivity (no external DB2 client required)
 7. **Update TASKLIST.md** - Mark tasks as complete immediately after implementation
 8. **Review TASKLIST.md BEFORE implementing** - Check what's already done to avoid duplicates
-9. **Kill, Build, and Run after EVERY change** - Follow the Build, Kill, and Run Workflow
-10. **Implement access control checks** - Query DBAUTH, respect user permission levels
+9. **Git commit, Kill, Build, and Run after EVERY change** - Follow the Build, Kill, and Run Workflow (includes git add/commit)
+10. **ALWAYS check log files when user reports errors** - Read logs/db2editor-*.log BEFORE asking questions (see Log File Investigation)
+11. **Implement access control checks** - Query DBAUTH, respect user permission levels
 11. **Tag menu items with access levels** - DBA, Middle, or Low level required
 12. **Follow WPF MVVM patterns** when appropriate
 13. **Support both dark and light themes** in all UI code

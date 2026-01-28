@@ -49,13 +49,33 @@ public static class UIStyleService
         {
             try
             {
-                _applicationIcon = new BitmapImage(new Uri(ApplicationIconPath));
+                var iconUri = new Uri(ApplicationIconPath, UriKind.Absolute);
+                _applicationIcon = new BitmapImage(iconUri);
+                _applicationIcon.Freeze(); // Freeze for thread safety
                 Logger.Debug("Application icon loaded from: {Path}", ApplicationIconPath);
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Failed to load application icon from: {Path}", ApplicationIconPath);
-                _applicationIcon = new BitmapImage(); // Return empty to avoid null
+                // Try loading from file system as fallback
+                try
+                {
+                    var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "dEdge.ico");
+                    if (File.Exists(iconPath))
+                    {
+                        _applicationIcon = new BitmapImage(new Uri(iconPath, UriKind.Absolute));
+                        _applicationIcon.Freeze();
+                        Logger.Info("Application icon loaded from file system: {Path}", iconPath);
+                    }
+                    else
+                    {
+                        _applicationIcon = new BitmapImage(); // Return empty to avoid null
+                    }
+                }
+                catch
+                {
+                    _applicationIcon = new BitmapImage(); // Return empty to avoid null
+                }
             }
         }
         return _applicationIcon;
@@ -89,11 +109,25 @@ public static class UIStyleService
         
         try
         {
-            // Only set if not already set (allows XAML override if needed)
-            if (window.Icon == null)
+            // Always set the icon to ensure it's loaded correctly
+            var icon = GetApplicationIcon();
+            if (icon != null && icon.PixelWidth > 0)
             {
-                window.Icon = GetApplicationIcon();
-                Logger.Trace("Applied application icon to window: {Window}", window.GetType().Name);
+                window.Icon = icon;
+                Logger.Debug("Applied application icon to window: {Window}", window.GetType().Name);
+            }
+            else
+            {
+                Logger.Warn("Icon is null or invalid, trying file system path");
+                // Try loading from file system directly
+                var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "dEdge.ico");
+                if (File.Exists(iconPath))
+                {
+                    var fileIcon = new BitmapImage(new Uri(iconPath, UriKind.Absolute));
+                    fileIcon.Freeze();
+                    window.Icon = fileIcon;
+                    Logger.Info("Loaded icon from file system: {Path}", iconPath);
+                }
             }
         }
         catch (Exception ex)

@@ -1,6 +1,7 @@
 using System.Windows;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Dialogs;
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Services;
 using WindowsDb2Editor.Utils;
@@ -39,6 +40,11 @@ public partial class App : Application
             PreferencesService = new PreferencesService();
             Logger.Info("PreferencesService initialized successfully");
             
+            // Apply saved log level preference
+            var savedLogLevel = PreferencesService.Preferences.LogLevel;
+            Logger.Debug("Applying saved log level: {Level}", savedLogLevel);
+            LoggingService.SetLogLevel(savedLogLevel);
+            
             // Check and manage Windows startup registry entry
             Logger.Debug("Checking Windows startup configuration");
             var startupManager = new StartupManagerService();
@@ -58,6 +64,12 @@ public partial class App : Application
             else
             {
                 Logger.Debug("Startup configuration matches preferences: {Enabled}", isStartupInPreferences);
+            }
+            
+            // Start tray icon app if preference is enabled
+            if (PreferencesService.Preferences.ShowTrayIcon)
+            {
+                StartTrayIconApp();
             }
             
             // Initialize theme before GUI mode
@@ -123,6 +135,8 @@ public partial class App : Application
             Logger.Debug("Global exception handlers registered");
             
             // Create and show main window
+            // Note: Taskbar icon comes from ApplicationIcon in .csproj file
+            // MainWindow.Icon (set in XAML) controls the window title bar icon
             var mainWindow = new MainWindow();
             mainWindow.Show();
             
@@ -154,11 +168,18 @@ public partial class App : Application
         Logger.Fatal(exception, "Unhandled exception in application domain");
         Logger.Fatal($"Is terminating: {e.IsTerminating}");
 
-        MessageBox.Show(
-            $"A fatal error occurred:\n\n{exception?.Message}\n\nThe application will now close.",
-            "Fatal Error",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
+        // Show user-friendly error dialog with expandable details
+        if (exception != null)
+        {
+            ErrorDialog.ShowError(exception, "Fatal Error", isFatal: true);
+        }
+        else
+        {
+            ErrorDialog.ShowError(
+                "A fatal error occurred. The application will now close.",
+                "Fatal Error",
+                e.ExceptionObject?.ToString());
+        }
     }
 
     private void App_DispatcherUnhandledException(object sender, 
@@ -168,11 +189,8 @@ public partial class App : Application
         Logger.Debug($"Exception type: {e.Exception.GetType().Name}");
         Logger.Debug($"Stack trace: {e.Exception.StackTrace}");
 
-        MessageBox.Show(
-            $"An error occurred:\n\n{e.Exception.Message}",
-            "Error",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
+        // Show user-friendly error dialog with expandable details
+        ErrorDialog.ShowError(e.Exception, "Error", isFatal: false);
 
         // Mark as handled to prevent application crash
         e.Handled = true;
@@ -303,6 +321,51 @@ public partial class App : Application
         {
             Logger.Error(ex, "Failed to auto-connect and open element");
             MessageBox.Show($"Failed to connect:\n\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Start the tray icon application if it's not already running
+    /// </summary>
+    private void StartTrayIconApp()
+    {
+        try
+        {
+            var trayAppName = "WindowsDb2EditorTray.exe";
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var trayAppPath = System.IO.Path.Combine(baseDir, trayAppName);
+
+            // Check if tray app exists
+            if (!System.IO.File.Exists(trayAppPath))
+            {
+                Logger.Debug("Tray icon app not found at: {Path}", trayAppPath);
+                return;
+            }
+
+            // Check if tray app is already running
+            var trayProcesses = System.Diagnostics.Process.GetProcessesByName("WindowsDb2EditorTray");
+            if (trayProcesses.Length > 0)
+            {
+                Logger.Debug("Tray icon app is already running (PID: {Pid})", trayProcesses[0].Id);
+                foreach (var p in trayProcesses) p.Dispose();
+                return;
+            }
+
+            // Start the tray app
+            Logger.Info("Starting tray icon app: {Path}", trayAppPath);
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = trayAppPath,
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+            System.Diagnostics.Process.Start(startInfo);
+            Logger.Info("Tray icon app started successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to start tray icon app");
+            // Don't show error to user - tray icon is optional
         }
     }
 

@@ -153,13 +153,40 @@
                         <!-- Log Level -->
                         <TextBlock Text="Log Level:" FontWeight="SemiBold" Margin="0,10,0,5"/>
                         <ComboBox x:Name="LogLevelComboBox" Width="200" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Debug" Tag="Debug"/>
-                            <ComboBoxItem Content="Info" Tag="Info"/>
-                            <ComboBoxItem Content="Warn" Tag="Warn"/>
-                            <ComboBoxItem Content="Error" Tag="Error"/>
+                            <ComboBoxItem Content="Trace" Tag="Trace" ToolTip="Most verbose - includes every detail for deep troubleshooting"/>
+                            <ComboBoxItem Content="Debug" Tag="Debug" ToolTip="Detailed diagnostic information for developers"/>
+                            <ComboBoxItem Content="Info" Tag="Info" ToolTip="General operational events (recommended default)"/>
+                            <ComboBoxItem Content="Warn" Tag="Warn" ToolTip="Unexpected but recoverable situations"/>
+                            <ComboBoxItem Content="Error" Tag="Error" ToolTip="Error events that might still allow the app to continue"/>
+                            <ComboBoxItem Content="Fatal" Tag="Fatal" ToolTip="Only critical errors that prevent the app from continuing"/>
                         </ComboBox>
-                        <TextBlock Text="Minimum level to log (Debug = most verbose)" 
+                        <TextBlock Text="Minimum level to log to file. Changes take effect immediately." 
                                    FontSize="11" Foreground="Gray" Margin="0,3,0,0"/>
+
+                        <!-- Log Level Descriptions -->
+                        <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                BorderThickness="1"
+                                Padding="10" 
+                                Margin="0,15,0,0"
+                                CornerRadius="4">
+                            <StackPanel>
+                                <TextBlock Text="Log Level Guide:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <TextBlock FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                                    <Run FontWeight="SemiBold">Trace:</Run> Every detail (SQL queries, all parameters)
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Debug:</Run> Developer diagnostics
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Info:</Run> Normal operations (recommended)
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Warn:</Run> Recoverable issues
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Error:</Run> Errors allowing continuation
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Fatal:</Run> Critical failures only
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
 
                         <!-- Open Logs Folder -->
                         <TextBlock Text="Log Files Location:" FontWeight="SemiBold" Margin="0,20,0,5"/>
@@ -169,6 +196,13 @@
                                 HorizontalAlignment="Left"
                                 Click="OpenLogsButton_Click"
                                 Padding="10,5"/>
+                        
+                        <!-- Current Log Level Display -->
+                        <TextBlock x:Name="CurrentLogLevelText" 
+                                   Text="Current level: Info" 
+                                   FontSize="11" 
+                                   Foreground="Gray" 
+                                   Margin="0,10,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
