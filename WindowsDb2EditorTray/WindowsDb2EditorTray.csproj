@@ -27,11 +27,15 @@
 
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
+    <PackageReference Include="NLog" Version="6.0.6" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="..\Resources\dEdge.ico">
       <Link>Resources\dEdge.ico</Link>
+    </None>
+    <None Update="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

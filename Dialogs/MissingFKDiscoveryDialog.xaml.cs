@@ -1599,10 +1599,16 @@ public partial class MissingFKDiscoveryDialog : Window
     private void ShowJobCompletionNotification(bool success, string message)
     {
         var title = success ? "Job Completed" : "Job Failed";
-        var icon = success ? MessageBoxImage.Information : MessageBoxImage.Error;
+        var details = $"{message}\n\nJob ID: {_jobId}\nOutput folder: {_outputFolder}";
         
+        // Use NotificationService to create tray notification
+        var notificationService = new NotificationService();
+        notificationService.ShowJobCompletion("Missing FK Discovery", success, details);
+        
+        // Also show MessageBox as fallback if tray icon is not running
+        var icon = success ? MessageBoxImage.Information : MessageBoxImage.Error;
         MessageBox.Show(
-            $"{message}\n\nJob ID: {_jobId}\nOutput folder: {_outputFolder}",
+            details,
             title,
             MessageBoxButton.OK,
             icon);

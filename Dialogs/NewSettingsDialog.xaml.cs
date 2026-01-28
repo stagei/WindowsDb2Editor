@@ -1227,6 +1227,8 @@ public partial class NewSettingsDialog : Window
         _preferencesService.Preferences.EditorCurrentLineColor = _workingPreferences.EditorCurrentLineColor;
         _preferencesService.Preferences.AutoDockTools = _workingPreferences.AutoDockTools;
         _preferencesService.Preferences.ActiveThemeName = _workingPreferences.ActiveThemeName;
+        _preferencesService.Preferences.StartupEnabled = _workingPreferences.StartupEnabled;
+        _preferencesService.Preferences.ShowTrayIcon = _workingPreferences.ShowTrayIcon;
 
         _preferencesService.SavePreferences();
 
@@ -1235,6 +1237,17 @@ public partial class NewSettingsDialog : Window
 
         // Refresh all UI styles to ensure theme changes propagate to all windows
         UIStyleService.RefreshAllStyles();
+
+        // Apply startup management
+        var startupManager = new StartupManagerService();
+        if (_workingPreferences.StartupEnabled)
+        {
+            startupManager.EnableStartup();
+        }
+        else
+        {
+            startupManager.DisableStartup();
+        }
 
         Logger.Info("Preferences saved from new settings dialog");
     }

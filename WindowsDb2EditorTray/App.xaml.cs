@@ -34,6 +34,13 @@ public partial class App : Application
 
         try
         {
+            // Initialize NLog configuration
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nlog.config");
+            if (File.Exists(configPath))
+            {
+                LogManager.LoadConfiguration(configPath);
+            }
+
             // Initialize logging
             var logDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -62,9 +69,11 @@ public partial class App : Application
             _folderWatcher.Start();
             Logger.Info("Notification folder watcher started");
 
-            // Hide main window (tray icon only)
-            MainWindow!.WindowState = WindowState.Minimized;
-            MainWindow.Hide();
+            // Create and hide main window (tray icon only)
+            var mainWindow = new MainWindow();
+            mainWindow.WindowState = WindowState.Minimized;
+            mainWindow.Hide();
+            MainWindow = mainWindow;
 
             Logger.Info("Application startup completed successfully");
         }

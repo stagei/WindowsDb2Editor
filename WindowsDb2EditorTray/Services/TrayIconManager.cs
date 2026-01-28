@@ -56,31 +56,28 @@ public class TrayIconManager : IDisposable
     {
         try
         {
-            var iconPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Resources",
-                "dEdge.ico");
-
-            if (File.Exists(iconPath))
+            // Try multiple possible locations for the icon
+            var possiblePaths = new[]
             {
-                return new Icon(iconPath);
-            }
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "dEdge.ico"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Resources", "dEdge.ico"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "Resources", "dEdge.ico"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Resources", "dEdge.ico"),
+                Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", "Resources", "dEdge.ico")
+            };
 
-            // Fallback: try parent directory (if running from bin folder)
-            iconPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "..",
-                "..",
-                "Resources",
-                "dEdge.ico");
-
-            if (File.Exists(iconPath))
+            foreach (var iconPath in possiblePaths)
             {
-                return new Icon(iconPath);
+                var fullPath = Path.GetFullPath(iconPath);
+                if (File.Exists(fullPath))
+                {
+                    Logger.Debug("Found application icon at: {Path}", fullPath);
+                    return new Icon(fullPath);
+                }
             }
 
             // Use default system icon as last resort
-            Logger.Warn("Application icon not found, using default system icon");
+            Logger.Warn("Application icon not found in any expected location, using default system icon");
             return SystemIcons.Application;
         }
         catch (Exception ex)
