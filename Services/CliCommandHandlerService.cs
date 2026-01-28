@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using NLog;
 using SqlMermaidErdTools.Models;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Utils;
 
 namespace WindowsDb2Editor.Services;
@@ -95,6 +97,11 @@ public class CliCommandHandlerService
                 "list-procedures" => await ListProceduresAsync(connectionManager, args),
                 "list-triggers" => await ListTriggersAsync(connectionManager, args),
                 "list-functions" => await ListFunctionsAsync(connectionManager, args),
+                
+                // Missing FK Discovery commands
+                "missing-fk-scan" => await RunMissingFKScanAsync(connectionManager, args),
+                "missing-fk-generate-input" => await GenerateMissingFKInputAsync(connectionManager, args),
+                "missing-fk-status" => await GetMissingFKStatusAsync(args),
                 
                 // TableDetailsDialog - Complete table information (with aliases)
                 "table-columns" => await GetTableColumnsAsync(connectionManager, args),
@@ -5073,6 +5080,269 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
             tab = args.Tab,
             status = "GUI tests require WPF context and cannot be run in CLI mode",
             note = "Use the WPF application directly for GUI testing"
+        };
+    }
+    
+    // ========================================================================
+    // Missing FK Discovery Commands (3 commands)
+    // ========================================================================
+    
+    /// <summary>
+    /// Run Missing FK Discovery batch job (missing-fk-scan)
+    /// </summary>
+    private async Task<object> RunMissingFKScanAsync(IConnectionManager connectionManager, CliArguments args)
+    {
+        Logger.Info("Running Missing FK Discovery batch job");
+        
+        if (string.IsNullOrEmpty(args.Input))
+        {
+            throw new ArgumentException("Input parameter required (path to missing_fk_input.json)");
+        }
+        
+        if (string.IsNullOrEmpty(args.OutFile))
+        {
+            throw new ArgumentException("Out parameter required (output folder path)");
+        }
+        
+        if (!File.Exists(args.Input))
+        {
+            throw new FileNotFoundException($"Input JSON file not found: {args.Input}");
+        }
+        
+        if (!Directory.Exists(args.OutFile))
+        {
+            Directory.CreateDirectory(args.OutFile);
+            Logger.Info("Created output directory: {Path}", args.OutFile);
+        }
+        
+        // Load input JSON
+        var inputJson = await File.ReadAllTextAsync(args.Input);
+        var inputModel = JsonSerializer.Deserialize<WindowsDb2Editor.Models.MissingFKInputModel>(inputJson, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        
+        if (inputModel == null)
+        {
+            throw new InvalidOperationException("Failed to parse input JSON");
+        }
+        
+        // Load ignore JSON if provided
+        var ignoreService = new MissingFKIgnoreService();
+        if (!string.IsNullOrEmpty(args.Ignore) && File.Exists(args.Ignore))
+        {
+            ignoreService.LoadIgnoreRules(args.Ignore);
+        }
+        
+        // Initialize services
+        var sqlMermaidService = new SqlMermaidIntegrationService();
+        var sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
+        var scanService = new MissingFKScanService(
+            sqlTranslationService,
+            ignoreService,
+            connectionManager,
+            args.OutFile,
+            inputModel.JobId,
+            inputModel
+        );
+        
+        // Execute batch job
+        Logger.Info("Starting Missing FK Discovery batch job: {JobId}", inputModel.JobId);
+        var results = await scanService.ExecuteAsync();
+        
+        Logger.Info("Missing FK Discovery batch job completed: {JobId}, Found {CandidateCount} candidates",
+            inputModel.JobId, results.Candidates.Count);
+        
+        return new
+        {
+            command = "missing-fk-scan",
+            jobId = results.JobId,
+            completedAt = results.CompletedAtUtc,
+            summary = new
+            {
+                tablesScanned = results.Summary.TablesScanned,
+                candidatesFound = results.Summary.CandidatesFound,
+                strongCandidates = results.Summary.StrongCandidates,
+                tablesWithoutKeys = results.Summary.TablesWithoutKeys
+            },
+            candidatesCount = results.Candidates.Count,
+            resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json"),
+            logPath = Path.Combine(args.OutFile, $"job_{inputModel.JobId}_log.txt"),
+            status = "SUCCESS"
+        };
+    }
+    
+    /// <summary>
+    /// Generate Missing FK Discovery input JSON (missing-fk-generate-input)
+    /// </summary>
+    private async Task<object> GenerateMissingFKInputAsync(IConnectionManager connectionManager, CliArguments args)
+    {
+        Logger.Info("Generating Missing FK Discovery input JSON");
+        
+        if (string.IsNullOrEmpty(args.Object))
+        {
+            throw new ArgumentException("Object parameter required (comma-separated list of SCHEMA.TABLE)");
+        }
+        
+        if (string.IsNullOrEmpty(args.OutFile))
+        {
+            throw new ArgumentException("Out parameter required (output file path)");
+        }
+        
+        // Parse table list
+        var tableRefs = new List<WindowsDb2Editor.Models.TableReference>();
+        var tableStrings = args.Object.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        
+        foreach (var tableStr in tableStrings)
+        {
+            var parts = tableStr.Split('.');
+            if (parts.Length == 2)
+            {
+                tableRefs.Add(new WindowsDb2Editor.Models.TableReference
+                {
+                    Schema = parts[0].Trim(),
+                    Name = parts[1].Trim()
+                });
+            }
+        }
+        
+        if (tableRefs.Count == 0)
+        {
+            throw new ArgumentException("No valid tables found in Object parameter");
+        }
+        
+        // Initialize services
+        var sqlMermaidService = new SqlMermaidIntegrationService();
+        var sqlTranslationService = new MissingFKSqlTranslationService(sqlMermaidService);
+        var metadataService = new MissingFKMetadataService(sqlTranslationService, connectionManager);
+        
+        // Collect metadata
+        Logger.Info("Collecting metadata for {Count} tables", tableRefs.Count);
+        var tablesMetadata = await metadataService.CollectTableMetadataAsync(tableRefs);
+        
+        // Create input model
+        var jobId = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{Guid.NewGuid():N}";
+        var inputModel = new WindowsDb2Editor.Models.MissingFKInputModel
+        {
+            JobId = jobId,
+            GeneratedAtUtc = DateTime.UtcNow,
+            ConnectionProfile = connectionManager.ConnectionInfo.Name ?? "Unknown",
+            Provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2",
+            ProviderVersion = "12.1", // TODO: Get actual version
+            Options = new WindowsDb2Editor.Models.MissingFKOptions
+            {
+                MinRowCount = 100,
+                MinMatchRatio = 0.95,
+                StrongMatchRatio = 0.99,
+                MaxParallelTables = 4,
+                ExportFormat = "csv",
+                IncludeNullsInMatch = false
+            },
+            SelectedTables = tableRefs,
+            Tables = tablesMetadata
+        };
+        
+        // Save input JSON
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        
+        var json = JsonSerializer.Serialize(inputModel, options);
+        await File.WriteAllTextAsync(args.OutFile, json, Encoding.UTF8);
+        
+        Logger.Info("Input JSON generated: {Path}", args.OutFile);
+        
+        return new
+        {
+            command = "missing-fk-generate-input",
+            jobId = jobId,
+            tablesCount = tableRefs.Count,
+            outputPath = args.OutFile,
+            status = "SUCCESS"
+        };
+    }
+    
+    /// <summary>
+    /// Get Missing FK Discovery job status (missing-fk-status)
+    /// </summary>
+    private async Task<object> GetMissingFKStatusAsync(CliArguments args)
+    {
+        Logger.Info("Getting Missing FK Discovery job status");
+        
+        if (string.IsNullOrEmpty(args.OutFile))
+        {
+            throw new ArgumentException("Out parameter required (output folder path)");
+        }
+        
+        var resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json");
+        var logPath = Path.Combine(args.OutFile, "job_*_log.txt");
+        
+        var status = new
+        {
+            command = "missing-fk-status",
+            outputFolder = args.OutFile,
+            resultsExists = File.Exists(resultsPath),
+            resultsPath = resultsPath,
+            logFiles = Directory.Exists(args.OutFile) 
+                ? Directory.GetFiles(args.OutFile, "job_*_log.txt").Select(Path.GetFileName).ToArray()
+                : Array.Empty<string>()
+        };
+        
+        if (File.Exists(resultsPath))
+        {
+            try
+            {
+                var resultsJson = await File.ReadAllTextAsync(resultsPath);
+                var results = JsonSerializer.Deserialize<WindowsDb2Editor.Models.MissingFKResultsModel>(resultsJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                return new
+                {
+                    status.command,
+                    status.outputFolder,
+                    status.resultsExists,
+                    status.resultsPath,
+                    status.logFiles,
+                    jobId = results?.JobId,
+                    completedAt = results?.CompletedAtUtc,
+                    summary = results?.Summary != null ? new
+                    {
+                        tablesScanned = results.Summary.TablesScanned,
+                        candidatesFound = results.Summary.CandidatesFound,
+                        strongCandidates = results.Summary.StrongCandidates,
+                        tablesWithoutKeys = results.Summary.TablesWithoutKeys
+                    } : null,
+                    statusText = "COMPLETED"
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to parse results JSON");
+                return new
+                {
+                    status.command,
+                    status.outputFolder,
+                    status.resultsExists,
+                    status.resultsPath,
+                    status.logFiles,
+                    statusText = "RESULTS_EXISTS_BUT_UNREADABLE",
+                    error = ex.Message
+                };
+            }
+        }
+        
+        return new
+        {
+            status.command,
+            status.outputFolder,
+            status.resultsExists,
+            status.resultsPath,
+            status.logFiles,
+            statusText = "NO_RESULTS"
         };
     }
     

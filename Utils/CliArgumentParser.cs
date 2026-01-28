@@ -34,6 +34,10 @@ public class CliArguments
     
     // NEW: AI Assistant parameters
     public string? Prompt { get; set; } // Natural language prompt for AI query generation
+    
+    // NEW: Missing FK Discovery parameters
+    public string? Input { get; set; } // Input JSON file path for missing-fk-scan
+    public string? Ignore { get; set; } // Ignore JSON file path (optional)
 }
 
 /// <summary>
@@ -216,6 +220,25 @@ public class CliArgumentParser
                     {
                         cliArgs.Prompt = args[++i];
                         Logger.Debug("Prompt: {Prompt}", cliArgs.Prompt);
+                    }
+                    break;
+                    
+                // NEW: Missing FK Discovery parameters
+                case "-input":
+                case "--input":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Input = args[++i];
+                        Logger.Debug("Input: {Input}", cliArgs.Input);
+                    }
+                    break;
+                    
+                case "-ignore":
+                case "--ignore":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.Ignore = args[++i];
+                        Logger.Debug("Ignore: {Ignore}", cliArgs.Ignore);
                     }
                     break;
             }

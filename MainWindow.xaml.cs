@@ -1096,6 +1096,41 @@ public partial class MainWindow : Window
         OpenToolWindow<CdcManagerPanel>("CDC Manager", "🔄");
     }
     
+    private void MissingFKDiscovery_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Missing FK Discovery dialog");
+        
+        // Get current connection
+        var currentTab = ConnectionTabs.SelectedItem as TabItem;
+        if (currentTab?.Content is ConnectionTabControl connectionTab)
+        {
+            var connectionManager = connectionTab.ConnectionManager;
+            if (connectionManager != null)
+            {
+                var connectionProfile = connectionManager.ConnectionInfo.Name ?? "Unknown";
+                var dialog = new MissingFKDiscoveryDialog(connectionManager, connectionProfile);
+                dialog.Owner = this;
+                dialog.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show(
+                    "No active database connection. Please connect to a database first.",
+                    "No Connection",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        else
+        {
+            MessageBox.Show(
+                "No active database connection. Please connect to a database first.",
+                "No Connection",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+    
     private void UnusedObjects_Click(object sender, RoutedEventArgs e)
     {
         OpenToolWindow<UnusedObjectsPanel>("Unused Objects", "🗑️");
