@@ -205,16 +205,26 @@ public class TrayIconManager : IDisposable
         try
         {
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var profilesFile = Path.Combine(appData, "WindowsDb2Editor", "connection_profiles.json");
+            var connectionsFile = Path.Combine(appData, "WindowsDb2Editor", "connections.json");
 
-            if (!File.Exists(profilesFile))
+            if (!File.Exists(connectionsFile))
             {
-                Logger.Debug("Connection profiles file not found: {File}", profilesFile);
+                Logger.Debug("Connections file not found: {File}", connectionsFile);
                 return new List<ConnectionProfile>();
             }
 
-            var json = File.ReadAllText(profilesFile);
-            var profiles = JsonSerializer.Deserialize<List<ConnectionProfile>>(json) ?? new List<ConnectionProfile>();
+            var json = File.ReadAllText(connectionsFile);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var connectionsData = JsonSerializer.Deserialize<ConnectionsFile>(json, options);
+            var profiles = connectionsData?.Connections ?? new List<ConnectionProfile>();
+
+            // Sort by lastUsed (most recent first)
+            profiles = profiles
+                .OrderByDescending(p => p.LastUsed ?? "")
+                .ToList();
 
             Logger.Debug("Loaded {Count} connection profiles", profiles.Count);
             return profiles;

@@ -1,9 +1,19 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace WindowsDb2EditorTray.Models;
 
 /// <summary>
-/// Simplified connection profile model for tray icon
+/// Wrapper for connections.json file structure
+/// </summary>
+public class ConnectionsFile
+{
+    [JsonPropertyName("connections")]
+    public List<ConnectionProfile> Connections { get; set; } = new();
+}
+
+/// <summary>
+/// Connection profile model matching the main app's connections.json format
 /// </summary>
 public class ConnectionProfile
 {
@@ -19,6 +29,9 @@ public class ConnectionProfile
     [JsonPropertyName("database")]
     public string Database { get; set; } = string.Empty;
 
-    [JsonPropertyName("providerType")]
-    public string ProviderType { get; set; } = "db2";
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = "DB2";
+
+    [JsonPropertyName("lastUsed")]
+    public string? LastUsed { get; set; }
 }
