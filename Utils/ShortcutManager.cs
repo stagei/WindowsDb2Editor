@@ -17,6 +17,15 @@ public static class ShortcutManager
     private const string AppName = "WindowsDb2Editor";
     private const string StartMenuFolderName = "DbEditor";
 
+    // Shell32 notification constants
+    private const int SHCNE_CREATE = 0x00000002;
+    private const int SHCNE_UPDATEDIR = 0x00001000;
+    private const int SHCNF_PATH = 0x0005;
+    private const int SHCNF_FLUSH = 0x1000;
+
+    [DllImport("shell32.dll")]
+    private static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
     /// <summary>
     /// Creates shortcuts on desktop and Start Menu if they don't already exist
     /// </summary>
@@ -117,6 +126,35 @@ public static class ShortcutManager
         persistFile.Save(shortcutPath, true);
 
         Marshal.ReleaseComObject(shell);
+
+        // Notify Windows shell that a new file was created
+        NotifyShellOfNewShortcut(shortcutPath);
+    }
+
+    private static void NotifyShellOfNewShortcut(string shortcutPath)
+    {
+        try
+        {
+            // Notify about the new file
+            var pathPtr = Marshal.StringToHGlobalUni(shortcutPath);
+            SHChangeNotify(SHCNE_CREATE, SHCNF_PATH | SHCNF_FLUSH, pathPtr, IntPtr.Zero);
+            Marshal.FreeHGlobal(pathPtr);
+
+            // Notify about directory update
+            var dirPath = Path.GetDirectoryName(shortcutPath);
+            if (!string.IsNullOrEmpty(dirPath))
+            {
+                var dirPtr = Marshal.StringToHGlobalUni(dirPath);
+                SHChangeNotify(SHCNE_UPDATEDIR, SHCNF_PATH | SHCNF_FLUSH, dirPtr, IntPtr.Zero);
+                Marshal.FreeHGlobal(dirPtr);
+            }
+
+            Logger.Debug("Shell notified of new shortcut: {Path}", shortcutPath);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to notify shell of new shortcut");
+        }
     }
 
     #region COM Interop for Shell Links
