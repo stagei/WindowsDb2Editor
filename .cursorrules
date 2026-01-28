@@ -783,14 +783,14 @@ This ensures the user is immediately aware of implementation status and protects
 
 ### Build, Kill, and Run Workflow
 **MANDATORY**: After EVERY code change, follow this exact sequence:
-1. **Git add and commit**: `git add -A; git commit -m "Description of what changed"`
+1. **Git add, commit, and push**: `git add -A; git commit -m "Description of what changed"; git push`
 2. **Kill existing processes**: `taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null`
 3. **Build the project**: `dotnet build`
 4. **Run the project**: `Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"`
 
 **PowerShell one-liner**:
 ```powershell
-git add -A; git commit -m "Description of changes"; taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
+git add -A; git commit -m "Description of changes"; git push; taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
 ```
 
 **Why this is critical**:
