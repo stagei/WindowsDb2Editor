@@ -147,6 +147,9 @@ public partial class App : Application
                 Logger.Debug("Global font size applied: {Size}", PreferencesService.Preferences.UIFontSize);
             }
             
+            // Create desktop and Start Menu shortcuts if they don't exist
+            Utils.ShortcutManager.EnsureShortcutsExist();
+            
             Logger.Info("Application startup completed successfully");
         }
         catch (Exception ex)
