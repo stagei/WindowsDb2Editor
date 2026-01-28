@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using NLog;
@@ -16,6 +17,27 @@ public partial class App : System.Windows.Application
     private static Mutex? _mutex;
     private TrayIconManager? _trayIconManager;
     private NotificationFolderWatcher? _folderWatcher;
+
+    public App()
+    {
+        // Handle assembly resolution for WPF BAML loading when running from different directory
+        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+    }
+
+    private static Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+    {
+        // WPF BAML loader sometimes requests the assembly by name
+        // Return the currently executing assembly if it matches
+        var requestedName = new AssemblyName(args.Name);
+        var executingAssembly = Assembly.GetExecutingAssembly();
+        
+        if (requestedName.Name == executingAssembly.GetName().Name)
+        {
+            return executingAssembly;
+        }
+        
+        return null;
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {

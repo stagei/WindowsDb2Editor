@@ -351,12 +351,13 @@ public partial class App : Application
                 return;
             }
 
-            // Start the tray app
+            // Start the tray app with working directory set to its location
             Logger.Info("Starting tray icon app: {Path}", trayAppPath);
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = trayAppPath,
                 UseShellExecute = true,
+                WorkingDirectory = baseDir,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             };
             System.Diagnostics.Process.Start(startInfo);
