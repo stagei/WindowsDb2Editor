@@ -266,8 +266,9 @@ public partial class MissingFKDiscoveryDialog : Window
                     Logger.Info("Existing job lock detected - Job ID: {JobId}, Age: {Age} minutes", 
                         lockInfo.JobId, lockAge.TotalMinutes);
                     
-                    // Start monitoring the running job
-                    StartJobStatusMonitoring();
+                    // Update job ID for monitoring and start monitoring the running job
+                    _jobId = lockInfo.JobId;
+                    StartJobStatusMonitoring(_jobId, _outputFolder);
                 }
             }
         }
