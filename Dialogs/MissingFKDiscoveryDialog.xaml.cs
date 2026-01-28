@@ -77,8 +77,8 @@ public partial class MissingFKDiscoveryDialog : Window
         
         OutputFolderTextBox.Text = _outputFolder;
         
-        // Initialize ignore columns grid
-        IgnoreColumnsGrid.ItemsSource = _ignoreColumnsCollection;
+        // Initialize ignore model summary
+        UpdateIgnoreRulesSummary();
         
         Loaded += MissingFKDiscoveryDialog_Loaded;
         Closing += MissingFKDiscoveryDialog_Closing;
@@ -100,7 +100,6 @@ public partial class MissingFKDiscoveryDialog : Window
             // Only load schemas initially, not tables
             await LoadSchemasAsync();
             PopulateSchemaComboBox();
-            await LoadIgnoreHistoryAsync();
             
             HideLoading();
             StatusText.Text = "Ready - Please select a schema to load tables";
@@ -227,6 +226,10 @@ public partial class MissingFKDiscoveryDialog : Window
         ).ToList();
         
         TablesList.ItemsSource = filtered;
+        
+        // Enable/disable "Add All from Search" button based on whether search is active
+        AddAllFromSearchButton.IsEnabled = !string.IsNullOrWhiteSpace(searchText) && filtered.Count > 0;
+        
         UpdateSelectionCounts();
     }
     
@@ -317,6 +320,48 @@ public partial class MissingFKDiscoveryDialog : Window
             }
         }
         UpdateSelectionCounts();
+    }
+    
+    private void AddAllFromSearch_Click(object sender, RoutedEventArgs e)
+    {
+        var searchText = SearchTextBox.Text?.ToLowerInvariant() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            MessageBox.Show("Please enter a search term first.", "No Search Term",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        var selectedSchema = SchemaComboBox.SelectedItem?.ToString() ?? "All";
+        
+        // Get all tables matching the search filter
+        var matchingTables = _allTables.Where(t =>
+            (t.TableName.ToLowerInvariant().Contains(searchText) || t.Schema.ToLowerInvariant().Contains(searchText)) &&
+            (selectedSchema == "All" || t.Schema == selectedSchema)
+        ).ToList();
+        
+        if (matchingTables.Count == 0)
+        {
+            MessageBox.Show($"No tables found matching '{SearchTextBox.Text}'.", "No Matches",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        var addedCount = 0;
+        foreach (var table in matchingTables)
+        {
+            if (!_selectedTables.Contains(table))
+            {
+                _selectedTables.Add(table);
+                addedCount++;
+            }
+        }
+        
+        UpdateSelectionCounts();
+        Logger.Info("Added {AddedCount} tables from search '{SearchText}' (total matching: {TotalCount})", 
+            addedCount, searchText, matchingTables.Count);
+        
+        StatusText.Text = $"Added {addedCount} table(s) matching '{SearchTextBox.Text}'";
     }
     
     private void RemoveSelected_Click(object sender, RoutedEventArgs e)
@@ -673,21 +718,11 @@ public partial class MissingFKDiscoveryDialog : Window
                 return;
             }
             
-            // Save ignore JSON if editor has been used
-            if (IgnoreColumnEditorExpander.IsExpanded)
+            // Save ignore JSON if configured
+            if (_currentIgnoreModel.IgnoreColumns.Count > 0 || 
+                _currentIgnoreModel.IgnoreColumnPatterns.Count > 0 || 
+                _currentIgnoreModel.IgnoreDataTypes.Count > 0)
             {
-                _currentIgnoreModel.IgnoreColumns = _ignoreColumnsCollection.ToList();
-                _currentIgnoreModel.IgnoreColumnPatterns = IgnorePatternsTextBox.Text
-                    .Split(new[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(p => p.Trim())
-                    .Where(p => !string.IsNullOrEmpty(p))
-                    .ToList();
-                _currentIgnoreModel.IgnoreDataTypes = IgnoreDataTypesTextBox.Text
-                    .Split(',')
-                    .Select(d => d.Trim())
-                    .Where(d => !string.IsNullOrEmpty(d))
-                    .ToList();
-                
                 // Save to ignore JSON file
                 if (string.IsNullOrEmpty(_ignoreJsonPath))
                 {
@@ -872,157 +907,66 @@ public partial class MissingFKDiscoveryDialog : Window
         }
     }
     
-    private async Task LoadIgnoreHistoryAsync()
+    private void EditIgnoreRules_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var history = _ignoreHistoryService.GetHistory();
-            IgnoreHistoryComboBox.Items.Clear();
-            foreach (var item in history)
+            var dialog = new MissingFKIgnoreRulesDialog(_currentIgnoreModel)
             {
-                IgnoreHistoryComboBox.Items.Add($"{item.Name} ({item.SavedAt:yyyy-MM-dd HH:mm})");
-            }
-            Logger.Debug("Loaded {Count} ignore configurations from history", history.Count);
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to load ignore history");
-        }
-    }
-    
-    private void IgnoreHistoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (IgnoreHistoryComboBox.SelectedIndex < 0) return;
-        
-        try
-        {
-            var history = _ignoreHistoryService.GetHistory();
-            if (IgnoreHistoryComboBox.SelectedIndex >= history.Count) return;
-            
-            var selectedItem = history[IgnoreHistoryComboBox.SelectedIndex];
-            var ignoreModel = _ignoreHistoryService.LoadIgnoreConfig(selectedItem.Name);
-            
-            if (ignoreModel != null)
-            {
-                _currentIgnoreModel = ignoreModel;
-                UpdateIgnoreColumnsGrid();
-                IgnorePatternsTextBox.Text = string.Join(Environment.NewLine, ignoreModel.IgnoreColumnPatterns);
-                IgnoreDataTypesTextBox.Text = string.Join(", ", ignoreModel.IgnoreDataTypes);
-                Logger.Info("Loaded ignore configuration from history: {Name}", selectedItem.Name);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to load ignore configuration from history");
-            MessageBox.Show($"Failed to load ignore configuration:\n{ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
-    
-    private async void SaveIgnoreConfig_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            // Get current ignore model from UI
-            _currentIgnoreModel.IgnoreColumns = _ignoreColumnsCollection.ToList();
-            _currentIgnoreModel.IgnoreColumnPatterns = IgnorePatternsTextBox.Text
-                .Split(new[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
-                .ToList();
-            _currentIgnoreModel.IgnoreDataTypes = IgnoreDataTypesTextBox.Text
-                .Split(',')
-                .Select(d => d.Trim())
-                .Where(d => !string.IsNullOrEmpty(d))
-                .ToList();
-            
-            // Prompt for name using simple input dialog
-            var inputDialog = new Window
-            {
-                Title = "Save Ignore Configuration",
-                Width = 400,
-                Height = 150,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Owner = this
             };
             
-            var textBox = new TextBox
+            if (dialog.ShowDialog() == true)
             {
-                Text = $"Ignore_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}",
-                Margin = new Thickness(10),
-                VerticalContentAlignment = VerticalAlignment.Center
-            };
-            
-            var okButton = new Button
-            {
-                Content = "OK",
-                Width = 75,
-                Height = 25,
-                Margin = new Thickness(5),
-                IsDefault = true
-            };
-            
-            var cancelButton = new Button
-            {
-                Content = "Cancel",
-                Width = 75,
-                Height = 25,
-                Margin = new Thickness(5),
-                IsCancel = true
-            };
-            
-            var stackPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(10)
-            };
-            stackPanel.Children.Add(okButton);
-            stackPanel.Children.Add(cancelButton);
-            
-            var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            
-            Grid.SetRow(textBox, 0);
-            Grid.SetRow(stackPanel, 1);
-            grid.Children.Add(textBox);
-            grid.Children.Add(stackPanel);
-            
-            inputDialog.Content = grid;
-            
-            bool? result = null;
-            okButton.Click += (s, args) => { result = true; inputDialog.Close(); };
-            cancelButton.Click += (s, args) => { result = false; inputDialog.Close(); };
-            
-            inputDialog.ShowDialog();
-            
-            if (result != true || string.IsNullOrWhiteSpace(textBox.Text))
-                return;
-            
-            var name = textBox.Text.Trim();
-            _ignoreHistoryService.SaveIgnoreConfig(_currentIgnoreModel, name);
-            await LoadIgnoreHistoryAsync();
-            
-            MessageBox.Show($"Ignore configuration saved: {name}", "Success",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+                _currentIgnoreModel = dialog.IgnoreModel;
+                UpdateIgnoreRulesSummary();
+                
+                // Update ignore JSON path if needed
+                if (!string.IsNullOrEmpty(_ignoreJsonPath))
+                {
+                    var ignoreJson = JsonSerializer.Serialize(_currentIgnoreModel, new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+                    File.WriteAllText(_ignoreJsonPath, ignoreJson, Encoding.UTF8);
+                }
+                
+                Logger.Info("Ignore rules updated from editor dialog");
+            }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to save ignore configuration");
-            MessageBox.Show($"Failed to save ignore configuration:\n{ex.Message}", "Error",
+            Logger.Error(ex, "Failed to open ignore rules editor");
+            MessageBox.Show($"Failed to open ignore rules editor:\n{ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
     
-    private void UpdateIgnoreColumnsGrid()
+    private void UpdateIgnoreRulesSummary()
     {
-        _ignoreColumnsCollection.Clear();
-        foreach (var col in _currentIgnoreModel.IgnoreColumns)
+        var parts = new List<string>();
+        if (_currentIgnoreModel.IgnoreColumns.Count > 0)
+            parts.Add($"{_currentIgnoreModel.IgnoreColumns.Count} column(s)");
+        if (_currentIgnoreModel.IgnoreColumnPatterns.Count > 0)
+            parts.Add($"{_currentIgnoreModel.IgnoreColumnPatterns.Count} pattern(s)");
+        if (_currentIgnoreModel.IgnoreDataTypes.Count > 0)
+            parts.Add($"{_currentIgnoreModel.IgnoreDataTypes.Count} data type(s)");
+        
+        if (parts.Count > 0)
         {
-            _ignoreColumnsCollection.Add(col);
+            IgnoreRulesSummaryText.Text = string.Join(", ", parts);
+            IgnoreRulesSummaryText.FontStyle = FontStyles.Normal;
+            IgnoreRulesSummaryText.Foreground = System.Windows.Media.Brushes.White;
+        }
+        else
+        {
+            IgnoreRulesSummaryText.Text = "No ignore rules configured";
+            IgnoreRulesSummaryText.FontStyle = FontStyles.Italic;
+            IgnoreRulesSummaryText.Foreground = System.Windows.Media.Brushes.Gray;
         }
     }
+    
+    // Old methods removed - functionality moved to MissingFKIgnoreRulesDialog
     
     private void ViewJobLog_Click(object sender, RoutedEventArgs e)
     {

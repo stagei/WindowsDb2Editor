@@ -51,6 +51,8 @@
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
                         <Button Content="Add Selected" Click="AddSelected_Click" Padding="8,4" Margin="0,0,5,0"/>
                         <Button Content="Add All in Schema" Click="AddAllInSchema_Click" Padding="8,4" Margin="0,0,5,0"/>
+                        <Button x:Name="AddAllFromSearchButton" Content="Add All from Search" Click="AddAllFromSearch_Click" 
+                                Padding="8,4" Margin="0,0,5,0" ToolTip="Add all tables matching the current search filter"/>
                         <Button Content="Remove Selected" Click="RemoveSelected_Click" Padding="8,4"/>
                     </StackPanel>
                     
@@ -183,49 +185,26 @@
                     <Button Grid.Column="2" Content="Browse..." Click="BrowseIgnoreJson_Click" Padding="8,4" Width="80"/>
                 </Grid>
                 
-                <!-- Ignore Column Editor -->
-                <Expander x:Name="IgnoreColumnEditorExpander" Grid.Row="2" Header="Edit Ignore Rules" IsExpanded="False" Margin="0,0,0,10" MaxHeight="400">
-                    <Grid Margin="10">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="200"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <!-- History Dropdown -->
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="Load from history:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <ComboBox x:Name="IgnoreHistoryComboBox" Width="300" 
-                                    SelectionChanged="IgnoreHistoryComboBox_SelectionChanged"
-                                    ui:ControlHelper.PlaceholderText="Select previous ignore list..."/>
-                            <Button Content="Save Current" Click="SaveIgnoreConfig_Click" Padding="8,4" Margin="10,0,0,0"/>
-                        </StackPanel>
-                        
-                        <!-- Ignore Column List -->
-                        <TextBlock Grid.Row="1" Text="Ignore Columns (Schema.Table.Column):" Margin="0,0,0,5" FontWeight="SemiBold"/>
-                        <DataGrid x:Name="IgnoreColumnsGrid" Grid.Row="2" 
-                                AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                                HeadersVisibility="Column" GridLinesVisibility="All">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Schema" Binding="{Binding Schema}" Width="150"/>
-                                <DataGridTextColumn Header="Table" Binding="{Binding Table}" Width="150"/>
-                                <DataGridTextColumn Header="Column" Binding="{Binding Column}" Width="*"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        
-                        <!-- Additional ignore options -->
-                        <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,10,0,0">
-                            <TextBlock Text="Ignore Column Patterns (Regex):" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                            <TextBox x:Name="IgnorePatternsTextBox" AcceptsReturn="True" TextWrapping="Wrap" 
-                                    Height="60" VerticalScrollBarVisibility="Auto"
-                                    ui:ControlHelper.PlaceholderText="One pattern per line, e.g., ^TMP_, _HASH$"/>
-                            <TextBlock Text="Ignore Data Types (comma-separated):" FontWeight="SemiBold" Margin="0,10,0,5"/>
-                            <TextBox x:Name="IgnoreDataTypesTextBox" 
-                                    ui:ControlHelper.PlaceholderText="BLOB, CLOB, XML"/>
-                        </StackPanel>
-                    </Grid>
-                </Expander>
+                <!-- Ignore Column Editor Button -->
+                <Grid Grid.Row="2" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Text="Ignore Rules:" VerticalAlignment="Center" Margin="0,0,10,0" Width="100"/>
+                    <TextBlock Grid.Column="1" x:Name="IgnoreRulesSummaryText" 
+                               Text="No ignore rules configured" 
+                               VerticalAlignment="Center" 
+                               FontStyle="Italic" 
+                               Foreground="Gray"
+                               Margin="0,0,10,0"/>
+                    <Button Grid.Column="2" Content="Edit Ignore Rules..." 
+                            Click="EditIgnoreRules_Click" 
+                            Padding="8,4" Width="150"
+                            ToolTip="Open ignore rules editor in a separate window"/>
+                </Grid>
                 
                 <!-- Options -->
                 <Grid Grid.Row="3" Margin="0,0,0,10">
@@ -279,9 +258,28 @@
         </GroupBox>
         
         <!-- Loading Overlay -->
-        <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="#CC1E1E1E">
+        <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="#CC1E1E1E" Panel.ZIndex="9999">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ui:ProgressRing IsActive="True" Width="60" Height="60"/>
+                <!-- Red Spinner -->
+                <Border Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Ellipse Width="60" Height="60" Stroke="#FF4444" StrokeThickness="4" 
+                             StrokeDashArray="15,10" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="SpinnerRotateTransform" Angle="0"/>
+                        </Ellipse.RenderTransform>
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SpinnerRotateTransform"
+                                                       Storyboard.TargetProperty="Angle"
+                                                       From="0" To="360" Duration="0:0:1"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                </Border>
                 <TextBlock x:Name="LoadingText" Text="Processing..." FontSize="16" 
                            Foreground="White" Margin="0,15,0,0" HorizontalAlignment="Center"/>
             </StackPanel>
