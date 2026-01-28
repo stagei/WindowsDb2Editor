@@ -88,9 +88,9 @@ public partial class MissingFKDiscoveryDialog : Window
             _searchHistoryService = new MissingFKSearchHistoryService();
             Logger.Debug("MissingFKSearchHistoryService created");
             
-            // Set default output folder
+            // Set default output folder in user's Documents
             _outputFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "WindowsDb2Editor",
                 "MissingFK");
             Logger.Debug("Output folder path: {Path}", _outputFolder);
