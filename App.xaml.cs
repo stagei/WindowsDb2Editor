@@ -103,6 +103,18 @@ public partial class App : Application
                     return; // Keep GUI running
                 }
                 
+                // Check if only profile is passed (no command) - launch GUI with auto-connect
+                if (!string.IsNullOrEmpty(cliArgs.ProfileName) && 
+                    string.IsNullOrEmpty(cliArgs.Command) && 
+                    string.IsNullOrEmpty(cliArgs.Sql) &&
+                    string.IsNullOrEmpty(cliArgs.TestForm) &&
+                    string.IsNullOrEmpty(cliArgs.Open))
+                {
+                    Logger.Info("GUI mode with profile auto-connect - Profile: {Profile}", cliArgs.ProfileName);
+                    await LaunchGuiWithProfileConnectAsync(cliArgs.ProfileName);
+                    return; // Keep GUI running
+                }
+                
                 // Check if this is GUI form testing mode
                 if (!string.IsNullOrEmpty(cliArgs.TestForm))
                 {
@@ -323,6 +335,65 @@ public partial class App : Application
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to auto-connect and open element");
+            MessageBox.Show($"Failed to connect:\n\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Launch GUI and automatically connect to the specified profile
+    /// Used when only --profile is passed without a command
+    /// </summary>
+    private async Task LaunchGuiWithProfileConnectAsync(string profileName)
+    {
+        Logger.Info("Launching GUI with profile auto-connect: {Profile}", profileName);
+        
+        // Set up global exception handling
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        DispatcherUnhandledException += App_DispatcherUnhandledException;
+
+        Logger.Debug("Global exception handlers registered");
+        
+        // Create and show main window
+        var mainWindow = new MainWindow();
+        mainWindow.Show();
+        
+        // Apply global font size from preferences
+        if (PreferencesService != null)
+        {
+            GlobalFontService.ApplyGlobalFontSize(PreferencesService.Preferences.UIFontSize);
+        }
+        
+        // Create desktop and Start Menu shortcuts if they don't exist
+        Utils.ShortcutManager.EnsureShortcutsExist();
+        
+        Logger.Info("MainWindow shown, now auto-connecting to profile: {Profile}", profileName);
+        
+        // Wait a bit for window to fully render
+        await Task.Delay(300);
+        
+        // Auto-connect to profile
+        try
+        {
+            var connectionService = new ConnectionStorageService();
+            var profile = connectionService.GetConnection(profileName);
+            
+            if (profile == null)
+            {
+                Logger.Error("Profile not found: {Profile}", profileName);
+                MessageBox.Show($"Profile '{profileName}' not found!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            Logger.Info("Profile loaded, establishing connection...");
+            
+            // Connect via MainWindow's connection method
+            await mainWindow.ConnectToProfileAsync(profile);
+            
+            Logger.Info("Auto-connect completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to auto-connect to profile");
             MessageBox.Show($"Failed to connect:\n\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

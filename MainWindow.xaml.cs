@@ -2173,6 +2173,32 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Connect to a profile and open a connection tab
+    /// Used when launching from tray icon with just a profile name
+    /// </summary>
+    public async Task ConnectToProfileAsync(Models.DatabaseConnection connection)
+    {
+        Logger.Info("Connecting to profile: {Profile}", connection.Name);
+        
+        try
+        {
+            // Add connection tab
+            AddConnectionTab(connection);
+            
+            Logger.Info("Connection tab added for profile: {Profile}", connection.Name);
+            
+            // Wait briefly for the tab to initialize
+            await Task.Delay(500);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to connect to profile: {Profile}", connection.Name);
+            MessageBox.Show($"Failed to connect to {connection.Name}:\n\n{ex.Message}",
+                "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
     /// Auto-connect to a profile and open a details dialog for any object type
     /// Used for automated testing and debugging
     /// </summary>
