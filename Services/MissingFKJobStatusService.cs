@@ -353,6 +353,29 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
+    /// Get lock file information (if exists).
+    /// </summary>
+    public MissingFKJobLock? GetLockInfo(string outputFolder)
+    {
+        var lockPath = GetLockFilePath(outputFolder);
+        if (!File.Exists(lockPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(lockPath);
+            return JsonSerializer.Deserialize<MissingFKJobLock>(json);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to read lock file info");
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Write status file atomically (write to temp file, then rename).
     /// </summary>
     private void WriteStatusFileAtomic(string statusPath, MissingFKJobStatus status)

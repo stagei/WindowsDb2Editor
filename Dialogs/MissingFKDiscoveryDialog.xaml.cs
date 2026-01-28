@@ -156,6 +156,9 @@ public partial class MissingFKDiscoveryDialog : Window
             StatusText.Text = "Ready - Please select a schema to load tables";
             TablesList.ItemsSource = new List<TableSelectionItem>(); // Empty list until schema selected
             
+            // Check if a job is already running and update button state accordingly
+            CheckExistingJobLock();
+            
             Logger.Info("MissingFKDiscoveryDialog loaded successfully");
         }
         catch (Exception ex)
@@ -218,6 +221,59 @@ public partial class MissingFKDiscoveryDialog : Window
         catch (Exception ex)
         {
             Logger.Debug(ex, "Failed to stop spinner animation");
+        }
+    }
+
+    /// <summary>
+    /// Check if a job is already running and update UI accordingly.
+    /// Also provides option to clear stale locks.
+    /// </summary>
+    private void CheckExistingJobLock()
+    {
+        try
+        {
+            if (_jobStatusService.IsJobLocked(_outputFolder))
+            {
+                var lockInfo = _jobStatusService.GetLockInfo(_outputFolder);
+                if (lockInfo != null)
+                {
+                    var lockAge = DateTime.UtcNow - lockInfo.StartedAtUtc;
+                    
+                    // If lock is more than 1 hour old, offer to clear it
+                    if (lockAge.TotalHours > 1)
+                    {
+                        var result = MessageBox.Show(
+                            $"A job lock exists from {lockAge.TotalHours:F1} hours ago (Job ID: {lockInfo.JobId}).\n\n" +
+                            "This may be a stale lock from a previously interrupted job.\n\n" +
+                            "Do you want to clear the stale lock and enable starting a new job?",
+                            "Stale Job Lock Detected",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+                        
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            _jobStatusService.ReleaseJobLock(_outputFolder);
+                            Logger.Info("User cleared stale job lock (age: {Age} hours)", lockAge.TotalHours);
+                            StatusText.Text = "Stale job lock cleared. Ready to start a new job.";
+                            return;
+                        }
+                    }
+                    
+                    // Job is running - disable button and show status
+                    StartBatchJobButton.IsEnabled = false;
+                    StartBatchJobButton.Content = "Job Running...";
+                    StatusText.Text = $"A job is already running (started {lockAge.TotalMinutes:F0} minutes ago)";
+                    Logger.Info("Existing job lock detected - Job ID: {JobId}, Age: {Age} minutes", 
+                        lockInfo.JobId, lockAge.TotalMinutes);
+                    
+                    // Start monitoring the running job
+                    StartJobStatusMonitoring();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to check existing job lock");
         }
     }
     
