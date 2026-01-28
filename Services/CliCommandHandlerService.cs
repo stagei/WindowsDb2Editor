@@ -5131,7 +5131,32 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         var ignoreService = new MissingFKIgnoreService();
         if (!string.IsNullOrEmpty(args.Ignore) && File.Exists(args.Ignore))
         {
+            Logger.Info("Loading ignore rules from: {Path}", args.Ignore);
             ignoreService.LoadIgnoreRules(args.Ignore);
+            
+            // Log ignore rules summary
+            try
+            {
+                var ignoreJson = await File.ReadAllTextAsync(args.Ignore);
+                var ignoreModel = JsonSerializer.Deserialize<WindowsDb2Editor.Models.MissingFKIgnoreModel>(ignoreJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                if (ignoreModel != null)
+                {
+                    Logger.Info("Ignore rules loaded: {TableRules} table rules, {ColumnRules} column rules, {PatternRules} patterns, {DataTypeRules} data types",
+                        ignoreModel.IgnoreTables.Count, ignoreModel.IgnoreColumns.Count,
+                        ignoreModel.IgnoreColumnPatterns.Count, ignoreModel.IgnoreDataTypes.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to parse ignore JSON for logging");
+            }
+        }
+        else
+        {
+            Logger.Info("No ignore rules file provided - all tables and columns will be analyzed");
         }
         
         // Initialize services

@@ -35,6 +35,7 @@ public partial class MissingFKDiscoveryDialog : Window
     private readonly MissingFKJobStatusService _jobStatusService;
     private readonly string _connectionProfile;
     
+    private List<string> _availableSchemas = new();
     private List<TableSelectionItem> _allTables = new();
     private List<TableSelectionItem> _selectedTables = new();
     private string _outputFolder = string.Empty;
@@ -42,7 +43,9 @@ public partial class MissingFKDiscoveryDialog : Window
     private string _jobId = string.Empty;
     private Process? _runningJobProcess;
     private FileSystemWatcher? _statusFileWatcher;
+    private FileSystemWatcher? _logFileWatcher;
     private Timer? _statusPollTimer;
+    private Timer? _logPollTimer;
     private MissingFKIgnoreModel _currentIgnoreModel = new();
     private ObservableCollection<MissingFKIgnoreColumn> _ignoreColumnsCollection = new();
     
@@ -84,29 +87,31 @@ public partial class MissingFKDiscoveryDialog : Window
     private void MissingFKDiscoveryDialog_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         StopJobStatusMonitoring();
+        StopLogFileMonitoring();
     }
     
     private async void MissingFKDiscoveryDialog_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
-            Logger.Info("Loading tables for Missing FK Discovery");
-            ShowLoading("Loading tables from database...");
+            Logger.Info("Loading schemas for Missing FK Discovery");
+            ShowLoading("Loading schemas from database...");
             
-            await LoadTablesAsync();
+            // Only load schemas initially, not tables
+            await LoadSchemasAsync();
             PopulateSchemaComboBox();
-            RefreshTableList();
             await LoadIgnoreHistoryAsync();
             
             HideLoading();
-            StatusText.Text = $"Ready - {_allTables.Count} tables loaded";
+            StatusText.Text = "Ready - Please select a schema to load tables";
+            TablesList.ItemsSource = new List<TableSelectionItem>(); // Empty list until schema selected
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load tables");
+            Logger.Error(ex, "Failed to load schemas");
             HideLoading();
             MessageBox.Show(
-                $"Failed to load tables: {ex.Message}",
+                $"Failed to load schemas: {ex.Message}",
                 "Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -124,9 +129,50 @@ public partial class MissingFKDiscoveryDialog : Window
         LoadingOverlay.Visibility = Visibility.Collapsed;
     }
     
-    private async Task LoadTablesAsync()
+    /// <summary>
+    /// Load only schemas (not tables) for initial population.
+    /// </summary>
+    private async Task LoadSchemasAsync()
     {
-        Logger.Debug("Loading all user tables");
+        Logger.Debug("Loading schemas");
+        
+        var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
+        var version = "12.1";
+        
+        // Use MetadataHandler to get SQL for listing schemas
+        var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
+        var schemasSql = metadataHandler.GetQuery(provider, version, "GetSchemasStatement");
+        var schemasResult = await _connectionManager.ExecuteQueryAsync(schemasSql);
+        
+        var schemas = new List<string>();
+        foreach (DataRow schemaRow in schemasResult.Rows)
+        {
+            var schema = schemaRow["SCHEMANAME"]?.ToString()?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(schema) && !schema.StartsWith("SYS", StringComparison.OrdinalIgnoreCase))
+            {
+                schemas.Add(schema);
+            }
+        }
+        
+        // Store schemas for later use
+        _availableSchemas = schemas.OrderBy(s => s).ToList();
+        
+        Logger.Info("Loaded {Count} schemas", _availableSchemas.Count);
+    }
+    
+    /// <summary>
+    /// Load tables for a specific schema.
+    /// </summary>
+    private async Task LoadTablesForSchemaAsync(string schema)
+    {
+        Logger.Debug("Loading tables for schema: {Schema}", schema);
+        
+        if (string.IsNullOrEmpty(schema) || schema == "All")
+        {
+            _allTables.Clear();
+            RefreshTableList();
+            return;
+        }
         
         var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
         var version = "12.1";
@@ -135,46 +181,35 @@ public partial class MissingFKDiscoveryDialog : Window
         var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         var sql = metadataHandler.GetQuery(provider, version, "GetTablesForSchema");
         
-        // Get all schemas first
-        var schemasSql = metadataHandler.GetQuery(provider, version, "GetSchemasStatement");
-        var schemasResult = await _connectionManager.ExecuteQueryAsync(schemasSql);
+        // Get tables for this schema
+        var tablesSql = ReplaceParameters(sql, schema);
+        var tablesResult = await _connectionManager.ExecuteQueryAsync(tablesSql);
         
         _allTables.Clear();
-        foreach (DataRow schemaRow in schemasResult.Rows)
+        foreach (DataRow row in tablesResult.Rows)
         {
-            var schema = schemaRow["SCHEMANAME"]?.ToString()?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(schema) || schema.StartsWith("SYS", StringComparison.OrdinalIgnoreCase))
-                continue;
-            
-            // Get tables for this schema
-            var tablesSql = ReplaceParameters(sql, schema);
-            var tablesResult = await _connectionManager.ExecuteQueryAsync(tablesSql);
-            
-            foreach (DataRow row in tablesResult.Rows)
+            var tableName = row["TABNAME"]?.ToString()?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(tableName))
             {
-                var tableName = row["TABNAME"]?.ToString()?.Trim() ?? string.Empty;
-                if (!string.IsNullOrEmpty(tableName))
+                _allTables.Add(new TableSelectionItem
                 {
-                    _allTables.Add(new TableSelectionItem
-                    {
-                        Schema = schema,
-                        TableName = tableName,
-                        IsSelected = false
-                    });
-                }
+                    Schema = schema,
+                    TableName = tableName,
+                    IsSelected = false
+                });
             }
         }
         
-        Logger.Info("Loaded {Count} tables from {SchemaCount} schemas", 
-            _allTables.Count, _allTables.Select(t => t.Schema).Distinct().Count());
+        Logger.Info("Loaded {Count} tables from schema {Schema}", _allTables.Count, schema);
+        RefreshTableList();
+        StatusText.Text = $"Ready - {_allTables.Count} tables loaded from schema {schema}";
     }
     
     private void PopulateSchemaComboBox()
     {
-        var schemas = _allTables.Select(t => t.Schema).Distinct().OrderBy(s => s).ToList();
         SchemaComboBox.Items.Clear();
         SchemaComboBox.Items.Add("All");
-        foreach (var schema in schemas)
+        foreach (var schema in _availableSchemas)
         {
             SchemaComboBox.Items.Add(schema);
         }
@@ -213,9 +248,36 @@ public partial class MissingFKDiscoveryDialog : Window
         RefreshTableList();
     }
     
-    private void SchemaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void SchemaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        RefreshTableList();
+        var selectedSchema = SchemaComboBox.SelectedItem?.ToString() ?? "All";
+        
+        if (selectedSchema == "All")
+        {
+            _allTables.Clear();
+            TablesList.ItemsSource = new List<TableSelectionItem>();
+            StatusText.Text = "Please select a specific schema to load tables";
+            UpdateSelectionCounts();
+        }
+        else
+        {
+            try
+            {
+                ShowLoading($"Loading tables from schema {selectedSchema}...");
+                await LoadTablesForSchemaAsync(selectedSchema);
+                HideLoading();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to load tables for schema: {Schema}", selectedSchema);
+                HideLoading();
+                MessageBox.Show(
+                    $"Failed to load tables from schema {selectedSchema}:\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
     }
     
     private void AddSelected_Click(object sender, RoutedEventArgs e)
@@ -585,20 +647,27 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
+            // Disable button immediately to prevent multiple clicks
+            StartBatchJobButton.IsEnabled = false;
+            
             // Check if job is already running (via lock file)
             if (_jobStatusService.IsJobLocked(_outputFolder))
             {
+                StartBatchJobButton.IsEnabled = false; // Keep disabled
                 MessageBox.Show(
-                    "A Missing FK Discovery job is already running. Please wait for it to complete before starting another job.",
+                    "A Missing FK Discovery job is already running. Please wait for it to complete before starting another job.\n\n" +
+                    "Check the job status below or use 'View Job Log' to see progress.",
                     "Job Already Running",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
             }
             
+            // Check if input JSON exists
             var inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
             if (!File.Exists(inputPath))
             {
+                StartBatchJobButton.IsEnabled = true; // Re-enable if validation fails
                 MessageBox.Show("Please generate input JSON first.", "Input JSON Not Found",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -636,12 +705,40 @@ public partial class MissingFKDiscoveryDialog : Window
             // Acquire job lock
             if (!_jobStatusService.AcquireJobLock(_outputFolder, _jobId))
             {
+                StartBatchJobButton.IsEnabled = true; // Re-enable if lock fails
                 MessageBox.Show(
-                    "Failed to acquire job lock. Another job may be running.",
+                    "Failed to acquire job lock. Another job may be running.\n\n" +
+                    "Please wait a moment and try again, or check if a job is already running.",
                     "Job Lock Failed",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
+            }
+            
+            // Log ignore rules being used
+            var ignoreRulesInfo = "No ignore rules";
+            if (!string.IsNullOrEmpty(_ignoreJsonPath) && File.Exists(_ignoreJsonPath))
+            {
+                try
+                {
+                    var ignoreJson = File.ReadAllText(_ignoreJsonPath);
+                    var ignoreModel = JsonSerializer.Deserialize<MissingFKIgnoreModel>(ignoreJson);
+                    if (ignoreModel != null)
+                    {
+                        var ruleCount = ignoreModel.IgnoreTables.Count + 
+                                       ignoreModel.IgnoreColumns.Count + 
+                                       ignoreModel.IgnoreColumnPatterns.Count + 
+                                       ignoreModel.IgnoreDataTypes.Count;
+                        ignoreRulesInfo = $"Using {ruleCount} ignore rule(s) from {Path.GetFileName(_ignoreJsonPath)}";
+                        Logger.Info("Ignore rules loaded: {TableRules} tables, {ColumnRules} columns, {PatternRules} patterns, {DataTypeRules} data types",
+                            ignoreModel.IgnoreTables.Count, ignoreModel.IgnoreColumns.Count,
+                            ignoreModel.IgnoreColumnPatterns.Count, ignoreModel.IgnoreDataTypes.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to parse ignore JSON for info display");
+                }
             }
             
             // Build command line arguments
@@ -682,15 +779,39 @@ public partial class MissingFKDiscoveryDialog : Window
             if (_runningJobProcess != null)
             {
                 Logger.Info("Batch job started with PID: {Pid}", _runningJobProcess.Id);
-                StatusText.Text = $"Batch job started (Job ID: {_jobId}, PID: {_runningJobProcess.Id})";
+                
+                // Show clear indication that job started
+                var ignoreInfo = string.IsNullOrEmpty(_ignoreJsonPath) 
+                    ? "No ignore rules" 
+                    : $"Ignore rules: {Path.GetFileName(_ignoreJsonPath)}";
+                
+                StatusText.Text = $"✓ Batch job STARTED - Job ID: {_jobId}";
+                JobStatusText.Text = $"Job running (PID: {_runningJobProcess.Id}) - {ignoreInfo}";
+                JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                
+                // Show notification
+                MessageBox.Show(
+                    $"Missing FK Discovery batch job has been started!\n\n" +
+                    $"Job ID: {_jobId}\n" +
+                    $"Process ID: {_runningJobProcess.Id}\n" +
+                    $"{ignoreInfo}\n\n" +
+                    $"The job is running in the background. You can monitor progress using the 'View Job Log' button.\n" +
+                    $"Status will update automatically as the job progresses.",
+                    "Job Started",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 
                 // Start status monitoring
                 StartJobStatusMonitoring(_jobId, _outputFolder);
                 
-                // Update UI
+                // Start log file monitoring and switch to Job Progress tab
+                StartLogFileMonitoring(_jobId, _outputFolder);
+                MainTabControl.SelectedItem = JobProgressTab;
+                
+                // Update UI - disable button to prevent multiple starts
                 StartBatchJobButton.IsEnabled = false;
+                StartBatchJobButton.Content = "Job Running...";
                 ViewJobLogButton.IsEnabled = true;
-                JobStatusText.Text = "Job starting...";
                 
                 Logger.Info("Job status monitoring started");
             }
@@ -979,6 +1100,149 @@ public partial class MissingFKDiscoveryDialog : Window
         }
     }
     
+    private void StartLogFileMonitoring(string jobId, string outputFolder)
+    {
+        try
+        {
+            Logger.Debug("Starting log file monitoring for job: {JobId}", jobId);
+            
+            var logPath = MissingFKJobStatusService.GetLogFilePath(outputFolder, jobId);
+            
+            // Create FileSystemWatcher for log file
+            _logFileWatcher = new FileSystemWatcher(outputFolder)
+            {
+                Filter = $"missing_fk_job_{jobId}.log",
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+            };
+            
+            _logFileWatcher.Changed += OnLogFileChanged;
+            _logFileWatcher.EnableRaisingEvents = true;
+            
+            // Load initial log content if file exists
+            if (File.Exists(logPath))
+            {
+                LoadLogFileContent(logPath);
+            }
+            
+            // Also poll every 1 second to catch updates
+            _logPollTimer = new Timer(_ => 
+            {
+                if (File.Exists(logPath))
+                {
+                    Dispatcher.Invoke(() => LoadLogFileContent(logPath));
+                }
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            
+            Logger.Info("Log file monitoring started for job: {JobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to start log file monitoring");
+        }
+    }
+    
+    private void StopLogFileMonitoring()
+    {
+        try
+        {
+            if (_logFileWatcher != null)
+            {
+                _logFileWatcher.EnableRaisingEvents = false;
+                _logFileWatcher.Dispose();
+                _logFileWatcher = null;
+            }
+            
+            if (_logPollTimer != null)
+            {
+                _logPollTimer.Dispose();
+                _logPollTimer = null;
+            }
+            
+            Logger.Debug("Log file monitoring stopped");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error stopping log file monitoring");
+        }
+    }
+    
+    private void OnLogFileChanged(object sender, FileSystemEventArgs e)
+    {
+        try
+        {
+            // Small delay to ensure file write is complete
+            Task.Delay(100).ContinueWith(_ =>
+            {
+                Dispatcher.Invoke(() => LoadLogFileContent(e.FullPath));
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error handling log file change");
+        }
+    }
+    
+    private void LoadLogFileContent(string logPath)
+    {
+        try
+        {
+            if (!File.Exists(logPath))
+            {
+                JobLogTextBox.Text = "Log file not found. Waiting for job to start...";
+                return;
+            }
+            
+            // Read file with retry logic (file might be locked)
+            string content = string.Empty;
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    content = File.ReadAllText(logPath, Encoding.UTF8);
+                    break;
+                }
+                catch (IOException)
+                {
+                    if (i < 2) Thread.Sleep(100);
+                    else content = "Unable to read log file (file may be locked)";
+                }
+            }
+            
+            JobLogTextBox.Text = content;
+            
+            // Auto-scroll to bottom
+            JobLogTextBox.CaretIndex = JobLogTextBox.Text.Length;
+            JobLogTextBox.ScrollToEnd();
+            
+            // Update status text
+            var lines = content.Split('\n');
+            var lastLine = lines.LastOrDefault(l => !string.IsNullOrWhiteSpace(l));
+            if (!string.IsNullOrEmpty(lastLine))
+            {
+                JobProgressStatusText.Text = $"Job running... Last update: {lastLine.Trim()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error loading log file content");
+            JobLogTextBox.Text = $"Error reading log file: {ex.Message}";
+        }
+    }
+    
+    private void RefreshJobLog_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_jobId)) return;
+        
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        LoadLogFileContent(logPath);
+    }
+    
+    private void ClearJobLog_Click(object sender, RoutedEventArgs e)
+    {
+        JobLogTextBox.Clear();
+        JobProgressStatusText.Text = "Log cleared. Waiting for updates...";
+    }
+    
     private void OnStatusFileChanged(object sender, FileSystemEventArgs e)
     {
         Dispatcher.Invoke(() => CheckJobStatus(null));
@@ -989,14 +1253,25 @@ public partial class MissingFKDiscoveryDialog : Window
         Dispatcher.Invoke(() =>
         {
             Logger.Info("Status file deleted - job completed");
-            JobStatusText.Text = "Job completed";
+            JobStatusText.Text = "Job completed successfully";
+            JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
             StartBatchJobButton.IsEnabled = true;
-            ViewJobLogButton.IsEnabled = false;
+            StartBatchJobButton.Content = "Start Batch Job";
+            ViewJobLogButton.IsEnabled = true; // Keep enabled so user can view final log
             
             // Show completion notification
             ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
             
+            // Update log one final time
+            var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+            if (File.Exists(logPath))
+            {
+                LoadLogFileContent(logPath);
+            }
+            JobProgressStatusText.Text = "Job completed successfully";
+            
             StopJobStatusMonitoring();
+            StopLogFileMonitoring();
         });
     }
     
@@ -1019,10 +1294,22 @@ public partial class MissingFKDiscoveryDialog : Window
                 // Job completed
                 Dispatcher.Invoke(() =>
                 {
-                    JobStatusText.Text = "Job completed";
+                    JobStatusText.Text = "Job completed successfully";
+                    JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
                     StartBatchJobButton.IsEnabled = true;
-                    ViewJobLogButton.IsEnabled = false;
+                    StartBatchJobButton.Content = "Start Batch Job";
+                    ViewJobLogButton.IsEnabled = true; // Keep enabled so user can view final log
+                    
+                    // Update log one final time
+                    var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+                    if (File.Exists(logPath))
+                    {
+                        LoadLogFileContent(logPath);
+                    }
+                    JobProgressStatusText.Text = "Job completed successfully";
+                    
                     StopJobStatusMonitoring();
+                    StopLogFileMonitoring();
                 });
                 return;
             }
@@ -1044,14 +1331,23 @@ public partial class MissingFKDiscoveryDialog : Window
                 StartBatchJobButton.IsEnabled = false;
                 ViewJobLogButton.IsEnabled = true;
                 
-                if (status.Status == "error")
-                {
-                    JobStatusText.Text = $"Job ERROR: {status.Error ?? "Unknown error"}";
-                    StartBatchJobButton.IsEnabled = true;
-                    ViewJobLogButton.IsEnabled = true;
-                    ShowJobCompletionNotification(false, status.Error ?? "Job failed with unknown error.");
-                    StopJobStatusMonitoring();
-                }
+            if (status.Status == "error")
+            {
+                JobStatusText.Text = $"Job ERROR: {status.Error ?? "Unknown error"}";
+                JobStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                StartBatchJobButton.IsEnabled = true;
+                StartBatchJobButton.Content = "Start Batch Job";
+                ViewJobLogButton.IsEnabled = true;
+                ShowJobCompletionNotification(false, status.Error ?? "Job failed with unknown error.");
+                StopJobStatusMonitoring();
+            }
+            else if (status.Status == "completed")
+            {
+                JobStatusText.Text = "Job completed successfully";
+                JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                StartBatchJobButton.IsEnabled = true;
+                StartBatchJobButton.Content = "Start Batch Job";
+            }
             });
         }
         catch (Exception ex)

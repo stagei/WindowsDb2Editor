@@ -75,11 +75,20 @@ public class MissingFKScanService
             
             // Create status file with "running" status
             _statusService.CreateStatusFile(_outputFolder, _jobId);
+            await WriteLogLineAsync("========================================");
             await WriteLogLineAsync("Missing FK Discovery batch job started");
+            await WriteLogLineAsync("========================================");
             await WriteLogLineAsync($"Job ID: {_jobId}");
             await WriteLogLineAsync($"Started: {startTime:yyyy-MM-dd HH:mm:ss} UTC");
             await WriteLogLineAsync($"Output folder: {_outputFolder}");
             await WriteLogLineAsync($"Tables to scan: {_inputModel.Tables.Count}");
+            await WriteLogLineAsync(string.Empty);
+            
+            // Log ignore rules being used
+            await WriteLogLineAsync("Ignore Rules Configuration:");
+            var ignoreTableCount = _inputModel.Tables.Count(t => _ignoreService.ShouldIgnoreTable(t.Schema, t.Name));
+            await WriteLogLineAsync($"  - Tables that will be ignored: {ignoreTableCount} out of {_inputModel.Tables.Count}");
+            await WriteLogLineAsync($"  - Ignore rules are active and will be applied during table and column analysis");
             await WriteLogLineAsync(string.Empty);
             
             // Step 1: Extract table data to CSV files
@@ -186,7 +195,20 @@ public class MissingFKScanService
             {
                 try
                 {
+                    // Check if table should be ignored
+                    if (_ignoreService.ShouldIgnoreTable(table.Schema, table.Name))
+                    {
+                        Logger.Debug("Skipping ignored table: {Schema}.{Table}", table.Schema, table.Name);
+                        await WriteLogLineAsync($"  [IGNORED] {table.Schema}.{table.Name} - Matches ignore rule");
+                        lock (lockObj)
+                        {
+                            processedCount++; // Count as processed (even though ignored)
+                        }
+                        return;
+                    }
+                    
                     await ExtractSingleTableAsync(table);
+                    await WriteLogLineAsync($"  [EXTRACTED] {table.Schema}.{table.Name} - {table.RowCount} rows");
                     
                     lock (lockObj)
                     {
@@ -209,7 +231,8 @@ public class MissingFKScanService
         
         await Task.WhenAll(tasks);
         Logger.Info("Data extraction complete for all tables");
-        await WriteLogLineAsync($"Extracted data from {processedCount} tables");
+        await WriteLogLineAsync(string.Empty);
+        await WriteLogLineAsync($"Extraction complete: {processedCount} tables processed");
     }
     
     /// <summary>

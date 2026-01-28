@@ -18,9 +18,12 @@
         <!-- Title -->
         <TextBlock Grid.Row="0" Text="Missing Foreign Key Discovery" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
         
-        <!-- Main Content: Left and Right Panels -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
+        <!-- Tab Control for Configuration and Job Progress -->
+        <TabControl Grid.Row="1" x:Name="MainTabControl">
+            <!-- Configuration Tab -->
+            <TabItem Header="Configuration">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*"/>
@@ -107,12 +110,48 @@
                     </StackPanel>
                 </Grid>
             </GroupBox>
-        </Grid>
+                </Grid>
+            </TabItem>
+            
+            <!-- Job Progress Tab -->
+            <TabItem Header="Job Progress" x:Name="JobProgressTab">
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" x:Name="JobProgressStatusText" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"
+                               Text="No job running. Start a job to see progress here."/>
+                    
+                    <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" 
+                            BorderThickness="1" Padding="5">
+                        <ScrollViewer x:Name="LogScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <TextBox x:Name="JobLogTextBox" 
+                                   IsReadOnly="True" 
+                                   FontFamily="Consolas" 
+                                   FontSize="12" 
+                                   TextWrapping="NoWrap"
+                                   AcceptsReturn="True"
+                                   VerticalScrollBarVisibility="Disabled"
+                                   HorizontalScrollBarVisibility="Disabled"/>
+                        </ScrollViewer>
+                    </Border>
+                    
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                        <Button Content="Refresh" Click="RefreshJobLog_Click" Padding="10,5" Margin="0,0,5,0"/>
+                        <Button Content="Clear" Click="ClearJobLog_Click" Padding="10,5" Margin="0,0,5,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
         
         <!-- Bottom Panel: Options and Actions -->
         <GroupBox Grid.Row="2" Header="Options and Actions" Margin="0,15,0,0">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -145,7 +184,7 @@
                 </Grid>
                 
                 <!-- Ignore Column Editor -->
-                <Expander x:Name="IgnoreColumnEditorExpander" Grid.Row="2" Header="Edit Ignore Rules" IsExpanded="False" Margin="0,0,0,10">
+                <Expander x:Name="IgnoreColumnEditorExpander" Grid.Row="2" Header="Edit Ignore Rules" IsExpanded="False" Margin="0,0,0,10" MaxHeight="400">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -213,20 +252,20 @@
                 </Grid>
                 
                 <!-- Status and Action Buttons -->
-                <Grid Grid.Row="4">
+                <Grid Grid.Row="4" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
-                    <StackPanel Grid.Column="0" Orientation="Vertical">
-                        <TextBlock x:Name="StatusText" Text="Ready" VerticalAlignment="Center" 
-                                   FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,5"/>
+                    <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                        <TextBlock x:Name="StatusText" Text="Ready" 
+                                   FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,3"/>
                         <TextBlock x:Name="JobStatusText" Text="No job running" 
                                    FontSize="11" Foreground="Gray" FontWeight="SemiBold"/>
                     </StackPanel>
                     
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="Generate Input JSON" Click="GenerateInputJson_Click" Padding="12,6" Margin="0,0,5,0"/>
                         <Button x:Name="StartBatchJobButton" Content="Start Batch Job" Click="StartBatchJob_Click" 
                                 Padding="12,6" Margin="0,0,5,0" IsEnabled="False"/>
