@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using NLog;
 using WindowsDb2Editor.Data;
@@ -169,15 +170,55 @@ public partial class MissingFKDiscoveryDialog : Window
         }
     }
     
+    private Storyboard? _spinnerStoryboard;
+
     private void ShowLoading(string message)
     {
         LoadingText.Text = message;
         LoadingOverlay.Visibility = Visibility.Visible;
+        StartSpinnerAnimation();
     }
     
     private void HideLoading()
     {
+        StopSpinnerAnimation();
         LoadingOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void StartSpinnerAnimation()
+    {
+        try
+        {
+            _spinnerStoryboard = new Storyboard();
+            var animation = new DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = TimeSpan.FromSeconds(1),
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+            Storyboard.SetTarget(animation, SpinnerRotateTransform);
+            Storyboard.SetTargetProperty(animation, new PropertyPath(System.Windows.Media.RotateTransform.AngleProperty));
+            _spinnerStoryboard.Children.Add(animation);
+            _spinnerStoryboard.Begin();
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Failed to start spinner animation");
+        }
+    }
+
+    private void StopSpinnerAnimation()
+    {
+        try
+        {
+            _spinnerStoryboard?.Stop();
+            _spinnerStoryboard = null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Failed to stop spinner animation");
+        }
     }
     
     /// <summary>

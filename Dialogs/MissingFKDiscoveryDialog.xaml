@@ -273,31 +273,10 @@
         
         <!-- Loading Overlay -->
         <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="#CC1E1E1E" Panel.ZIndex="9999">
-            <Grid.Resources>
-                <Storyboard x:Key="SpinnerStoryboard" RepeatBehavior="Forever">
-                    <DoubleAnimation Storyboard.TargetName="SpinnerRotateTransform"
-                                     Storyboard.TargetProperty="Angle"
-                                     From="0" To="360" Duration="0:0:1"/>
-                </Storyboard>
-            </Grid.Resources>
-            <Grid.Style>
-                <Style TargetType="Grid">
-                    <Style.Triggers>
-                        <Trigger Property="Visibility" Value="Visible">
-                            <Trigger.EnterActions>
-                                <BeginStoryboard Name="SpinnerBeginStoryboard" Storyboard="{StaticResource SpinnerStoryboard}"/>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <StopStoryboard BeginStoryboardName="SpinnerBeginStoryboard"/>
-                            </Trigger.ExitActions>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </Grid.Style>
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <!-- Red Spinner -->
+                <!-- Red Spinner with animation controlled from code-behind -->
                 <Border Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Ellipse Width="60" Height="60" Stroke="#FF4444" StrokeThickness="4" 
+                    <Ellipse x:Name="SpinnerEllipse" Width="60" Height="60" Stroke="#FF4444" StrokeThickness="4" 
                              StrokeDashArray="15,10" RenderTransformOrigin="0.5,0.5">
                         <Ellipse.RenderTransform>
                             <RotateTransform x:Name="SpinnerRotateTransform" Angle="0"/>
