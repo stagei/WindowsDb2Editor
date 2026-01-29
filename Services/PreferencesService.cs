@@ -13,7 +13,7 @@ namespace WindowsDb2Editor.Services
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private const string PreferencesFileName = "preferences.json";
-        private readonly string _preferencesFilePath;
+        private string _preferencesFilePath;
 
         public UserPreferences Preferences { get; private set; } = new UserPreferences();
 
@@ -21,12 +21,104 @@ namespace WindowsDb2Editor.Services
         {
             Logger.Debug("PreferencesService initialized");
             
-            // Store preferences.json in user's AppData folder
-            _preferencesFilePath = AppDataHelper.GetDataFilePath(PreferencesFileName);
+            // Bootstrap: Determine preferences file path
+            // 1. Check new default location (Documents\WindowsDb2Editor)
+            // 2. Check old AppData location for migration
+            _preferencesFilePath = DeterminePreferencesFilePath();
             
             Logger.Debug("Preferences file path: {Path}", _preferencesFilePath);
             
             LoadPreferences();
+            
+            // Set the UserDataFolderHelper cache with the loaded preferences
+            UserDataFolderHelper.SetUserDataFolder(Preferences.UserDataFolder);
+        }
+        
+        /// <summary>
+        /// Determines the correct preferences file path, handling migration from old AppData location.
+        /// </summary>
+        private string DeterminePreferencesFilePath()
+        {
+            // Default location (Documents\WindowsDb2Editor)
+            var defaultFolder = UserPreferences.GetDefaultUserDataFolder();
+            var defaultPath = Path.Combine(defaultFolder, PreferencesFileName);
+            
+            // Old AppData location
+            var oldAppDataFolder = UserDataFolderHelper.GetOldAppDataFolder();
+            var oldPath = Path.Combine(oldAppDataFolder, PreferencesFileName);
+            
+            // If preferences exist in new location, use it
+            if (File.Exists(defaultPath))
+            {
+                Logger.Debug("Found preferences in new location: {Path}", defaultPath);
+                return defaultPath;
+            }
+            
+            // If preferences exist in old location, migrate
+            if (File.Exists(oldPath))
+            {
+                Logger.Info("Found preferences in old AppData location, will migrate: {Path}", oldPath);
+                
+                // Ensure new folder exists
+                if (!Directory.Exists(defaultFolder))
+                {
+                    Directory.CreateDirectory(defaultFolder);
+                }
+                
+                // Copy to new location
+                try
+                {
+                    File.Copy(oldPath, defaultPath, overwrite: false);
+                    Logger.Info("Migrated preferences from {Old} to {New}", oldPath, defaultPath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Could not migrate preferences, will use old location");
+                    return oldPath;
+                }
+                
+                return defaultPath;
+            }
+            
+            // Neither exists, use new default location
+            if (!Directory.Exists(defaultFolder))
+            {
+                Directory.CreateDirectory(defaultFolder);
+            }
+            
+            Logger.Debug("No existing preferences found, using default location: {Path}", defaultPath);
+            return defaultPath;
+        }
+        
+        /// <summary>
+        /// Updates the preferences file path when user changes the user data folder.
+        /// </summary>
+        public void UpdateUserDataFolder(string newFolder)
+        {
+            Logger.Info("Updating user data folder from {Old} to {New}", 
+                Preferences.UserDataFolder, newFolder);
+            
+            var oldPath = _preferencesFilePath;
+            
+            // Update the preference
+            Preferences.UserDataFolder = newFolder;
+            
+            // Ensure new folder exists
+            if (!Directory.Exists(newFolder))
+            {
+                Directory.CreateDirectory(newFolder);
+            }
+            
+            // Update file path
+            _preferencesFilePath = Path.Combine(newFolder, PreferencesFileName);
+            
+            // Save to new location
+            SavePreferences();
+            
+            // Update the cache
+            UserDataFolderHelper.SetUserDataFolder(newFolder);
+            
+            Logger.Info("User data folder updated, new preferences path: {Path}", _preferencesFilePath);
         }
 
         /// <summary>

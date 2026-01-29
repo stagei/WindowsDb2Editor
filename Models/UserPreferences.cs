@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Text.Json.Serialization;
 
 namespace WindowsDb2Editor.Models
@@ -7,6 +9,24 @@ namespace WindowsDb2Editor.Models
     /// </summary>
     public class UserPreferences
     {
+        /// <summary>
+        /// Default user data folder path (Documents\WindowsDb2Editor)
+        /// </summary>
+        private static readonly string DefaultUserDataFolder = 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WindowsDb2Editor");
+
+        /// <summary>
+        /// User data folder for all user-specific files (connections, history, Missing FK projects, etc.)
+        /// Default: Documents\WindowsDb2Editor
+        /// </summary>
+        [JsonPropertyName("userDataFolder")]
+        public string UserDataFolder { get; set; } = DefaultUserDataFolder;
+
+        /// <summary>
+        /// Gets the default user data folder path
+        /// </summary>
+        [JsonIgnore]
+        public static string GetDefaultUserDataFolder() => DefaultUserDataFolder;
         /// <summary>
         /// Maximum number of rows to fetch per query (default: 1000)
         /// </summary>

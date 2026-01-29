@@ -204,8 +204,7 @@ public class TrayIconManager : IDisposable
     {
         try
         {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var connectionsFile = Path.Combine(appData, "WindowsDb2Editor", "connections.json");
+            var connectionsFile = GetConnectionsFilePath();
 
             if (!File.Exists(connectionsFile))
             {
@@ -234,6 +233,68 @@ public class TrayIconManager : IDisposable
             Logger.Error(ex, "Failed to load connection profiles");
             return new List<ConnectionProfile>();
         }
+    }
+    
+    /// <summary>
+    /// Gets the path to the connections.json file.
+    /// First checks preferences.json for custom user data folder, then falls back to default Documents location.
+    /// </summary>
+    private string GetConnectionsFilePath()
+    {
+        // Default location (Documents\WindowsDb2Editor)
+        var defaultFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "WindowsDb2Editor");
+        
+        // Old AppData location for backwards compatibility
+        var oldAppDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WindowsDb2Editor");
+        
+        // Try to read preferences to get custom user data folder
+        var userDataFolder = defaultFolder;
+        var preferencesPath = Path.Combine(defaultFolder, "preferences.json");
+        
+        if (File.Exists(preferencesPath))
+        {
+            try
+            {
+                var prefsJson = File.ReadAllText(preferencesPath);
+                var prefs = JsonSerializer.Deserialize<Dictionary<string, object>>(prefsJson);
+                if (prefs != null && prefs.TryGetValue("userDataFolder", out var folder) && folder is JsonElement elem)
+                {
+                    var customFolder = elem.GetString();
+                    if (!string.IsNullOrEmpty(customFolder) && Directory.Exists(customFolder))
+                    {
+                        userDataFolder = customFolder;
+                        Logger.Debug("Using custom user data folder from preferences: {Path}", userDataFolder);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Could not read preferences, using default folder");
+            }
+        }
+        
+        // Check new location first
+        var newPath = Path.Combine(userDataFolder, "connections.json");
+        if (File.Exists(newPath))
+        {
+            Logger.Debug("Found connections in new location: {Path}", newPath);
+            return newPath;
+        }
+        
+        // Fall back to old AppData location
+        var oldPath = Path.Combine(oldAppDataFolder, "connections.json");
+        if (File.Exists(oldPath))
+        {
+            Logger.Debug("Found connections in old AppData location: {Path}", oldPath);
+            return oldPath;
+        }
+        
+        // Return new location (will create if needed)
+        return newPath;
     }
 
     private void LaunchConnection(ConnectionProfile profile)

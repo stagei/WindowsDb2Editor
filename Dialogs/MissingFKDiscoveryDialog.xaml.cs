@@ -88,25 +88,17 @@ public partial class MissingFKDiscoveryDialog : Window
             _searchHistoryService = new MissingFKSearchHistoryService();
             Logger.Debug("MissingFKSearchHistoryService created");
             
-            // Set default output folder in user's Documents
-            _outputFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "WindowsDb2Editor",
-                "MissingFK");
-            Logger.Debug("Output folder path: {Path}", _outputFolder);
-            
-            if (!Directory.Exists(_outputFolder))
-            {
-                Directory.CreateDirectory(_outputFolder);
-                Logger.Debug("Created output folder");
-            }
+            // Set default output folder to user's data folder MissingFK/Projects
+            // Note: The actual project subfolder will be created when starting a job
+            _outputFolder = UserDataFolderHelper.GetMissingFKProjectsFolder();
+            Logger.Debug("Output base folder path: {Path}", _outputFolder);
             
             OutputFolderTextBox.Text = _outputFolder;
             Logger.Debug("Output folder textbox set");
             
-            // Create dedicated folder for ignore files
-            _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
-            Logger.Info("Ignore files folder: {Path}", _ignoreFilesFolder);
+            // Create dedicated folder for ignore patterns
+            _ignoreFilesFolder = UserDataFolderHelper.GetMissingFKIgnorePatternsFolder();
+            Logger.Info("Ignore patterns folder: {Path}", _ignoreFilesFolder);
             
             // Initialize ignore model summary
             Logger.Debug("Updating ignore rules summary...");
@@ -1028,7 +1020,7 @@ public partial class MissingFKDiscoveryDialog : Window
         // Ensure ignore files folder exists
         if (string.IsNullOrEmpty(_ignoreFilesFolder))
         {
-            _ignoreFilesFolder = AppDataHelper.EnsureSubDirectory("MissingFKIgnore");
+            _ignoreFilesFolder = UserDataFolderHelper.GetMissingFKIgnorePatternsFolder();
         }
         
         var dialog = new OpenFileDialog
@@ -1082,6 +1074,13 @@ public partial class MissingFKDiscoveryDialog : Window
             Logger.Info("Collecting metadata for {Count} tables", tableRefs.Count);
             var tablesMetadata = await _metadataService.CollectTableMetadataAsync(tableRefs);
             
+            // Create project-specific folder with timestamp and table names
+            var schema = _selectedTables.FirstOrDefault()?.Schema ?? "UNKNOWN";
+            var tableNames = _selectedTables.Select(t => t.TableName);
+            _outputFolder = UserDataFolderHelper.CreateProjectFolder(schema, tableNames);
+            OutputFolderTextBox.Text = _outputFolder;
+            Logger.Info("Created project folder: {Path}", _outputFolder);
+            
             // Create input model
             var inputModel = new MissingFKInputModel
             {
@@ -1103,7 +1102,7 @@ public partial class MissingFKDiscoveryDialog : Window
                 Tables = tablesMetadata
             };
             
-            // Save input JSON
+            // Save input JSON to project folder
             var inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
             var options = new JsonSerializerOptions
             {
@@ -1114,11 +1113,11 @@ public partial class MissingFKDiscoveryDialog : Window
             var json = JsonSerializer.Serialize(inputModel, options);
             await File.WriteAllTextAsync(inputPath, json, Encoding.UTF8);
             
-            Logger.Info("Input JSON generated: {Path}", inputPath);
+            Logger.Info("Input JSON generated in project folder: {Path}", inputPath);
             StatusText.Text = $"Input JSON generated: {inputPath}";
             StartBatchJobButton.IsEnabled = true;
             
-            MessageBox.Show($"Input JSON generated successfully:\n{inputPath}", "Success",
+            MessageBox.Show($"Input JSON generated successfully:\n{inputPath}\n\nProject folder:\n{_outputFolder}", "Success",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

@@ -213,7 +213,32 @@
                     <StackPanel Margin="20">
                         <TextBlock Text="Data Files Location" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                        <!-- Info -->
+                        <!-- User Data Folder Configuration -->
+                        <TextBlock Text="User Data Folder:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="UserDataFolderTextBox" 
+                                     Grid.Column="0"
+                                     Height="32"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     IsReadOnly="True"/>
+                            <Button x:Name="BrowseUserDataFolderButton" 
+                                    Grid.Column="1"
+                                    Content="📂 Browse..."
+                                    Click="BrowseUserDataFolderButton_Click"
+                                    Padding="10,5"/>
+                        </Grid>
+                        <TextBlock Text="Location where all user-specific files are stored (connections, history, Missing FK projects)" 
+                                   FontSize="11" 
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,5,0,15"/>
+
+                        <!-- Info Box -->
                         <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
                                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                                 BorderThickness="1"
@@ -221,7 +246,7 @@
                                 Margin="0,0,0,20"
                                 CornerRadius="4">
                             <StackPanel>
-                                <TextBlock Text="ℹ️ All application data is stored in your user profile" 
+                                <TextBlock Text="ℹ️ Folder Structure" 
                                            FontWeight="SemiBold" 
                                            Margin="0,0,0,5"/>
                                 <TextBlock x:Name="DataFolderPathText" 
@@ -237,7 +262,16 @@
                         <StackPanel Margin="10,0,0,0">
                             <TextBlock Text="• connections.json - Saved database connections (encrypted)" Margin="0,3"/>
                             <TextBlock Text="• preferences.json - Application preferences" Margin="0,3"/>
-                            <TextBlock Text="• queryhistory.json - Query execution history (encrypted)" Margin="0,3"/>
+                            <TextBlock Text="• query-history.json - Query execution history (encrypted)" Margin="0,3"/>
+                            <TextBlock Text="• missing-fk-search-history.json - Missing FK search patterns" Margin="0,3"/>
+                            <TextBlock Text="• missing-fk-ignore-history.json - Missing FK ignore configurations" Margin="0,3"/>
+                        </StackPanel>
+
+                        <!-- Subfolders List -->
+                        <TextBlock Text="Subfolders:" FontWeight="SemiBold" Margin="0,15,0,10"/>
+                        <StackPanel Margin="10,0,0,0">
+                            <TextBlock Text="• MissingFK/IgnorePatterns/ - Ignore pattern JSON files" Margin="0,3"/>
+                            <TextBlock Text="• MissingFK/Projects/ - Missing FK discovery job outputs" Margin="0,3"/>
                         </StackPanel>
 
                         <!-- Open Data Folder Button -->
@@ -262,7 +296,7 @@
                                 <TextBlock Text="⚠️ Warning" 
                                            FontWeight="Bold" 
                                            Margin="0,0,0,5"/>
-                                <TextBlock Text="Manually editing these files may cause data loss or application errors. Always backup before making changes." 
+                                <TextBlock Text="Manually editing these files may cause data loss or application errors. Always backup before making changes. Changing the data folder will NOT migrate existing files - you must move them manually." 
                                            TextWrapping="Wrap"
                                            FontSize="11"
                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>

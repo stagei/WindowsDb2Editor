@@ -41,8 +41,25 @@ namespace WindowsDb2Editor.Dialogs
                 TreeViewSpacingSlider.ValueChanged += TreeViewSpacingSlider_ValueChanged;
             }
 
-            // Display data folder path
-            DataFolderPathText.Text = $"Location: {AppDataHelper.GetAppDataFolder()}";
+            // Display user data folder path and structure info
+            UpdateDataFolderDisplay();
+        }
+        
+        /// <summary>
+        /// Updates the data folder display in the Data Files tab.
+        /// </summary>
+        private void UpdateDataFolderDisplay()
+        {
+            var userDataFolder = _preferencesService.Preferences.UserDataFolder;
+            UserDataFolderTextBox.Text = userDataFolder;
+            
+            DataFolderPathText.Text = $"Base: {userDataFolder}\n" +
+                $"├── connections.json\n" +
+                $"├── preferences.json\n" +
+                $"├── query-history.json\n" +
+                $"└── MissingFK/\n" +
+                $"    ├── IgnorePatterns/\n" +
+                $"    └── Projects/";
         }
 
         private void LoadCurrentSettings()
@@ -257,7 +274,7 @@ namespace WindowsDb2Editor.Dialogs
             try
             {
                 Logger.Info("Opening data folder");
-                var dataFolder = AppDataHelper.GetAppDataFolder();
+                var dataFolder = _preferencesService.Preferences.UserDataFolder;
                 
                 if (!Directory.Exists(dataFolder))
                 {
@@ -272,6 +289,80 @@ namespace WindowsDb2Editor.Dialogs
             {
                 Logger.Error(ex, "Error opening data folder");
                 MessageBox.Show($"Error opening data folder: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void BrowseUserDataFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.Debug("Opening folder browser for user data folder");
+                
+                var dialog = new System.Windows.Forms.FolderBrowserDialog
+                {
+                    Description = "Select User Data Folder",
+                    SelectedPath = _preferencesService.Preferences.UserDataFolder,
+                    ShowNewFolderButton = true
+                };
+                
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    var newFolder = dialog.SelectedPath;
+                    Logger.Info("User selected new data folder: {Path}", newFolder);
+                    
+                    // Validate the folder is writable
+                    try
+                    {
+                        if (!Directory.Exists(newFolder))
+                        {
+                            Directory.CreateDirectory(newFolder);
+                        }
+                        
+                        // Test write access
+                        var testFile = Path.Combine(newFolder, ".write_test");
+                        File.WriteAllText(testFile, "test");
+                        File.Delete(testFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(ex, "Cannot write to selected folder");
+                        MessageBox.Show(
+                            $"Cannot write to the selected folder:\n{ex.Message}\n\nPlease choose a different location.",
+                            "Invalid Folder",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+                    
+                    // Warn about existing files not being migrated
+                    var oldFolder = _preferencesService.Preferences.UserDataFolder;
+                    if (oldFolder != newFolder && Directory.Exists(oldFolder) && Directory.GetFiles(oldFolder).Length > 0)
+                    {
+                        var result = MessageBox.Show(
+                            $"Existing files in:\n{oldFolder}\n\nwill NOT be automatically moved to:\n{newFolder}\n\n" +
+                            "You will need to move them manually. Continue?",
+                            "Confirm Folder Change",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+                        
+                        if (result != MessageBoxResult.Yes)
+                        {
+                            return;
+                        }
+                    }
+                    
+                    // Update UI
+                    UserDataFolderTextBox.Text = newFolder;
+                    UpdateDataFolderDisplay();
+                    
+                    Logger.Info("User data folder will be changed to: {Path}", newFolder);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error selecting user data folder");
+                MessageBox.Show($"Error selecting folder: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -418,9 +509,34 @@ namespace WindowsDb2Editor.Dialogs
                 
                 // TreeView settings
                 _preferencesService.Preferences.TreeViewItemSpacing = (int)TreeViewSpacingSlider.Value;
-
-                // Save to file
-                _preferencesService.SavePreferences();
+                
+                // User Data Folder - check if changed and update appropriately
+                var newUserDataFolder = UserDataFolderTextBox.Text;
+                var currentUserDataFolder = _preferencesService.Preferences.UserDataFolder;
+                
+                if (!string.Equals(newUserDataFolder, currentUserDataFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Info("User data folder changed from {Old} to {New}", currentUserDataFolder, newUserDataFolder);
+                    
+                    // Use the special update method that handles the path change
+                    _preferencesService.UpdateUserDataFolder(newUserDataFolder);
+                    
+                    // Clear the cache so other services pick up the new location
+                    UserDataFolderHelper.ClearCache();
+                    
+                    MessageBox.Show(
+                        "User data folder has been changed.\n\n" +
+                        "Note: Existing files were NOT moved. You may need to manually copy your files " +
+                        "(connections.json, query-history.json, etc.) to the new location.",
+                        "Folder Changed",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    // Save to file (normal save when folder hasn't changed)
+                    _preferencesService.SavePreferences();
+                }
 
                 // Apply log level change immediately (no restart required)
                 var newLogLevel = GetComboBoxValue(LogLevelComboBox);
