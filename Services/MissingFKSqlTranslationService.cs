@@ -8,8 +8,8 @@ namespace WindowsDb2Editor.Services;
 
 /// <summary>
 /// Service for retrieving SQL statements for Missing FK Discovery.
-/// Delegates to MetadataHandler which loads provider-specific SQL from config files
-/// (e.g., db2_12.1_sql_statements.json, postgresql_X.X_sql_statements.json).
+/// Delegates to MetadataHandler which handles all provider-specific SQL loading.
+/// This service is provider-agnostic - MetadataHandler centralizes provider awareness.
 /// </summary>
 public class MissingFKSqlTranslationService
 {
@@ -31,38 +31,34 @@ public class MissingFKSqlTranslationService
     }
     
     /// <summary>
-    /// Get provider-specific SQL statement from MetadataHandler.
-    /// All provider-specific SQL is centralized in {provider}_{version}_sql_statements.json files.
+    /// Get SQL statement from MetadataHandler.
+    /// MetadataHandler handles all provider/version awareness - this service is provider-agnostic.
     /// </summary>
-    /// <param name="connectionManager">Connection manager to determine provider</param>
+    /// <param name="connectionManager">Connection manager (unused - MetadataHandler knows current provider)</param>
     /// <param name="statementName">Name of the SQL statement to retrieve</param>
-    /// <returns>Provider-specific SQL statement</returns>
+    /// <returns>Provider-specific SQL statement from MetadataHandler</returns>
     public Task<string> GetTranslatedStatementAsync(IConnectionManager connectionManager, string statementName)
     {
-        var provider = connectionManager.ConnectionInfo.ProviderType?.ToLowerInvariant() ?? "db2";
-        var version = "12.1"; // Currently only DB2 12.1 is supported; extend when adding more providers
-        var cacheKey = $"{provider}|{version}|{statementName}";
-        
-        Logger.Debug("Getting SQL statement: {Statement} for provider: {Provider}", statementName, provider);
+        Logger.Debug("Getting SQL statement: {Statement}", statementName);
         
         // Check cache first
-        if (_cache.TryGetValue(cacheKey, out var cachedSql))
+        if (_cache.TryGetValue(statementName, out var cachedSql))
         {
             Logger.Debug("Returning cached SQL for {Statement}", statementName);
             return Task.FromResult(cachedSql);
         }
         
-        // Use MetadataHandler to load from provider-specific config file
+        // Use MetadataHandler - it knows the current provider/version from connection context
         try
         {
-            var sql = _metadataHandler.GetStatement(statementName, provider, version);
+            var sql = _metadataHandler.GetStatement(statementName);
             Logger.Debug("Loaded SQL for {Statement} via MetadataHandler ({Length} chars)", statementName, sql.Length);
-            _cache[cacheKey] = sql;
+            _cache[statementName] = sql;
             return Task.FromResult(sql);
         }
         catch (KeyNotFoundException ex)
         {
-            Logger.Error(ex, "SQL statement {Statement} not found for provider {Provider}", statementName, provider);
+            Logger.Error(ex, "SQL statement {Statement} not found", statementName);
             throw;
         }
     }
