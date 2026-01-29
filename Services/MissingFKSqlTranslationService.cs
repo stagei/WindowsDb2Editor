@@ -29,7 +29,9 @@ public class MissingFKSqlTranslationService
     }
     
     /// <summary>
-    /// Get provider-specific SQL statement by translating ANSI SQL.
+    /// Get provider-specific SQL statement.
+    /// For DB2, loads from db2_missing_fk_sql_statements.json.
+    /// For other providers, translates from ANSI SQL.
     /// </summary>
     /// <param name="connectionManager">Connection manager to determine provider</param>
     /// <param name="statementName">Name of the SQL statement to retrieve</param>
@@ -39,13 +41,26 @@ public class MissingFKSqlTranslationService
         var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
         var cacheKey = $"{provider}|{statementName}";
         
-        Logger.Debug("Getting translated SQL statement: {Statement} for provider: {Provider}", statementName, provider);
+        Logger.Debug("Getting SQL statement: {Statement} for provider: {Provider}", statementName, provider);
         
         // Check cache first
         if (_translationCache.TryGetValue(cacheKey, out var cachedSql))
         {
             Logger.Debug("Returning cached SQL for {Statement}", statementName);
             return cachedSql;
+        }
+        
+        // For DB2, load from provider-specific file directly
+        if (provider == "DB2")
+        {
+            var db2Sql = LoadProviderSqlStatement("db2", statementName);
+            if (!string.IsNullOrEmpty(db2Sql))
+            {
+                Logger.Debug("Loaded DB2-specific SQL for {Statement} ({Length} chars)", statementName, db2Sql.Length);
+                _translationCache[cacheKey] = db2Sql;
+                return db2Sql;
+            }
+            Logger.Warn("DB2-specific SQL not found for {Statement}, falling back to ANSI", statementName);
         }
         
         // Load ANSI SQL from JSON file
@@ -92,6 +107,47 @@ public class MissingFKSqlTranslationService
             // Fallback to ANSI SQL if translation fails
             _translationCache[cacheKey] = ansiSql;
             return ansiSql;
+        }
+    }
+    
+    /// <summary>
+    /// Load provider-specific SQL statement from JSON file.
+    /// </summary>
+    private string LoadProviderSqlStatement(string provider, string statementName)
+    {
+        var jsonFilePath = Path.Combine(_configFilesPath, $"{provider.ToLowerInvariant()}_missing_fk_sql_statements.json");
+        
+        if (!File.Exists(jsonFilePath))
+        {
+            Logger.Debug("Provider-specific SQL file not found: {Path}", jsonFilePath);
+            return string.Empty;
+        }
+        
+        try
+        {
+            var json = File.ReadAllText(jsonFilePath);
+            var doc = JsonDocument.Parse(json);
+            
+            if (doc.RootElement.TryGetProperty("statements", out var statements))
+            {
+                if (statements.TryGetProperty(statementName, out var statement))
+                {
+                    if (statement.TryGetProperty("sql", out var sqlElement))
+                    {
+                        var sql = sqlElement.GetString() ?? string.Empty;
+                        Logger.Debug("Loaded provider-specific SQL statement {Statement} from {File}", statementName, jsonFilePath);
+                        return sql;
+                    }
+                }
+            }
+            
+            Logger.Debug("SQL statement {Statement} not found in {File}", statementName, jsonFilePath);
+            return string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to load provider-specific SQL statement {Statement} from {File}", statementName, jsonFilePath);
+            return string.Empty;
         }
     }
     
