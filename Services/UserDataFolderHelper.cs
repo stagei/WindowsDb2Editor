@@ -130,6 +130,14 @@ public static class UserDataFolderHelper
     }
     
     /// <summary>
+    /// Gets the Missing FK base folder (for status/trigger files).
+    /// </summary>
+    public static string GetMissingFKBaseFolder()
+    {
+        return EnsureSubFolder("MissingFK");
+    }
+    
+    /// <summary>
     /// Gets the Missing FK projects base folder.
     /// </summary>
     public static string GetMissingFKProjectsFolder()

@@ -9,45 +9,97 @@ namespace WindowsDb2Editor.Services;
 /// <summary>
 /// Service for managing job status files for Missing FK Discovery batch jobs.
 /// Provides file-based communication between detached batch job and UI.
+/// 
+/// File locations:
+/// - Status/trigger files (lock, status, error): MissingFK/ folder (for easy client monitoring)
+/// - Project files (input, results, logs): MissingFK/Projects/{project}/ folder
 /// </summary>
 public class MissingFKJobStatusService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
+    /// <summary>
+    /// Gets the base folder for status/trigger files.
+    /// These are stored in the MissingFK root for easy client monitoring.
+    /// </summary>
+    private static string GetStatusBaseFolder()
+    {
+        return UserDataFolderHelper.GetMissingFKBaseFolder();
+    }
 
     /// <summary>
-    /// Get status file path for a job.
+    /// Get status file path for a job (in MissingFK base folder).
+    /// </summary>
+    private static string GetStatusFilePath(string jobId)
+    {
+        return Path.Combine(GetStatusBaseFolder(), $"job_status_{jobId}.json");
+    }
+    
+    /// <summary>
+    /// Get status file path for a job (legacy - uses outputFolder for backwards compatibility).
     /// </summary>
     private static string GetStatusFilePath(string outputFolder, string jobId)
     {
+        // First check the new location (MissingFK base folder)
+        var newPath = GetStatusFilePath(jobId);
+        if (File.Exists(newPath))
+            return newPath;
+        
+        // Fall back to old location (project folder)
         return Path.Combine(outputFolder, $"missing_fk_status_{jobId}.json");
     }
 
     /// <summary>
-    /// Get error file path for a job.
+    /// Get error file path for a job (in MissingFK base folder).
+    /// </summary>
+    private static string GetErrorFilePath(string jobId)
+    {
+        return Path.Combine(GetStatusBaseFolder(), $"job_error_{jobId}.json");
+    }
+    
+    /// <summary>
+    /// Get error file path for a job (legacy - uses outputFolder for backwards compatibility).
     /// </summary>
     private static string GetErrorFilePath(string outputFolder, string jobId)
     {
+        // First check the new location (MissingFK base folder)
+        var newPath = GetErrorFilePath(jobId);
+        if (File.Exists(newPath))
+            return newPath;
+        
+        // Fall back to old location (project folder)
         return Path.Combine(outputFolder, $"missing_fk_error_{jobId}.json");
     }
 
     /// <summary>
-    /// Get lock file path.
+    /// Get lock file path (in MissingFK base folder).
+    /// This is the global lock for all Missing FK jobs.
+    /// </summary>
+    public static string GetLockFilePath()
+    {
+        return Path.Combine(GetStatusBaseFolder(), ".job_lock");
+    }
+    
+    /// <summary>
+    /// Get lock file path (legacy - kept for backwards compatibility).
     /// </summary>
     private static string GetLockFilePath(string outputFolder)
     {
-        return Path.Combine(outputFolder, ".missing_fk_job_lock");
+        // Always use the central lock file now
+        return GetLockFilePath();
     }
 
     /// <summary>
-    /// Get log file path for a job.
+    /// Get log file path for a job (in project folder).
     /// </summary>
     public static string GetLogFilePath(string outputFolder, string jobId)
     {
-        return Path.Combine(outputFolder, $"missing_fk_job_{jobId}.log");
+        return Path.Combine(outputFolder, $"job_{jobId}.log");
     }
 
     /// <summary>
     /// Create initial status file when job starts.
+    /// Status file is stored in MissingFK base folder for easy client monitoring.
     /// </summary>
     public void CreateStatusFile(string outputFolder, string jobId)
     {
@@ -55,7 +107,8 @@ public class MissingFKJobStatusService
 
         try
         {
-            var statusPath = GetStatusFilePath(outputFolder, jobId);
+            // Use central status file location (MissingFK base folder)
+            var statusPath = GetStatusFilePath(jobId);
 
             // Delete existing status file if present (from previous run)
             if (File.Exists(statusPath))
@@ -63,13 +116,15 @@ public class MissingFKJobStatusService
                 File.Delete(statusPath);
                 Logger.Debug("Deleted existing status file: {Path}", statusPath);
             }
-
+            
+            // Also store project folder reference in status
             var status = new MissingFKJobStatus
             {
                 JobId = jobId,
                 Status = "running",
                 StartedAtUtc = DateTime.UtcNow,
                 CompletedAtUtc = null,
+                ProjectFolder = outputFolder,
                 Progress = new MissingFKJobProgress
                 {
                     TablesScanned = 0,
@@ -81,7 +136,7 @@ public class MissingFKJobStatusService
             };
 
             WriteStatusFileAtomic(statusPath, status);
-            Logger.Info("Created status file: {Path}", statusPath);
+            Logger.Info("Created status file in MissingFK folder: {Path}", statusPath);
         }
         catch (Exception ex)
         {
@@ -92,6 +147,7 @@ public class MissingFKJobStatusService
 
     /// <summary>
     /// Update status file with new status and progress.
+    /// Status file is stored in MissingFK base folder for easy client monitoring.
     /// </summary>
     public void UpdateStatusFile(string outputFolder, string jobId, string status, MissingFKJobProgress? progress = null)
     {
@@ -99,7 +155,8 @@ public class MissingFKJobStatusService
 
         try
         {
-            var statusPath = GetStatusFilePath(outputFolder, jobId);
+            // Use central status file location
+            var statusPath = GetStatusFilePath(jobId);
             MissingFKJobStatus? existingStatus = null;
 
             // Read existing status if file exists
@@ -119,7 +176,8 @@ public class MissingFKJobStatusService
             var newStatus = existingStatus ?? new MissingFKJobStatus
             {
                 JobId = jobId,
-                StartedAtUtc = DateTime.UtcNow
+                StartedAtUtc = DateTime.UtcNow,
+                ProjectFolder = outputFolder
             };
 
             newStatus.Status = status;
@@ -152,11 +210,20 @@ public class MissingFKJobStatusService
 
         try
         {
-            var statusPath = GetStatusFilePath(outputFolder, jobId);
+            // Delete from central location
+            var statusPath = GetStatusFilePath(jobId);
             if (File.Exists(statusPath))
             {
                 File.Delete(statusPath);
                 Logger.Info("Deleted status file: {Path}", statusPath);
+            }
+            
+            // Also try to delete from old location (project folder) for cleanup
+            var oldPath = Path.Combine(outputFolder, $"missing_fk_status_{jobId}.json");
+            if (File.Exists(oldPath))
+            {
+                File.Delete(oldPath);
+                Logger.Debug("Deleted legacy status file: {Path}", oldPath);
             }
         }
         catch (Exception ex)
@@ -168,6 +235,7 @@ public class MissingFKJobStatusService
 
     /// <summary>
     /// Create error file when job fails.
+    /// Error file is stored in MissingFK base folder for easy client monitoring.
     /// </summary>
     public void CreateErrorFile(string outputFolder, string jobId, Exception error)
     {
@@ -175,7 +243,8 @@ public class MissingFKJobStatusService
 
         try
         {
-            var errorPath = GetErrorFilePath(outputFolder, jobId);
+            // Use central location
+            var errorPath = GetErrorFilePath(jobId);
 
             var errorInfo = new MissingFKJobError
             {
@@ -192,7 +261,7 @@ public class MissingFKJobStatusService
             });
 
             File.WriteAllText(errorPath, json);
-            Logger.Info("Created error file: {Path}", errorPath);
+            Logger.Info("Created error file in MissingFK folder: {Path}", errorPath);
         }
         catch (Exception ex)
         {
@@ -202,16 +271,22 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Read current status file.
+    /// Read current status file from MissingFK base folder.
     /// </summary>
     public MissingFKJobStatus? ReadStatusFile(string outputFolder, string jobId)
     {
         try
         {
-            var statusPath = GetStatusFilePath(outputFolder, jobId);
+            // Try central location first
+            var statusPath = GetStatusFilePath(jobId);
             if (!File.Exists(statusPath))
             {
-                return null;
+                // Fall back to old location (project folder)
+                statusPath = Path.Combine(outputFolder, $"missing_fk_status_{jobId}.json");
+                if (!File.Exists(statusPath))
+                {
+                    return null;
+                }
             }
 
             var json = File.ReadAllText(statusPath);
@@ -225,24 +300,34 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Check if job is currently running (status file exists).
+    /// Check if job is currently running (status file exists in MissingFK base folder).
+    /// </summary>
+    public bool IsJobRunning(string jobId)
+    {
+        var statusPath = GetStatusFilePath(jobId);
+        return File.Exists(statusPath);
+    }
+    
+    /// <summary>
+    /// Check if job is currently running (legacy overload for backwards compatibility).
     /// </summary>
     public bool IsJobRunning(string outputFolder, string jobId)
     {
-        var statusPath = GetStatusFilePath(outputFolder, jobId);
-        return File.Exists(statusPath);
+        // Use the new central location
+        return IsJobRunning(jobId);
     }
 
     /// <summary>
     /// Acquire job lock (prevents multiple concurrent jobs).
+    /// Lock file is stored in MissingFK base folder.
     /// </summary>
-    public bool AcquireJobLock(string outputFolder, string jobId)
+    public bool AcquireJobLock(string jobId)
     {
         Logger.Debug("Acquiring job lock for job: {JobId}", jobId);
 
         try
         {
-            var lockPath = GetLockFilePath(outputFolder);
+            var lockPath = GetLockFilePath();
 
             // Check if lock file exists
             if (File.Exists(lockPath))
@@ -289,7 +374,7 @@ public class MissingFKJobStatusService
             });
 
             File.WriteAllText(lockPath, lockJson);
-            Logger.Info("Acquired job lock: {Path}", lockPath);
+            Logger.Info("Acquired job lock in MissingFK folder: {Path}", lockPath);
             return true;
         }
         catch (Exception ex)
@@ -298,17 +383,26 @@ public class MissingFKJobStatusService
             return false;
         }
     }
+    
+    /// <summary>
+    /// Acquire job lock (legacy overload for backwards compatibility).
+    /// </summary>
+    public bool AcquireJobLock(string outputFolder, string jobId)
+    {
+        // Use the new central lock
+        return AcquireJobLock(jobId);
+    }
 
     /// <summary>
-    /// Release job lock.
+    /// Release job lock from MissingFK base folder.
     /// </summary>
-    public void ReleaseJobLock(string outputFolder)
+    public void ReleaseJobLock()
     {
         Logger.Debug("Releasing job lock");
 
         try
         {
-            var lockPath = GetLockFilePath(outputFolder);
+            var lockPath = GetLockFilePath();
             if (File.Exists(lockPath))
             {
                 File.Delete(lockPath);
@@ -321,13 +415,22 @@ public class MissingFKJobStatusService
             // Don't throw - lock release failure is not critical
         }
     }
+    
+    /// <summary>
+    /// Release job lock (legacy overload for backwards compatibility).
+    /// </summary>
+    public void ReleaseJobLock(string outputFolder)
+    {
+        // Use the new central lock
+        ReleaseJobLock();
+    }
 
     /// <summary>
-    /// Check if job is locked (lock file exists).
+    /// Check if a job is locked (lock file exists in MissingFK base folder).
     /// </summary>
-    public bool IsJobLocked(string outputFolder)
+    public bool IsJobLocked()
     {
-        var lockPath = GetLockFilePath(outputFolder);
+        var lockPath = GetLockFilePath();
         if (!File.Exists(lockPath))
         {
             return false;
@@ -351,13 +454,22 @@ public class MissingFKJobStatusService
 
         return false;
     }
+    
+    /// <summary>
+    /// Check if job is locked (legacy overload for backwards compatibility).
+    /// </summary>
+    public bool IsJobLocked(string outputFolder)
+    {
+        // Use the new central lock
+        return IsJobLocked();
+    }
 
     /// <summary>
-    /// Get lock file information (if exists).
+    /// Read lock file info from MissingFK base folder.
     /// </summary>
-    public MissingFKJobLock? GetLockInfo(string outputFolder)
+    public MissingFKJobLock? ReadLockFile()
     {
-        var lockPath = GetLockFilePath(outputFolder);
+        var lockPath = GetLockFilePath();
         if (!File.Exists(lockPath))
         {
             return null;
@@ -373,6 +485,15 @@ public class MissingFKJobStatusService
             Logger.Warn(ex, "Failed to read lock file info");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Get lock file information (legacy overload for backwards compatibility).
+    /// </summary>
+    public MissingFKJobLock? GetLockInfo(string outputFolder)
+    {
+        // Use the new central lock
+        return ReadLockFile();
     }
 
     /// <summary>
@@ -393,6 +514,7 @@ public class MissingFKJobStatusService
 
 /// <summary>
 /// Job status model.
+/// Stored in MissingFK folder for easy client monitoring.
 /// </summary>
 public class MissingFKJobStatus
 {
@@ -400,6 +522,7 @@ public class MissingFKJobStatus
     public string Status { get; set; } = string.Empty; // "running", "completed", "error"
     public DateTime StartedAtUtc { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
+    public string? ProjectFolder { get; set; } // Path to project folder with results
     public MissingFKJobProgress Progress { get; set; } = new();
     public string? Error { get; set; }
 }
