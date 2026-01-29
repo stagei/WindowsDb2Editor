@@ -45,9 +45,6 @@ public partial class App : Application
             Logger.Debug("Applying saved log level: {Level}", savedLogLevel);
             LoggingService.SetLogLevel(savedLogLevel);
             
-            // Check for data migration from old AppData location
-            CheckAndOfferMigration();
-            
             // Check and manage Windows startup registry entry
             Logger.Debug("Checking Windows startup configuration");
             var startupManager = new StartupManagerService();
@@ -447,63 +444,6 @@ public partial class App : Application
         }
     }
     
-    /// <summary>
-    /// Checks if there are files in the old AppData location that need migration
-    /// and offers to migrate them to the new Documents location.
-    /// </summary>
-    private void CheckAndOfferMigration()
-    {
-        try
-        {
-            if (!UserDataFolderHelper.HasOldAppDataToMigrate())
-            {
-                Logger.Debug("No old AppData files to migrate");
-                return;
-            }
-            
-            Logger.Info("Old AppData files found - offering migration to user");
-            
-            var oldFolder = UserDataFolderHelper.GetOldAppDataFolder();
-            var newFolder = UserDataFolderHelper.GetUserDataFolder();
-            
-            var result = MessageBox.Show(
-                $"Data files found in old location:\n{oldFolder}\n\n" +
-                $"Would you like to migrate them to the new location?\n{newFolder}\n\n" +
-                "This will move your saved connections, query history, and preferences.",
-                "Migrate Data Files",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
-            {
-                var migratedCount = UserDataFolderHelper.MigrateFromOldAppData();
-                Logger.Info("Migration complete - {Count} files migrated", migratedCount);
-                
-                if (migratedCount > 0)
-                {
-                    MessageBox.Show(
-                        $"Successfully moved {migratedCount} file(s) to:\n{newFolder}\n\n" +
-                        "The old files have been moved and removed from the old location.",
-                        "Migration Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    
-                    // Reload preferences to pick up migrated data
-                    PreferencesService?.Reload();
-                }
-            }
-            else
-            {
-                Logger.Info("User declined data migration");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error during migration check");
-            // Don't show error to user - migration is optional
-        }
-    }
-
     protected override void OnExit(ExitEventArgs e)
     {
         Logger.Info("===== WindowsDb2Editor Application Shutting Down =====");

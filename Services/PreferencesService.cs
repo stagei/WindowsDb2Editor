@@ -35,58 +35,20 @@ namespace WindowsDb2Editor.Services
         }
         
         /// <summary>
-        /// Determines the correct preferences file path, handling migration from old AppData location.
+        /// Determines the correct preferences file path.
         /// </summary>
         private string DeterminePreferencesFilePath()
         {
-            // Default location (Documents\WindowsDb2Editor)
             var defaultFolder = UserPreferences.GetDefaultUserDataFolder();
             var defaultPath = Path.Combine(defaultFolder, PreferencesFileName);
             
-            // Old AppData location
-            var oldAppDataFolder = UserDataFolderHelper.GetOldAppDataFolder();
-            var oldPath = Path.Combine(oldAppDataFolder, PreferencesFileName);
-            
-            // If preferences exist in new location, use it
-            if (File.Exists(defaultPath))
-            {
-                Logger.Debug("Found preferences in new location: {Path}", defaultPath);
-                return defaultPath;
-            }
-            
-            // If preferences exist in old location, migrate
-            if (File.Exists(oldPath))
-            {
-                Logger.Info("Found preferences in old AppData location, will migrate: {Path}", oldPath);
-                
-                // Ensure new folder exists
-                if (!Directory.Exists(defaultFolder))
-                {
-                    Directory.CreateDirectory(defaultFolder);
-                }
-                
-                // Copy to new location
-                try
-                {
-                    File.Copy(oldPath, defaultPath, overwrite: false);
-                    Logger.Info("Migrated preferences from {Old} to {New}", oldPath, defaultPath);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn(ex, "Could not migrate preferences, will use old location");
-                    return oldPath;
-                }
-                
-                return defaultPath;
-            }
-            
-            // Neither exists, use new default location
+            // Ensure folder exists
             if (!Directory.Exists(defaultFolder))
             {
                 Directory.CreateDirectory(defaultFolder);
             }
             
-            Logger.Debug("No existing preferences found, using default location: {Path}", defaultPath);
+            Logger.Debug("Using preferences path: {Path}", defaultPath);
             return defaultPath;
         }
         

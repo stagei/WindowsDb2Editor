@@ -32,35 +32,11 @@ public class MissingFKSearchHistoryService
     }
     
     /// <summary>
-    /// Determines the correct file path, handling migration from old AppData location.
+    /// Determines the file path.
     /// </summary>
     private static string DetermineFilePath(string fileName)
     {
-        var newPath = UserDataFolderHelper.GetFilePath(fileName);
-        var oldAppDataFolder = UserDataFolderHelper.GetOldAppDataFolder();
-        var oldPath = Path.Combine(oldAppDataFolder, fileName);
-        
-        if (File.Exists(newPath)) return newPath;
-        
-        if (File.Exists(oldPath))
-        {
-            try
-            {
-                var newFolder = Path.GetDirectoryName(newPath);
-                if (!string.IsNullOrEmpty(newFolder) && !Directory.Exists(newFolder))
-                    Directory.CreateDirectory(newFolder);
-                    
-                File.Copy(oldPath, newPath, overwrite: false);
-                Logger.Info("Migrated {FileName} to new location", fileName);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, "Could not migrate {FileName}", fileName);
-                return oldPath;
-            }
-        }
-        
-        return newPath;
+        return UserDataFolderHelper.GetFilePath(fileName);
     }
 
     /// <summary>

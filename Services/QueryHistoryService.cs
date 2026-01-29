@@ -31,52 +31,13 @@ public class QueryHistoryService
     }
     
     /// <summary>
-    /// Determines the correct history file path, handling migration from old AppData location.
+    /// Determines the history file path.
     /// </summary>
     private static string DetermineHistoryFilePath(string fileName)
     {
-        // New location (uses UserDataFolderHelper)
-        var newPath = UserDataFolderHelper.GetFilePath(fileName);
-        
-        // Old AppData location
-        var oldAppDataFolder = UserDataFolderHelper.GetOldAppDataFolder();
-        var oldPath = Path.Combine(oldAppDataFolder, fileName);
-        
-        // If file exists in new location, use it
-        if (File.Exists(newPath))
-        {
-            Logger.Debug("Found {FileName} in new location: {Path}", fileName, newPath);
-            return newPath;
-        }
-        
-        // If file exists in old location, migrate
-        if (File.Exists(oldPath))
-        {
-            Logger.Info("Found {FileName} in old AppData location, migrating", fileName);
-            
-            try
-            {
-                var newFolder = Path.GetDirectoryName(newPath);
-                if (!string.IsNullOrEmpty(newFolder) && !Directory.Exists(newFolder))
-                {
-                    Directory.CreateDirectory(newFolder);
-                }
-                
-                File.Copy(oldPath, newPath, overwrite: false);
-                Logger.Info("Migrated {FileName} from {Old} to {New}", fileName, oldPath, newPath);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex, "Could not migrate {FileName}, will use old location", fileName);
-                return oldPath;
-            }
-            
-            return newPath;
-        }
-        
-        // Neither exists, use new location
-        Logger.Debug("No existing {FileName} found, using new location: {Path}", fileName, newPath);
-        return newPath;
+        var path = UserDataFolderHelper.GetFilePath(fileName);
+        Logger.Debug("Using {FileName} path: {Path}", fileName, path);
+        return path;
     }
 
     /// <summary>

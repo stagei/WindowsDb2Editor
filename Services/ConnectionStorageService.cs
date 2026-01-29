@@ -34,50 +34,9 @@ namespace WindowsDb2Editor.Services
         /// </summary>
         private string DetermineConnectionsFilePath()
         {
-            // New location (uses UserDataFolderHelper)
-            var newPath = UserDataFolderHelper.GetFilePath(ConnectionsFileName);
-            
-            // Old AppData location
-            var oldAppDataFolder = UserDataFolderHelper.GetOldAppDataFolder();
-            var oldPath = Path.Combine(oldAppDataFolder, ConnectionsFileName);
-            
-            // If connections exist in new location, use it
-            if (File.Exists(newPath))
-            {
-                Logger.Debug("Found connections in new location: {Path}", newPath);
-                return newPath;
-            }
-            
-            // If connections exist in old location, migrate
-            if (File.Exists(oldPath))
-            {
-                Logger.Info("Found connections in old AppData location, migrating: {Path}", oldPath);
-                
-                try
-                {
-                    // Ensure new folder exists
-                    var newFolder = Path.GetDirectoryName(newPath);
-                    if (!string.IsNullOrEmpty(newFolder) && !Directory.Exists(newFolder))
-                    {
-                        Directory.CreateDirectory(newFolder);
-                    }
-                    
-                    // Copy to new location
-                    File.Copy(oldPath, newPath, overwrite: false);
-                    Logger.Info("Migrated connections from {Old} to {New}", oldPath, newPath);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn(ex, "Could not migrate connections, will use old location");
-                    return oldPath;
-                }
-                
-                return newPath;
-            }
-            
-            // Neither exists, use new location
-            Logger.Debug("No existing connections found, using new location: {Path}", newPath);
-            return newPath;
+            var path = UserDataFolderHelper.GetFilePath(ConnectionsFileName);
+            Logger.Debug("Using connections path: {Path}", path);
+            return path;
         }
 
         /// <summary>
