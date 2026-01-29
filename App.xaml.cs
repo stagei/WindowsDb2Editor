@@ -469,7 +469,7 @@ public partial class App : Application
             var result = MessageBox.Show(
                 $"Data files found in old location:\n{oldFolder}\n\n" +
                 $"Would you like to migrate them to the new location?\n{newFolder}\n\n" +
-                "This will copy your saved connections, query history, and preferences.",
+                "This will move your saved connections, query history, and preferences.",
                 "Migrate Data Files",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -482,8 +482,8 @@ public partial class App : Application
                 if (migratedCount > 0)
                 {
                     MessageBox.Show(
-                        $"Successfully migrated {migratedCount} file(s) to:\n{newFolder}\n\n" +
-                        "The old files have been left in place. You can delete them manually if desired.",
+                        $"Successfully moved {migratedCount} file(s) to:\n{newFolder}\n\n" +
+                        "The old files have been moved and removed from the old location.",
                         "Migration Complete",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);

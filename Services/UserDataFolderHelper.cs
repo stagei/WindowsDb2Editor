@@ -310,13 +310,13 @@ public static class UserDataFolderHelper
             {
                 try
                 {
-                    File.Copy(oldPath, newPath);
-                    Logger.Info("Migrated {FileName}", fileName);
+                    File.Move(oldPath, newPath);
+                    Logger.Info("Moved {FileName} from old location to new location", fileName);
                     migratedCount++;
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn(ex, "Failed to migrate {FileName}", fileName);
+                    Logger.Warn(ex, "Failed to move {FileName}", fileName);
                 }
             }
         }
@@ -337,19 +337,54 @@ public static class UserDataFolderHelper
                 {
                     try
                     {
-                        File.Copy(oldFile, newPath);
-                        Logger.Info("Migrated ignore pattern: {FileName}", fileName);
+                        File.Move(oldFile, newPath);
+                        Logger.Info("Moved ignore pattern: {FileName} from old location to new location", fileName);
                         migratedCount++;
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warn(ex, "Failed to migrate ignore pattern: {FileName}", fileName);
+                        Logger.Warn(ex, "Failed to move ignore pattern: {FileName}", fileName);
                     }
                 }
             }
         }
         
-        Logger.Info("Migration complete. {Count} files migrated", migratedCount);
+        // Try to delete old folders if they're empty
+        try
+        {
+            if (Directory.Exists(oldIgnoreFolder) && Directory.GetFiles(oldIgnoreFolder).Length == 0)
+            {
+                Directory.Delete(oldIgnoreFolder);
+                Logger.Debug("Deleted empty old MissingFKIgnore folder");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not delete old MissingFKIgnore folder (may not be empty)");
+        }
+        
+        try
+        {
+            if (Directory.Exists(oldFolder))
+            {
+                var remainingFiles = Directory.GetFiles(oldFolder);
+                if (remainingFiles.Length == 0)
+                {
+                    Directory.Delete(oldFolder);
+                    Logger.Debug("Deleted empty old AppData folder");
+                }
+                else
+                {
+                    Logger.Debug("Old AppData folder still contains {Count} file(s), not deleting", remainingFiles.Length);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not delete old AppData folder (may not be empty or in use)");
+        }
+        
+        Logger.Info("Migration complete. {Count} files moved", migratedCount);
         return migratedCount;
     }
 }
