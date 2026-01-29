@@ -1043,23 +1043,40 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
+            var generateButton = sender as Button;
+            generateButton!.IsEnabled = false;
+            
+            var (success, errorMessage) = await GenerateInputJsonAsync(showSuccessMessage: true);
+            
+            if (!success && !string.IsNullOrEmpty(errorMessage))
+            {
+                MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        finally
+        {
+            if (sender is Button btn)
+            {
+                btn.IsEnabled = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Generate input JSON for the Missing FK Discovery job.
+    /// </summary>
+    /// <param name="showSuccessMessage">Whether to show a success message box</param>
+    /// <returns>Tuple of (success, errorMessage)</returns>
+    private async Task<(bool Success, string? ErrorMessage)> GenerateInputJsonAsync(bool showSuccessMessage = false)
+    {
+        try
+        {
             if (_selectedTables.Count == 0)
             {
-                MessageBox.Show("Please select at least one table.", "No Tables Selected",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            
-            if (string.IsNullOrEmpty(_outputFolder) || !Directory.Exists(_outputFolder))
-            {
-                MessageBox.Show("Please select a valid output folder.", "Invalid Output Folder",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return (false, "Please select at least one table.");
             }
             
             ShowLoading("Generating input JSON...");
-            var generateButton = sender as Button;
-            generateButton!.IsEnabled = false;
             
             // Generate job ID
             _jobId = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{Guid.NewGuid():N}";
@@ -1117,26 +1134,26 @@ public partial class MissingFKDiscoveryDialog : Window
             StatusText.Text = $"Input JSON generated: {inputPath}";
             StartBatchJobButton.IsEnabled = true;
             
-            MessageBox.Show($"Input JSON generated successfully:\n{inputPath}\n\nProject folder:\n{_outputFolder}", "Success",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            if (showSuccessMessage)
+            {
+                MessageBox.Show($"Input JSON generated successfully:\n{inputPath}\n\nProject folder:\n{_outputFolder}", "Success",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            
+            return (true, null);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to generate input JSON");
-            MessageBox.Show($"Failed to generate input JSON:\n{ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            return (false, $"Failed to generate input JSON:\n{ex.Message}");
         }
         finally
         {
             HideLoading();
-            if (sender is Button btn)
-            {
-                btn.IsEnabled = true;
-            }
         }
     }
     
-    private void StartBatchJob_Click(object sender, RoutedEventArgs e)
+    private async void StartBatchJob_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -1156,14 +1173,23 @@ public partial class MissingFKDiscoveryDialog : Window
                 return;
             }
             
-            // Check if input JSON exists
+            // Auto-generate input JSON if it doesn't exist
             var inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
-            if (!File.Exists(inputPath))
+            if (string.IsNullOrEmpty(_outputFolder) || !File.Exists(inputPath))
             {
-                StartBatchJobButton.IsEnabled = true; // Re-enable if validation fails
-                MessageBox.Show("Please generate input JSON first.", "Input JSON Not Found",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                Logger.Info("Input JSON not found, auto-generating...");
+                var (success, errorMessage) = await GenerateInputJsonAsync(showSuccessMessage: false);
+                
+                if (!success)
+                {
+                    StartBatchJobButton.IsEnabled = true; // Re-enable if validation fails
+                    MessageBox.Show(errorMessage ?? "Failed to generate input JSON.", "Generation Failed",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                
+                // Update input path after generation
+                inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
             }
             
             // Save ignore JSON if configured
