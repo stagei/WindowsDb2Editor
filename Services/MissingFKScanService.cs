@@ -70,11 +70,7 @@ public class MissingFKScanService
         
         try
         {
-            // Delete existing status file if present (from previous run)
-            _statusService.DeleteStatusFile(_outputFolder, _jobId);
-            
-            // Create status file with "running" status
-            _statusService.CreateStatusFile(_outputFolder, _jobId);
+            // Job is tracked by CLIENT via PID file - no status files needed here
             await WriteLogLineAsync("========================================");
             await WriteLogLineAsync("Missing FK Discovery batch job started");
             await WriteLogLineAsync("========================================");
@@ -94,39 +90,18 @@ public class MissingFKScanService
             // Step 1: Extract table data to CSV files
             Logger.Info("Step 1: Extracting table data to CSV files");
             await WriteLogLineAsync("Step 1: Extracting table data to CSV files");
-            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
-            {
-                Phase = "extracting",
-                TotalTables = _inputModel.Tables.Count,
-                TablesScanned = 0,
-                CurrentTable = string.Empty
-            });
             
             await ExtractTableDataAsync();
             
             // Step 2: Analyze data to find missing FK candidates
             Logger.Info("Step 2: Analyzing data for missing FK candidates");
             await WriteLogLineAsync("Step 2: Analyzing data for missing FK candidates");
-            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
-            {
-                Phase = "analyzing",
-                TotalTables = _inputModel.Tables.Count,
-                TablesScanned = _inputModel.Tables.Count,
-                CurrentTable = string.Empty
-            });
             
             await AnalyzeMissingFKsAsync();
             
             // Step 3: Generate results JSON
             Logger.Info("Step 3: Generating results JSON");
             await WriteLogLineAsync("Step 3: Generating results JSON");
-            _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
-            {
-                Phase = "generating",
-                TotalTables = _inputModel.Tables.Count,
-                TablesScanned = _inputModel.Tables.Count,
-                CurrentTable = string.Empty
-            });
             
             _resultsModel.CompletedAtUtc = DateTime.UtcNow;
             var resultsPath = Path.Combine(_outputFolder, "missing_fk_results.json");
@@ -135,9 +110,6 @@ public class MissingFKScanService
             // Step 4: Write job log summary
             Logger.Info("Step 4: Writing job log summary");
             await WriteJobLogSummaryAsync(startTime);
-            
-            // Delete status file on successful completion
-            _statusService.DeleteStatusFile(_outputFolder, _jobId);
             
             var duration = DateTime.UtcNow - startTime;
             await WriteLogLineAsync($"Job completed successfully in {duration:g}");
@@ -155,18 +127,7 @@ public class MissingFKScanService
             await WriteLogLineAsync($"Stack Trace: {ex.StackTrace}");
             await WriteJobLogSummaryAsync(startTime, ex);
             
-            // Create error file
-            _statusService.CreateErrorFile(_outputFolder, _jobId, ex);
-            
-            // Update status file with error
-            _statusService.UpdateStatusFile(_outputFolder, _jobId, "error", new MissingFKJobProgress
-            {
-                Phase = "error",
-                TotalTables = _inputModel.Tables.Count,
-                TablesScanned = 0,
-                CurrentTable = string.Empty
-            });
-            
+            // No status file updates needed - client tracks via PID and will detect failure via exit code
             throw;
         }
     }
@@ -213,13 +174,7 @@ public class MissingFKScanService
                     lock (lockObj)
                     {
                         processedCount++;
-                        _statusService.UpdateStatusFile(_outputFolder, _jobId, "running", new MissingFKJobProgress
-                        {
-                            Phase = "extracting",
-                            TotalTables = tablesToProcess.Count,
-                            TablesScanned = processedCount,
-                            CurrentTable = $"{table.Schema}.{table.Name}"
-                        });
+                        // Progress is logged to log file - no status file updates needed
                     }
                 }
                 finally

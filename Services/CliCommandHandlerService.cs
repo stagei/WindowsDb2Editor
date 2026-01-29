@@ -5204,8 +5204,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         }
         finally
         {
-            // Always release job lock
-            jobStatusService.ReleaseJobLock(args.OutFile);
+            // Job lock is managed by CLIENT via PID file and process.Exited event
+            // No cleanup needed here - the client will detect process exit and clear the running job file
         }
     }
     

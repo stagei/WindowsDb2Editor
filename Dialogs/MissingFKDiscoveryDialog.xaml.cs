@@ -224,50 +224,132 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
-            if (_jobStatusService.IsJobLocked(_outputFolder))
+            // Clean up old status files first
+            _jobStatusService.CleanupOldStatusFiles();
+            
+            // Check if a job is running using PID-based approach
+            var runningJob = _jobStatusService.GetRunningJobIfActive();
+            if (runningJob != null)
             {
-                var lockInfo = _jobStatusService.GetLockInfo(_outputFolder);
-                if (lockInfo != null)
-                {
-                    var lockAge = DateTime.UtcNow - lockInfo.StartedAtUtc;
-                    
-                    // If lock is more than 1 hour old, offer to clear it
-                    if (lockAge.TotalHours > 1)
-                    {
-                        var result = MessageBox.Show(
-                            $"A job lock exists from {lockAge.TotalHours:F1} hours ago (Job ID: {lockInfo.JobId}).\n\n" +
-                            "This may be a stale lock from a previously interrupted job.\n\n" +
-                            "Do you want to clear the stale lock and enable starting a new job?",
-                            "Stale Job Lock Detected",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
-                        
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            _jobStatusService.ReleaseJobLock(_outputFolder);
-                            Logger.Info("User cleared stale job lock (age: {Age} hours)", lockAge.TotalHours);
-                            StatusText.Text = "Stale job lock cleared. Ready to start a new job.";
-                            return;
-                        }
-                    }
-                    
-                    // Job is running - disable button and show status
-                    StartBatchJobButton.IsEnabled = false;
-                    StartBatchJobButton.Content = "Job Running...";
-                    StatusText.Text = $"A job is already running (started {lockAge.TotalMinutes:F0} minutes ago)";
-                    Logger.Info("Existing job lock detected - Job ID: {JobId}, Age: {Age} minutes", 
-                        lockInfo.JobId, lockAge.TotalMinutes);
-                    
-                    // Update job ID for monitoring and start monitoring the running job
-                    _jobId = lockInfo.JobId;
-                    StartJobStatusMonitoring(_jobId, _outputFolder);
-                }
+                var jobAge = DateTime.UtcNow - runningJob.StartedAtUtc;
+                
+                // Job is actually running - disable button and attach to process
+                StartBatchJobButton.IsEnabled = false;
+                StartBatchJobButton.Content = "Job Running...";
+                StatusText.Text = $"A job is running (PID: {runningJob.ProcessId}, started {jobAge.TotalMinutes:F0} minutes ago)";
+                Logger.Info("Existing job detected - PID: {Pid}, JobId: {JobId}, Age: {Age} minutes", 
+                    runningJob.ProcessId, runningJob.JobId, jobAge.TotalMinutes);
+                
+                // Update job ID and output folder for monitoring
+                _jobId = runningJob.JobId;
+                _outputFolder = runningJob.ProjectFolder;
+                OutputFolderTextBox.Text = _outputFolder;
+                
+                // Attach to the running process to detect when it completes
+                AttachToRunningJobProcess(runningJob.ProcessId);
+                
+                // Start log file monitoring
+                StartLogFileMonitoring(_jobId, _outputFolder);
             }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to check existing job lock");
+            Logger.Error(ex, "Failed to check existing job");
         }
+    }
+    
+    /// <summary>
+    /// Attach to a running job process to detect when it completes.
+    /// </summary>
+    private void AttachToRunningJobProcess(int processId)
+    {
+        try
+        {
+            _runningJobProcess = Process.GetProcessById(processId);
+            _runningJobProcess.EnableRaisingEvents = true;
+            _runningJobProcess.Exited += OnJobProcessExited;
+            
+            Logger.Info("Attached to running job process - PID: {Pid}", processId);
+            JobStatusText.Text = $"Job running (PID: {processId}) - Monitoring...";
+            JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
+        }
+        catch (ArgumentException)
+        {
+            // Process no longer exists - clean up
+            Logger.Info("Job process no longer exists (PID: {Pid}), clearing status", processId);
+            _jobStatusService.ClearRunningJob();
+            OnJobCompleted();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to attach to running job process");
+        }
+    }
+    
+    /// <summary>
+    /// Called when the job process exits. Immediately re-enables the start button.
+    /// </summary>
+    private void OnJobProcessExited(object? sender, EventArgs e)
+    {
+        Logger.Info("Job process exited");
+        
+        Dispatcher.Invoke(() =>
+        {
+            // Clear the running job file
+            _jobStatusService.ClearRunningJob();
+            
+            // Re-enable the start button
+            OnJobCompleted();
+            
+            // Check if job completed successfully by looking for results file
+            var resultsPath = Path.Combine(_outputFolder, "missing_fk_results.json");
+            if (File.Exists(resultsPath))
+            {
+                ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
+            }
+            else
+            {
+                // Check log for errors
+                var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+                if (File.Exists(logPath))
+                {
+                    var logContent = File.ReadAllText(logPath);
+                    if (logContent.Contains("ERROR") || logContent.Contains("Exception"))
+                    {
+                        ShowJobCompletionNotification(false, "Job completed with errors. Check the log for details.");
+                    }
+                    else
+                    {
+                        ShowJobCompletionNotification(true, "Missing FK Discovery job completed.");
+                    }
+                }
+            }
+        });
+    }
+    
+    /// <summary>
+    /// Called when a job completes (successfully or not). Re-enables UI.
+    /// </summary>
+    private void OnJobCompleted()
+    {
+        StartBatchJobButton.IsEnabled = true;
+        StartBatchJobButton.Content = "Start Batch Job";
+        JobStatusText.Text = "Job completed";
+        JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
+        ViewJobLogButton.IsEnabled = true;
+        
+        // Update log one final time
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        if (File.Exists(logPath))
+        {
+            LoadLogFileContent(logPath);
+        }
+        JobProgressStatusText.Text = "Job completed";
+        
+        StopJobStatusMonitoring();
+        StopLogFileMonitoring();
+        
+        _runningJobProcess = null;
     }
     
     /// <summary>
@@ -1039,29 +1121,6 @@ public partial class MissingFKDiscoveryDialog : Window
         }
     }
     
-    private async void GenerateInputJson_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var generateButton = sender as Button;
-            generateButton!.IsEnabled = false;
-            
-            var (success, errorMessage) = await GenerateInputJsonAsync(showSuccessMessage: true);
-            
-            if (!success && !string.IsNullOrEmpty(errorMessage))
-            {
-                MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-        finally
-        {
-            if (sender is Button btn)
-            {
-                btn.IsEnabled = true;
-            }
-        }
-    }
-    
     /// <summary>
     /// Generate input JSON for the Missing FK Discovery job.
     /// </summary>
@@ -1160,19 +1219,6 @@ public partial class MissingFKDiscoveryDialog : Window
             // Disable button immediately to prevent multiple clicks
             StartBatchJobButton.IsEnabled = false;
             
-            // Check if job is already running (via lock file)
-            if (_jobStatusService.IsJobLocked(_outputFolder))
-            {
-                StartBatchJobButton.IsEnabled = false; // Keep disabled
-                MessageBox.Show(
-                    "A Missing FK Discovery job is already running. Please wait for it to complete before starting another job.\n\n" +
-                    "Check the job status below or use 'View Job Log' to see progress.",
-                    "Job Already Running",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-            
             // Auto-generate input JSON if it doesn't exist
             var inputPath = Path.Combine(_outputFolder, "missing_fk_input.json");
             if (string.IsNullOrEmpty(_outputFolder) || !File.Exists(inputPath))
@@ -1211,14 +1257,16 @@ public partial class MissingFKDiscoveryDialog : Window
                 IgnoreJsonTextBox.Text = _ignoreJsonPath;
             }
             
-            // Acquire job lock
-            if (!_jobStatusService.AcquireJobLock(_outputFolder, _jobId))
+            // Check if another job is already running (PID-based check)
+            var existingJob = _jobStatusService.GetRunningJobIfActive();
+            if (existingJob != null)
             {
-                StartBatchJobButton.IsEnabled = true; // Re-enable if lock fails
+                StartBatchJobButton.IsEnabled = false; // Keep disabled
+                AttachToRunningJobProcess(existingJob.ProcessId);
                 MessageBox.Show(
-                    "Failed to acquire job lock. Another job may be running.\n\n" +
-                    "Please wait a moment and try again, or check if a job is already running.",
-                    "Job Lock Failed",
+                    $"A Missing FK Discovery job is already running (PID: {existingJob.ProcessId}).\n\n" +
+                    "Please wait for it to complete. The button will be re-enabled automatically.",
+                    "Job Already Running",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -1289,6 +1337,13 @@ public partial class MissingFKDiscoveryDialog : Window
             {
                 Logger.Info("Batch job started with PID: {Pid}", _runningJobProcess.Id);
                 
+                // Save running job info (PID-based tracking)
+                _jobStatusService.SaveRunningJob(_runningJobProcess.Id, _jobId, _outputFolder);
+                
+                // Attach to process exit event for immediate notification
+                _runningJobProcess.EnableRaisingEvents = true;
+                _runningJobProcess.Exited += OnJobProcessExited;
+                
                 // Show clear indication that job started
                 var ignoreInfo = string.IsNullOrEmpty(_ignoreJsonPath) 
                     ? "No ignore rules" 
@@ -1305,13 +1360,10 @@ public partial class MissingFKDiscoveryDialog : Window
                     $"Process ID: {_runningJobProcess.Id}\n" +
                     $"{ignoreInfo}\n\n" +
                     $"The job is running in the background. You can monitor progress using the 'View Job Log' button.\n" +
-                    $"Status will update automatically as the job progresses.",
+                    $"The button will be re-enabled immediately when the job completes.",
                     "Job Started",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
-                
-                // Start status monitoring
-                StartJobStatusMonitoring(_jobId, _outputFolder);
                 
                 // Start log file monitoring and switch to Job Progress tab
                 StartLogFileMonitoring(_jobId, _outputFolder);
@@ -1322,11 +1374,11 @@ public partial class MissingFKDiscoveryDialog : Window
                 StartBatchJobButton.Content = "Job Running...";
                 ViewJobLogButton.IsEnabled = true;
                 
-                Logger.Info("Job status monitoring started");
+                Logger.Info("Job started and PID file saved - PID: {Pid}", _runningJobProcess.Id);
             }
             else
             {
-                _jobStatusService.ReleaseJobLock(_outputFolder);
+                _jobStatusService.ClearRunningJob();
                 throw new InvalidOperationException("Failed to start batch job process");
             }
         }
@@ -1697,80 +1749,19 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
-            if (string.IsNullOrEmpty(_jobId)) return;
+            // With PID-based tracking, we mainly rely on process.Exited event
+            // This timer is a fallback to check if process is still running
+            if (_runningJobProcess == null) return;
             
-            var status = _jobStatusService.ReadStatusFile(_outputFolder, _jobId);
-            if (status == null)
+            if (_runningJobProcess.HasExited)
             {
-                // Status file doesn't exist - job may have completed
-                if (_jobStatusService.IsJobRunning(_outputFolder, _jobId))
-                {
-                    // Still running, just no status file yet
-                    return;
-                }
-                
-                // Job completed
-                Dispatcher.Invoke(() =>
-                {
-                    JobStatusText.Text = "Job completed successfully";
-                    JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                    StartBatchJobButton.IsEnabled = true;
-                    StartBatchJobButton.Content = "Start Batch Job";
-                    ViewJobLogButton.IsEnabled = true; // Keep enabled so user can view final log
-                    
-                    // Update log one final time
-                    var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
-                    if (File.Exists(logPath))
-                    {
-                        LoadLogFileContent(logPath);
-                    }
-                    JobProgressStatusText.Text = "Job completed successfully";
-                    
-                    StopJobStatusMonitoring();
-                    StopLogFileMonitoring();
-                });
-                return;
+                // Process has exited - trigger cleanup
+                Dispatcher.Invoke(() => OnJobCompleted());
             }
-            
-            Dispatcher.Invoke(() =>
-            {
-                var progress = status.Progress;
-                var statusText = $"Job {status.Status} - {progress.Phase}";
-                if (progress.TotalTables > 0)
-                {
-                    statusText += $" ({progress.TablesScanned}/{progress.TotalTables} tables)";
-                }
-                if (!string.IsNullOrEmpty(progress.CurrentTable))
-                {
-                    statusText += $" - {progress.CurrentTable}";
-                }
-                
-                JobStatusText.Text = statusText;
-                StartBatchJobButton.IsEnabled = false;
-                ViewJobLogButton.IsEnabled = true;
-                
-            if (status.Status == "error")
-            {
-                JobStatusText.Text = $"Job ERROR: {status.Error ?? "Unknown error"}";
-                JobStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                StartBatchJobButton.IsEnabled = true;
-                StartBatchJobButton.Content = "Start Batch Job";
-                ViewJobLogButton.IsEnabled = true;
-                ShowJobCompletionNotification(false, status.Error ?? "Job failed with unknown error.");
-                StopJobStatusMonitoring();
-            }
-            else if (status.Status == "completed")
-            {
-                JobStatusText.Text = "Job completed successfully";
-                JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                StartBatchJobButton.IsEnabled = true;
-                StartBatchJobButton.Content = "Start Batch Job";
-            }
-            });
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error checking job status");
+            Logger.Warn(ex, "Error checking job status");
         }
     }
     
