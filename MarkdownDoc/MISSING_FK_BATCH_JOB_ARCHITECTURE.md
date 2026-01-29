@@ -255,25 +255,38 @@ graph LR
 
 ## SQL Provider Abstraction
 
-The batch job uses the same SQL translation system:
+The batch job uses the same SQL translation system via `MetadataHandler`:
 
 ```mermaid
 graph TB
     SCAN[MissingFKScanService]
     TRANS[MissingFKSqlTranslationService]
+    META[MetadataHandler]
     
     subgraph "JSON Config Files"
-        DB2[db2_missing_fk_sql_statements.json]
+        DB2[db2_12.1_sql_statements.json]
         ANSI[missing_fk_sql_statements.json]
     end
     
     SCAN -->|"GetTranslatedStatementAsync()"| TRANS
-    TRANS -->|"provider=DB2"| DB2
+    TRANS -->|"provider=DB2"| META
+    META -->|"GetStatement()"| DB2
     TRANS -->|"provider=other"| ANSI
     
     DB2 -->|"SYSCAT.COLUMNS"| SYSCAT[DB2 System Catalog]
     ANSI -->|"INFORMATION_SCHEMA"| INFO[ANSI Standard]
 ```
+
+### Key SQL Statements (in `db2_12.1_sql_statements.json`)
+
+| Statement Name | Purpose |
+|----------------|---------|
+| `GetTableColumnsForMissingFK` | Get column metadata for FK candidate matching |
+| `GetTablePrimaryKey` | Get primary key columns |
+| `GetTableUniqueKeys` | Get unique constraint columns |
+| `GetTableForeignKeysForMissingFK` | Get existing FK relationships |
+| `GetTableRowCount` | Get table row count |
+| `GetTableDataForExport` | Sample data for FK value matching |
 
 ## Summary
 

@@ -199,7 +199,7 @@ public class MissingFKMetadataService
     {
         Logger.Debug("Getting foreign keys for {Schema}.{Table}", schema, tableName);
         
-        var sql = await _sqlTranslationService.GetTranslatedStatementAsync(_connectionManager, "GetTableForeignKeys");
+        var sql = await _sqlTranslationService.GetTranslatedStatementAsync(_connectionManager, "GetTableForeignKeysForMissingFK");
         sql = ReplaceParameters(sql, schema, tableName, schema, tableName); // 4 parameters
         
         Logger.Debug("Executing query: {Sql}", sql.Substring(0, Math.Min(100, sql.Length)));
