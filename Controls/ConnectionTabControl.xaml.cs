@@ -774,10 +774,11 @@ public partial class ConnectionTabControl : UserControl
             return;
         }
         
-        // If completion window is already open, let AvalonEdit handle the filtering automatically
-        // Do NOT close and reopen - that breaks the built-in filtering behavior
+        // If completion window is already open, update filtering dynamically
         if (_completionWindow != null)
         {
+            // Update the StartOffset and filter the list based on the new word
+            UpdateCompletionWindowFilter();
             return;
         }
         
@@ -1164,6 +1165,119 @@ public partial class ConnectionTabControl : UserControl
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to show IntelliSense completion window");
+        }
+    }
+    
+    /// <summary>
+    /// Update the completion window filter when user types while window is open
+    /// </summary>
+    private void UpdateCompletionWindowFilter()
+    {
+        if (_completionWindow == null)
+            return;
+            
+        try
+        {
+            var currentWord = GetCurrentWord(out bool isAfterPeriod);
+            Logger.Debug("Updating completion filter for word: '{Word}'", currentWord);
+            
+            // Update StartOffset to match the new word position
+            _completionWindow.StartOffset = SqlEditor.CaretOffset - currentWord.Length;
+            
+            // Get all original completions (we need to re-filter them)
+            // Since we can't easily get the original list, we'll regenerate completions
+            // This is necessary because AvalonEdit doesn't maintain the original unfiltered list
+            var completions = _newIntelliSenseManager?.GetCompletions(
+                SqlEditor.Text,
+                SqlEditor.CaretOffset,
+                _connectionManager);
+            
+            if (completions == null || completions.Count == 0)
+            {
+                // Fallback to old IntelliSense
+                var suggestions = _intellisenseService.GetSuggestions(currentWord);
+                if (suggestions.Count == 0)
+                {
+                    Logger.Debug("No suggestions found after filtering, closing window");
+                    _completionWindow.Close();
+                    _completionWindow = null;
+                    return;
+                }
+                
+                // Clear and repopulate with filtered suggestions
+                _completionWindow.CompletionList.CompletionData.Clear();
+                foreach (var suggestion in suggestions)
+                {
+                    _completionWindow.CompletionList.CompletionData.Add(new SqlCompletionData(suggestion));
+                }
+                
+                Logger.Debug("Updated completion window with {Count} filtered suggestions", suggestions.Count);
+                return;
+            }
+            
+            // Filter completions based on current word
+            var filteredCompletions = completions;
+            if (!string.IsNullOrWhiteSpace(currentWord))
+            {
+                filteredCompletions = completions
+                    .Where(c => c.Text.StartsWith(currentWord, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                // If no prefix matches, try contains
+                if (filteredCompletions.Count == 0)
+                {
+                    filteredCompletions = completions
+                        .Where(c => c.Text.Contains(currentWord, StringComparison.OrdinalIgnoreCase))
+                        .Take(30)
+                        .ToList();
+                }
+            }
+            else
+            {
+                filteredCompletions = completions.Take(30).ToList();
+            }
+            
+            if (filteredCompletions.Count == 0)
+            {
+                Logger.Debug("No matching completions after filtering, closing window");
+                _completionWindow.Close();
+                _completionWindow = null;
+                return;
+            }
+            
+            // Clear and repopulate with filtered completions
+            _completionWindow.CompletionList.CompletionData.Clear();
+            foreach (var completion in filteredCompletions)
+            {
+                // Wire up OnCompleted callback for schema completions
+                if (completion is SqlSchemaCompletionData schemaCompletion)
+                {
+                    schemaCompletion.OnCompleted = () =>
+                    {
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            System.Threading.Tasks.Task.Delay(50).ContinueWith(_ =>
+                            {
+                                Dispatcher.Invoke(() => ShowNewCompletionWindow());
+                            });
+                        }), System.Windows.Threading.DispatcherPriority.Background);
+                    };
+                }
+                
+                _completionWindow.CompletionList.CompletionData.Add(completion);
+            }
+            
+            // Auto-select first item if available
+            if (filteredCompletions.Count > 0)
+            {
+                _completionWindow.CompletionList.SelectedItem = filteredCompletions[0];
+            }
+            
+            Logger.Debug("Updated completion window with {Count} filtered completions", filteredCompletions.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to update completion window filter");
         }
     }
     
