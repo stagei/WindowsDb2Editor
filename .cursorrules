@@ -794,6 +794,52 @@ This ensures the user is immediately aware of implementation status and protects
 git add -A; git commit -m "Description of changes"; git push; taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null; dotnet build WindowsDb2EditorTray\WindowsDb2EditorTray.csproj; dotnet build; if ($LASTEXITCODE -eq 0) { Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" }
 ```
 
+### Deploy/Publish Commands (--deploy / --publish)
+**When user says `--deploy` or `--publish`** (both commands do the same thing):
+
+Execute this complete workflow in sequence:
+1. **Kill ALL existing running apps**:
+   ```powershell
+   taskkill /F /IM WindowsDb2Editor.exe 2>$null
+   taskkill /F /IM WindowsDb2EditorTray.exe 2>$null
+   # Also kill any batch job processes if running
+   ```
+
+2. **Compile ALL apps (tray first, then main)**:
+   ```powershell
+   dotnet build WindowsDb2EditorTray\WindowsDb2EditorTray.csproj
+   dotnet build
+   ```
+
+3. **Fix any compilation errors from the build log** - Do NOT proceed until build succeeds
+
+4. **Git add all changes**:
+   ```powershell
+   git add -A
+   ```
+
+5. **Git commit with descriptive message**:
+   ```powershell
+   git commit -m "<message describing what changed>"
+   ```
+
+6. **Git push to remote**:
+   ```powershell
+   git push
+   ```
+
+7. **Run the main application**:
+   ```powershell
+   Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
+   ```
+
+**Complete Deploy/Publish one-liner**:
+```powershell
+taskkill /F /IM WindowsDb2Editor.exe 2>$null; taskkill /F /IM WindowsDb2EditorTray.exe 2>$null; dotnet build WindowsDb2EditorTray\WindowsDb2EditorTray.csproj; dotnet build; if ($LASTEXITCODE -eq 0) { git add -A; git commit -m "Deploy: <message>"; git push; Start-Process "bin\Debug\net10.0-windows\WindowsDb2Editor.exe" } else { Write-Host "BUILD FAILED - Fix errors first" -ForegroundColor Red }
+```
+
+**CRITICAL**: If build fails, DO NOT proceed to git commit. Fix the errors first and rebuild.
+
 **Why this is critical**:
 - Git commit ensures all changes are saved and tracked before testing
 - The executable is locked when running, preventing builds from succeeding
