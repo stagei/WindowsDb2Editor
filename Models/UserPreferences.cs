@@ -25,8 +25,8 @@ namespace WindowsDb2Editor.Models
         /// <summary>
         /// Gets the default user data folder path
         /// </summary>
-        [JsonIgnore]
         public static string GetDefaultUserDataFolder() => DefaultUserDataFolder;
+
         /// <summary>
         /// Maximum number of rows to fetch per query (default: 1000)
         /// </summary>
