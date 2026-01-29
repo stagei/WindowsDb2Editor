@@ -774,6 +774,13 @@ public partial class ConnectionTabControl : UserControl
             return;
         }
         
+        // If completion window is already open, let AvalonEdit handle the filtering automatically
+        // Do NOT close and reopen - that breaks the built-in filtering behavior
+        if (_completionWindow != null)
+        {
+            return;
+        }
+        
         // Show completion after space (for keywords)
         if (e.Text == " ")
         {
