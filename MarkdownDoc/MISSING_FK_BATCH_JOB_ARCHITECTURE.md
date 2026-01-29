@@ -203,7 +203,7 @@ var connectionManager = ConnectionManagerFactory.CreateConnectionManager(profile
 await connectionManager.ConnectAsync();
 ```
 
-## File Communication
+## File Communication (PID-Based Tracking)
 
 ```mermaid
 graph LR
@@ -212,9 +212,8 @@ graph LR
         IN2[missing_fk_ignore.json]
     end
     
-    subgraph "Status Files (MissingFK/)"
-        LOCK[.job_lock]
-        STATUS[job_status_*.json]
+    subgraph "Status File (MissingFK/)"
+        PID[running_job.json]
     end
     
     subgraph "Output Files (Projects/...)"
@@ -222,20 +221,26 @@ graph LR
         LOG[job_*.log]
     end
     
-    GUI -->|writes| IN1
+    GUI -->|"writes (auto-generated)"| IN1
     GUI -->|writes| IN2
-    GUI -->|creates| LOCK
+    GUI -->|"saves PID"| PID
     
     BATCH -->|reads| IN1
     BATCH -->|reads| IN2
-    BATCH -->|updates| STATUS
     BATCH -->|writes| OUT1
     BATCH -->|writes| LOG
-    BATCH -->|releases| LOCK
     
-    GUI -->|polls| STATUS
+    GUI -->|"Process.Exited event"| PID
     GUI -->|reads| LOG
 ```
+
+### How PID Tracking Works
+
+1. **On Start Job**: Client saves `running_job.json` with `{ProcessId, JobId, ProjectFolder, StartedAtUtc}`
+2. **On Dialog Open**: Client reads `running_job.json`, checks if PID exists using `Process.GetProcessById()`
+3. **If Process Running**: Attach to `Process.Exited` event for immediate notification
+4. **On Process Exit**: Event fires immediately, client clears `running_job.json` and re-enables Start button
+5. **Cleanup**: Old status files are automatically cleaned up on dialog open
 
 ## Why This Architecture?
 
