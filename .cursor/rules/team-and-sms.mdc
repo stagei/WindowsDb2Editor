@@ -1,0 +1,80 @@
+---
+description: Team configuration and SMS notifications
+alwaysApply: true
+---
+
+# Team Member Configuration
+
+**Current team members:**
+
+```yaml
+Users:
+  - Username: FKGEISTA
+    FullName: Geir Helge Starholm
+    Email: geir.helge.starholm@felleskjopet.no
+    SmsNumber: +4797188358
+    
+  - Username: FKSVEERI
+    FullName: Svein Morten Erikstad
+    Email: svein.morten.erikstad@felleskjopet.no
+    SmsNumber: +4795762742
+    
+  - Username: FKMISTA
+    FullName: Mina Marie Starholm
+    Email: mina.marie.starholm@felleskjopet.no
+    SmsNumber: +4799348397
+    
+  - Username: FKCELERI
+    FullName: Celine Andreassen Erikstad
+    Email: Celine.Andreassen.Erikstad@felleskjopet.no
+    SmsNumber: +4745269945
+```
+
+## SMS Lookup Function
+
+```powershell
+$smsNumber = switch ($env:USERNAME) {
+    "FKGEISTA" { "+4797188358" }
+    "FKSVEERI" { "+4795762742" }
+    "FKMISTA"  { "+4799348397" }
+    "FKCELERI" { "+4745269945" }
+    default    { "+4797188358" }
+}
+```
+
+## Long Operation Completion SMS (MANDATORY)
+
+**RULE**: When completing any operation that took more than 10 minutes, send an SMS notification.
+
+```powershell
+Send-Sms $smsNumber "WindowsDb2Editor: [TASK] completed successfully. [DETAILS]"
+```
+
+**When to send:**
+- After completing long refactoring operations (> 10 min)
+- After completing full test suite runs (> 10 min)
+- After completing database-wide operations (> 10 min)
+
+**Message Format:**
+```
+WindowsDb2Editor: [TaskName] complete. Build: [PASSED/FAILED]. Tests: [X/Y passed]. Duration: [Xm].
+```
+
+## Hourly Status SMS (During Continuous Implementation)
+
+**RULE**: During continuous implementation, send hourly SMS updates.
+
+```powershell
+Send-Sms "+4797188358" "WindowsDb2Editor: [TIME] Progress [X]% - [Y] tasks done, [Z] remaining. Current: [task]"
+```
+
+## Stop Protocol (CRITICAL)
+
+**If battery < 10% OR continuous implementation must be stopped:**
+
+1. **Commit all changes**: Ensure all code is committed to git
+2. **Sync with remote**: Push changes to remote repository
+3. **Send SMS notification**:
+   ```powershell
+   Send-Sms "+4797188358" "WindowsDb2Editor: Implementation stopped at [X]% - All changes committed & pushed"
+   ```

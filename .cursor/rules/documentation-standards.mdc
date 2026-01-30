@@ -1,0 +1,41 @@
+---
+description: Documentation standards and token economy
+alwaysApply: true
+---
+
+# Documentation Standards
+
+## Markdown Documentation Location
+
+**CRITICAL**: All markdown documentation files MUST be created in the `MarkdownDoc/` directory.
+
+**Rules:**
+- All new `.md` files (except README.md) should be created in `MarkdownDoc/`
+- Only `README.md` stays in the project root
+
+## Documentation Token Economy (CRITICAL)
+
+**ABSOLUTE RULE**: Do NOT waste tokens on non-permanent/temporary documentation.
+
+**FORBIDDEN - Non-Permanent Documents:**
+- Progress summaries (use brief shell output instead)
+- Interim status reports
+- "FIXES.md" files that just describe what was fixed
+- Duplicate documentation explaining what the code already shows
+- Verbose implementation logs
+
+**ALLOWED - Permanent/Reference Documents:**
+- Architecture documentation
+- User guides and tutorials
+- API reference documentation
+- Design specifications that inform future development
+- Troubleshooting guides
+
+**Token Saving Guidelines:**
+1. **Instead of creating "FIXES.md"** → Add comments in code explaining the fix
+2. **Instead of progress summaries** → Use brief shell Write-Host output
+3. **Instead of verbose change logs** → Use git commit messages
+4. **Instead of interim reports** → Report completion only
+5. **Only create .md files that will be referenced long-term**
+
+**When in doubt:** Ask "Will this document be useful 3 months from now?" If no, don't create it.
