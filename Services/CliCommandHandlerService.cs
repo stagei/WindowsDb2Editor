@@ -5198,7 +5198,7 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
                 },
                 candidatesCount = results.Candidates.Count,
                 resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json"),
-                logPath = MissingFKJobStatusService.GetLogFilePath(args.OutFile, inputModel.JobId),
+                logPath = MissingFKJobStatusService.GetLogFilePath(args.OutFile),
                 status = "SUCCESS"
             };
         }
@@ -5314,7 +5314,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
         }
         
         var resultsPath = Path.Combine(args.OutFile, "missing_fk_results.json");
-        var logPath = Path.Combine(args.OutFile, "job_*_log.txt");
+        var logPath = MissingFKJobStatusService.GetLogFilePath(args.OutFile);
+        var logFileExists = File.Exists(logPath);
         
         var status = new
         {
@@ -5322,9 +5323,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
             outputFolder = args.OutFile,
             resultsExists = File.Exists(resultsPath),
             resultsPath = resultsPath,
-            logFiles = Directory.Exists(args.OutFile) 
-                ? Directory.GetFiles(args.OutFile, "job_*_log.txt").Select(Path.GetFileName).ToArray()
-                : Array.Empty<string>()
+            logPath = logPath,
+            logFileExists = logFileExists
         };
         
         if (File.Exists(resultsPath))
@@ -5343,7 +5343,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
                     status.outputFolder,
                     status.resultsExists,
                     status.resultsPath,
-                    status.logFiles,
+                    status.logPath,
+                    status.logFileExists,
                     jobId = results?.JobId,
                     completedAt = results?.CompletedAtUtc,
                     summary = results?.Summary != null ? new
@@ -5365,7 +5366,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
                     status.outputFolder,
                     status.resultsExists,
                     status.resultsPath,
-                    status.logFiles,
+                    status.logPath,
+                    status.logFileExists,
                     statusText = "RESULTS_EXISTS_BUT_UNREADABLE",
                     error = ex.Message
                 };
@@ -5378,7 +5380,8 @@ WHERE TABSCHEMA = '{schema}' AND TABNAME = '{objectName}'";
             status.outputFolder,
             status.resultsExists,
             status.resultsPath,
-            status.logFiles,
+            status.logPath,
+            status.logFileExists,
             statusText = "NO_RESULTS"
         };
     }

@@ -1238,29 +1238,18 @@ public partial class MainWindow : Window
         if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
             var outputFolder = folderDialog.SelectedPath;
-            
-            // Look for log files in the folder
-            var logFiles = Directory.GetFiles(outputFolder, "missing_fk_job_*.log");
-            if (logFiles.Length == 0)
+            var logPath = MissingFKJobStatusService.GetLogFilePath(outputFolder);
+            if (!File.Exists(logPath))
             {
                 MessageBox.Show(
-                    "No job log files found in the selected folder.",
-                    "No Log Files",
+                    "No log file in this folder.",
+                    "No Log File",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
             }
-            
-            // If multiple log files, let user choose (for now, use the most recent)
-            var latestLog = logFiles
-                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-                .First();
-            
-            // Extract job ID from filename
-            var fileName = Path.GetFileNameWithoutExtension(latestLog);
-            var jobId = fileName.Replace("missing_fk_job_", "");
-            
-            var logViewer = new MissingFKJobLogViewerDialog(latestLog, jobId);
+            var displayName = Path.GetFileName(outputFolder) ?? "Missing FK Job Log";
+            var logViewer = new MissingFKJobLogViewerDialog(logPath, displayName);
             logViewer.Owner = this;
             logViewer.Show();
         }

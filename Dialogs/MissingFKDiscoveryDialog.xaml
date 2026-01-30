@@ -151,7 +151,9 @@
                                    TextWrapping="NoWrap"
                                    AcceptsReturn="True"
                                    VerticalScrollBarVisibility="Disabled"
-                                   HorizontalScrollBarVisibility="Disabled"/>
+                                   HorizontalScrollBarVisibility="Disabled"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
                         </ScrollViewer>
                     </Border>
                     

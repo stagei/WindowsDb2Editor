@@ -108,6 +108,7 @@ public partial class MissingFKDiscoveryDialog : Window
             Loaded += MissingFKDiscoveryDialog_Loaded;
             Closing += MissingFKDiscoveryDialog_Closing;
             Activated += MissingFKDiscoveryDialog_Activated;
+            MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
             
             Logger.Info("MissingFKDiscoveryDialog constructor completed successfully");
         }
@@ -263,7 +264,7 @@ public partial class MissingFKDiscoveryDialog : Window
                 AttachToRunningJobProcess(runningJob.ProcessId);
                 
                 // Start log file monitoring and status polling (so we re-enable button when job ends or PID reused)
-                StartLogFileMonitoring(_jobId, _outputFolder);
+                StartLogFileMonitoring(_outputFolder);
                 StartJobStatusMonitoring(_jobId, _outputFolder);
             }
         }
@@ -316,28 +317,19 @@ public partial class MissingFKDiscoveryDialog : Window
             // Re-enable the start button
             OnJobCompleted();
             
-            // Check if job completed successfully by looking for results file
-            var resultsPath = Path.Combine(_outputFolder, "missing_fk_results.json");
-            if (File.Exists(resultsPath))
+            // Use log notification line for balloon message when available; fallback to results file
+            var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
+            if (File.Exists(logPath))
             {
-                ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
+                var logContent = File.ReadAllText(logPath);
+                var (success, message) = ParseLogNotificationLine(logContent);
+                ShowJobCompletionNotification(success, message);
             }
             else
             {
-                // Check log for errors
-                var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
-                if (File.Exists(logPath))
-                {
-                    var logContent = File.ReadAllText(logPath);
-                    if (logContent.Contains("ERROR") || logContent.Contains("Exception"))
-                    {
-                        ShowJobCompletionNotification(false, "Job completed with errors. Check the log for details.");
-                    }
-                    else
-                    {
-                        ShowJobCompletionNotification(true, "Missing FK Discovery job completed.");
-                    }
-                }
+                var resultsPath = Path.Combine(_outputFolder, "missing_fk_results.json");
+                if (File.Exists(resultsPath))
+                    ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
             }
         });
     }
@@ -353,18 +345,33 @@ public partial class MissingFKDiscoveryDialog : Window
         JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
         ViewJobLogButton.IsEnabled = true;
         
-        // Update log one final time
-        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        // Update log one final time and parse notification line for status
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
         if (File.Exists(logPath))
         {
             LoadLogFileContent(logPath);
+            var content = File.ReadAllText(logPath);
+            var (_, statusMessage) = ParseLogNotificationLine(content);
+            JobProgressStatusText.Text = string.IsNullOrEmpty(statusMessage) ? "Job completed" : statusMessage;
         }
-        JobProgressStatusText.Text = "Job completed";
+        else
+        {
+            JobProgressStatusText.Text = "Job completed";
+        }
         
         StopJobStatusMonitoring();
         StopLogFileMonitoring();
         
         _runningJobProcess = null;
+    }
+    
+    private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MainTabControl.SelectedItem == JobProgressTab && !string.IsNullOrEmpty(_outputFolder))
+        {
+            var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
+            LoadLogFileContent(logPath);
+        }
     }
     
     /// <summary>
@@ -1380,8 +1387,19 @@ public partial class MissingFKDiscoveryDialog : Window
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 
+                // Tray balloon: job started
+                try
+                {
+                    var notificationService = new NotificationService();
+                    notificationService.ShowInfo("Missing FK Discovery", $"Job started. PID: {_runningJobProcess.Id}. Output: {_outputFolder}");
+                }
+                catch (Exception exNotif)
+                {
+                    Logger.Warn(exNotif, "Failed to show tray notification for job start");
+                }
+                
                 // Start log file monitoring and status polling (so we re-enable button when job ends or PID reused)
-                StartLogFileMonitoring(_jobId, _outputFolder);
+                StartLogFileMonitoring(_outputFolder);
                 StartJobStatusMonitoring(_jobId, _outputFolder);
                 MainTabControl.SelectedItem = JobProgressTab;
                 
@@ -1426,14 +1444,14 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private void OpenJobLog_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(_jobId))
+        if (string.IsNullOrEmpty(_outputFolder))
         {
             MessageBox.Show("No job has been started yet.", "No Job",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         
-        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
         if (File.Exists(logPath))
         {
             Process.Start(new ProcessStartInfo
@@ -1512,14 +1530,14 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private void ViewJobLog_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(_jobId))
+        if (string.IsNullOrEmpty(_outputFolder))
         {
             MessageBox.Show("No job has been started yet.", "No Job",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         
-        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
         if (!File.Exists(logPath))
         {
             MessageBox.Show($"Job log not found:\n{logPath}", "Log Not Found",
@@ -1527,7 +1545,7 @@ public partial class MissingFKDiscoveryDialog : Window
             return;
         }
         
-        var logViewer = new MissingFKJobLogViewerDialog(logPath, _jobId);
+        var logViewer = new MissingFKJobLogViewerDialog(logPath, _jobId ?? Path.GetFileName(_outputFolder));
         logViewer.Owner = this;
         logViewer.Show();
     }
@@ -1586,40 +1604,39 @@ public partial class MissingFKDiscoveryDialog : Window
         }
     }
     
-    private void StartLogFileMonitoring(string jobId, string outputFolder)
+    private void StartLogFileMonitoring(string outputFolder)
     {
         try
         {
-            Logger.Debug("Starting log file monitoring for job: {JobId}", jobId);
+            var logPath = MissingFKJobStatusService.GetLogFilePath(outputFolder);
+            var logFileName = Path.GetFileName(logPath);
             
-            var logPath = MissingFKJobStatusService.GetLogFilePath(outputFolder, jobId);
+            Logger.Debug("Starting log file monitoring, path: {Path}", logPath);
             
-            // Create FileSystemWatcher for log file
+            // Create FileSystemWatcher for log file (static name: missing_fk_job.log)
             _logFileWatcher = new FileSystemWatcher(outputFolder)
             {
-                Filter = $"missing_fk_job_{jobId}.log",
+                Filter = logFileName,
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
             };
             
             _logFileWatcher.Changed += OnLogFileChanged;
             _logFileWatcher.EnableRaisingEvents = true;
             
-            // Load initial log content if file exists
-            if (File.Exists(logPath))
-            {
-                LoadLogFileContent(logPath);
-            }
+            // Always load once so user sees either content or "Log file not found. Waiting for job to start..."
+            LoadLogFileContent(logPath);
             
-            // Also poll every 1 second to catch updates
-            _logPollTimer = new Timer(_ => 
+            // Poll every 1 second; LoadLogFileContent only runs when Job Progress tab is selected (tab-aware)
+            _logPollTimer = new Timer(_ =>
             {
-                if (File.Exists(logPath))
+                Dispatcher.Invoke(() =>
                 {
-                    Dispatcher.Invoke(() => LoadLogFileContent(logPath));
-                }
-            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+                    if (MainTabControl.SelectedItem == JobProgressTab)
+                        LoadLogFileContent(logPath);
+                });
+            }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             
-            Logger.Info("Log file monitoring started for job: {JobId}", jobId);
+            Logger.Info("Log file monitoring started, path: {Path}", logPath);
         }
         catch (Exception ex)
         {
@@ -1656,16 +1673,50 @@ public partial class MissingFKDiscoveryDialog : Window
     {
         try
         {
-            // Small delay to ensure file write is complete
+            // Small delay to ensure file write is complete; only refresh when user is on Job Progress tab
             Task.Delay(100).ContinueWith(_ =>
             {
-                Dispatcher.Invoke(() => LoadLogFileContent(e.FullPath));
+                Dispatcher.Invoke(() =>
+                {
+                    if (MainTabControl.SelectedItem == JobProgressTab)
+                        LoadLogFileContent(e.FullPath);
+                });
             });
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Error handling log file change");
         }
+    }
+    
+    /// <summary>
+    /// Parse the [MISSING_FK_JOB] notification line from log content. Returns (success, message for display/balloon).
+    /// </summary>
+    private static (bool success, string message) ParseLogNotificationLine(string logContent)
+    {
+        if (string.IsNullOrWhiteSpace(logContent)) return (true, "Job completed.");
+        var idx = logContent.LastIndexOf("[MISSING_FK_JOB]", StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return (true, "Job completed.");
+        var line = logContent.Substring(idx);
+        var firstNewLine = line.IndexOf('\n');
+        if (firstNewLine > 0) line = line.Substring(0, firstNewLine);
+        line = line.Trim();
+        var success = line.IndexOf("STATUS=SUCCESS", StringComparison.OrdinalIgnoreCase) >= 0;
+        var message = new StringBuilder();
+        if (success)
+        {
+            message.Append("Completed.");
+            var candMatch = System.Text.RegularExpressions.Regex.Match(line, @"CANDIDATES=(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var durMatch = System.Text.RegularExpressions.Regex.Match(line, @"DURATION=([^\s]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (candMatch.Success) message.Append($" {candMatch.Groups[1].Value} candidates.");
+            if (durMatch.Success) message.Append($" Duration: {durMatch.Groups[1].Value}");
+        }
+        else
+        {
+            var msgMatch = System.Text.RegularExpressions.Regex.Match(line, @"MESSAGE=([^\s]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            message.Append(msgMatch.Success ? msgMatch.Groups[1].Value.Replace("_", " ") : "Job completed with errors. Check the log for details.");
+        }
+        return (success, message.ToString().Trim());
     }
     
     private void LoadLogFileContent(string logPath)
@@ -1700,12 +1751,18 @@ public partial class MissingFKDiscoveryDialog : Window
             JobLogTextBox.CaretIndex = JobLogTextBox.Text.Length;
             JobLogTextBox.ScrollToEnd();
             
-            // Update status text
-            var lines = content.Split('\n');
-            var lastLine = lines.LastOrDefault(l => !string.IsNullOrWhiteSpace(l));
-            if (!string.IsNullOrEmpty(lastLine))
+            // Update status text: use parsed notification line if present, else last log line
+            var (_, statusMessage) = ParseLogNotificationLine(content);
+            if (!string.IsNullOrEmpty(statusMessage))
             {
-                JobProgressStatusText.Text = $"Job running... Last update: {lastLine.Trim()}";
+                JobProgressStatusText.Text = statusMessage;
+            }
+            else
+            {
+                var lines = content.Split('\n');
+                var lastLine = lines.LastOrDefault(l => !string.IsNullOrWhiteSpace(l));
+                if (!string.IsNullOrEmpty(lastLine))
+                    JobProgressStatusText.Text = $"Job running... Last update: {lastLine.Trim()}";
             }
         }
         catch (Exception ex)
@@ -1717,9 +1774,9 @@ public partial class MissingFKDiscoveryDialog : Window
     
     private void RefreshJobLog_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrEmpty(_jobId)) return;
+        if (string.IsNullOrEmpty(_outputFolder)) return;
         
-        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+        var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
         LoadLogFileContent(logPath);
     }
     
@@ -1748,13 +1805,19 @@ public partial class MissingFKDiscoveryDialog : Window
             // Show completion notification
             ShowJobCompletionNotification(true, "Missing FK Discovery job completed successfully.");
             
-            // Update log one final time
-            var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder, _jobId);
+            // Update log one final time and parse notification for status
+            var logPath = MissingFKJobStatusService.GetLogFilePath(_outputFolder);
             if (File.Exists(logPath))
             {
                 LoadLogFileContent(logPath);
+                var content = File.ReadAllText(logPath);
+                var (_, statusMessage) = ParseLogNotificationLine(content);
+                JobProgressStatusText.Text = string.IsNullOrEmpty(statusMessage) ? "Job completed successfully" : statusMessage;
             }
-            JobProgressStatusText.Text = "Job completed successfully";
+            else
+            {
+                JobProgressStatusText.Text = "Job completed successfully";
+            }
             
             StopJobStatusMonitoring();
             StopLogFileMonitoring();

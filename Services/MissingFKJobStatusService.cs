@@ -38,11 +38,11 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Get log file path for a job (in project folder).
+    /// Get log file path for a job (in project folder). Static filename per folder.
     /// </summary>
-    public static string GetLogFilePath(string outputFolder, string jobId)
+    public static string GetLogFilePath(string outputFolder)
     {
-        return Path.Combine(outputFolder, $"job_{jobId}.log");
+        return Path.Combine(outputFolder, "missing_fk_job.log");
     }
 
     /// <summary>

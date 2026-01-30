@@ -46,7 +46,7 @@ public class MissingFKScanService
         _jobId = jobId ?? throw new ArgumentNullException(nameof(jobId));
         _inputModel = inputModel ?? throw new ArgumentNullException(nameof(inputModel));
         
-        _logFilePath = MissingFKJobStatusService.GetLogFilePath(outputFolder, jobId);
+        _logFilePath = MissingFKJobStatusService.GetLogFilePath(outputFolder);
         
         _resultsModel = new MissingFKResultsModel
         {
@@ -731,10 +731,14 @@ public class MissingFKScanService
             {
                 await WriteLogLineAsync($"Stack Trace: {error.StackTrace}");
             }
+            var shortMessage = error.Message.Length > 200 ? error.Message.Substring(0, 197) + "..." : error.Message;
+            await WriteLogLineAsync($"[MISSING_FK_JOB] STATUS=ERROR MESSAGE={shortMessage.Replace(" ", "_")}");
         }
         else
         {
             await WriteLogLineAsync("Status: SUCCESS");
+            var duration = DateTime.UtcNow - startTime;
+            await WriteLogLineAsync($"[MISSING_FK_JOB] STATUS=SUCCESS CANDIDATES={_resultsModel.Candidates.Count} DURATION={duration:c}");
         }
         
         Logger.Info("Job log summary written: {Path}", _logFilePath);
