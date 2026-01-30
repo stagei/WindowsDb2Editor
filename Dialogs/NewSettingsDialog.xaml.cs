@@ -822,11 +822,18 @@ public partial class NewSettingsDialog : Window
         };
         panel.Children.Add(logCombo);
         
-        panel.Children.Add(CreateSectionHeader("Log Location"));
-        var logPath = new TextBlock { 
-            Text = $"Logs are stored in: {AppDataHelper.GetAppDataFolder()}",
+        panel.Children.Add(CreateSectionHeader("Data & Log Locations"));
+        var userDataPath = new TextBlock {
+            Text = $"User data (connections, preferences, themes, etc.): {UserDataFolderHelper.GetUserDataFolder()}",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 5, 0, 0),
+            Foreground = (Brush)FindResource("SystemControlForegroundBaseMediumBrush")
+        };
+        panel.Children.Add(userDataPath);
+        var logPath = new TextBlock {
+            Text = "Log files: see application directory or NLog configuration.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 3, 0, 0),
             Foreground = (Brush)FindResource("SystemControlForegroundBaseMediumBrush")
         };
         panel.Children.Add(logPath);

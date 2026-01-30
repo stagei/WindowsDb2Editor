@@ -61,9 +61,7 @@ public class MetadataLoaderService
     {
         _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _metadataFolder = Path.Combine(appData, "WindowsDb2Editor", "metadata");
-        
+        _metadataFolder = UserDataFolderHelper.EnsureSubFolder("metadata");
         Logger.Debug("Metadata folder: {Folder}", _metadataFolder);
     }
     

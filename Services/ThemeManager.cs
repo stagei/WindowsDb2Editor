@@ -22,8 +22,8 @@ public class ThemeManager
         // Built-in themes in application directory
         _themesDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Themes");
         
-        // User custom themes in AppData
-        _userThemesDirectory = Path.Combine(AppDataHelper.GetAppDataFolder(), "Themes");
+        // User custom themes in user data folder (Documents\WindowsDb2Editor\Themes)
+        _userThemesDirectory = UserDataFolderHelper.EnsureSubFolder("Themes");
         
         EnsureDirectoriesExist();
         CreateBuiltInThemes();

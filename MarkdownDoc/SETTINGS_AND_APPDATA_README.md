@@ -36,17 +36,17 @@ A comprehensive settings dialog (`SettingsDialog`) has been added to manage all 
 - **Open Data Folder Button**: Opens Windows Explorer to the data folder location
 - **Safety Warning**: Reminds users to backup before manual editing
 
-### 2. AppData Storage Migration
+### 2. User Data Folder (Centralized)
 
 #### Storage Location
-All user data is now stored in:
+All user data is stored in the **user data folder** (configurable in **View → Settings**). Default:
 ```
-%LOCALAPPDATA%\WindowsDb2Editor\
+%USERPROFILE%\Documents\WindowsDb2Editor\
 ```
 
 Typical path:
 ```
-C:\Users\{YourUsername}\AppData\Local\WindowsDb2Editor\
+C:\Users\{YourUsername}\Documents\WindowsDb2Editor\
 ```
 
 #### Benefits
@@ -57,7 +57,7 @@ C:\Users\{YourUsername}\AppData\Local\WindowsDb2Editor\
 ✅ **Backup-Friendly**: User profile backups include settings  
 ✅ **Multi-User**: Works seamlessly in terminal server/RDP environments  
 
-#### Files Stored in AppData
+#### Files Stored in User Data Folder
 
 ##### `preferences.json`
 User preferences including:

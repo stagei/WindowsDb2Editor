@@ -107,6 +107,7 @@ public partial class MissingFKDiscoveryDialog : Window
             
             Loaded += MissingFKDiscoveryDialog_Loaded;
             Closing += MissingFKDiscoveryDialog_Closing;
+            Activated += MissingFKDiscoveryDialog_Activated;
             
             Logger.Info("MissingFKDiscoveryDialog constructor completed successfully");
         }
@@ -122,7 +123,20 @@ public partial class MissingFKDiscoveryDialog : Window
         StopJobStatusMonitoring();
         StopLogFileMonitoring();
     }
-    
+
+    /// <summary>
+    /// When dialog is activated (e.g. user switches back), re-check if job is still running.
+    /// Re-enables Start Batch Job button if job ended or PID was reused.
+    /// </summary>
+    private void MissingFKDiscoveryDialog_Activated(object? sender, EventArgs e)
+    {
+        if (!StartBatchJobButton.IsEnabled && _jobStatusService.GetRunningJobIfActive() == null)
+        {
+            Logger.Info("Job no longer running on dialog activation, re-enabling Start Batch Job button");
+            OnJobCompleted();
+        }
+    }
+
     private async void MissingFKDiscoveryDialog_Loaded(object sender, RoutedEventArgs e)
     {
         Logger.Debug("MissingFKDiscoveryDialog_Loaded event started");
@@ -150,7 +164,7 @@ public partial class MissingFKDiscoveryDialog : Window
             
             // Check if a job is already running and update button state accordingly
             CheckExistingJobLock();
-            
+
             Logger.Info("MissingFKDiscoveryDialog loaded successfully");
         }
         catch (Exception ex)
@@ -248,8 +262,9 @@ public partial class MissingFKDiscoveryDialog : Window
                 // Attach to the running process to detect when it completes
                 AttachToRunningJobProcess(runningJob.ProcessId);
                 
-                // Start log file monitoring
+                // Start log file monitoring and status polling (so we re-enable button when job ends or PID reused)
                 StartLogFileMonitoring(_jobId, _outputFolder);
+                StartJobStatusMonitoring(_jobId, _outputFolder);
             }
         }
         catch (Exception ex)
@@ -257,7 +272,7 @@ public partial class MissingFKDiscoveryDialog : Window
             Logger.Error(ex, "Failed to check existing job");
         }
     }
-    
+
     /// <summary>
     /// Attach to a running job process to detect when it completes.
     /// </summary>
@@ -1337,8 +1352,8 @@ public partial class MissingFKDiscoveryDialog : Window
             {
                 Logger.Info("Batch job started with PID: {Pid}", _runningJobProcess.Id);
                 
-                // Save running job info (PID-based tracking)
-                _jobStatusService.SaveRunningJob(_runningJobProcess.Id, _jobId, _outputFolder);
+                // Save running job info (PID + exe path so we can verify PID wasn't reused)
+                _jobStatusService.SaveRunningJob(_runningJobProcess.Id, _jobId, _outputFolder, exePath);
                 
                 // Attach to process exit event for immediate notification
                 _runningJobProcess.EnableRaisingEvents = true;
@@ -1365,8 +1380,9 @@ public partial class MissingFKDiscoveryDialog : Window
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 
-                // Start log file monitoring and switch to Job Progress tab
+                // Start log file monitoring and status polling (so we re-enable button when job ends or PID reused)
                 StartLogFileMonitoring(_jobId, _outputFolder);
+                StartJobStatusMonitoring(_jobId, _outputFolder);
                 MainTabControl.SelectedItem = JobProgressTab;
                 
                 // Update UI - disable button to prevent multiple starts
@@ -1751,13 +1767,21 @@ public partial class MissingFKDiscoveryDialog : Window
         {
             // With PID-based tracking, we mainly rely on process.Exited event
             // This timer is a fallback to check if process is still running
-            if (_runningJobProcess == null) return;
-            
-            if (_runningJobProcess.HasExited)
+            if (_runningJobProcess != null && _runningJobProcess.HasExited)
             {
-                // Process has exited - trigger cleanup
                 Dispatcher.Invoke(() => OnJobCompleted());
+                return;
             }
+
+            // Re-enable Start button if we think job is running but it no longer is (PID reused or stale state)
+            Dispatcher.Invoke(() =>
+            {
+                if (!StartBatchJobButton.IsEnabled && _jobStatusService.GetRunningJobIfActive() == null)
+                {
+                    Logger.Info("Job no longer running (PID reused or ended), re-enabling Start Batch Job button");
+                    OnJobCompleted();
+                }
+            });
         }
         catch (Exception ex)
         {

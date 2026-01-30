@@ -70,7 +70,55 @@ public partial class MainWindow : Window
         UpdateThemeMenuText();
         PopulateRecentConnections();
 
+        Activated += MainWindow_Activated;
+
         Logger.Info("MainWindow initialized successfully");
+    }
+
+    private void MainWindow_Activated(object? sender, EventArgs e)
+    {
+        CheckTrayOpenProfileRequest();
+    }
+
+    /// <summary>
+    /// When activated (e.g. brought to front by tray icon), check for tray_open_profile.txt
+    /// written by the tray when user clicked a connection or settings.
+    /// </summary>
+    private void CheckTrayOpenProfileRequest()
+    {
+        try
+        {
+            var filePath = UserDataFolderHelper.GetFilePath("tray_open_profile.txt");
+            if (!File.Exists(filePath))
+                return;
+            var content = File.ReadAllText(filePath).Trim();
+            File.Delete(filePath);
+            if (string.IsNullOrEmpty(content))
+                return;
+            if (content == "__SETTINGS__")
+            {
+                Logger.Info("Tray requested settings - opening Settings dialog");
+                var settingsDialog = new NewSettingsDialog(_preferencesService) { Owner = this };
+                if (settingsDialog.ShowDialog() == true)
+                {
+                    RefreshAllConnectionTabs();
+                }
+                return;
+            }
+            var profileName = content;
+            Logger.Info("Tray requested connection: {Profile}", profileName);
+            var profile = _connectionStorageService.GetConnection(profileName);
+            if (profile == null)
+            {
+                Logger.Warn("Profile not found for tray request: {Profile}", profileName);
+                return;
+            }
+            _ = ConnectToProfileAsync(profile);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error handling tray open profile request");
+        }
     }
     
     private void UpdateWelcomePanelVisibility()

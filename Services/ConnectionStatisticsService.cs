@@ -18,16 +18,32 @@ public class ConnectionStatisticsService
 
     public ConnectionStatisticsService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var folder = Path.Combine(appData, "WindowsDb2Editor");
-        
-        if (!Directory.Exists(folder))
+        _statisticsFilePath = UserDataFolderHelper.GetFilePath("connection_statistics.json");
+        var folder = Path.GetDirectoryName(_statisticsFilePath);
+        if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
         {
             Directory.CreateDirectory(folder);
         }
-        
-        _statisticsFilePath = Path.Combine(folder, "connection_statistics.json");
+        MigrateFromAppDataIfNeeded();
         Logger.Debug("Connection statistics file: {Path}", _statisticsFilePath);
+    }
+
+    private void MigrateFromAppDataIfNeeded()
+    {
+        if (File.Exists(_statisticsFilePath)) return;
+        var oldPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WindowsDb2Editor", "connection_statistics.json");
+        if (!File.Exists(oldPath)) return;
+        try
+        {
+            File.Copy(oldPath, _statisticsFilePath);
+            Logger.Info("Migrated connection_statistics.json from AppData to user data folder");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Could not migrate connection_statistics.json from AppData");
+        }
     }
 
     /// <summary>

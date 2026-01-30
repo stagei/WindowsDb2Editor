@@ -15,15 +15,8 @@ public class NotificationService
 
     public NotificationService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _notificationsFolder = Path.Combine(appData, "WindowsDb2Editor", "Notifications");
-        
-        // Ensure folder exists
-        if (!Directory.Exists(_notificationsFolder))
-        {
-            Directory.CreateDirectory(_notificationsFolder);
-            Logger.Debug("Created notifications folder: {Folder}", _notificationsFolder);
-        }
+        _notificationsFolder = UserDataFolderHelper.EnsureSubFolder("Notifications");
+        Logger.Debug("Notifications folder: {Folder}", _notificationsFolder);
     }
 
     /// <summary>

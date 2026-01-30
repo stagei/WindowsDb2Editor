@@ -18,6 +18,14 @@ namespace WindowsDb2EditorTray.Services;
 /// </summary>
 public class TrayIconManager : IDisposable
 {
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    private const int SW_RESTORE = 9;
+
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private NotifyIcon? _notifyIcon;
     private bool _disposed = false;
@@ -236,46 +244,90 @@ public class TrayIconManager : IDisposable
     }
     
     /// <summary>
+    /// Gets the user data folder (same as main app: Documents\WindowsDb2Editor or custom from preferences).
+    /// </summary>
+    private string GetUserDataFolder()
+    {
+        var defaultFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "WindowsDb2Editor");
+        var preferencesPath = Path.Combine(defaultFolder, "preferences.json");
+        if (!File.Exists(preferencesPath))
+            return defaultFolder;
+        try
+        {
+            var prefsJson = File.ReadAllText(preferencesPath);
+            var prefs = JsonSerializer.Deserialize<Dictionary<string, object>>(prefsJson);
+            if (prefs != null && prefs.TryGetValue("userDataFolder", out var folder) && folder is JsonElement elem)
+            {
+                var customFolder = elem.GetString();
+                if (!string.IsNullOrEmpty(customFolder) && Directory.Exists(customFolder))
+                {
+                    Logger.Debug("Using custom user data folder from preferences: {Path}", customFolder);
+                    return customFolder;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not read preferences, using default folder");
+        }
+        return defaultFolder;
+    }
+
+    /// <summary>
+    /// Try to find an existing WindowsDb2Editor (main app) process and bring its window to foreground.
+    /// If profileName is not null, writes it to tray_open_profile.txt so the main app can open that profile when activated.
+    /// Returns true if we activated an existing instance; false if main app is not running.
+    /// </summary>
+    private bool TryActivateExistingMainApp(string? profileName)
+    {
+        try
+        {
+            var mainProcesses = Process.GetProcessesByName("WindowsDb2Editor");
+            foreach (var p in mainProcesses)
+            {
+                try
+                {
+                    if (p.MainWindowHandle == IntPtr.Zero)
+                        continue;
+                    if (profileName != null)
+                    {
+                        var userDataFolder = GetUserDataFolder();
+                        if (!Directory.Exists(userDataFolder))
+                            Directory.CreateDirectory(userDataFolder);
+                        var filePath = Path.Combine(userDataFolder, "tray_open_profile.txt");
+                        File.WriteAllText(filePath, profileName);
+                        Logger.Info("Wrote profile request for existing main app: {Profile}", profileName);
+                    }
+                    ShowWindow(p.MainWindowHandle, SW_RESTORE);
+                    SetForegroundWindow(p.MainWindowHandle);
+                    Logger.Info("Activated existing WindowsDb2Editor window");
+                    return true;
+                }
+                finally
+                {
+                    p.Dispose();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Could not activate existing main app");
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Gets the path to the connections.json file.
     /// First checks preferences.json for custom user data folder, then falls back to default Documents location.
     /// </summary>
     private string GetConnectionsFilePath()
     {
-        // Default location (Documents\WindowsDb2Editor)
-        var defaultFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "WindowsDb2Editor");
-        
-        // Old AppData location for backwards compatibility
+        var userDataFolder = GetUserDataFolder();
         var oldAppDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "WindowsDb2Editor");
-        
-        // Try to read preferences to get custom user data folder
-        var userDataFolder = defaultFolder;
-        var preferencesPath = Path.Combine(defaultFolder, "preferences.json");
-        
-        if (File.Exists(preferencesPath))
-        {
-            try
-            {
-                var prefsJson = File.ReadAllText(preferencesPath);
-                var prefs = JsonSerializer.Deserialize<Dictionary<string, object>>(prefsJson);
-                if (prefs != null && prefs.TryGetValue("userDataFolder", out var folder) && folder is JsonElement elem)
-                {
-                    var customFolder = elem.GetString();
-                    if (!string.IsNullOrEmpty(customFolder) && Directory.Exists(customFolder))
-                    {
-                        userDataFolder = customFolder;
-                        Logger.Debug("Using custom user data folder from preferences: {Path}", userDataFolder);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, "Could not read preferences, using default folder");
-            }
-        }
         
         // Check new location first
         var newPath = Path.Combine(userDataFolder, "connections.json");
@@ -303,6 +355,12 @@ public class TrayIconManager : IDisposable
         {
             Logger.Info("Launching connection: {ProfileName}", profile.Name);
 
+            if (TryActivateExistingMainApp(profile.Name))
+            {
+                Logger.Info("Activated existing main app with profile request: {ProfileName}", profile.Name);
+                return;
+            }
+
             var mainAppPath = GetMainApplicationPath();
             if (string.IsNullOrEmpty(mainAppPath) || !File.Exists(mainAppPath))
             {
@@ -315,7 +373,8 @@ public class TrayIconManager : IDisposable
             {
                 FileName = mainAppPath,
                 Arguments = $"--profile \"{profile.Name}\"",
-                UseShellExecute = true
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(mainAppPath) ?? ""
             };
 
             Process.Start(startInfo);
@@ -330,9 +389,8 @@ public class TrayIconManager : IDisposable
 
     private string GetMainApplicationPath()
     {
-        // Try to find WindowsDb2Editor.exe in common locations
         var currentDir = AppDomain.CurrentDomain.BaseDirectory;
-        var possiblePaths = new[]
+        var possiblePaths = new List<string>
         {
             Path.Combine(currentDir, "WindowsDb2Editor.exe"),
             Path.Combine(currentDir, "..", "WindowsDb2Editor.exe"),
@@ -340,6 +398,25 @@ public class TrayIconManager : IDisposable
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsDb2Editor", "WindowsDb2Editor.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WindowsDb2Editor", "WindowsDb2Editor.exe")
         };
+
+        // Same directory as this tray exe (when both deployed together)
+        try
+        {
+            var trayPath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(trayPath))
+            {
+                var trayDir = Path.GetDirectoryName(trayPath);
+                if (!string.IsNullOrEmpty(trayDir))
+                    possiblePaths.Insert(0, Path.Combine(trayDir, "WindowsDb2Editor.exe"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not get tray exe path for main app lookup");
+        }
+
+        // Sibling output when running from solution (tray in WindowsDb2EditorTray\bin\Debug\net10.0-windows, main in WindowsDb2Editor\bin\Debug\net10.0-windows)
+        possiblePaths.Add(Path.GetFullPath(Path.Combine(currentDir, "..", "..", "..", "..", "WindowsDb2Editor", "bin", "Debug", "net10.0-windows", "WindowsDb2Editor.exe")));
 
         foreach (var path in possiblePaths)
         {
@@ -360,13 +437,16 @@ public class TrayIconManager : IDisposable
         try
         {
             Logger.Debug("Showing main window");
+            if (TryActivateExistingMainApp(null))
+                return;
             var mainAppPath = GetMainApplicationPath();
             if (!string.IsNullOrEmpty(mainAppPath) && File.Exists(mainAppPath))
             {
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = mainAppPath,
-                    UseShellExecute = true
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(mainAppPath) ?? ""
                 };
                 Process.Start(startInfo);
             }
@@ -382,6 +462,8 @@ public class TrayIconManager : IDisposable
         try
         {
             Logger.Debug("Showing main window with settings");
+            if (TryActivateExistingMainApp("__SETTINGS__"))
+                return;
             var mainAppPath = GetMainApplicationPath();
             if (!string.IsNullOrEmpty(mainAppPath) && File.Exists(mainAppPath))
             {
@@ -389,7 +471,8 @@ public class TrayIconManager : IDisposable
                 {
                     FileName = mainAppPath,
                     Arguments = "--settings",
-                    UseShellExecute = true
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(mainAppPath) ?? ""
                 };
                 Process.Start(startInfo);
             }

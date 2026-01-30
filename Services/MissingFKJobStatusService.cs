@@ -10,12 +10,12 @@ namespace WindowsDb2Editor.Services;
 /// Service for managing Missing FK Discovery batch job status using PID-based tracking.
 /// 
 /// Simple approach:
-/// - Client saves a single file with PID when starting job
-/// - On startup, check if PID process exists
+/// - Client saves a single file with PID + process executable path when starting job
+/// - On check: verify PID exists AND that the process is running the batch job exe (PIDs are reused)
 /// - Listen for process exit to re-enable start button
 /// - Clean up stale files automatically
 /// 
-/// File: MissingFK/running_job.json (contains PID + job info)
+/// File: MissingFK/running_job.json (contains PID + job info + optional ProcessPath)
 /// </summary>
 public class MissingFKJobStatusService
 {
@@ -46,11 +46,12 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Save running job info with PID. Called by CLIENT when starting a job.
+    /// Save running job info with PID and process executable path. Called by CLIENT when starting a job.
+    /// ProcessPath is used to verify the PID is still the batch job (PIDs are reused by the OS).
     /// </summary>
-    public void SaveRunningJob(int processId, string jobId, string projectFolder)
+    public void SaveRunningJob(int processId, string jobId, string projectFolder, string? processPath = null)
     {
-        Logger.Debug("Saving running job info - PID: {Pid}, JobId: {JobId}", processId, jobId);
+        Logger.Debug("Saving running job info - PID: {Pid}, JobId: {JobId}, ProcessPath: {Path}", processId, jobId, processPath ?? "(none)");
 
         try
         {
@@ -66,7 +67,8 @@ public class MissingFKJobStatusService
                 ProcessId = processId,
                 JobId = jobId,
                 ProjectFolder = projectFolder,
-                StartedAtUtc = DateTime.UtcNow
+                StartedAtUtc = DateTime.UtcNow,
+                ProcessPath = !string.IsNullOrWhiteSpace(processPath) ? processPath.Trim() : null
             };
 
             var filePath = GetRunningJobFilePath();
@@ -126,9 +128,9 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Check if a job is currently running by checking if the PID process exists.
+    /// Check if a job is currently running: PID exists AND process is running the batch job exe (PID reuse safe).
     /// Returns the running job info if running, null otherwise.
-    /// Automatically clears stale files if process doesn't exist.
+    /// Automatically clears stale files if process doesn't exist or PID was reused by another exe.
     /// </summary>
     public RunningJobInfo? GetRunningJobIfActive()
     {
@@ -138,15 +140,15 @@ public class MissingFKJobStatusService
             return null;
         }
 
-        // Check if the process still exists
-        if (IsProcessRunning(jobInfo.ProcessId))
+        // Check if the process still exists and is actually the batch job exe (PIDs are reused)
+        if (IsProcessRunningBatchJob(jobInfo.ProcessId, jobInfo.ProcessPath))
         {
             Logger.Debug("Job process still running - PID: {Pid}", jobInfo.ProcessId);
             return jobInfo;
         }
 
-        // Process doesn't exist - stale file, clear it
-        Logger.Info("Job process no longer running (PID: {Pid}), clearing stale file", jobInfo.ProcessId);
+        // Process doesn't exist or PID was reused by another executable - clear stale file
+        Logger.Info("Job process no longer running or PID reused (PID: {Pid}), clearing stale file", jobInfo.ProcessId);
         ClearRunningJob();
         return null;
     }
@@ -205,7 +207,7 @@ public class MissingFKJobStatusService
 
     /// <summary>
     /// Get a Process object for the running job. Can be used to wait for exit.
-    /// Returns null if no job running or process not found.
+    /// Returns null if no job running, process not found, or PID was reused by another exe.
     /// </summary>
     public Process? GetRunningJobProcess()
     {
@@ -217,7 +219,17 @@ public class MissingFKJobStatusService
 
         try
         {
-            return Process.GetProcessById(jobInfo.ProcessId);
+            var process = Process.GetProcessById(jobInfo.ProcessId);
+            if (process.HasExited)
+            {
+                ClearRunningJob();
+                return null;
+            }
+            if (!IsProcessRunningBatchJob(jobInfo.ProcessId, jobInfo.ProcessPath))
+            {
+                return null;
+            }
+            return process;
         }
         catch (ArgumentException)
         {
@@ -228,7 +240,7 @@ public class MissingFKJobStatusService
     }
 
     /// <summary>
-    /// Check if a process with the given PID is running.
+    /// Check if a process with the given PID is running (existence only).
     /// </summary>
     public static bool IsProcessRunning(int processId)
     {
@@ -246,6 +258,66 @@ public class MissingFKJobStatusService
         {
             // Process has exited
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Check if the given PID is running and is the batch job executable (PID reuse safe).
+    /// If expectedProcessPath is null/empty, only existence is checked (legacy JSON without ProcessPath).
+    /// </summary>
+    public static bool IsProcessRunningBatchJob(int processId, string? expectedProcessPath)
+    {
+        try
+        {
+            var process = Process.GetProcessById(processId);
+            if (process.HasExited)
+            {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(expectedProcessPath))
+            {
+                return true; // Legacy: no path stored, trust PID only
+            }
+            var actualPath = GetProcessExecutablePath(processId);
+            if (string.IsNullOrEmpty(actualPath))
+            {
+                Logger.Debug("Could not get executable path for PID {Pid}, treating as not our job", processId);
+                return false;
+            }
+            var match = Path.GetFullPath(actualPath).Equals(Path.GetFullPath(expectedProcessPath.Trim()), StringComparison.OrdinalIgnoreCase);
+            if (!match)
+            {
+                Logger.Debug("PID {Pid} is running {Actual}, not batch job {Expected}", processId, actualPath, expectedProcessPath);
+            }
+            return match;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get the main module executable path for a process. Returns null if inaccessible (e.g. permissions).
+    /// </summary>
+    private static string? GetProcessExecutablePath(int processId)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            return process.MainModule?.FileName;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
         }
     }
 
@@ -333,6 +405,7 @@ public class MissingFKJobStatusService
 
 /// <summary>
 /// Running job info - stored by CLIENT when starting a batch job.
+/// ProcessPath is used to verify the PID is still our batch job (PIDs are reused).
 /// </summary>
 public class RunningJobInfo
 {
@@ -340,6 +413,8 @@ public class RunningJobInfo
     public string JobId { get; set; } = string.Empty;
     public string ProjectFolder { get; set; } = string.Empty;
     public DateTime StartedAtUtc { get; set; }
+    /// <summary>Full path to the batch job executable; used to verify PID was not reused by another process.</summary>
+    public string? ProcessPath { get; set; }
 }
 
 /// <summary>

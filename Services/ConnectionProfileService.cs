@@ -18,18 +18,31 @@ public class ConnectionProfileService
     
     public ConnectionProfileService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var appFolder = Path.Combine(appData, "WindowsDb2Editor");
-        _profilesFile = Path.Combine(appFolder, "connection_profiles.json");
-        
-        Logger.Debug("Connection profiles file: {File}", _profilesFile);
-        
-        // Ensure directory exists
+        _profilesFile = UserDataFolderHelper.GetFilePath("connection_profiles.json");
         var directory = Path.GetDirectoryName(_profilesFile);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
-            Logger.Debug("Created profiles directory: {Directory}", directory);
+        }
+        MigrateFromAppDataIfNeeded();
+        Logger.Debug("Connection profiles file: {File}", _profilesFile);
+    }
+
+    private void MigrateFromAppDataIfNeeded()
+    {
+        if (File.Exists(_profilesFile)) return;
+        var oldPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WindowsDb2Editor", "connection_profiles.json");
+        if (!File.Exists(oldPath)) return;
+        try
+        {
+            File.Copy(oldPath, _profilesFile);
+            Logger.Info("Migrated connection_profiles.json from AppData to user data folder");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Could not migrate connection_profiles.json from AppData");
         }
     }
     

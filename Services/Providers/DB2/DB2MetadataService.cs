@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using NLog;
 using WindowsDb2Editor.Data;
+using WindowsDb2Editor.Services;
 
 namespace WindowsDb2Editor.Services.Providers.DB2;
 
@@ -23,15 +24,12 @@ public class DB2MetadataService
     {
         _metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
         
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _metadataFolder = Path.Combine(appData, "WindowsDb2Editor", "metadata");
-        
+        _metadataFolder = UserDataFolderHelper.EnsureSubFolder("metadata");
         if (!Directory.Exists(_metadataFolder))
         {
             Directory.CreateDirectory(_metadataFolder);
             Logger.Debug("Created metadata folder: {Folder}", _metadataFolder);
         }
-        
         Logger.Debug("Metadata folder: {Folder}", _metadataFolder);
     }
     

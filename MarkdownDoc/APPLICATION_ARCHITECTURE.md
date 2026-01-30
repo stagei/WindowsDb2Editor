@@ -704,13 +704,22 @@ To add PostgreSQL support, create these files:
 
 ### User Data Files (Separate from ConfigFiles/)
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `connections.json` | User Documents | Saved connection profiles |
-| `preferences.json` | User Documents | User preferences (theme, fonts, language) |
-| `query-history.json` | User Documents | Recent query history |
-| `nlog.config` | App Root | Logging configuration |
-| `appsettings.json` | App Root | Application settings |
+All user-specific files live under the **user data folder** (default: `Documents\WindowsDb2Editor`; configurable in **View → Settings**).
+
+| File / Folder | Purpose |
+|---------------|---------|
+| `connections.json` | Saved connection profiles |
+| `preferences.json` | User preferences (theme, fonts, language) |
+| `query-history.json` | Recent query history |
+| `connection_profiles.json` | Connection profile cache |
+| `connection_statistics.json` | Connection timing stats |
+| `missing-fk-search-history.json` | Missing FK search history |
+| `missing-fk-ignore-history.json` | Missing FK ignore history |
+| `Themes\` | User custom themes |
+| `Notifications\` | Notification payloads (tray) |
+| `metadata\` | Metadata cache (DB2, etc.) |
+
+Logging configuration (`nlog.config`) and application settings (`appsettings.json`) remain in the application directory.
 
 ## User Data Folder Structure
 
@@ -719,8 +728,13 @@ C:\Users\<user>\Documents\WindowsDb2Editor\
 ├── connections.json              (saved profiles)
 ├── preferences.json              (user settings)
 ├── query-history.json            (query history)
+├── connection_profiles.json      (profile cache)
+├── connection_statistics.json    (connection timing)
 ├── missing-fk-search-history.json
 ├── missing-fk-ignore-history.json
+├── Themes\                       (user custom themes)
+├── Notifications\                (tray notifications)
+├── metadata\                     (metadata cache)
 └── MissingFK\
     ├── running_job.json          (PID tracking)
     ├── IgnorePatterns\           (ignore pattern files)

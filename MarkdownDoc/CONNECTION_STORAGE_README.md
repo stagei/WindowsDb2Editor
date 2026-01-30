@@ -41,11 +41,12 @@ Access recent connections quickly from **File → Recent Connections**:
 ## Storage Location
 
 ### Connections File
-**Path**: `{ApplicationDirectory}\connections.json`
+**Path**: User data folder (default: `Documents\WindowsDb2Editor\connections.json`).  
+The folder is configurable in **View → Settings → Data Files**.
 
 **Example path**: 
 ```
-C:\opt\src\WindowsDb2Editor\bin\Debug\net10.0-windows\connections.json
+C:\Users\<user>\Documents\WindowsDb2Editor\connections.json
 ```
 
 ### File Format

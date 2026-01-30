@@ -22,7 +22,7 @@ namespace WindowsDb2Editor.Services;
 public static class UIStyleService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private static readonly string UserThemesDirectory = Path.Combine(AppDataHelper.GetAppDataFolder(), "Themes");
+    private static readonly string UserThemesDirectory = UserDataFolderHelper.EnsureSubFolder("Themes");
     private static AppTheme? _currentTheme;
     
     /// <summary>
