@@ -672,7 +672,8 @@ public class DB2ConnectionManager : IConnectionManager
     public bool IsConnected => _db2Connection != null && _db2Connection.State == ConnectionState.Open;
 
     /// <summary>
-    /// Reconnect to the database if connection is lost
+    /// Reconnect to the database if connection is lost.
+    /// Throws InvalidOperationException with inner cause when reconnection fails.
     /// </summary>
     public async Task<bool> ReconnectAsync()
     {
@@ -704,7 +705,7 @@ public class DB2ConnectionManager : IConnectionManager
         catch (Exception ex)
         {
             Logger.Error(ex, "Reconnection failed");
-            return false;
+            throw new InvalidOperationException("Connection is not open and reconnection failed: " + ex.Message, ex);
         }
     }
     
