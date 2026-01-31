@@ -105,6 +105,8 @@ sql=$sql
     if ($Execute) {
         $paramList = if ($obj.parameters -and $obj.parameters.Count -gt 0) { @($obj.parameters | ForEach-Object { $_.ToString() }) } else { @() }
         $execSql = Get-ExecutableSql -Sql $sql -ParamNames $paramList
+        # Placeholder statements (e.g. ExecuteUserQuery with {user_sql}) are not runnable; use SELECT 1 for test
+        if ($execSql -match '\{user_sql\}') { $execSql = 'SELECT 1' }
         $tempOut = Join-Path $outputDir "stmt_$n`_$alias.json"
         $runProfile = if ($Profile) { $Profile } else { 'PostgreSQL_Local' }
         if (-not (Test-Path $exePath)) {

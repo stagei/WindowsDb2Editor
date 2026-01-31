@@ -24,11 +24,25 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 # Test using CLI - works with any provider (DB2, PostgreSQL, etc.)
+# Use ProcessStartInfo so exit code is reliable (.NET exe does not set $LASTEXITCODE in PowerShell)
 $exePath = Join-Path $projectRoot "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
 $outFile = Join-Path $OutputDir "test_schemas.json"
-$result = & $exePath --profile $Profile --command list-schemas --outfile $outFile 2>&1
+$psi = New-Object System.Diagnostics.ProcessStartInfo -Property @{
+    FileName = $exePath
+    Arguments = "--profile $Profile --command list-schemas --outfile `"$outFile`""
+    UseShellExecute = $false
+    RedirectStandardOutput = $true
+    RedirectStandardError = $true
+    CreateNoWindow = $true
+}
+$proc = [System.Diagnostics.Process]::Start($psi)
+$stdout = $proc.StandardOutput.ReadToEnd()
+$stderr = $proc.StandardError.ReadToEnd()
+$proc.WaitForExit()
+$exitCode = $proc.ExitCode
+$result = $stdout, $stderr | Where-Object { $_ }
 
-if ($LASTEXITCODE -eq 0) {
+if ($exitCode -eq 0) {
     Write-TestLog "Connection successful (profile: $Profile)." -Level PASS
     if (Test-Path $outFile) {
         $schemas = Get-Content $outFile -Raw | ConvertFrom-Json
@@ -36,7 +50,9 @@ if ($LASTEXITCODE -eq 0) {
         Write-TestLog "Schemas returned: $count" -Level INFO
         $schemas | Format-Table -AutoSize | Out-String | ForEach-Object { Write-TestLog $_ -Level DEBUG -NoConsole }
     }
+    exit 0
 } else {
-    Write-TestLog "Connection failed (profile: $Profile). ExitCode: $LASTEXITCODE" -Level FAIL
+    Write-TestLog "Connection failed (profile: $Profile). ExitCode: $exitCode" -Level FAIL
     Write-TestLog ($result | Out-String) -Level ERROR
+    exit 1
 }

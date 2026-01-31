@@ -95,7 +95,7 @@
       "source": "PostgreSQLConnectionManager"
     },
     "GetSequencesForSchema": {
-      "sql": "SELECT s.sequencename AS seqname, (SELECT rolname FROM pg_roles r JOIN pg_class c ON c.relowner = r.oid WHERE c.relname = s.sequencename AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = s.schemaname) LIMIT 1) AS owner, '' AS remarks FROM information_schema.sequences s WHERE s.sequence_schema = ? ORDER BY s.sequencename",
+      "sql": "SELECT s.sequence_name AS seqname, (SELECT rolname FROM pg_roles r JOIN pg_class c ON c.relowner = r.oid WHERE c.relname = s.sequence_name AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = s.sequence_schema) LIMIT 1) AS owner, '' AS remarks FROM information_schema.sequences s WHERE s.sequence_schema = ? ORDER BY s.sequence_name",
       "description": "Get sequences in a schema.",
       "parameters": ["SEQSCHEMA"],
       "returns": "List of sequences",
@@ -123,7 +123,7 @@
       "source": "Property Dialogs"
     },
     "GetPrimaryKeysForTable": {
-      "sql": "SELECT a.attribute_name AS colname, (array_position(ix.indkey, a.attnum))::int AS colseq FROM pg_index ix JOIN pg_class t ON t.oid = ix.indrelid JOIN pg_namespace n ON n.oid = t.relnamespace JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND a.attisdropped = false WHERE n.nspname = ? AND t.relname = ? AND ix.indisprimary ORDER BY array_position(ix.indkey, a.attnum)",
+      "sql": "SELECT a.attname AS colname, (array_position(ix.indkey, a.attnum))::int AS colseq FROM pg_index ix JOIN pg_class t ON t.oid = ix.indrelid JOIN pg_namespace n ON n.oid = t.relnamespace JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND a.attisdropped = false WHERE n.nspname = ? AND t.relname = ? AND ix.indisprimary ORDER BY array_position(ix.indkey, a.attnum)",
       "description": "Get primary key columns.",
       "parameters": ["TABSCHEMA", "TABNAME"],
       "returns": "List of PK columns",

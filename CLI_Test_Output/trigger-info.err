@@ -1,1 +1,1 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: Trigger not found: INL.MY_TRIGGER

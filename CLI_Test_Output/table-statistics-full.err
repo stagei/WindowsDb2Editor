@@ -1,1 +1,1 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: SQL statement 'GetTableStatistics_Full' not found for POSTGRESQL 18

@@ -1,1 +1,1 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: Function not found: INL.MY_FUNC

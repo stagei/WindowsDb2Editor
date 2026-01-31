@@ -1,1 +1,3 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: Query failed: 42601: syntax error at or near "AS"
+
+POSITION: 50

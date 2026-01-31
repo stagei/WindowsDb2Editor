@@ -1,1 +1,1 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: SQL statement 'GetTableSize' not found for POSTGRESQL 18

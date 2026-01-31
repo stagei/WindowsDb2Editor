@@ -1,5 +1,5 @@
 {
-  "totalCommands": 91,
+  "totalCommands": 92,
   "categoryCount": 22,
   "categories": [
     {
@@ -92,12 +92,17 @@
     },
     {
       "category": "Connection",
-      "commandCount": 3,
+      "commandCount": 4,
       "commands": [
         {
           "command": "connection-profiles",
           "category": "Connection",
           "description": "List connection profiles"
+        },
+        {
+          "command": "create-profile",
+          "category": "Connection",
+          "description": "Create a new connection profile (DB2 or PostgreSQL); -name, -provider, -host, -port, -database, -username, -password"
         },
         {
           "command": "connection-stats",
@@ -592,5 +597,5 @@
   ],
   "usage": "WindowsDb2Editor.exe -Profile \u003Cprofile\u003E -Command \u003Ccommand\u003E -Outfile \u003Coutput.json\u003E [options]",
   "note": "All commands export structured JSON for automated testing",
-  "retrievedAt": "2026-01-31T13:41:38.271218+01:00"
+  "retrievedAt": "2026-01-31T20:59:27.4796041+01:00"
 }

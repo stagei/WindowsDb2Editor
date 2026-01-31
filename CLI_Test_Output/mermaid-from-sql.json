@@ -3,5 +3,5 @@
   "mermaidDiagram": "erDiagram\r\n    TEST {\r\n        int ID\r\n    }",
   "diagramLength": 44,
   "note": "SQL DDL successfully converted to Mermaid ERD",
-  "retrievedAt": "2025-12-14T18:47:51.7685046+01:00"
+  "retrievedAt": "2026-01-31T20:57:50.4026497+01:00"
 }

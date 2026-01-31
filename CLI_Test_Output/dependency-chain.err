@@ -1,1 +1,1 @@
-ERROR: PostgreSQL connection manager not yet implemented
+ERROR: Both Object (source) and Schema (target) parameters required

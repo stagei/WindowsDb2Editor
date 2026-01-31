@@ -3,5 +3,5 @@
   "sqlDdl": "CREATE TABLE TEST (\r\n    ID INTEGER,\r\n    PRIMARY KEY (ID)\r\n);",
   "ddlLength": 62,
   "note": "Mermaid ERD successfully converted to SQL DDL",
-  "retrievedAt": "2025-12-14T18:47:54.1782723+01:00"
+  "retrievedAt": "2026-01-31T20:57:53.6707406+01:00"
 }
