@@ -59,8 +59,8 @@ public class DatabaseConnection : IConnectionInfo
                 $"Data Source={Server}:{Port}/{Database};User Id={Username};Password={pwd};Connection Timeout={ConnectionTimeout};",
             "mysql" => 
                 $"Server={Server};Port={Port};Database={Database};Uid={Username};Pwd={pwd};Connection Timeout={ConnectionTimeout};",
-            _ => // Default to DB2
-                $"Server={Server}:{Port};Database={Database};UID={Username};PWD={pwd};ConnectTimeout={ConnectionTimeout};"
+            _ => // Default to DB2; Security=0 avoids SQL30082N reason 36 (UNEXPECTED CLIENT ERROR) when server uses simple auth
+                $"Server={Server}:{Port};Database={Database};UID={Username};PWD={pwd};ConnectTimeout={ConnectionTimeout};Security=0;"
         };
     }
 
