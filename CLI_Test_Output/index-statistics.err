@@ -1,1 +1,1 @@
-ERROR: Object parameter required (format: SCHEMA.TABLE)
+ERROR: PostgreSQL connection manager not yet implemented

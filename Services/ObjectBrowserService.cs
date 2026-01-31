@@ -621,7 +621,7 @@ public class ObjectBrowserService
             string sql;
             if (_metadataHandler != null)
             {
-                sql = _metadataHandler.GetQuery("DB2", "12.1", "GetSchemasStatement");
+                sql = _metadataHandler.GetStatement("GetSchemasStatement");
                 Logger.Debug("Using SQL from MetadataHandler: GetSchemasStatement");
             }
             else

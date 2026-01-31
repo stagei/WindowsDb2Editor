@@ -382,7 +382,7 @@ public partial class MissingFKDiscoveryDialog : Window
         Logger.Debug("Loading schemas");
         
         var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
-        var version = "12.1";
+        var version = provider == "POSTGRESQL" ? "18" : "12.1";
         
         // Use MetadataHandler to get SQL for listing schemas
         var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");
@@ -420,7 +420,7 @@ public partial class MissingFKDiscoveryDialog : Window
         }
         
         var provider = _connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
-        var version = "12.1";
+        var version = provider == "POSTGRESQL" ? "18" : "12.1";
         
         // Use MetadataHandler to get SQL for listing tables
         var metadataHandler = App.MetadataHandler ?? throw new InvalidOperationException("MetadataHandler not initialized");

@@ -1,9 +1,14 @@
 # Comprehensive CLI Command Testing Script
 # Tests ALL CLI commands with file output and generates detailed report
+# Provider-independent: use -Profile / -Provider or env WDE_TEST_PROFILE, WDE_TEST_PROVIDER
 
 param(
     [Parameter(Mandatory=$false)]
-    [string]$ProfileName = "FKKTOTST",
+    [string]$ProfileName,
+    
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('', 'DB2', 'PostgreSQL')]
+    [string]$Provider,
     
     [Parameter(Mandatory=$false)]
     [string]$TestSchema = "INL",
@@ -11,6 +16,12 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$TestTable = "INL.BILAGNR"
 )
+
+# Load shared config (profile/provider from env if not passed)
+$testsRoot = Split-Path $PSScriptRoot -Parent
+. (Join-Path $testsRoot "TestConfig.ps1") -Profile $ProfileName -Provider $Provider
+$ProfileName = Get-WdeTestProfile
+$Provider = Get-WdeTestProvider
 
 $ErrorActionPreference = "Continue"
 $AppPath = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
@@ -25,6 +36,7 @@ $report = @"
 # CLI Command Test Report
 **Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 **Profile**: $ProfileName
+**Provider**: $(if ($Provider) { $Provider } else { 'all' })
 **Test Schema**: $TestSchema
 **Test Table**: $TestTable
 
@@ -293,6 +305,10 @@ foreach ($category in $cliCommands.Keys) {
     Write-Host "╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     
     foreach ($cmd in $cliCommands[$category]) {
+        if (-not (Test-WdeCommandSupportedForProvider -CommandName $cmd.name)) {
+            Write-Host "  Skipping $($cmd.name) (not supported for provider: $Provider)" -ForegroundColor DarkGray
+            continue
+        }
         $result = Test-CLICommand -CommandName $cmd.name -Arguments $cmd.args -Category $category
         $testResults += $result
         Start-Sleep -Milliseconds 500  # Brief pause between tests

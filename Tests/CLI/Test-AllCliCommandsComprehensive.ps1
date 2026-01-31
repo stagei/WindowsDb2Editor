@@ -1,12 +1,19 @@
 # Comprehensive CLI Test - ALL 119 Commands with Full I/O Capture
-# Tests every single CLI command with FKKTOTST connection
+# Provider-independent: use -Profile / -Provider or env WDE_TEST_PROFILE, WDE_TEST_PROVIDER
 # Captures: CLI Input, Console Output (logs), and JSON Results
-# Date: December 16, 2025
 
 param(
-    [string]$Profile = "FKKTOTST",
+    [string]$Profile,
+    [ValidateSet('', 'DB2', 'PostgreSQL')]
+    [string]$Provider,
     [switch]$SkipBuild
 )
+
+# Load shared config (profile/provider from env if not passed)
+$testsRoot = Split-Path $PSScriptRoot -Parent
+. (Join-Path $testsRoot "TestConfig.ps1") -Profile $Profile -Provider $Provider
+$Profile = Get-WdeTestProfile
+$Provider = Get-WdeTestProvider
 
 $ErrorActionPreference = "Continue"
 $testResults = @()
@@ -23,8 +30,9 @@ $connectionProfile = $Profile
 $exePath = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
 
 Write-Host "=" * 80 -ForegroundColor Cyan
-Write-Host "COMPREHENSIVE CLI TEST - ALL 119 COMMANDS WITH I/O CAPTURE" -ForegroundColor Cyan
-Write-Host "Connection: $connectionProfile" -ForegroundColor Cyan
+Write-Host "COMPREHENSIVE CLI TEST - ALL COMMANDS WITH I/O CAPTURE" -ForegroundColor Cyan
+Write-Host "Profile: $connectionProfile" -ForegroundColor Cyan
+Write-Host "Provider: $(if ($Provider) { $Provider } else { 'all' })" -ForegroundColor Cyan
 Write-Host "Started: $(Get-Date)" -ForegroundColor Cyan
 Write-Host "=" * 80 -ForegroundColor Cyan
 Write-Host ""
@@ -771,6 +779,18 @@ $failed = 0
 $current = 0
 
 foreach ($cmd in $commands) {
+    if (-not (Test-WdeCommandSupportedForProvider -CommandName $cmd.Name)) {
+        Write-Host "  Skipping $($cmd.Name) (not supported for provider: $Provider)" -ForegroundColor DarkGray
+        $testResults += @{
+            Command = $cmd.Name
+            Description = $cmd.Description
+            Status = "Skipped"
+            SkipReason = "DB2-only"
+            DurationMs = 0
+            ExitCode = $null
+        }
+        continue
+    }
     $current++
     $progress = [math]::Round(($current / $totalCommands) * 100, 1)
     

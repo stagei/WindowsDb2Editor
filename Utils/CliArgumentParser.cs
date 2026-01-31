@@ -38,6 +38,16 @@ public class CliArguments
     // NEW: Missing FK Discovery parameters
     public string? Input { get; set; } // Input JSON file path for missing-fk-scan
     public string? Ignore { get; set; } // Ignore JSON file path (optional)
+
+    // NEW: create-profile command (no connection required)
+    public string? CreateName { get; set; }   // Profile name for new connection
+    public string? CreateProvider { get; set; } // DB2 | PostgreSQL
+    public string? CreateHost { get; set; }   // Host or server
+    public int? CreatePort { get; set; }      // Port (default by provider: DB2 50000, PostgreSQL 5432)
+    public string? CreateDatabase { get; set; }
+    public string? CreateUsername { get; set; }
+    public string? CreatePassword { get; set; }
+    public string? CreateVersion { get; set; } // Optional: 12.1 for DB2, 18 for PostgreSQL
 }
 
 /// <summary>
@@ -239,6 +249,78 @@ public class CliArgumentParser
                     {
                         cliArgs.Ignore = args[++i];
                         Logger.Debug("Ignore: {Ignore}", cliArgs.Ignore);
+                    }
+                    break;
+
+                // create-profile: --name, --provider, --host/--server, --port, --database, --username, --password, --version
+                case "-name":
+                case "--name":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateName = args[++i];
+                        Logger.Debug("CreateName: {Name}", cliArgs.CreateName);
+                    }
+                    break;
+                case "-provider":
+                case "--provider":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateProvider = args[++i];
+                        Logger.Debug("CreateProvider: {Provider}", cliArgs.CreateProvider);
+                    }
+                    break;
+                case "-host":
+                case "--host":
+                case "-server":
+                case "--server":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateHost = args[++i];
+                        Logger.Debug("CreateHost: {Host}", cliArgs.CreateHost);
+                    }
+                    break;
+                case "-port":
+                case "--port":
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int port))
+                    {
+                        cliArgs.CreatePort = port;
+                        Logger.Debug("CreatePort: {Port}", cliArgs.CreatePort);
+                    }
+                    break;
+                case "-database":
+                case "--database":
+                case "-db":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateDatabase = args[++i];
+                        Logger.Debug("CreateDatabase: {Database}", cliArgs.CreateDatabase);
+                    }
+                    break;
+                case "-username":
+                case "--username":
+                case "-user":
+                case "-u":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateUsername = args[++i];
+                        Logger.Debug("CreateUsername: {User}", cliArgs.CreateUsername);
+                    }
+                    break;
+                case "-password":
+                case "--password":
+                case "-pwd":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreatePassword = args[++i];
+                        Logger.Debug("CreatePassword: (set)");
+                    }
+                    break;
+                case "-version":
+                case "--version":
+                    if (i + 1 < args.Length)
+                    {
+                        cliArgs.CreateVersion = args[++i];
+                        Logger.Debug("CreateVersion: {Version}", cliArgs.CreateVersion);
                     }
                     break;
             }

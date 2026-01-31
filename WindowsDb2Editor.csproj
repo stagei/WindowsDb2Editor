@@ -54,6 +54,7 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2535.41" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.400" />
+    <PackageReference Include="Npgsql" Version="9.0.1" />
     <PackageReference Include="NLog" Version="6.0.6" />
     <PackageReference Include="NLog.Extensions.Logging" Version="6.0.6" />
     <PackageReference Include="NLog.Schema" Version="6.0.6" />
@@ -84,6 +85,10 @@
     </None>
     <None Update="ConfigFiles\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Docs\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Docs\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
   

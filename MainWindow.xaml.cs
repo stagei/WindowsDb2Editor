@@ -1842,7 +1842,7 @@ public partial class MainWindow : Window
         Logger.Info("Documentation clicked");
         try
         {
-            var docPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MarkdownDoc");
+            var docPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Docs");
             if (Directory.Exists(docPath))
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -1853,7 +1853,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                MessageBox.Show("Documentation folder not found.\n\nCheck the MarkdownDoc folder in the application directory.", 
+                MessageBox.Show("Documentation folder not found.\n\nCheck the Docs folder in the application directory.", 
                     "Documentation", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }

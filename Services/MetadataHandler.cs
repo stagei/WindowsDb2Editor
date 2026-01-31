@@ -373,7 +373,7 @@ public class MetadataHandler : IMetadataProvider
     {
         _connectionManager = connectionManager;
         _currentProvider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
-        _currentVersion = "12.1"; // TODO: Get version from connection or detect it
+        _currentVersion = _currentProvider == "POSTGRESQL" ? "18" : "12.1"; // TODO: Get version from connection or detect it
     }
     
     public string GetStatement(string statementName)

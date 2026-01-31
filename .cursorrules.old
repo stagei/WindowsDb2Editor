@@ -34,15 +34,15 @@ This is a C# WPF application for Windows 11 that provides a DBeaver-like databas
 ## Documentation Standards
 
 ### Markdown Documentation Location
-**CRITICAL**: All markdown documentation files MUST be created in the `MarkdownDoc/` directory.
+**CRITICAL**: All markdown documentation files MUST be placed in the `.\Docs` folder.
 
 **Rules:**
-- All new `.md` files (except README.md) should be created in `MarkdownDoc/`
-- Feature specifications → `MarkdownDoc/`
-- Implementation summaries → `MarkdownDoc/`
-- Status reports → `MarkdownDoc/`
-- Technical guides → `MarkdownDoc/`
-- Analysis documents → `MarkdownDoc/`
+- All new `.md` files (except README.md at project root) should be created in `.\Docs`
+- Feature specifications → `Docs/`
+- Implementation summaries → `Docs/`
+- Status reports → `Docs/`
+- Technical guides → `Docs/`
+- Analysis documents → `Docs/`
 - Only `README.md` stays in the project root
 
 **When creating documentation:**

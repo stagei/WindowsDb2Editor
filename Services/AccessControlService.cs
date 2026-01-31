@@ -44,7 +44,7 @@ public class AccessControlService
                 try
                 {
                     var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
-                    var version = "12.1"; // TODO: Get from connection
+                    var version = provider == "POSTGRESQL" ? "18" : "12.1";
                     var sqlTemplate = _metadataHandler.GetQuery(provider, version, "GetUserAccessLevel");
                     sql = sqlTemplate.Replace("?", $"'{username}'"); // Replace parameter placeholder
                     Logger.Debug("Using SQL from MetadataHandler: GetUserAccessLevel (parameter replaced)");

@@ -1,15 +1,27 @@
-# Comprehensive Validation of All 129 Queries
-# Systematically tests every query defined in db2_12.1_sql_statements.json
-# Profile: FKKTOTST (DBA Access)
+# Comprehensive Validation of All Queries
+# Provider-independent: tests queries from db2_12.1 or postgresql_18_sql_statements.json
+# Use -Profile / -Provider or env WDE_TEST_PROFILE, WDE_TEST_PROVIDER
 
 param(
-    [string]$Profile = "FKKTOTST",
+    [string]$Profile,
+    [ValidateSet('', 'DB2', 'PostgreSQL')]
+    [string]$Provider,
     [int]$MaxHours = 20
 )
 
+# Load shared config (profile/provider from env if not passed)
+$testsRoot = Split-Path $PSScriptRoot -Parent
+. (Join-Path $testsRoot "TestConfig.ps1") -Profile $Profile -Provider $Provider
+$Profile = Get-WdeTestProfile
+$Provider = Get-WdeTestProvider
+
 $startTime = Get-Date
 $exe = "bin\Debug\net10.0-windows\WindowsDb2Editor.exe"
-$jsonFile = "ConfigFiles\db2_12.1_sql_statements.json"
+$jsonFile = if ($Provider -eq 'PostgreSQL') {
+    "ConfigFiles\postgresql_18_sql_statements.json"
+} else {
+    "ConfigFiles\db2_12.1_sql_statements.json"
+}
 $OutputDir = "CLI_Test_Output"
 
 # Create output directory if it doesn't exist
@@ -17,7 +29,11 @@ if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 }
 
-# Load all queries from JSON
+# Load all queries from JSON (provider-specific file)
+if (-not (Test-Path $jsonFile)) {
+    Write-Host "ERROR: SQL statements file not found: $jsonFile" -ForegroundColor Red
+    exit 1
+}
 $json = Get-Content $jsonFile -Raw | ConvertFrom-Json
 $queries = $json.statements.PSObject.Properties
 
@@ -27,6 +43,8 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Total queries in JSON: $($queries.Count)" -ForegroundColor Yellow
 Write-Host "Profile: $Profile" -ForegroundColor Cyan
+Write-Host "Provider: $(if ($Provider) { $Provider } else { 'DB2 (default)' })" -ForegroundColor Cyan
+Write-Host "SQL file: $jsonFile" -ForegroundColor Gray
 Write-Host "Max time: $MaxHours hours" -ForegroundColor White
 Write-Host ""
 
@@ -35,8 +53,8 @@ $results = @{
     Tested = @()
     Passed = @()
     Failed = @()
-    Skipped = @()
     NoCliCommand = @()
+    Skipped = @()
 }
 
 # Find test objects
@@ -46,7 +64,9 @@ Write-Host "🔍 Finding test objects..." -ForegroundColor Cyan
 & $exe --profile $Profile --command list-procedures --limit 5 --outfile "$OutputDir\_test_procedures.json" 2>&1 | Out-Null
 & $exe --profile $Profile --command list-functions --limit 5 --outfile "$OutputDir\_test_functions.json" 2>&1 | Out-Null
 & $exe --profile $Profile --command list-triggers --limit 5 --outfile "$OutputDir\_test_triggers.json" 2>&1 | Out-Null
-& $exe --profile $Profile --command list-packages --limit 5 --outfile "$OutputDir\_test_packages.json" 2>&1 | Out-Null
+if ($Provider -ne 'PostgreSQL') {
+    & $exe --profile $Profile --command list-packages --limit 5 --outfile "$OutputDir\_test_packages.json" 2>&1 | Out-Null
+}
 
 $testTable = if (Test-Path "$OutputDir\_test_tables.json") {
     $data = Get-Content "$OutputDir\_test_tables.json" -Raw | ConvertFrom-Json
@@ -152,7 +172,11 @@ foreach ($query in $queries) {
         $cliCmd = $mapping.cmd
         $cliObj = $mapping.obj
         $cliSchema = $mapping.schema
-        
+        if (-not (Test-WdeCommandSupportedForProvider -CommandName $cliCmd)) {
+            Write-Host "   ⏭️  Skipped (DB2-only: $cliCmd)" -ForegroundColor DarkGray
+            $results.Skipped += $queryName
+            continue
+        }
         if ($cliObj -eq $null -and $cliSchema -eq $null) {
             # Simple command
             Write-Host "   Executing: $cliCmd" -ForegroundColor Cyan
@@ -197,6 +221,9 @@ Write-Host "Tested: $totalTested" -ForegroundColor Cyan
 Write-Host "Passed: $($results.Passed.Count)" -ForegroundColor Green
 Write-Host "Failed: $($results.Failed.Count)" -ForegroundColor Red
 Write-Host "No CLI Command: $($results.NoCliCommand.Count)" -ForegroundColor Yellow
+if ($results.Skipped.Count -gt 0) {
+    Write-Host "Skipped (provider-specific): $($results.Skipped.Count)" -ForegroundColor DarkGray
+}
 Write-Host "Success Rate: $passRate%" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Elapsed Time: $([math]::Round(((Get-Date) - $startTime).TotalHours, 2)) hours" -ForegroundColor White

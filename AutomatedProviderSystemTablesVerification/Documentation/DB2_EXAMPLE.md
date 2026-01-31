@@ -416,9 +416,9 @@ Aim for:
 - `Utils/CliArgumentParser.cs` - Parse --tab parameter
 
 ### Documentation
-- `MarkdownDoc/TAB_SELECTION_IMPLEMENTATION_COMPLETE.md`
-- `MarkdownDoc/PROPERTY_FORMS_VALIDATION_COMPLETE.md`
-- `MarkdownDoc/ALL_OBJECT_TYPES_IMPLEMENTED.md`
+- `Docs/TAB_SELECTION_IMPLEMENTATION_COMPLETE.md`
+- `Docs/PROPERTY_FORMS_VALIDATION_COMPLETE.md`
+- `Docs/ALL_OBJECT_TYPES_IMPLEMENTED.md`
 
 ---
 

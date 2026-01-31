@@ -1,5 +1,6 @@
 using WindowsDb2Editor.Models;
 using WindowsDb2Editor.Data.Providers.DB2;
+using WindowsDb2Editor.Data.Providers.PostgreSQL;
 
 namespace WindowsDb2Editor.Data;
 
@@ -17,7 +18,7 @@ public static class ConnectionManagerFactory
         
         return provider switch
         {
-            "POSTGRESQL" or "POSTGRES" => throw new NotImplementedException("PostgreSQL connection manager not yet implemented"),
+            "POSTGRESQL" or "POSTGRES" => new PostgreSQLConnectionManager(connection),
             "SQLSERVER" or "MSSQL" => throw new NotImplementedException("SQL Server connection manager not yet implemented"),
             "ORACLE" => throw new NotImplementedException("Oracle connection manager not yet implemented"),
             "MYSQL" => throw new NotImplementedException("MySQL connection manager not yet implemented"),

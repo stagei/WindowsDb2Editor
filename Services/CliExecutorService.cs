@@ -45,7 +45,7 @@ public class CliExecutorService
             }
             
             // Handle meta commands that don't require a profile
-            if (args.Command == "help-all" || args.Command == "cli-version" || args.Command == "connection-profiles")
+            if (args.Command == "help-all" || args.Command == "cli-version" || args.Command == "connection-profiles" || args.Command == "create-profile")
             {
                 Logger.Info("Executing profile-independent command: {Command}", args.Command);
                 return await _commandHandler.ExecuteCommandAsync(null!, args);
@@ -366,8 +366,13 @@ EXIT CODES:
     0   Success
     1   Error occurred
 
+  CREATE PROFILE (no -Profile required):
+    create-profile    Create a new connection profile (DB2 or PostgreSQL)
+                      -Command create-profile -name MyProfile -provider PostgreSQL -host localhost -port 5432 -database postgres -username postgres -password secret [-outfile result.json]
+                      -Command create-profile -name MyDB2 -provider DB2 -host dbhost -port 50000 -database MYDB -username user -password secret
+
 AUTOMATED TESTING WORKFLOW:
-    1. Create connection profiles in GUI
+    1. Create connection profiles via GUI or CLI: -Command create-profile -name X -provider DB2|PostgreSQL -host ... -port ... -database ... -username ... -password ...
     2. Run CLI commands with -Command parameter
     3. Verify JSON output structure
     4. Build test assertions from JSON results
@@ -375,8 +380,8 @@ AUTOMATED TESTING WORKFLOW:
     6. Compare results across database versions
 
 NOTES:
-    - Connection profiles: %LOCALAPPDATA%\WindowsDb2Editor\connection_profiles.json
-    - Create profiles in GUI first, then reference by name
+    - Connection profiles: Documents\WindowsDb2Editor\connections.json (create-profile writes here; password DPAPI-encrypted)
+    - Create profiles in GUI or via create-profile CLI, then reference by -Profile name
     - Passwords are encrypted in saved profiles
     - All command outputs are in JSON format for easy parsing
     - Use -Limit to prevent overwhelming output for large schemas

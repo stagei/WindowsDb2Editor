@@ -130,6 +130,11 @@ namespace WindowsDb2Editor.Services
                 // Encrypt password
                 var encryptedPassword = EncryptPassword(connection.Password);
                 
+                // Version: use from connection if set, else default by provider (12.1 DB2, 18 PostgreSQL)
+                var version = !string.IsNullOrWhiteSpace(connection.Version)
+                    ? connection.Version!.Trim()
+                    : (connection.ProviderType?.ToLowerInvariant() is "postgresql" or "postgres" ? "18" : "12.1");
+
                 // Create saved connection
                 var savedConnection = new SavedConnection
                 {
@@ -141,7 +146,7 @@ namespace WindowsDb2Editor.Services
                     EncryptedPassword = encryptedPassword,
                     LastUsed = DateTime.Now,
                     Provider = connection.ProviderType?.ToUpperInvariant() ?? "DB2",
-                    Version = "12.1" // TODO: Store version from connection
+                    Version = version
                 };
                 
                 // Remove existing connection with same name

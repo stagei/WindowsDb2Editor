@@ -1,1 +1,1 @@
-ERROR: SQL statement 'ListAllIndexes' not found for DB2 12.1
+ERROR: PostgreSQL connection manager not yet implemented

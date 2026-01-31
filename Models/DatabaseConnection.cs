@@ -21,6 +21,11 @@ public class DatabaseConnection : IConnectionInfo
     /// Default is db2 for backward compatibility
     /// </summary>
     public string ProviderType { get; set; } = "db2";
+
+    /// <summary>
+    /// Provider version (e.g. 12.1 for DB2, 18 for PostgreSQL). Optional; defaults by provider when saving.
+    /// </summary>
+    public string? Version { get; set; }
     
     /// <summary>
     /// Whether this connection should be read-only (no DML/DDL allowed)

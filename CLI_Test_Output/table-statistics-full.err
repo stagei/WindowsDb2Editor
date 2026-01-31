@@ -1,1 +1,1 @@
-ERROR: Column 'FreePages' does not belong to table Results.
+ERROR: PostgreSQL connection manager not yet implemented

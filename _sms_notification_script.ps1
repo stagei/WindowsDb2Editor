@@ -3,7 +3,7 @@
 
 param(
     [string]$PhoneNumber = "+4797188358",
-    [string]$ProgressFile = "MarkdownDoc\IMPLEMENTATION_PROGRESS_LOG.md"
+    [string]$ProgressFile = "Docs\IMPLEMENTATION_PROGRESS_LOG.md"
 )
 
 function Send-ProgressSMS {

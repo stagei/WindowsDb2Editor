@@ -1,1 +1,1 @@
-ERROR: Query failed: ERROR [42703] [IBM][DB2/NT64] SQL0206N  "ROUTINETYPE" is not valid in the context where it is used.
+ERROR: PostgreSQL connection manager not yet implemented

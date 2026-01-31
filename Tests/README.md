@@ -23,17 +23,20 @@ All test scripts output JSON results to the `CLI_Test_Output/` folder in the pro
 Tests that verify the command-line interface functionality.
 
 ### `Test-Connection.ps1`
-**Purpose:** Basic connection test to verify database connectivity.
+**Purpose:** Basic connection test to verify database connectivity (provider-independent).
 
 **What it tests:**
-- Establishes connection to DB2 database using a profile
+- Establishes connection using the given profile (DB2 or PostgreSQL)
 - Lists available schemas
 - Verifies connection success
 
 **Usage:**
 ```powershell
 .\Tests\CLI\Test-Connection.ps1
+.\Tests\CLI\Test-Connection.ps1 -Profile PostgreSQL_Local -Provider PostgreSQL
 ```
+
+**Parameters:** `-Profile`, `-Provider` (or set `WDE_TEST_PROFILE`, `WDE_TEST_PROVIDER`)
 
 **Output:** `CLI_Test_Output\test_schemas.json`
 
@@ -256,6 +259,28 @@ Tests that validate data accuracy and compare CLI output with GUI forms.
 - `MaxHours` - Maximum time to run validation (default: 20)
 
 **Output:** `CLI_Test_Output\_comprehensive_validation_results.json`
+
+---
+
+### `Test-PostgreSQLStatements.ps1`
+**Purpose:** Log every statement in `ConfigFiles/postgresql_18_sql_statements.json` by **alias** with the **actual SQL** and a **Cursor AI–findable tag** for verification or correction.
+
+**What it does:**
+- Loads `postgresql_18_sql_statements.json` and iterates over each statement key (alias).
+- For each alias: writes **alias**, **description**, **parameters**, and **sql** to a dedicated verification log.
+- Tags each block with `[CURSOR_VERIFY_POSTGRESQL_STATEMENT]` so Cursor AI (or an agent) can search the log and verify/correct the corresponding entry in the JSON file.
+
+**Usage:**
+```powershell
+.\Tests\Validation\Test-PostgreSQLStatements.ps1 -Profile PostgreSQL_Local -Provider PostgreSQL
+.\Tests\Run-TestSuite.ps1 -Tests Statements -Profile PostgreSQL_Local -Provider PostgreSQL
+```
+
+**Cursor AI / agent:** Search the verification log for `CURSOR_VERIFY_POSTGRESQL_STATEMENT` to get each alias and SQL; use the alias to locate and verify or correct the statement in `ConfigFiles/postgresql_18_sql_statements.json`.
+
+**Output:**
+- `CLI_Test_Output/postgresql_statements_verify_YYYYMMDD_HHMMSS.log` – one block per statement (alias, description, parameters, sql, separator).
+- Suite log (when run via Run-TestSuite) also contains the tag for grep.
 
 ---
 
@@ -486,6 +511,84 @@ Tests specific to Mermaid diagram functionality.
 
 ---
 
+## Running Tests Independent of Database Provider
+
+Tests can run with **any supported provider** (DB2 or PostgreSQL). Use a connection profile and optionally specify the provider so DB2-only commands are skipped when using PostgreSQL.
+
+### Environment variables (recommended for CI / scripted runs)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `WDE_TEST_PROFILE` | Connection profile name | `FKKTOTST`, `PostgreSQL_Local` |
+| `WDE_TEST_PROVIDER` | Provider for skip logic | `DB2`, `PostgreSQL` |
+
+### Parameters
+
+Most CLI and validation scripts accept:
+
+- **`-Profile`** – Connection profile (default from `WDE_TEST_PROFILE` or `FKKTOTST`)
+- **`-Provider`** – `DB2` or `PostgreSQL`; when `PostgreSQL`, DB2-only commands (packages, lock monitor, CDC, etc.) are skipped
+
+### Examples
+
+**DB2 (default):**
+```powershell
+.\Tests\CLI\Test-Connection.ps1
+.\Tests\CLI\Test-Connection.ps1 -Profile FKKTOTST
+.\Tests\CLI\Test-AllCliCommands.ps1 -ProfileName FKKTOTST -TestSchema INL -TestTable "INL.BILAGNR"
+```
+
+**PostgreSQL:**
+```powershell
+$env:WDE_TEST_PROFILE = "PostgreSQL_Local"
+$env:WDE_TEST_PROVIDER = "PostgreSQL"
+.\Tests\CLI\Test-Connection.ps1
+.\Tests\CLI\Test-AllCliCommands.ps1 -Provider PostgreSQL
+.\Tests\CLI\Test-AllCliCommandsComprehensive.ps1 -Profile PostgreSQL_Local -Provider PostgreSQL
+.\Tests\Validation\Validate-AllQueriesComprehensive.ps1 -Profile PostgreSQL_Local -Provider PostgreSQL
+```
+
+**Explicit profile + provider (no env):**
+```powershell
+.\Tests\CLI\Test-Connection.ps1 -Profile PostgreSQL_Local -Provider PostgreSQL
+.\Tests\Validation\Validate-AllQueriesComprehensive.ps1 -Profile MyDB2 -Provider DB2
+```
+
+### Shared config
+
+`Tests\TestConfig.ps1` is dot-sourced by CLI and validation scripts. It sets profile/provider from parameters or env and defines which CLI commands are DB2-only (skipped when `-Provider PostgreSQL`).
+
+---
+
+## Standardized Test Runner and Logging
+
+### Run-TestSuite.ps1
+
+Single entry point: kill processes, ensure PostgreSQL_Local profile, build, run tests, check app logs, optionally start the app.
+
+**Usage:**
+```powershell
+.\Tests\Run-TestSuite.ps1 [-Profile PostgreSQL_Local] [-Provider PostgreSQL] [-Tests Connection|AllCLI|All|Statements] [-SkipKill] [-SkipBuild] [-StartApp] [-EnsurePg18Only]
+```
+
+**Steps:** (1) Kill `WindowsDb2Editor` / `WindowsDb2EditorTray`; (2) Ensure `PostgreSQL_Local` in `Documents\WindowsDb2Editor\connections.json`; (3) Build tray then main; (4) Run tests (Connection, AllCLI, or All); (5) Check `bin\Debug\net10.0-windows\logs\db2editor-*.log` for ERROR/FATAL/Exception; (6) If `-StartApp`, launch the app.
+
+**Example (full run with PostgreSQL):**
+```powershell
+.\Tests\Run-TestSuite.ps1 -Tests All -Profile PostgreSQL_Local -Provider PostgreSQL
+```
+
+### TestLogger.ps1 and test logging
+
+- **TestLogger.ps1** provides `Start-TestLog`, `Write-TestLog`, and `Get-TestLogPath` for timestamped, level-based (INFO, WARN, ERROR, DEBUG, PASS, FAIL) logging.
+- When run **under Run-TestSuite**, child scripts write to the **same suite log** (`WDE_TEST_LOG_PATH`). When run **standalone**, each script gets its own log in `CLI_Test_Output/` (e.g. `connection_test_YYYYMMDD_HHMMSS.log`).
+- **TestConfig.ps1** logs the resolved profile/provider at DEBUG when TestLogger is loaded.
+- **Test-Connection.ps1** uses TestLogger for connection attempt, success/failure, and schema count.
+
+**Log location:** `CLI_Test_Output/testsuite_YYYYMMDD_HHMMSS.log` (when using Run-TestSuite).
+
+---
+
 ## Running Tests
 
 ### Quick Start
@@ -525,7 +628,8 @@ The `CLI_Test_Output/` folder is excluded from git via `.gitignore`.
 
 - All scripts use relative paths and should be run from the project root directory
 - Scripts automatically create the `CLI_Test_Output` directory if it doesn't exist
-- Most scripts require a database connection profile to be configured
+- Most scripts require a database connection profile to be configured (DB2 or PostgreSQL)
+- Use `-Provider PostgreSQL` or `WDE_TEST_PROVIDER=PostgreSQL` to run with PostgreSQL; DB2-only commands are skipped automatically
 - UI tests require the application to be built before running
 - Some tests may take a long time to complete (especially comprehensive validation tests)
 

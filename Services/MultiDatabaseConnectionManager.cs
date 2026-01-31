@@ -27,14 +27,13 @@ public class MultiDatabaseConnectionManager : IDisposable
         
         try
         {
-            // Create connection manager based on provider type
+            // Create connection manager via factory (supports DB2, PostgreSQL; others throw)
             IConnectionManager connectionManager = connectionInfo.ProviderType?.ToUpperInvariant() switch
             {
-                "POSTGRESQL" or "POSTGRES" => throw new NotImplementedException("PostgreSQL connection manager not yet implemented"),
                 "SQLSERVER" or "MSSQL" => throw new NotImplementedException("SQL Server connection manager not yet implemented"),
                 "ORACLE" => throw new NotImplementedException("Oracle connection manager not yet implemented"),
                 "MYSQL" => throw new NotImplementedException("MySQL connection manager not yet implemented"),
-                _ => ConnectionManagerFactory.CreateConnectionManager(connectionInfo) // Use factory
+                _ => ConnectionManagerFactory.CreateConnectionManager(connectionInfo) // DB2, PostgreSQL, or default
             };
             
             await connectionManager.OpenAsync();
