@@ -58,6 +58,8 @@ public class DatabaseConnection : IConnectionInfo
         {
             "postgresql" or "postgres" => 
                 $"Host={Server};Port={Port};Database={Database};Username={Username};Password={pwd};Timeout={ConnectionTimeout};",
+            "sqlite" => 
+                $"Data Source={Database};Mode=ReadWriteCreate;Cache=Default;",
             "sqlserver" or "mssql" => 
                 $"Server={Server},{Port};Database={Database};User Id={Username};Password={pwd};Connection Timeout={ConnectionTimeout};TrustServerCertificate=True;",
             "oracle" => 
@@ -77,6 +79,7 @@ public class DatabaseConnection : IConnectionInfo
         var providerLabel = ProviderType?.ToUpperInvariant() switch
         {
             "POSTGRESQL" or "POSTGRES" => "PostgreSQL",
+            "SQLITE" => "SQLite",
             "SQLSERVER" or "MSSQL" => "SQL Server",
             "ORACLE" => "Oracle",
             "MYSQL" => "MySQL",
@@ -93,6 +96,8 @@ public class DatabaseConnection : IConnectionInfo
     /// </summary>
     public bool IsValid()
     {
+        if (string.Equals(ProviderType, "SQLite", StringComparison.OrdinalIgnoreCase))
+            return !string.IsNullOrWhiteSpace(Database); // Data Source path
         return !string.IsNullOrWhiteSpace(Server) &&
                !string.IsNullOrWhiteSpace(Database) &&
                !string.IsNullOrWhiteSpace(Username) &&
@@ -107,6 +112,7 @@ public class DatabaseConnection : IConnectionInfo
         return providerType?.ToLowerInvariant() switch
         {
             "postgresql" or "postgres" => 5432,
+            "sqlite" => 0,
             "sqlserver" or "mssql" => 1433,
             "oracle" => 1521,
             "mysql" => 3306,

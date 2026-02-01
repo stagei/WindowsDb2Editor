@@ -16,7 +16,26 @@
                        FontSize="16" 
                        Foreground="Gray" 
                        HorizontalAlignment="Center" 
-                       Margin="0,0,0,40"/>
+                       Margin="0,0,0,20"/>
+            
+            <!-- Supported database providers -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,30">
+                <StackPanel Margin="0,0,24,0" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/WindowsDb2Editor;component/Resources/Providers/db2.png" 
+                           Width="64" Height="64" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="IBM DB2" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,24,0" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/WindowsDb2Editor;component/Resources/Providers/postgresql.png" 
+                           Width="64" Height="64" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="PostgreSQL" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/WindowsDb2Editor;component/Resources/Providers/sqlite.png" 
+                           Width="64" Height="64" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="SQLite" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+            </StackPanel>
             
             <!-- Quick Actions -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,40">

@@ -54,6 +54,7 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2535.41" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.400" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
     <PackageReference Include="Npgsql" Version="9.0.1" />
     <PackageReference Include="NLog" Version="6.0.6" />
     <PackageReference Include="NLog.Extensions.Logging" Version="6.0.6" />
@@ -80,6 +81,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Resource Include="Resources\dEdge.ico" />
+    <Resource Include="Resources\Providers\db2.png" />
+    <Resource Include="Resources\Providers\postgresql.png" />
+    <Resource Include="Resources\Providers\sqlite.png" />
     <None Include="Resources\dEdge.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

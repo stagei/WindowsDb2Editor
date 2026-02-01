@@ -458,7 +458,7 @@ public class CliCommandHandlerService
     private static (string provider, string version) GetProviderAndVersion(IConnectionManager connectionManager)
     {
         var provider = connectionManager.ConnectionInfo.ProviderType?.ToUpperInvariant() ?? "DB2";
-        var version = provider == "POSTGRESQL" ? "18" : "12.1";
+        var version = provider switch { "POSTGRESQL" => "18", "SQLITE" => "3", _ => "12.1" };
         return (provider, version);
     }
     

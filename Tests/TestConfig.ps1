@@ -3,7 +3,7 @@
 
 param(
     [string]$Profile,
-    [ValidateSet('', 'DB2', 'PostgreSQL')]
+    [ValidateSet('', 'DB2', 'PostgreSQL', 'SQLite')]
     [string]$Provider
 )
 
@@ -74,7 +74,7 @@ function Test-WdeCommandSupportedForProvider {
     if ([string]::IsNullOrWhiteSpace($Provider) -or $Provider -eq 'DB2') {
         return $true
     }
-    if ($Provider -eq 'PostgreSQL') {
+    if ($Provider -eq 'PostgreSQL' -or $Provider -eq 'SQLite') {
         return $script:WDE_DB2OnlyCommands -notcontains $CommandName
     }
     return $true

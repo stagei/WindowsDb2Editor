@@ -32,6 +32,20 @@
       "connection_string_template": "Host={host};Port={port};Database={database};Username={username};Password={password};",
       "requires_schema": true,
       "system_catalog_schema": "pg_catalog"
+    },
+    {
+      "provider_code": "SQLITE",
+      "display_name": "SQLite Database",
+      "icon": "🗃️",
+      "vendor": "SQLite",
+      "description": "SQLite 3 - file-based, serverless",
+      "supported_versions": [
+        "3"
+      ],
+      "default_port": 0,
+      "connection_string_template": "Data Source={database};",
+      "requires_schema": false,
+      "system_catalog_schema": "main"
     }
   ]
 }

@@ -1,6 +1,6 @@
 param(
     [string]$Profile,
-    [ValidateSet('', 'DB2', 'PostgreSQL')]
+    [ValidateSet('', 'DB2', 'PostgreSQL', 'SQLite')]
     [string]$Provider
 )
 
