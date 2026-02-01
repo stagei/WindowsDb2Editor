@@ -799,10 +799,21 @@ public partial class ConnectionTabControl : UserControl
     }
     
     /// <summary>
-    /// Handle Ctrl+Space to manually trigger intellisense and Backspace to re-trigger
+    /// Handle Ctrl+Space to manually trigger intellisense, Ctrl+K for AI SQL edit, and Backspace to re-trigger
     /// </summary>
     private void TextEditor_KeyDown(object? sender, KeyEventArgs e)
     {
+        // Ctrl+K - AI SQL edit (Edit selected code)
+        if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            var selectedText = SqlEditor.SelectedText?.Trim() ?? "";
+            if (!string.IsNullOrEmpty(selectedText))
+            {
+                e.Handled = true;
+                OpenSqlEditWithAiDialog(selectedText);
+            }
+            return;
+        }
         // Ctrl+Space - Force show context-aware IntelliSense
         if (e.Key == Key.Space && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
@@ -3877,6 +3888,24 @@ public partial class ConnectionTabControl : UserControl
     {
         MessageBox.Show("Use Ctrl+H in the SQL editor to find and replace text.\n\nThe replace panel appears at the top of the editor.", 
             "Find and Replace", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    /// <summary>
+    /// Open AI SQL Edit dialog (Ctrl+K). Replaces selection with LLM result on Accept.
+    /// </summary>
+    private void OpenSqlEditWithAiDialog(string selectedSql)
+    {
+        var owner = Window.GetWindow(this);
+        var dialog = new SqlEditWithAiDialog(selectedSql, _connectionManager)
+        {
+            Owner = owner
+        };
+        if (dialog.ShowDialog() != true || string.IsNullOrEmpty(dialog.ResultNewSql))
+            return;
+        var start = SqlEditor.SelectionStart;
+        var length = SqlEditor.SelectionLength;
+        SqlEditor.Document.Replace(start, length, dialog.ResultNewSql);
+        Logger.Info("AI SQL edit applied: replaced {Len} chars with {NewLen} chars", length, dialog.ResultNewSql.Length);
     }
     
     /// <summary>

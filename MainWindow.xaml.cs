@@ -1790,6 +1790,13 @@ public partial class MainWindow : Window
         Logger.Info("Generate Schema DDL clicked");
         DdlGenerator_Click(sender, e);
     }
+
+    private void AiSqlTraining_Click(object sender, RoutedEventArgs e)
+    {
+        Logger.Info("AI SQL Training dialog requested");
+        var dialog = new Dialogs.AiSqlTrainingDialog { Owner = this };
+        dialog.ShowDialog();
+    }
     
     #endregion
     

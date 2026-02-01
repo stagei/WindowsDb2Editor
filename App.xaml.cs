@@ -162,6 +162,9 @@ public partial class App : Application
             // Create desktop and Start Menu shortcuts if they don't exist
             Utils.ShortcutManager.EnsureShortcutsExist();
             
+            // Ollama detection and consent (non-blocking, after window is shown)
+            mainWindow.Loaded += (_, _) => _ = RunOllamaStartupAsync(mainWindow);
+            
             Logger.Info("Application startup completed successfully");
         }
         catch (Exception ex)
@@ -444,6 +447,76 @@ public partial class App : Application
         }
     }
     
+    /// <summary>
+    /// Run Ollama detection on startup; show consent dialog once; optionally offer SQL model download.
+    /// </summary>
+    private async Task RunOllamaStartupAsync(Window mainWindow)
+    {
+        if (PreferencesService == null) return;
+        try
+        {
+            var ollamaService = new OllamaDetectionService();
+            var config = await ollamaService.GetFullConfigurationAsync();
+            if (!config.IsRunning)
+            {
+                Logger.Debug("Ollama not running - skipping consent");
+                return;
+            }
+            if (PreferencesService.Preferences.OllamaSqlEditAskedOnce)
+            {
+                Logger.Debug("Ollama consent already asked - skipping");
+                return;
+            }
+            await mainWindow.Dispatcher.InvokeAsync(() =>
+            {
+                var consent = new OllamaConsentDialog { Owner = mainWindow };
+                consent.ShowDialog();
+                PreferencesService.Preferences.OllamaSqlEditAskedOnce = true;
+                if (consent.DontAskAgain)
+                    PreferencesService.Preferences.AllowOllamaForSqlEdit = false;
+                else if (consent.AllowOllama)
+                    PreferencesService.Preferences.AllowOllamaForSqlEdit = true;
+                else
+                    PreferencesService.Preferences.AllowOllamaForSqlEdit = false;
+                PreferencesService.SavePreferences();
+                Logger.Info("Ollama consent: Allow={Allow}, DontAskAgain={DontAsk}", consent.AllowOllama, consent.DontAskAgain);
+            });
+            if (!PreferencesService.Preferences.AllowOllamaForSqlEdit) return;
+            var hasSqlModel = config.AvailableModels.Any(m =>
+                (m.Name?.Contains("sqlcoder", StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (m.FullName?.Contains("defog-llama3-sqlcoder", StringComparison.OrdinalIgnoreCase) ?? false));
+            if (hasSqlModel) return;
+            await mainWindow.Dispatcher.InvokeAsync(() =>
+            {
+                var downloadDlg = new OllamaModelDownloadDialog { Owner = mainWindow };
+                downloadDlg.ShowDialog();
+                if (!downloadDlg.UserChoseDownload) return;
+                try
+                {
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "ollama",
+                        Arguments = "pull defog-llama3-sqlcoder-8b",
+                        UseShellExecute = true,
+                        CreateNoWindow = false
+                    };
+                    System.Diagnostics.Process.Start(startInfo);
+                    Logger.Info("Started ollama pull defog-llama3-sqlcoder-8b");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Could not start ollama pull");
+                    MessageBox.Show($"Could not start ollama pull:\n{ex.Message}\n\nRun manually: ollama pull defog-llama3-sqlcoder-8b",
+                        "Ollama", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Ollama startup check failed");
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         Logger.Info("===== WindowsDb2Editor Application Shutting Down =====");

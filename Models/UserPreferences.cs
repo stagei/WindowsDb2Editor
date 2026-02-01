@@ -206,6 +206,24 @@ namespace WindowsDb2Editor.Models
         /// </summary>
         [JsonPropertyName("showTrayIcon")]
         public bool ShowTrayIcon { get; set; } = true;
+
+        /// <summary>
+        /// Allow using Ollama for AI SQL editing (Ctrl+K). Set after user consent.
+        /// </summary>
+        [JsonPropertyName("allowOllamaForSqlEdit")]
+        public bool AllowOllamaForSqlEdit { get; set; } = false;
+
+        /// <summary>
+        /// Whether the "Use Ollama for AI SQL edit?" consent has been shown once.
+        /// </summary>
+        [JsonPropertyName("ollamaSqlEditAskedOnce")]
+        public bool OllamaSqlEditAskedOnce { get; set; } = false;
+
+        /// <summary>
+        /// Ollama model name for SQL edit (e.g. defog-llama3-sqlcoder-8b or sqlcoder).
+        /// </summary>
+        [JsonPropertyName("sqlEditModel")]
+        public string SqlEditModel { get; set; } = "defog-llama3-sqlcoder-8b";
     }
 }
 

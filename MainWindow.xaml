@@ -215,6 +215,12 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
+                <MenuItem Header="AI _SQL Training..." Click="AiSqlTraining_Click">
+                    <MenuItem.Icon>
+                        <TextBlock Text="🤖" FontSize="16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
                 <MenuItem Header="_Options..." Click="Settings_Click">
                     <MenuItem.Icon>
                         <TextBlock Text="⚙️" FontSize="16"/>
