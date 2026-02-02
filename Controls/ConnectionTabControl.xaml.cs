@@ -124,31 +124,48 @@ public partial class ConnectionTabControl : UserControl
             var prefs = _preferencesService?.Preferences;
             if (prefs == null) return;
             
-            // Apply font size and row height
+            // Apply font size and row height to the grid
             ResultsGrid.FontSize = prefs.GridFontSize;
             ResultsGrid.RowHeight = prefs.GridCellHeight;
             
-            // Force all existing columns to recalculate their widths
+            // Create a cell style that explicitly sets font size for cell content
+            var cellStyle = new Style(typeof(DataGridCell));
+            cellStyle.Setters.Add(new Setter(Control.FontSizeProperty, (double)prefs.GridFontSize));
+            cellStyle.Setters.Add(new Setter(Control.FontFamilyProperty, new System.Windows.Media.FontFamily(prefs.GridFontFamily)));
+            ResultsGrid.CellStyle = cellStyle;
+            
+            // Force all existing columns to update their element styles and widths
             foreach (var column in ResultsGrid.Columns)
             {
                 // Set minimum width based on font size
                 column.MinWidth = Math.Max(30, prefs.GridFontSize * 3);
                 
-                // Force column to recalculate by resetting width
-                var currentWidth = column.Width;
-                column.Width = new DataGridLength(1, DataGridLengthUnitType.Auto);
-                
-                // Use dispatcher to restore width mode after layout
-                Dispatcher.BeginInvoke(new Action(() =>
+                // For text columns, set the ElementStyle to apply font to TextBlock
+                if (column is DataGridTextColumn textColumn)
                 {
-                    try
+                    var elementStyle = new Style(typeof(System.Windows.Controls.TextBlock));
+                    elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontSizeProperty, (double)prefs.GridFontSize));
+                    elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily(prefs.GridFontFamily)));
+                    textColumn.ElementStyle = elementStyle;
+                }
+                
+                // Force column to recalculate by resetting width
+                column.Width = new DataGridLength(1, DataGridLengthUnitType.Auto);
+            }
+            
+            // Use dispatcher to set SizeToCells after layout pass
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    foreach (var column in ResultsGrid.Columns)
                     {
-                        // For auto-generated columns, use SizeToCells for better content fit
                         column.Width = new DataGridLength(1, DataGridLengthUnitType.SizeToCells);
                     }
-                    catch { /* Ignore errors */ }
-                }), System.Windows.Threading.DispatcherPriority.Loaded);
-            }
+                    ResultsGrid.UpdateLayout();
+                }
+                catch { /* Ignore errors */ }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
             
             // Force visual refresh
             ResultsGrid.UpdateLayout();
