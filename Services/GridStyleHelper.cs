@@ -82,6 +82,19 @@ public static class GridStyleHelper
             // Row height
             grid.RowHeight = (double)preferences.GridCellHeight;
             
+            // Apply font size to cell content (DataGridTextColumn ElementStyle)
+            foreach (var column in grid.Columns)
+            {
+                if (column is DataGridTextColumn textColumn)
+                {
+                    var elementStyle = new Style(typeof(TextBlock));
+                    elementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, (double)preferences.GridFontSize));
+                    elementStyle.Setters.Add(new Setter(TextBlock.FontFamilyProperty, new FontFamily(preferences.GridFontFamily)));
+                    textColumn.ElementStyle = elementStyle;
+                }
+                column.MinWidth = Math.Max(30, preferences.GridFontSize * 3);
+            }
+            
             // Refresh column widths to adapt to new font size
             RefreshColumnWidths(grid, preferences);
 
@@ -170,7 +183,7 @@ public static class GridStyleHelper
     }
 
     /// <summary>
-    /// Refresh all DataGrid controls in the application with current preferences
+    /// Refresh all DataGrid controls in ALL open windows with current preferences
     /// </summary>
     public static void RefreshAllGrids(UserPreferences preferences)
     {
@@ -178,24 +191,19 @@ public static class GridStyleHelper
         
         try
         {
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow == null)
-            {
-                Logger.Warn("MainWindow is null, cannot refresh grids");
-                return;
-            }
-
-            // Find all DataGrid controls in the visual tree
-            var grids = FindVisualChildren<DataGrid>(mainWindow);
             var count = 0;
-            
-            foreach (var grid in grids)
+            foreach (Window window in Application.Current.Windows)
             {
-                ApplyGridStyle(grid, preferences);
-                count++;
+                if (window == null) continue;
+                var grids = FindVisualChildren<DataGrid>(window);
+                foreach (var grid in grids)
+                {
+                    ApplyGridStyle(grid, preferences);
+                    count++;
+                }
             }
             
-            Logger.Info("Refreshed {Count} DataGrid controls", count);
+            Logger.Info("Refreshed {Count} DataGrid controls across all windows", count);
         }
         catch (Exception ex)
         {

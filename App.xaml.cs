@@ -39,7 +39,10 @@ public partial class App : Application
             Logger.Debug("Initializing PreferencesService");
             PreferencesService = new PreferencesService();
             Logger.Info("PreferencesService initialized successfully");
-            
+
+            // Initialize FontSizeManager and set application resources for global font scaling
+            FontSizeManager.Instance.EnsureApplicationResources();
+
             // Apply saved log level preference
             var savedLogLevel = PreferencesService.Preferences.LogLevel;
             Logger.Debug("Applying saved log level: {Level}", savedLogLevel);

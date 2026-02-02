@@ -1031,33 +1031,19 @@ public partial class MainWindow : Window
     /// </summary>
     private void IncreaseFontSize()
     {
-        App.PreferencesService?.IncreaseFontSize();
-        
-        // Apply to entire application
-        if (App.PreferencesService != null)
-        {
-            GlobalFontService.ApplyAllPreferences(App.PreferencesService.Preferences);
-        }
-        
+        FontSizeManager.Instance.IncreaseAll();
         RefreshAllConnectionTabs();
-        Logger.Info("All font sizes increased - UI: {Size}", App.PreferencesService?.Preferences.UIFontSize);
+        Logger.Info("All font sizes increased - BaseFontSize: {Size}", FontSizeManager.Instance.BaseFontSize);
     }
 
     /// <summary>
-    /// Decrease font size (Ctrl+Minus) - applies to entire application
+    /// Decrease font size (Ctrl+Minus) - applies to entire application via FontSizeManager
     /// </summary>
     private void DecreaseFontSize()
     {
-        App.PreferencesService?.DecreaseFontSize();
-        
-        // Apply to entire application
-        if (App.PreferencesService != null)
-        {
-            GlobalFontService.ApplyAllPreferences(App.PreferencesService.Preferences);
-        }
-        
+        FontSizeManager.Instance.DecreaseAll();
         RefreshAllConnectionTabs();
-        Logger.Info("All font sizes decreased - UI: {Size}", App.PreferencesService?.Preferences.UIFontSize);
+        Logger.Info("All font sizes decreased - BaseFontSize: {Size}", FontSizeManager.Instance.BaseFontSize);
     }
 
     /// <summary>

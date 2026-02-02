@@ -164,6 +164,98 @@ public static class UIStyleService
         ApplyStylesToElement(element, element.GetType().Name);
     }
 
+    /// <summary>
+    /// Apply font size and heights to all controls in the visual tree (DataGrids, TreeViews, ListBoxes, TextBoxes, ComboBoxes, Buttons, Labels, TextBlocks).
+    /// Called by FontSizeManager when BaseFontSize changes.
+    /// </summary>
+    public static void ApplyAllControlStyles(DependencyObject parent, double baseFontSize)
+    {
+        if (parent == null) return;
+
+        try
+        {
+            foreach (var grid in FindVisualChildren<DataGrid>(parent))
+            {
+                grid.FontSize = baseFontSize;
+                grid.RowHeight = baseFontSize * 2 + 1;
+                ApplyGridCellStylesByFontSize(grid, baseFontSize);
+            }
+
+            foreach (var tree in FindVisualChildren<TreeView>(parent))
+            {
+                tree.FontSize = baseFontSize;
+                var itemStyle = new Style(typeof(TreeViewItem));
+                itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, baseFontSize * 1.8));
+                tree.ItemContainerStyle = itemStyle;
+            }
+
+            foreach (var list in FindVisualChildren<ListBox>(parent))
+            {
+                list.FontSize = baseFontSize;
+                var itemStyle = new Style(typeof(ListBoxItem));
+                itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, baseFontSize * 2));
+                list.ItemContainerStyle = itemStyle;
+            }
+
+            foreach (var textBox in FindVisualChildren<TextBox>(parent))
+            {
+                textBox.FontSize = baseFontSize;
+                textBox.MinHeight = baseFontSize * 2 + 4;
+            }
+
+            foreach (var combo in FindVisualChildren<ComboBox>(parent))
+            {
+                combo.FontSize = baseFontSize;
+                combo.MinHeight = baseFontSize * 2 + 4;
+            }
+
+            foreach (var button in FindVisualChildren<Button>(parent))
+            {
+                button.FontSize = baseFontSize;
+                button.MinHeight = baseFontSize * 2 + 6;
+                button.Padding = new Thickness(baseFontSize * 0.5, baseFontSize * 0.25, baseFontSize * 0.5, baseFontSize * 0.25);
+            }
+
+            foreach (var label in FindVisualChildren<Label>(parent))
+            {
+                label.FontSize = baseFontSize;
+            }
+
+            foreach (var textBlock in FindVisualChildren<TextBlock>(parent))
+            {
+                textBlock.FontSize = baseFontSize;
+            }
+
+            Logger.Trace("ApplyAllControlStyles applied to {Parent}, BaseFontSize: {Size}", parent.GetType().Name, baseFontSize);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error in ApplyAllControlStyles for {Parent}", parent.GetType().Name);
+        }
+    }
+
+    private static void ApplyGridCellStylesByFontSize(DataGrid grid, double fontSize)
+    {
+        try
+        {
+            if (grid.Columns == null) return;
+            foreach (var column in grid.Columns)
+            {
+                if (column is DataGridTextColumn textColumn)
+                {
+                    var elementStyle = new Style(typeof(TextBlock));
+                    elementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, fontSize));
+                    textColumn.ElementStyle = elementStyle;
+                }
+                column.MinWidth = Math.Max(30, fontSize * 3);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error applying grid cell styles: {Name}", grid.Name);
+        }
+    }
+
     private static void ApplyStylesToElement(DependencyObject element, string elementName)
     {
         try
@@ -909,8 +1001,10 @@ public static class UIStyleService
         {
             if (column is DataGridTextColumn textColumn)
             {
-                // Create element style for the TextBlock in cells
+                // Create element style for the TextBlock in cells (font size so cell content scales)
                 var elementStyle = new Style(typeof(TextBlock));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, (double)preferences.GridFontSize));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontFamilyProperty, new FontFamily(preferences.GridFontFamily)));
                 elementStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, new SolidColorBrush(foreground)));
                 elementStyle.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(4, 2, 4, 2)));
                 elementStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));

@@ -8,7 +8,7 @@ namespace WindowsDb2Editor.Services;
 
 /// <summary>
 /// Centralized font size management service for the application.
-/// Allows dynamic font size changes across all UI components.
+/// BaseFontSize drives all UI control scaling; all windows subscribe and auto-adjust.
 /// </summary>
 public class FontSizeManager : INotifyPropertyChanged
 {
@@ -16,7 +16,10 @@ public class FontSizeManager : INotifyPropertyChanged
     private static FontSizeManager? _instance;
     private static readonly object _lock = new object();
 
-    // Default font sizes
+    // Base font size - everything derives from this (default 12)
+    private double _baseFontSize = 12;
+
+    // Legacy per-control sizes (kept for compatibility, synced from BaseFontSize in IncreaseAll/DecreaseAll)
     private double _editorFontSize = 14;
     private double _objectBrowserFontSize = 11;
     private double _dialogFontSize = 12;
@@ -51,8 +54,72 @@ public class FontSizeManager : INotifyPropertyChanged
     private FontSizeManager()
     {
         LoadFromSettings();
-        Logger.Debug("FontSizeManager initialized with default sizes");
+        Logger.Debug("FontSizeManager initialized with BaseFontSize: {0}", _baseFontSize);
     }
+
+    /// <summary>
+    /// Ensure application resources are set (call once after PreferencesService is ready).
+    /// </summary>
+    public void EnsureApplicationResources()
+    {
+        UpdateApplicationResources();
+    }
+
+    /// <summary>
+    /// Base font size - everything derives from this. Range 8-24.
+    /// </summary>
+    public double BaseFontSize
+    {
+        get => _baseFontSize;
+        set
+        {
+            if (Math.Abs(_baseFontSize - value) > 0.01 && value >= 8 && value <= 24)
+            {
+                Logger.Info("BaseFontSize changing from {Old} to {New}", _baseFontSize, value);
+                _baseFontSize = value;
+                RecalculateAllSizes();
+                UpdateApplicationResources();
+                SyncToPreferences();
+                NotifyAllWindows();
+                SaveToSettings();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Grid font size (same as base).
+    /// </summary>
+    public double GridFontSize => _baseFontSize;
+
+    /// <summary>
+    /// Grid row height in pixels (derived from base).
+    /// </summary>
+    public double GridRowHeight => _baseFontSize * 2 + 1;
+
+    /// <summary>
+    /// Height for TextBox, ComboBox (derived from base).
+    /// </summary>
+    public double ControlHeight => _baseFontSize * 2 + 4;
+
+    /// <summary>
+    /// Button min-height (derived from base).
+    /// </summary>
+    public double ButtonHeight => _baseFontSize * 2 + 6;
+
+    /// <summary>
+    /// TreeView item height (derived from base).
+    /// </summary>
+    public double TreeViewItemHeight => _baseFontSize * 1.8;
+
+    /// <summary>
+    /// ListBox item height (derived from base).
+    /// </summary>
+    public double ListBoxItemHeight => _baseFontSize * 2;
+
+    /// <summary>
+    /// Menu item height (derived from base).
+    /// </summary>
+    public double MenuItemHeight => _baseFontSize * 2;
 
     /// <summary>
     /// SQL editor font size (Consolas, monospace)
@@ -62,9 +129,8 @@ public class FontSizeManager : INotifyPropertyChanged
         get => _editorFontSize;
         set
         {
-            if (_editorFontSize != value && value >= 8 && value <= 32)
+            if (Math.Abs(_editorFontSize - value) > 0.01 && value >= 8 && value <= 32)
             {
-                Logger.Debug("EditorFontSize changing from {Old} to {New}", _editorFontSize, value);
                 _editorFontSize = value;
                 OnPropertyChanged(nameof(EditorFontSize));
                 SaveToSettings();
@@ -80,9 +146,8 @@ public class FontSizeManager : INotifyPropertyChanged
         get => _objectBrowserFontSize;
         set
         {
-            if (_objectBrowserFontSize != value && value >= 8 && value <= 24)
+            if (Math.Abs(_objectBrowserFontSize - value) > 0.01 && value >= 8 && value <= 24)
             {
-                Logger.Debug("ObjectBrowserFontSize changing from {Old} to {New}", _objectBrowserFontSize, value);
                 _objectBrowserFontSize = value;
                 OnPropertyChanged(nameof(ObjectBrowserFontSize));
                 SaveToSettings();
@@ -98,9 +163,8 @@ public class FontSizeManager : INotifyPropertyChanged
         get => _dialogFontSize;
         set
         {
-            if (_dialogFontSize != value && value >= 8 && value <= 24)
+            if (Math.Abs(_dialogFontSize - value) > 0.01 && value >= 8 && value <= 24)
             {
-                Logger.Debug("DialogFontSize changing from {Old} to {New}", _dialogFontSize, value);
                 _dialogFontSize = value;
                 OnPropertyChanged(nameof(DialogFontSize));
                 SaveToSettings();
@@ -116,9 +180,8 @@ public class FontSizeManager : INotifyPropertyChanged
         get => _menuFontSize;
         set
         {
-            if (_menuFontSize != value && value >= 8 && value <= 20)
+            if (Math.Abs(_menuFontSize - value) > 0.01 && value >= 8 && value <= 20)
             {
-                Logger.Debug("MenuFontSize changing from {Old} to {New}", _menuFontSize, value);
                 _menuFontSize = value;
                 OnPropertyChanged(nameof(MenuFontSize));
                 SaveToSettings();
@@ -134,9 +197,8 @@ public class FontSizeManager : INotifyPropertyChanged
         get => _statusBarFontSize;
         set
         {
-            if (_statusBarFontSize != value && value >= 8 && value <= 20)
+            if (Math.Abs(_statusBarFontSize - value) > 0.01 && value >= 8 && value <= 20)
             {
-                Logger.Debug("StatusBarFontSize changing from {Old} to {New}", _statusBarFontSize, value);
                 _statusBarFontSize = value;
                 OnPropertyChanged(nameof(StatusBarFontSize));
                 SaveToSettings();
@@ -145,20 +207,117 @@ public class FontSizeManager : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Property window font size (table details, package details, etc.)
+    /// Property window font size
     /// </summary>
     public double PropertyWindowFontSize
     {
         get => _propertyWindowFontSize;
         set
         {
-            if (_propertyWindowFontSize != value && value >= 8 && value <= 24)
+            if (Math.Abs(_propertyWindowFontSize - value) > 0.01 && value >= 8 && value <= 24)
             {
-                Logger.Debug("PropertyWindowFontSize changing from {Old} to {New}", _propertyWindowFontSize, value);
                 _propertyWindowFontSize = value;
                 OnPropertyChanged(nameof(PropertyWindowFontSize));
                 SaveToSettings();
             }
+        }
+    }
+
+    private void RecalculateAllSizes()
+    {
+        OnPropertyChanged(nameof(BaseFontSize));
+        OnPropertyChanged(nameof(GridFontSize));
+        OnPropertyChanged(nameof(GridRowHeight));
+        OnPropertyChanged(nameof(ControlHeight));
+        OnPropertyChanged(nameof(ButtonHeight));
+        OnPropertyChanged(nameof(TreeViewItemHeight));
+        OnPropertyChanged(nameof(ListBoxItemHeight));
+        OnPropertyChanged(nameof(MenuItemHeight));
+        Logger.Debug("All derived sizes recalculated for BaseFontSize: {0}", _baseFontSize);
+    }
+
+    private void UpdateApplicationResources()
+    {
+        try
+        {
+            var res = Application.Current.Resources;
+            res["BaseFontSize"] = BaseFontSize;
+            res["GridFontSize"] = GridFontSize;
+            res["GridRowHeight"] = GridRowHeight;
+            res["ControlHeight"] = ControlHeight;
+            res["ButtonHeight"] = ButtonHeight;
+            res["TreeViewItemHeight"] = TreeViewItemHeight;
+            res["ListBoxItemHeight"] = ListBoxItemHeight;
+            res["MenuItemHeight"] = MenuItemHeight;
+            Logger.Info("Application resources updated - BaseFontSize: {0}", BaseFontSize);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to update application resources");
+        }
+    }
+
+    /// <summary>
+    /// Sync current sizes to PreferencesService so existing code using preferences still works.
+    /// </summary>
+    private void SyncToPreferences()
+    {
+        try
+        {
+            var prefs = App.PreferencesService?.Preferences;
+            if (prefs == null) return;
+
+            prefs.UIFontSize = (int)Math.Round(_baseFontSize);
+            prefs.GridFontSize = (int)Math.Round(_baseFontSize);
+            prefs.GridCellHeight = (int)Math.Round(GridRowHeight);
+            prefs.TreeViewItemSpacing = (int)Math.Max(0, Math.Round(_baseFontSize * 0.3));
+            App.PreferencesService?.SavePreferences();
+            Logger.Debug("Synced FontSizeManager to Preferences");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to sync FontSizeManager to preferences");
+        }
+    }
+
+    /// <summary>
+    /// Notify all open windows to refresh control styles and optionally resize.
+    /// </summary>
+    private void NotifyAllWindows()
+    {
+        try
+        {
+            var prefs = App.PreferencesService?.Preferences;
+            if (prefs == null) return;
+
+            foreach (Window window in Application.Current.Windows)
+            {
+                if (window == null) continue;
+
+                try
+                {
+                    UIStyleService.ApplyAllControlStyles(window, _baseFontSize);
+
+                    if (window.WindowState != WindowState.Maximized)
+                    {
+                        var originalSizeToContent = window.SizeToContent;
+                        window.SizeToContent = SizeToContent.WidthAndHeight;
+                        window.UpdateLayout();
+                        window.SizeToContent = originalSizeToContent;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Error applying styles to window: {0}", window.GetType().Name);
+                }
+            }
+
+            GridStyleHelper.RefreshAllGrids(prefs);
+            Logger.Debug("Notified all windows - applied control styles");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error in NotifyAllWindows");
         }
     }
 
@@ -168,7 +327,7 @@ public class FontSizeManager : INotifyPropertyChanged
     public void ResetToDefaults()
     {
         Logger.Info("Resetting all font sizes to defaults");
-        
+        BaseFontSize = 12;
         EditorFontSize = 14;
         ObjectBrowserFontSize = 11;
         DialogFontSize = 12;
@@ -178,12 +337,13 @@ public class FontSizeManager : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Increase all font sizes by 1pt
+    /// Increase all font sizes (Ctrl+Plus). BaseFontSize drives global UI scale.
     /// </summary>
     public void IncreaseAll()
     {
-        Logger.Info("Increasing all font sizes by 1pt");
-        
+        Logger.Info("Increasing all font sizes (BaseFontSize +1)");
+        BaseFontSize = Math.Min(24, _baseFontSize + 1);
+
         EditorFontSize = Math.Min(32, EditorFontSize + 1);
         ObjectBrowserFontSize = Math.Min(24, ObjectBrowserFontSize + 1);
         DialogFontSize = Math.Min(24, DialogFontSize + 1);
@@ -193,12 +353,13 @@ public class FontSizeManager : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Decrease all font sizes by 1pt
+    /// Decrease all font sizes (Ctrl+Minus).
     /// </summary>
     public void DecreaseAll()
     {
-        Logger.Info("Decreasing all font sizes by 1pt");
-        
+        Logger.Info("Decreasing all font sizes (BaseFontSize -1)");
+        BaseFontSize = Math.Max(8, _baseFontSize - 1);
+
         EditorFontSize = Math.Max(8, EditorFontSize - 1);
         ObjectBrowserFontSize = Math.Max(8, ObjectBrowserFontSize - 1);
         DialogFontSize = Math.Max(8, DialogFontSize - 1);
@@ -211,8 +372,11 @@ public class FontSizeManager : INotifyPropertyChanged
     {
         try
         {
-            // TODO: Load from appsettings.json or user settings file
-            Logger.Debug("Loading font sizes from settings (using defaults for now)");
+            if (App.PreferencesService?.Preferences == null) return;
+            var prefs = App.PreferencesService.Preferences;
+            _baseFontSize = prefs.UIFontSize;
+            _editorFontSize = prefs.FontSize;
+            Logger.Debug("Loaded font sizes from preferences - BaseFontSize: {0}", _baseFontSize);
         }
         catch (Exception ex)
         {
@@ -224,8 +388,7 @@ public class FontSizeManager : INotifyPropertyChanged
     {
         try
         {
-            // TODO: Save to appsettings.json or user settings file
-            Logger.Debug("Saving font sizes to settings (not implemented yet)");
+            SyncToPreferences();
         }
         catch (Exception ex)
         {
@@ -239,4 +402,3 @@ public class FontSizeManager : INotifyPropertyChanged
         Logger.Debug("Font size property changed: {Property}", propertyName);
     }
 }
-

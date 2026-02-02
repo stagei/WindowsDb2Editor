@@ -1,5 +1,9 @@
 using NLog;
+using System;
+using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Services;
 
@@ -17,6 +21,8 @@ public partial class DeepAnalysisDialog : Window
         _connectionManager = connectionManager;
         _targetObjects = targetObjects;
 
+        SampleDataGrid.AutoGeneratingColumn += SampleDataGrid_AutoGeneratingColumn;
+
         TargetInfoText.Text = $"Analyzing: {string.Join(", ", targetObjects)}";
 
         Loaded += async (s, e) => 
@@ -25,6 +31,27 @@ public partial class DeepAnalysisDialog : Window
             UIStyleService.ApplyStyles(this);
             await LoadAnalysisAsync();
         };
+    }
+
+    private void SampleDataGrid_AutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        try
+        {
+            var fontSize = (double)(App.PreferencesService?.Preferences?.GridFontSize ?? 12);
+            var fontFamily = App.PreferencesService?.Preferences?.GridFontFamily ?? "Segoe UI";
+            if (e.Column is DataGridTextColumn textColumn)
+            {
+                var elementStyle = new Style(typeof(TextBlock));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, fontSize));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontFamilyProperty, new FontFamily(fontFamily)));
+                textColumn.ElementStyle = elementStyle;
+            }
+            e.Column.MinWidth = Math.Max(30, fontSize * 3);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error applying style to auto-generated column: {0}", e.Column?.Header);
+        }
     }
 
     private async Task LoadAnalysisAsync()

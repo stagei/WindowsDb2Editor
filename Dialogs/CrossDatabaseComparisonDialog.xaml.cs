@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Win32;
 using WindowsDb2Editor.Data;
 using WindowsDb2Editor.Models;
@@ -42,12 +43,35 @@ public partial class CrossDatabaseComparisonDialog : Window
         _connectionStorage = new ConnectionStorageService();
         _metadataHandler = new MetadataHandler();
 
+        DifferencesGrid.AutoGeneratingColumn += DifferencesGrid_AutoGeneratingColumn;
+
         Loaded += async (s, e) => 
         {
             // Apply all UI styles from the unified style service
             UIStyleService.ApplyStyles(this);
             await LoadConnectionProfilesAsync();
         };
+    }
+
+    private void DifferencesGrid_AutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        try
+        {
+            var fontSize = (double)(App.PreferencesService?.Preferences?.GridFontSize ?? 12);
+            var fontFamily = App.PreferencesService?.Preferences?.GridFontFamily ?? "Segoe UI";
+            if (e.Column is DataGridTextColumn textColumn)
+            {
+                var elementStyle = new Style(typeof(TextBlock));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, fontSize));
+                elementStyle.Setters.Add(new Setter(TextBlock.FontFamilyProperty, new FontFamily(fontFamily)));
+                textColumn.ElementStyle = elementStyle;
+            }
+            e.Column.MinWidth = Math.Max(30, fontSize * 3);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error applying style to auto-generated column: {0}", e.Column?.Header);
+        }
     }
     
     /// <summary>
