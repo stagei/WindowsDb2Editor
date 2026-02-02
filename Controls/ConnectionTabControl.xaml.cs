@@ -134,26 +134,17 @@ public partial class ConnectionTabControl : UserControl
             cellStyle.Setters.Add(new Setter(Control.FontFamilyProperty, new System.Windows.Media.FontFamily(prefs.GridFontFamily)));
             ResultsGrid.CellStyle = cellStyle;
             
-            // Force all existing columns to update their element styles and widths
-            foreach (var column in ResultsGrid.Columns)
+            // Force the grid to re-generate columns by rebinding the data source
+            // The AutoGeneratingColumn event handler will apply the correct font styles
+            if (ResultsGrid.ItemsSource != null)
             {
-                // Set minimum width based on font size
-                column.MinWidth = Math.Max(30, prefs.GridFontSize * 3);
-                
-                // For text columns, set the ElementStyle to apply font to TextBlock
-                if (column is DataGridTextColumn textColumn)
-                {
-                    var elementStyle = new Style(typeof(System.Windows.Controls.TextBlock));
-                    elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontSizeProperty, (double)prefs.GridFontSize));
-                    elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily(prefs.GridFontFamily)));
-                    textColumn.ElementStyle = elementStyle;
-                }
-                
-                // Force column to recalculate by resetting width
-                column.Width = new DataGridLength(1, DataGridLengthUnitType.Auto);
+                var currentSource = ResultsGrid.ItemsSource;
+                ResultsGrid.Columns.Clear();
+                ResultsGrid.ItemsSource = null;
+                ResultsGrid.ItemsSource = currentSource;
             }
             
-            // Use dispatcher to set SizeToCells after layout pass
+            // Use dispatcher to set SizeToCells after columns are regenerated
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 try
@@ -167,12 +158,8 @@ public partial class ConnectionTabControl : UserControl
                 catch { /* Ignore errors */ }
             }), System.Windows.Threading.DispatcherPriority.Loaded);
             
-            // Force visual refresh
-            ResultsGrid.UpdateLayout();
-            ResultsGrid.InvalidateVisual();
-            
-            Logger.Debug("ResultsGrid sizing refreshed - FontSize: {0}, RowHeight: {1}, Columns: {2}",
-                prefs.GridFontSize, prefs.GridCellHeight, ResultsGrid.Columns.Count);
+            Logger.Debug("ResultsGrid sizing refreshed - FontSize: {0}, RowHeight: {1}",
+                prefs.GridFontSize, prefs.GridCellHeight);
         }
         catch (Exception ex)
         {
@@ -645,6 +632,37 @@ public partial class ConnectionTabControl : UserControl
         
         // Capture cell info on right-click before context menu opens
         ResultsGrid.PreviewMouseRightButtonDown += ResultsGrid_PreviewMouseRightButtonDown;
+        
+        // Handle auto-generated columns to apply font styles
+        ResultsGrid.AutoGeneratingColumn += ResultsGrid_AutoGeneratingColumn;
+    }
+    
+    /// <summary>
+    /// Apply font styles to auto-generated columns
+    /// </summary>
+    private void ResultsGrid_AutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        try
+        {
+            var prefs = _preferencesService?.Preferences;
+            if (prefs == null) return;
+            
+            // Apply font styles to text columns
+            if (e.Column is DataGridTextColumn textColumn)
+            {
+                var elementStyle = new Style(typeof(System.Windows.Controls.TextBlock));
+                elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontSizeProperty, (double)prefs.GridFontSize));
+                elementStyle.Setters.Add(new Setter(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily(prefs.GridFontFamily)));
+                textColumn.ElementStyle = elementStyle;
+            }
+            
+            // Set minimum width based on font size
+            e.Column.MinWidth = Math.Max(30, prefs.GridFontSize * 3);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error applying style to auto-generated column: {0}", e.Column.Header);
+        }
     }
     
     /// <summary>
