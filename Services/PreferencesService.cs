@@ -165,6 +165,7 @@ namespace WindowsDb2Editor.Services
         
         /// <summary>
         /// Increase all font sizes by 1 and save (UI, Grid, Editor)
+        /// Also scales grid cell height proportionally
         /// </summary>
         public void IncreaseFontSize()
         {
@@ -173,14 +174,20 @@ namespace WindowsDb2Editor.Services
                 Preferences.UIFontSize++;
                 Preferences.GridFontSize = Math.Min(36, Preferences.GridFontSize + 1);
                 Preferences.FontSize = Math.Min(36, Preferences.FontSize + 1);
+                
+                // Scale grid cell height proportionally (formula: FontSize * 2 + 1)
+                // This ensures row height accommodates the new font size
+                Preferences.GridCellHeight = Math.Min(50, Preferences.GridFontSize * 2 + 1);
+                
                 SavePreferences();
-                Logger.Info("All font sizes increased - UI: {UI}, Grid: {Grid}, Editor: {Editor}", 
-                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize);
+                Logger.Info("All font sizes increased - UI: {UI}, Grid: {Grid}, Editor: {Editor}, CellHeight: {CellHeight}", 
+                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize, Preferences.GridCellHeight);
             }
         }
         
         /// <summary>
         /// Decrease all font sizes by 1 and save (UI, Grid, Editor)
+        /// Also scales grid cell height proportionally
         /// </summary>
         public void DecreaseFontSize()
         {
@@ -189,9 +196,14 @@ namespace WindowsDb2Editor.Services
                 Preferences.UIFontSize--;
                 Preferences.GridFontSize = Math.Max(8, Preferences.GridFontSize - 1);
                 Preferences.FontSize = Math.Max(8, Preferences.FontSize - 1);
+                
+                // Scale grid cell height proportionally (formula: FontSize * 2 + 1)
+                // Minimum height of 17 (for font size 8)
+                Preferences.GridCellHeight = Math.Max(17, Preferences.GridFontSize * 2 + 1);
+                
                 SavePreferences();
-                Logger.Info("All font sizes decreased - UI: {UI}, Grid: {Grid}, Editor: {Editor}", 
-                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize);
+                Logger.Info("All font sizes decreased - UI: {UI}, Grid: {Grid}, Editor: {Editor}, CellHeight: {CellHeight}", 
+                    Preferences.UIFontSize, Preferences.GridFontSize, Preferences.FontSize, Preferences.GridCellHeight);
             }
         }
         

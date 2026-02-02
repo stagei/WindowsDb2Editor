@@ -60,7 +60,8 @@ public static class GridStyleHelper
 
         try
         {
-            Logger.Debug("Applying grid style to DataGrid: {Name}", grid.Name);
+            Logger.Debug("Applying grid style to DataGrid: {Name}, FontSize: {FontSize}, CellHeight: {CellHeight}", 
+                grid.Name, preferences.GridFontSize, preferences.GridCellHeight);
 
             // Background color
             if (TryParseColor(preferences.GridBackgroundColor, out var backgroundColor))
@@ -80,6 +81,9 @@ public static class GridStyleHelper
 
             // Row height
             grid.RowHeight = (double)preferences.GridCellHeight;
+            
+            // Refresh column widths to adapt to new font size
+            RefreshColumnWidths(grid, preferences);
 
             // Create or update style for selected rows
             var style = new Style(typeof(DataGridRow));
@@ -196,6 +200,65 @@ public static class GridStyleHelper
         catch (Exception ex)
         {
             Logger.Error(ex, "Error refreshing all grids");
+        }
+    }
+
+    /// <summary>
+    /// Refresh column widths to adapt to new font sizes
+    /// This forces columns to recalculate their widths based on content
+    /// </summary>
+    private static void RefreshColumnWidths(DataGrid grid, UserPreferences preferences)
+    {
+        try
+        {
+            if (grid.Columns == null || grid.Columns.Count == 0)
+                return;
+
+            // Calculate a scale factor based on font size relative to default (12)
+            var scaleFactor = preferences.GridFontSize / 12.0;
+            
+            foreach (var column in grid.Columns)
+            {
+                // Store current width mode
+                var currentWidth = column.Width;
+                
+                // Set MinWidth based on font size to ensure content fits
+                column.MinWidth = Math.Max(30, preferences.GridFontSize * 3);
+                
+                if (currentWidth.IsSizeToCells || currentWidth.IsSizeToHeader)
+                {
+                    // Force recalculation by toggling width mode
+                    column.Width = DataGridLength.Auto;
+                    column.Width = currentWidth;
+                }
+                else if (currentWidth.IsAuto || currentWidth.IsStar)
+                {
+                    // For auto/star columns, temporarily set to auto to force recalculation
+                    var originalWidth = column.Width;
+                    column.Width = DataGridLength.Auto;
+                    
+                    // Use dispatcher to set back after layout pass
+                    grid.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            column.Width = originalWidth;
+                        }
+                        catch { /* Ignore errors during async update */ }
+                    }), System.Windows.Threading.DispatcherPriority.Loaded);
+                }
+                // For absolute widths, just leave them - they typically don't need scaling
+            }
+            
+            // Force grid to update its layout
+            grid.UpdateLayout();
+            
+            Logger.Debug("Column widths refreshed for grid: {Name}, ScaleFactor: {Scale:F2}", 
+                grid.Name, scaleFactor);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error refreshing column widths for grid: {Name}", grid.Name);
         }
     }
 
