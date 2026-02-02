@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Missing FK Discovery"
         Icon="pack://application:,,,/Resources/dEdge.ico"
-        Width="900"
+        Width="1170"
         Height="750"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="15">
@@ -57,7 +57,7 @@
                                 <ComboBoxItem Content="Regex" Tag="Regex"/>
                             </ComboBox>
                             <TextBox x:Name="SearchTextBox" ui:ControlHelper.PlaceholderText="Enter search pattern..." Width="200" Margin="0,0,5,0" TextChanged="SearchTextBox_TextChanged"/>
-                            <Button x:Name="SearchHistoryButton" Content="📋" Width="30" ToolTip="Load previous search pattern" Click="SearchHistoryButton_Click"/>
+                            <Button x:Name="SearchHistoryButton" Content="📋" Width="44" MinWidth="44" ToolTip="Load previous search pattern" Click="SearchHistoryButton_Click"/>
                         </StackPanel>
                     </StackPanel>
                     

@@ -42,10 +42,10 @@ public class MissingFKSearchHistoryService
     /// <summary>
     /// Save search pattern to history.
     /// </summary>
-    public void SaveSearchPattern(string pattern, string searchType, string patternType, string? name = null)
+    public void SaveSearchPattern(string pattern, string searchType, string patternType, string? schema = null, string? name = null)
     {
-        Logger.Debug("Saving search pattern to history: {Pattern}, Type: {SearchType}, PatternType: {PatternType}", 
-            pattern, searchType, patternType);
+        Logger.Debug("Saving search pattern to history: {Pattern}, Type: {SearchType}, PatternType: {PatternType}, Schema: {Schema}",
+            pattern, searchType, patternType, schema ?? "(none)");
 
         try
         {
@@ -55,14 +55,16 @@ public class MissingFKSearchHistoryService
                 Pattern = pattern,
                 SearchType = searchType, // "TableName" or "ColumnName"
                 PatternType = patternType, // "Standard" or "Regex"
+                Schema = schema ?? string.Empty,
                 SavedAt = DateTime.Now
             };
 
             // Remove existing pattern with same values (avoid duplicates)
-            _history.RemoveAll(h => 
-                h.Pattern == pattern && 
-                h.SearchType == searchType && 
-                h.PatternType == patternType);
+            _history.RemoveAll(h =>
+                h.Pattern == pattern &&
+                h.SearchType == searchType &&
+                h.PatternType == patternType &&
+                (h.Schema ?? string.Empty) == (schema ?? string.Empty));
 
             _history.Insert(0, item);
 
@@ -160,5 +162,7 @@ public class MissingFKSearchHistoryItem
     public string Pattern { get; set; } = string.Empty;
     public string SearchType { get; set; } = "TableName"; // "TableName" or "ColumnName"
     public string PatternType { get; set; } = "Standard"; // "Standard" or "Regex"
+    /// <summary>Schema name when the pattern was saved (optional).</summary>
+    public string? Schema { get; set; }
     public DateTime SavedAt { get; set; }
 }

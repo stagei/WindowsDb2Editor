@@ -522,12 +522,13 @@ public partial class MissingFKDiscoveryDialog : Window
         // Enable/disable "Add All from Search" button based on whether search is active
         AddAllFromSearchButton.IsEnabled = !string.IsNullOrWhiteSpace(searchText) && filtered.Count > 0;
         
-        // Auto-save search pattern to history
+        // Auto-save search pattern to history (include schema when not "All")
         if (!string.IsNullOrWhiteSpace(searchText))
         {
             try
             {
-                _searchHistoryService.SaveSearchPattern(searchText, searchType, patternType);
+                var schemaForHistory = (selectedSchema == "All" || string.IsNullOrWhiteSpace(selectedSchema)) ? null : selectedSchema;
+                _searchHistoryService.SaveSearchPattern(searchText, searchType, patternType, schemaForHistory);
             }
             catch (Exception ex)
             {
@@ -686,28 +687,67 @@ public partial class MissingFKDiscoveryDialog : Window
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            
-            // Create simple selection dialog
+
+            // Create selection dialog (30% wider by default so Item text is not truncated)
             var dialog = new Window
             {
                 Title = "Select Previous Search Pattern",
-                Width = 600,
+                Width = 780,
+                MinWidth = 500,
                 Height = 400,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Owner = this
             };
-            
+
             var listBox = new ListBox
             {
-                Margin = new Thickness(10)
+                Margin = new Thickness(10),
+                DisplayMemberPath = "Display"
             };
-            
-            listBox.ItemsSource = history.Select(h => new
+
+            var displayItems = history.Select(h => new
             {
-                Display = $"{h.Pattern} ({h.SearchType}, {h.PatternType}) - {h.SavedAt:yyyy-MM-dd HH:mm}",
+                Display = string.IsNullOrWhiteSpace(h.Schema)
+                    ? $"{h.Pattern} ({h.SearchType}, {h.PatternType}) - {h.SavedAt:yyyy-MM-dd HH:mm}"
+                    : $"{h.Pattern} ({h.Schema}, {h.SearchType}, {h.PatternType}) - {h.SavedAt:yyyy-MM-dd HH:mm}",
                 Item = h
-            });
-            
+            }).ToList();
+            listBox.ItemsSource = displayItems;
+
+            void ApplySelectedItem()
+            {
+                if (listBox.SelectedItem == null) return;
+                var selected = ((dynamic)listBox.SelectedItem).Item;
+                SearchTextBox.Text = selected.Pattern;
+
+                // Set schema if stored
+                if (!string.IsNullOrWhiteSpace(selected.Schema) && SchemaComboBox.Items.Cast<object>().Any(s => s?.ToString() == selected.Schema))
+                {
+                    SchemaComboBox.SelectedItem = SchemaComboBox.Items.Cast<object>().First(s => s?.ToString() == selected.Schema);
+                }
+
+                // Set search type
+                var searchTypeItem = SearchTypeComboBox.Items.Cast<ComboBoxItem>()
+                    .FirstOrDefault(item => item.Tag?.ToString() == selected.SearchType);
+                if (searchTypeItem != null)
+                    SearchTypeComboBox.SelectedItem = searchTypeItem;
+
+                // Set pattern type
+                var patternTypeItem = PatternTypeComboBox.Items.Cast<ComboBoxItem>()
+                    .FirstOrDefault(item => item.Tag?.ToString() == selected.PatternType);
+                if (patternTypeItem != null)
+                    PatternTypeComboBox.SelectedItem = patternTypeItem;
+
+                dialog.DialogResult = true;
+                dialog.Close();
+            }
+
+            listBox.MouseDoubleClick += (s, args) =>
+            {
+                if (listBox.SelectedItem != null)
+                    ApplySelectedItem();
+            };
+
             var okButton = new Button
             {
                 Content = "Load",
@@ -716,7 +756,8 @@ public partial class MissingFKDiscoveryDialog : Window
                 Margin = new Thickness(5),
                 IsDefault = true
             };
-            
+            okButton.Click += (s, args) => ApplySelectedItem();
+
             var cancelButton = new Button
             {
                 Content = "Cancel",
@@ -725,31 +766,8 @@ public partial class MissingFKDiscoveryDialog : Window
                 Margin = new Thickness(5),
                 IsCancel = true
             };
-            
-            okButton.Click += (s, args) =>
-            {
-                if (listBox.SelectedItem != null)
-                {
-                    var selected = ((dynamic)listBox.SelectedItem).Item;
-                    SearchTextBox.Text = selected.Pattern;
-                    
-                    // Set search type
-                    var searchTypeItem = SearchTypeComboBox.Items.Cast<ComboBoxItem>()
-                        .FirstOrDefault(item => item.Tag?.ToString() == selected.SearchType);
-                    if (searchTypeItem != null)
-                        SearchTypeComboBox.SelectedItem = searchTypeItem;
-                    
-                    // Set pattern type
-                    var patternTypeItem = PatternTypeComboBox.Items.Cast<ComboBoxItem>()
-                        .FirstOrDefault(item => item.Tag?.ToString() == selected.PatternType);
-                    if (patternTypeItem != null)
-                        PatternTypeComboBox.SelectedItem = patternTypeItem;
-                    
-                    dialog.DialogResult = true;
-                    dialog.Close();
-                }
-            };
-            
+            cancelButton.Click += (s, args) => { dialog.DialogResult = false; dialog.Close(); };
+
             var buttonPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -758,24 +776,20 @@ public partial class MissingFKDiscoveryDialog : Window
             };
             buttonPanel.Children.Add(okButton);
             buttonPanel.Children.Add(cancelButton);
-            
+
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            
             Grid.SetRow(listBox, 0);
             Grid.SetRow(buttonPanel, 1);
             grid.Children.Add(listBox);
             grid.Children.Add(buttonPanel);
-            
+
             dialog.Content = grid;
             listBox.Focus();
-            
+
             if (dialog.ShowDialog() == true)
-            {
-                // Trigger search refresh
                 RefreshTableList();
-            }
         }
         catch (Exception ex)
         {
@@ -1293,7 +1307,18 @@ public partial class MissingFKDiscoveryDialog : Window
                     MessageBoxImage.Warning);
                 return;
             }
-            
+
+            // Defensive: ensure we have valid folder and job id (set by auto-generate or previous generate)
+            var outFolder = _outputFolder ?? string.Empty;
+            var jobId = _jobId ?? string.Empty;
+            if (string.IsNullOrEmpty(outFolder) || string.IsNullOrEmpty(jobId))
+            {
+                StartBatchJobButton.IsEnabled = true;
+                MessageBox.Show("Output folder or job ID is missing. Please generate input (e.g. add tables and generate) or select an existing project folder.", "Start Job",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Log ignore rules being used
             var ignoreRulesInfo = "No ignore rules";
             if (!string.IsNullOrEmpty(_ignoreJsonPath) && File.Exists(_ignoreJsonPath))
@@ -1326,7 +1351,7 @@ public partial class MissingFKDiscoveryDialog : Window
                 "-profile", _connectionProfile,
                 "-command", "missing-fk-scan",
                 "-input", inputPath,
-                "-out", _outputFolder
+                "-out", outFolder
             };
             
             if (!string.IsNullOrEmpty(_ignoreJsonPath) && File.Exists(_ignoreJsonPath))
@@ -1335,15 +1360,27 @@ public partial class MissingFKDiscoveryDialog : Window
                 args.Add(_ignoreJsonPath);
             }
             
-            // Get executable path
-            var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            // Get executable path (prefer Environment.ProcessPath for .NET 6+; avoids NRE with single-file or hosted)
+            var exePath = Environment.ProcessPath;
             if (string.IsNullOrEmpty(exePath))
             {
-                exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "WindowsDb2Editor.exe";
+                exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
             }
-            
+            if (string.IsNullOrEmpty(exePath))
+            {
+                try
+                {
+                    exePath = Process.GetCurrentProcess().MainModule?.FileName;
+                }
+                catch (InvalidOperationException)
+                {
+                    // MainModule can throw in some hosted scenarios
+                }
+                exePath = exePath ?? "WindowsDb2Editor.exe";
+            }
+
             Logger.Info("Starting detached batch job: {Exe} {Args}", exePath, string.Join(" ", args));
-            
+
             var processInfo = new ProcessStartInfo
             {
                 FileName = exePath,
@@ -1359,26 +1396,30 @@ public partial class MissingFKDiscoveryDialog : Window
             {
                 Logger.Info("Batch job started with PID: {Pid}", _runningJobProcess.Id);
                 
+                // Persist for rest of method
+                _jobId = jobId;
+                _outputFolder = outFolder;
+
                 // Save running job info (PID + exe path so we can verify PID wasn't reused)
-                _jobStatusService.SaveRunningJob(_runningJobProcess.Id, _jobId, _outputFolder, exePath);
-                
+                _jobStatusService.SaveRunningJob(_runningJobProcess.Id, jobId, outFolder, exePath);
+
                 // Attach to process exit event for immediate notification
                 _runningJobProcess.EnableRaisingEvents = true;
                 _runningJobProcess.Exited += OnJobProcessExited;
-                
+
                 // Show clear indication that job started
-                var ignoreInfo = string.IsNullOrEmpty(_ignoreJsonPath) 
-                    ? "No ignore rules" 
+                var ignoreInfo = string.IsNullOrEmpty(_ignoreJsonPath)
+                    ? "No ignore rules"
                     : $"Ignore rules: {Path.GetFileName(_ignoreJsonPath)}";
-                
-                StatusText.Text = $"✓ Batch job STARTED - Job ID: {_jobId}";
+
+                StatusText.Text = $"✓ Batch job STARTED - Job ID: {jobId}";
                 JobStatusText.Text = $"Job running (PID: {_runningJobProcess.Id}) - {ignoreInfo}";
                 JobStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                
+
                 // Show notification
                 MessageBox.Show(
                     $"Missing FK Discovery batch job has been started!\n\n" +
-                    $"Job ID: {_jobId}\n" +
+                    $"Job ID: {jobId}\n" +
                     $"Process ID: {_runningJobProcess.Id}\n" +
                     $"{ignoreInfo}\n\n" +
                     $"The job is running in the background. You can monitor progress using the 'View Job Log' button.\n" +
@@ -1391,7 +1432,7 @@ public partial class MissingFKDiscoveryDialog : Window
                 try
                 {
                     var notificationService = new NotificationService();
-                    notificationService.ShowInfo("Missing FK Discovery", $"Job started. PID: {_runningJobProcess.Id}. Output: {_outputFolder}");
+                    notificationService.ShowInfo("Missing FK Discovery", $"Job started. PID: {_runningJobProcess.Id}. Output: {outFolder}");
                 }
                 catch (Exception exNotif)
                 {
@@ -1399,10 +1440,10 @@ public partial class MissingFKDiscoveryDialog : Window
                 }
                 
                 // Start log file monitoring and status polling (so we re-enable button when job ends or PID reused)
-                StartLogFileMonitoring(_outputFolder);
-                StartJobStatusMonitoring(_jobId, _outputFolder);
+                StartLogFileMonitoring(outFolder);
+                StartJobStatusMonitoring(jobId, outFolder);
                 MainTabControl.SelectedItem = JobProgressTab;
-                
+
                 // Update UI - disable button to prevent multiple starts
                 StartBatchJobButton.IsEnabled = false;
                 StartBatchJobButton.Content = "Job Running...";
