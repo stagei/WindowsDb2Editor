@@ -98,14 +98,68 @@ public partial class ConnectionTabControl : UserControl
             // Apply all UI styles to this control
             UIStyleService.ApplyStyles(this);
             
+            // Explicitly refresh the ResultsGrid with new font and row height
+            RefreshResultsGridSizing();
+            
             // Apply spacing to all existing TreeViewItems
             ApplyTreeViewSpacingToAll(DatabaseTreeView);
             
             // Apply editor theme
             ApplyEditorTheme();
             
-            Logger.Debug("Grid preferences applied - FontSize: {0}, Spacing: {1}", 
-                GetTreeViewFontSize(), GetTreeViewItemSpacing());
+            Logger.Debug("Grid preferences applied - FontSize: {0}, CellHeight: {1}, Spacing: {2}", 
+                _preferencesService.Preferences.GridFontSize,
+                _preferencesService.Preferences.GridCellHeight,
+                GetTreeViewItemSpacing());
+        }
+    }
+    
+    /// <summary>
+    /// Explicitly refresh the ResultsGrid sizing (font, row height, column widths)
+    /// </summary>
+    private void RefreshResultsGridSizing()
+    {
+        try
+        {
+            var prefs = _preferencesService?.Preferences;
+            if (prefs == null) return;
+            
+            // Apply font size and row height
+            ResultsGrid.FontSize = prefs.GridFontSize;
+            ResultsGrid.RowHeight = prefs.GridCellHeight;
+            
+            // Force all existing columns to recalculate their widths
+            foreach (var column in ResultsGrid.Columns)
+            {
+                // Set minimum width based on font size
+                column.MinWidth = Math.Max(30, prefs.GridFontSize * 3);
+                
+                // Force column to recalculate by resetting width
+                var currentWidth = column.Width;
+                column.Width = new DataGridLength(1, DataGridLengthUnitType.Auto);
+                
+                // Use dispatcher to restore width mode after layout
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // For auto-generated columns, use SizeToCells for better content fit
+                        column.Width = new DataGridLength(1, DataGridLengthUnitType.SizeToCells);
+                    }
+                    catch { /* Ignore errors */ }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            
+            // Force visual refresh
+            ResultsGrid.UpdateLayout();
+            ResultsGrid.InvalidateVisual();
+            
+            Logger.Debug("ResultsGrid sizing refreshed - FontSize: {0}, RowHeight: {1}, Columns: {2}",
+                prefs.GridFontSize, prefs.GridCellHeight, ResultsGrid.Columns.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Error refreshing ResultsGrid sizing");
         }
     }
 
